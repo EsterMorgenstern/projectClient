@@ -1,19 +1,13 @@
-import './App.css'
-import Login from './components/logIn'
-import AddItemDialog from './components/dialog'
-import InstructorsTable from './components/InstructorsTable'
-import AnimatedTable from './components/AnimatedTable'
+import { Provider } from 'react-redux';
+import Routing from './pages/routing';
+import store from './store/store';
 
 function App() {
-
   return (
-    <>
-     {/* <Login></Login> */}
-     <AnimatedTable></AnimatedTable>
-     {/* <InstructorsTable></InstructorsTable> */}
-     {/* <AddItemDialog></AddItemDialog> */}
-    </>
-  )
+    <Provider store={store}> 
+      <Routing />
+    </Provider>
+  );
 }
 
-export default App
+export default App;

@@ -1,16 +1,17 @@
-import { useState } from "react";
 import { DataGrid } from "@mui/x-data-grid";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from "@mui/material";
 import { Delete, Edit, Add } from "@mui/icons-material";
 import { motion } from "framer-motion";
-
-const initialRows = [
+import { useState } from "react";
+const rr = [
   { id: 1, fullName: "דוד כהן", email: "david@example.com" },
   { id: 2, fullName: "רונית לוי", email: "ronit@example.com" },
-];
+];  
 
 export default function AnimatedTable() {
-  const [rows, setRows] = useState(initialRows);
+
+
+  const [rows, setRows] = useState(rr);
   const [open, setOpen] = useState(false);
   const [currentInstructor, setCurrentInstructor] = useState({ id: null, fullName: "", email: "" });
 
@@ -70,6 +71,7 @@ export default function AnimatedTable() {
           boxShadow: 3,
           "& .MuiDataGrid-cell": { transition: "all 0.3s ease-in-out" },
           "& .MuiDataGrid-cell:hover": { backgroundColor: "#f5f5f5" },
+          backgroundColor: "background.paper",
         }}
       />
 

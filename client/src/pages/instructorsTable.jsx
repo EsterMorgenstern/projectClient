@@ -4,36 +4,36 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } 
 import { Delete, Edit, Add } from "@mui/icons-material";
 import axios from "axios";
 
-// const API_URL = "http://localhost:5000/api/instructors";
+ const API_URL = "http://localhost:5000/api/instructors";
 
 const InstructorsTable=() =>{
    const [instructors, setInstructors] = useState([]);
    const [open, setOpen] = useState(false);
    const [currentInstructor, setCurrentInstructor] = useState({ id: null, fullName: "", email: "" });
 
-  // useEffect(() => {
-  //   fetchInstructors();
-  // }, []);
+  useEffect(() => {
+    fetchInstructors();
+  }, []);
 
-  // const fetchInstructors = async () => {
-  //   const response = await axios.get(API_URL);
-  //   setInstructors(response.data);
-  // };
+  const fetchInstructors = async () => {
+    const response = await axios.get(API_URL);
+    setInstructors(response.data);
+  };
 
-  // const handleSave = async () => {
-  //   if (currentInstructor.id) {
-  //     await axios.put(`${API_URL}/${currentInstructor.id}`, currentInstructor);
-  //   } else {
-  //     await axios.post(API_URL, currentInstructor);
-  //   }
-  //   fetchInstructors();
-  //   setOpen(false);
-  // };
+  const handleSave = async () => {
+    if (currentInstructor.id) {
+      await axios.put(`${API_URL}/${currentInstructor.id}`, currentInstructor);
+    } else {
+      await axios.post(API_URL, currentInstructor);
+    }
+    fetchInstructors();
+    setOpen(false);
+  };
 
-  // const handleDelete = async (id) => {
-  //   await axios.delete(`${API_URL}/${id}`);
-  //   fetchInstructors();
-  // };
+  const handleDelete = async (id) => {
+    await axios.delete(`${API_URL}/${id}`);
+    fetchInstructors();
+  };
 
   const columns = [
     { field: "id", headerName: "ID", width: 70 },
@@ -52,7 +52,7 @@ const InstructorsTable=() =>{
       //       <Delete color="error" />
       //     </Button>
       //   </>/
-      // ),
+      // )
     },
   ];
 
