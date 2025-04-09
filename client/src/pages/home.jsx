@@ -53,63 +53,119 @@
 
 // export default Home;
 
-import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { BookOpen, Users, GraduationCap, Activity, PlusCircle, ClipboardList } from "lucide-react";
-import { Button, Card, CardContent } from "@mui/material";
+// import { useNavigate } from "react-router-dom";
+// import { motion } from "framer-motion";
+// import { BookOpen, Users, GraduationCap, Activity, PlusCircle, ClipboardList } from "lucide-react";
+// import { Button, Card, CardContent } from "@mui/material";
 
 
-export default function Home() {
-  const navigate = useNavigate();
+// export default function Home() {
+//   const navigate = useNavigate();
 
-  const buttons = [
-    { label: "ניהול תלמידים", path: "/students", icon: Users },
-    { label: "ניהול מדריכים", path: "/instructors", icon: GraduationCap },
-    { label: "ניהול כל החוגים", path: "/courses", icon: BookOpen },
-    { label: "חוגים פעילים", path: "/active-courses", icon: Activity },
-    { label: "שיבוץ תלמידים לחוגים", path: "/student-courses", icon: ClipboardList },
-    { label: "הוספת חוג חדש", path: "/add-course", icon: PlusCircle },
-  ];
+//   const buttons = [
+//     { label: "ניהול תלמידים", path: "/students", icon: Users },
+//     { label: "ניהול מדריכים", path: "/instructors", icon: GraduationCap },
+//     { label: "ניהול כל החוגים", path: "/courses", icon: BookOpen },
+//     { label: "חוגים פעילים", path: "/active-courses", icon: Activity },
+//     { label: "שיבוץ תלמידים לחוגים", path: "/student-courses", icon: ClipboardList },
+//     { label: "הוספת חוג חדש", path: "/add-course", icon: PlusCircle },
+//   ];
 
+//   return (
+//     <div className="min-h-screen flex flex-col bg-gradient-to-br from-indigo-300 via-purple-300 to-pink-300 p-8">
+//       <motion.h1
+//         className="text-5xl md:text-7xl font-bold text-center mb-16 text-white drop-shadow-lg"
+//         initial={{ opacity: 0, y: -60 }}
+//         animate={{ opacity: 1, y: 0 }}
+//         transition={{ duration: 0.8 }}
+//       >
+//         ניהול חוגים
+//       </motion.h1>
+
+//       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12 w-full flex-grow">
+//         {buttons.map((btn, index) => {
+//           const Icon = btn.icon;
+//           return (
+//             <motion.div 
+//               key={index}
+//               whileHover={{ scale: 1.05 }}
+//               whileTap={{ scale: 0.95 }}
+//               className="flex"
+//             >
+//               <Card
+//                 onClick={() => navigate(btn.path)}
+//                 className="flex flex-col items-center justify-center w-full h-64 bg-white/80 backdrop-blur-md rounded-3xl shadow-2xl cursor-pointer transition hover:bg-white"
+//               >
+//                 <CardContent className="flex flex-col items-center justify-center space-y-6">
+//                   <Icon className="h-16 w-16 text-purple-600" />
+//                   <Button
+//                     variant="ghost" 
+//                     className="text-2xl font-bold text-purple-700 hover:text-purple-900"
+//                   >
+//                     {btn.label}
+//                   </Button>
+//                 </CardContent>
+//               </Card>
+//             </motion.div>
+//           );
+//         })}
+//       </div>
+//     </div>
+//   );
+// }
+
+
+import { Box, Typography, Button } from '@mui/material';
+import { Link } from 'react-router-dom';
+
+const Home = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-indigo-300 via-purple-300 to-pink-300 p-8">
-      <motion.h1
-        className="text-5xl md:text-7xl font-bold text-center mb-16 text-white drop-shadow-lg"
-        initial={{ opacity: 0, y: -60 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
+    <Box
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        gap: 4,
+      }}
+    >
+      <Typography
+        variant="h2"
+        sx={{
+          fontWeight: 'bold',
+          background: 'linear-gradient(90deg, #ff8a00, #e52e71)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          fontFamily: 'Rubik, sans-serif',
+        }}
       >
-        ניהול חוגים
-      </motion.h1>
+        ברוכים הבאים למערכת ניהול חוגים
+      </Typography>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12 w-full flex-grow">
-        {buttons.map((btn, index) => {
-          const Icon = btn.icon;
-          return (
-            <motion.div 
-              key={index}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex"
-            >
-              <Card
-                onClick={() => navigate(btn.path)}
-                className="flex flex-col items-center justify-center w-full h-64 bg-white/80 backdrop-blur-md rounded-3xl shadow-2xl cursor-pointer transition hover:bg-white"
-              >
-                <CardContent className="flex flex-col items-center justify-center space-y-6">
-                  <Icon className="h-16 w-16 text-purple-600" />
-                  <Button
-                    variant="ghost" 
-                    className="text-2xl font-bold text-purple-700 hover:text-purple-900"
-                  >
-                    {btn.label}
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
-          );
-        })}
-      </div>
-    </div>
+      <Button
+        component={Link}
+        to="/students"
+        variant="contained"
+        size="large"
+        sx={{
+          background: 'linear-gradient(90deg, #fc466b 0%, #3f5efb 100%)',
+          color: 'white',
+          fontSize: '18px',
+          borderRadius: '30px',
+          padding: '10px 30px',
+          transition: '0.3s',
+          '&:hover': {
+            background: 'linear-gradient(90deg, #3f5efb 0%, #fc466b 100%)',
+          },
+        }}
+      >
+        התחילו לנהל תלמידים
+      </Button>
+    </Box>
   );
-}
+};
+
+export default Home;
+
