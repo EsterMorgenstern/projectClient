@@ -5,28 +5,13 @@ import { Add, Edit, Delete } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchStudents } from '../store/studentGetAllThunk';
+import { addStudent } from '../store/studentAddThunk';
 
 // פונקציות גישה לשרת
-const fetchStudents = async () => {
-  try {
-    const response = await axios.get('https://localhost:5000/api/Student/GetAll');
-    //   const response = await axios.get('https://localhost:5000/api/Student/GetAll');
 
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching students:', error);
-    return [];
-  }
-};
 
-const addStudent = async (student) => {
-  try {
-    const response = await axios.post('https://localhost:5000/api/Student/Add', student);
-    return response.data;
-  } catch (error) {
-    console.error('Error adding student:', error);
-  }
-};
 
 const updateStudent = async (student) => {
   try {
@@ -47,20 +32,20 @@ const deleteStudent = async (id) => {
 };
 
 export default function StudentsTable() {
-  const [students, setStudents] = useState([]);
+  const students = useSelector((state) => state.students.students);
+  // const [students, setStudents] = useState([]);
   const [open, setOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleted, setDeleted] = useState(false);
   const [currentStudent, setCurrentStudent] = useState({ id: null, firstName: '', lastName: '', phone: null, city: '', school: '' });
   const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+ 
+useEffect(() => {
+ dispatch(fetchStudents()) ;
+  setLoading(false);
+},[students]);
 
-  useEffect(() => {
-    const loadStudents = async () => {
-      const fetchedStudents = await fetchStudents();
-      setStudents(fetchedStudents);
-      setLoading(false);
-    };
-    loadStudents();
-  }, []);
 
   const handleAdd = async () => {
     const newStudent = { firstName: currentStudent.firstName, lastName: currentStudent.lastName, phone: currentStudent.phone, city: currentStudent.city, school: currentStudent.school };
@@ -80,17 +65,14 @@ export default function StudentsTable() {
       const updatedStudent = await updateStudent(currentStudent);
       setStudents(students.map((student) => (student.id === updatedStudent.id ? updatedStudent : student)));
     } else {
-      const addedStudent = await addStudent(currentStudent);
-      setStudents([...students, addedStudent]);
+      dispatch(addStudent(currentStudent));
     }
     setOpen(false);
     setCurrentStudent({ id: null, firstName: '', lastName: '', phone: null, city: '', school: '' });
   };
 
   const handleDelete = async (id) => {
-    setDeleteOpen(true)
-    await deleteStudent(id);
-    setStudents(students.filter((student) => student.id !== id));
+       dispatch(deleteStudent(id));
   };
 
   const columns = [
@@ -118,7 +100,7 @@ export default function StudentsTable() {
             variant="outlined"
             color="error"
             startIcon={<Delete />}
-            onClick={() => handleDelete(params.row.id)
+            onClick={() =>  setDeleteOpen(true)
             }
           >
             מחק
@@ -185,25 +167,48 @@ export default function StudentsTable() {
           {currentStudent.id ? 'ערוך תלמיד' : 'הוסף תלמיד'}
         </DialogTitle>
         <DialogContent>
-          <TextField
+          <br />
+        <TextField
             fullWidth
-            label="שם מלא"
-            value={currentStudent.firstName}
-            onChange={(e) => setCurrentStudent({ ...currentStudent, firstName: e.target.value })}
+            label="תעודת זהות"
+            value={currentStudent.id}
+            onChange={(e) => setCurrentStudent({ ...currentStudent, id: e.target.value })}
             sx={{ mb: 2, backgroundColor: '#ffffff' }} // רקע לבן בשדות
           />
           <TextField
             fullWidth
-            label="גיל"
-            value={currentStudent.age}
-            onChange={(e) => setCurrentStudent({ ...currentStudent, age: e.target.value })}
+            label="שם פרטי"
+            value={currentStudent.firstName}
+            onChange={(e) => setCurrentStudent({ ...currentStudent, firstName: e.target.value })}
+            sx={{ mb: 2, backgroundColor: '#ffffff' }} // רקע לבן בשדות
+          />
+           <TextField
+            fullWidth
+            label="שם משפחה"
+            value={currentStudent.lastName}
+            onChange={(e) => setCurrentStudent({ ...currentStudent, lastName: e.target.value })}
+            sx={{ mb: 2, backgroundColor: '#ffffff' }} // רקע לבן בשדות
+          />
+           <TextField
+            fullWidth
+            label="טלפון"
+            type="number"
+            value={currentStudent.phone}
+            onChange={(e) => setCurrentStudent({ ...currentStudent, phone: e.target.value })}
+            sx={{ mb: 2, backgroundColor: '#ffffff' }} // רקע לבן בשדות
+          />
+          <TextField
+            fullWidth
+            label="עיר"
+            value={currentStudent.city}
+            onChange={(e) => setCurrentStudent({ ...currentStudent, city: e.target.value })}
             sx={{ mb: 2, backgroundColor: '#ffffff' }}
           />
           <TextField
             fullWidth
-            label="אימייל"
-            value={currentStudent.email}
-            onChange={(e) => setCurrentStudent({ ...currentStudent, email: e.target.value })}
+            label="בית ספר"
+            value={currentStudent.school}
+            onChange={(e) => setCurrentStudent({ ...currentStudent, school: e.target.value })}
             sx={{ mb: 2, backgroundColor: '#ffffff' }}
           />
         </DialogContent>
@@ -250,7 +255,7 @@ export default function StudentsTable() {
             לא
           </Button>
           <Button
-            onClick={handleDelete}
+            onClick={() => { handleDelete(currentStudent.id); setDeleteOpen(false) }}
             color="primary"
             variant="contained"
             sx={{

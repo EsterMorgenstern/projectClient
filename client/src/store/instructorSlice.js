@@ -1,16 +1,9 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import { fetchInstructors } from './instructorGetAllThunk';
+import { addInstructor } from './instructorAddThunk';
+import { deleteInstructor } from './instuctorDeleteThunk';
 
-// קריאות לשרת
-export const fetchInstructors = createAsyncThunk('instructors/fetchInstructors', async () => {
-  const response = await axios.get('https://localhost:5000/api/Instructor/GetAll');
-  return response.data;
-});
-
-export const addInstructor = createAsyncThunk('instructors/addInstructor', async (instructor) => {
-  const response = await axios.post('https://localhost:5000/api/instructor/Add', instructor);
-  return response.data;
-});
 
 export const updateInstructor = createAsyncThunk('instructors/updateInstructor', async (instructor) => {
   const response = await axios.put(`https://localhost:5000/api/Instructor/Update/${instructor.id}`, student);
@@ -27,19 +20,50 @@ const instructorsSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
+//fetchInstructors    
       .addCase(fetchInstructors.pending, (state) => {
+        console.log('Fetching instructors...');
         state.loading = true;
       })
       .addCase(fetchInstructors.fulfilled, (state, action) => {
+        console.log(action.payload);
         state.loading = false;
         state.instructors = action.payload;
       })
       .addCase(fetchInstructors.rejected, (state, action) => {
+        console.error('Error fetching instructors:', action.error.message);
         state.loading = false;
         state.error = action.error.message;
       })
+//addInstructor          
+      .addCase(addInstructor.pending, (state) => {
+        console.log('addInstructor...');
+        state.loading = true;
+      })
       .addCase(addInstructor.fulfilled, (state, action) => {
-        state.instructors.push(action.payload);
+        console.log(action.payload);
+        state.loading = false;
+        state.instructors.push(action.payload); // Add the new student to the state 
+      })
+      .addCase(addInstructor.rejected, (state, action) => {
+        console.error('Error addInstructor:', action.error.message);
+        state.loading = false;
+        state.error = action.error.message;
+      })
+//deleteInstructor      
+      .addCase(deleteInstructor.pending, (state) => {
+        console.log('deleteInstructor...');
+        state.loading = true;
+      })
+      .addCase(deleteInstructor.fulfilled, (state, action) => {
+        console.log(action.payload);
+        state.loading = false;
+        state.instructors = state.instructors.filter((instructor) => instructor.id !== action.payload.id);
+      })
+      .addCase(deleteInstructor.rejected, (state, action) => {
+        console.error('Error deleteInstructor:', action.error.message);
+        state.loading = false;
+        state.error = action.error.message;
       })
       .addCase(updateInstructor.fulfilled, (state, action) => {
         const updateInstructor = state.instructor.map((instructor) =>

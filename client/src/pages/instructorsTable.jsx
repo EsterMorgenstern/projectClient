@@ -4,26 +4,14 @@ import { DataGrid } from '@mui/x-data-grid';
 import { Add, Edit, Delete, IntegrationInstructions } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import axios from 'axios';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchInstructors } from '../store/instructorGetAllThunk';
+import { deleteInstructor } from '../store/instuctorDeleteThunk';
+import { addInstructor } from '../store/instructorAddThunk';
+
 
 // פונקציות גישה לשרת
-const fetchInstructors = async () => {
-  try {
-    const response = await axios.get('https://localhost:5000/api/instructor/GetAll');
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching instructors:', error);
-    return [];
-  }
-};
 
-const addInstructor = async (instructor) => {
-  try {
-    const response = await axios.post('https://localhost:5000/api/instructor/Add', instructor);
-    return response.data;
-  } catch (error) {
-    console.error('Error adding instructor:', error);
-  }
-};
 
 const updateInstructor = async (instructor) => {
   try {
@@ -34,29 +22,23 @@ const updateInstructor = async (instructor) => {
   }
 };
 
-const deleteInstructor = async (id) => {
-  try {
-    const response = await axios.delete(`https://localhost:5000/api/instructor/Delete/${id}`);
-    return response.data;
-  } catch (error) {
-    console.error('Error deleting instructor:', error);
-  }
-};
 
 export default function InstructorsTable() {
-  const [instructors, setInstructors] = useState([]);
+  const instructors = useSelector((state) => state.instructors.instructors);
   const [open, setOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [currentInstructor, setcurrentInstructor] = useState({ id: null, firstName: '', lastName: '', phone: null, email: '', city: '' });
   const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+
 
   useEffect(() => {
     const loadInstructors = async () => {
-      const fetchedInstructors = await fetchInstructors();
-      setInstructors(fetchedInstructors);
+      dispatch(fetchInstructors());
       setLoading(false);
     };
     loadInstructors();
-  }, []);
+  }, [instructors]);
 
   const handleAdd = async () => {
     const newinstructor = { firstName: currentInstructor.firstName, lastName: currentInstructor.lastName, phone: currentInstructor.phone, email: currentInstructor.email, city: currentInstructor.city };
@@ -76,16 +58,14 @@ export default function InstructorsTable() {
       const updatedInstructor = await updateInstructor(currentInstructor);
       setInstructors(instructors.map((instructor) => (instructor.id === updatedInstructor.id ? updatedInstructor : instructor)));
     } else {
-      const addedInstructor = await addInstructor(currentInstructor);
-      setInstructors([...instructors, addedInstructor]);
+      dispatch(addInstructor(currentInstructor));
     }
     setOpen(false);
     setcurrentInstructor({ id: null, firstName: '', lastName: '', phone: null, email: '', city: '' });
   };
 
   const handleDelete = async (id) => {
-    await deleteInstructor(id);
-    setInstructors(instructors.filter((instructor) => instructor.id !== id));
+    dispatch(deleteInstructor(id));
   };
 
   const columns = [
@@ -113,7 +93,7 @@ export default function InstructorsTable() {
             variant="outlined"
             color="error"
             startIcon={<Delete />}
-            onClick={() => handleDelete(params.row.id)}
+            onClick={() => setDeleteOpen(true)}
           >
             מחק
           </Button>
@@ -181,18 +161,40 @@ export default function InstructorsTable() {
           {currentInstructor.id ? "ערוך מדריך" : "הוסף מדריך"}
         </DialogTitle>
         <DialogContent>
+          <br />
           <TextField
             fullWidth
-            label="שם מלא"
+            label="תעודת זהות"
+            value={currentInstructor.id}
+            onChange={(e) => setcurrentInstructor({ ...currentInstructor, id: e.target.value })}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            fullWidth
+            label="שם פרטי"
             value={currentInstructor.firstName}
             onChange={(e) => setcurrentInstructor({ ...currentInstructor, firstName: e.target.value })}
             sx={{ mb: 2 }}
           />
           <TextField
             fullWidth
-            label="גיל"
-            value={currentInstructor.age}
-            onChange={(e) => setcurrentInstructor({ ...currentInstructor, age: e.target.value })}
+            label="שם משפחה"
+            value={currentInstructor.lastName}
+            onChange={(e) => setcurrentInstructor({ ...currentInstructor, lastName: e.target.value })}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            fullWidth
+            label="טלפון"
+            value={currentInstructor.phone}
+            onChange={(e) => setcurrentInstructor({ ...currentInstructor, phone: e.target.value })}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            fullWidth
+            label="עיר"
+            value={currentInstructor.city}
+            onChange={(e) => setcurrentInstructor({ ...currentInstructor, city: e.target.value })}
             sx={{ mb: 2 }}
           />
           <TextField
@@ -209,6 +211,46 @@ export default function InstructorsTable() {
           </Button>
           <Button onClick={handleSave} color="primary" variant="contained">
             {currentInstructor.id ? "שמור שינויים" : "הוסף מדריך"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      {/*דיאלוג מחיקת מדריך */}
+      <Dialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        sx={{
+          '& .MuiDialog-paper': {
+            borderRadius: 12,
+            padding: 3,
+            backgroundColor: '#F0F4FF', // רקע כחול בהיר
+            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
+          },
+        }}
+      >
+        <DialogTitle sx={{ color: '#1E3A8A', fontWeight: 'bold', textAlign: 'center' }}>
+          מחיקת מדריך
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ color: '#333' }}>
+            ?  {currentInstructor.lastName} {currentInstructor.firstName} האם אתה בטוח שברצונך למחוק את המדריך
+
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteOpen(false)} color="error" variant="outlined">
+            לא
+          </Button>
+          <Button
+            onClick={() => { handleDelete(currentInstructor.id); setDeleteOpen(false) }}
+            color="primary"
+            variant="contained"
+            sx={{
+
+              backgroundColor: '#D32F2F', // אדום למחיקה
+              '&:hover': { backgroundColor: '#F44336' },
+            }}
+          >
+            כן, מחק
           </Button>
         </DialogActions>
       </Dialog>
