@@ -38,21 +38,20 @@ export default function StudentsTable() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleted, setDeleted] = useState(false);
   const [currentStudent, setCurrentStudent] = useState({ id: null, firstName: '', lastName: '', phone: null, city: '', school: '' });
+  const [newStudent, setnewStudent] = useState({ id: null, firstName: '', lastName: '', phone: null,birthDate:'02/03/2025' ,city: '', school: '' });
   const [loading, setLoading] = useState(true);
   const dispatch = useDispatch();
  
 useEffect(() => {
- dispatch(fetchStudents()) ;
+  dispatch(fetchStudents()) ;
   setLoading(false);
-},[students]);
+},[dispatch]);
 
 
   const handleAdd = async () => {
-    const newStudent = { firstName: currentStudent.firstName, lastName: currentStudent.lastName, phone: currentStudent.phone, city: currentStudent.city, school: currentStudent.school };
-    const addedStudent = await addStudent(newStudent);
-    setStudents([...students, addedStudent]);
+    await dispatch(addStudent(newStudent));
     setOpen(false);
-    setCurrentStudent({ id: null, firstName: '', lastName: '', phone: null, city: '', school: '' });
+    setnewStudent({ id: null, firstName: '', lastName: '', phone: null,birthDate:'02/03/2025' , city: '', school: '' });
   };
 
   const handleEdit = (student) => {
@@ -65,14 +64,15 @@ useEffect(() => {
       const updatedStudent = await updateStudent(currentStudent);
       setStudents(students.map((student) => (student.id === updatedStudent.id ? updatedStudent : student)));
     } else {
-      dispatch(addStudent(currentStudent));
+     await dispatch(addStudent(currentStudent));
     }
     setOpen(false);
     setCurrentStudent({ id: null, firstName: '', lastName: '', phone: null, city: '', school: '' });
   };
 
   const handleDelete = async (id) => {
-       dispatch(deleteStudent(id));
+    await dispatch(deleteStudent(id));
+    // await dispatch(fetchStudents());
   };
 
   const columns = [
@@ -100,8 +100,8 @@ useEffect(() => {
             variant="outlined"
             color="error"
             startIcon={<Delete />}
-            onClick={() =>  setDeleteOpen(true)
-            }
+            onClick={() => { setCurrentStudent({ id: params.row.id, firstName: params.row.firstName, lastName: params.row.lastName, phone: params.row.phone, city: params.row.city,school: params.row.school }); setDeleteOpen(true); }}
+           
           >
             מחק
           </Button>
@@ -132,24 +132,22 @@ useEffect(() => {
         />
       </Box>
 
-      <Button
-        component={Link}
-        startIcon={<Add />}
-        // to="/courses/new"
-        variant="contained"
-        color="primary"
-        onClick={() => { setCurrentStudent({ id: null, firstName: '', lastName: '', phone: null, city: '', school: '' }); setOpen(true); }}
-        size="large"
-        sx={{
-          borderRadius: '20px',
-          fontSize: '18px',
-          marginTop: '20px',
-          padding: '10px 20px',
-          transition: 'all 0.3s ease',
-        }}
-      >
-        הוסף תלמיד חדש
-      </Button>
+      {/* כפתור הוספת תלמיד חדש */}
+           <Button
+             onClick={() => { setnewStudent({id: null, firstName: '', lastName: '', phone: null,birthDate:'02/03/2025' , city: '', school: '' }); setOpen(true); }}
+             variant="contained"
+             color="primary"
+             size="large"
+             sx={{
+               borderRadius: '20px',
+               fontSize: '18px',
+               marginTop: '20px',
+               padding: '10px 20px',
+               width: '100%',
+             }}
+           >
+             הוסף תלמיד חדש
+           </Button>
       {/*דיאלוג הוספת תלמיד/עריכה */}
       <Dialog
         open={open}
@@ -164,51 +162,51 @@ useEffect(() => {
         }}
       >
         <DialogTitle sx={{ color: '#1E3A8A', fontWeight: 'bold', textAlign: 'center' }}>
-          {currentStudent.id ? 'ערוך תלמיד' : 'הוסף תלמיד'}
+        הוסף תלמיד
         </DialogTitle>
         <DialogContent>
           <br />
         <TextField
             fullWidth
             label="תעודת זהות"
-            value={currentStudent.id}
-            onChange={(e) => setCurrentStudent({ ...currentStudent, id: e.target.value })}
+            value={newStudent.id}
+            onChange={(e) => setnewStudent({ ...newStudent, id: e.target.value })}
             sx={{ mb: 2, backgroundColor: '#ffffff' }} // רקע לבן בשדות
           />
           <TextField
             fullWidth
             label="שם פרטי"
-            value={currentStudent.firstName}
-            onChange={(e) => setCurrentStudent({ ...currentStudent, firstName: e.target.value })}
+            value={newStudent.firstName}
+            onChange={(e) => setnewStudent({ ...newStudent, firstName: e.target.value })}
             sx={{ mb: 2, backgroundColor: '#ffffff' }} // רקע לבן בשדות
           />
            <TextField
             fullWidth
             label="שם משפחה"
-            value={currentStudent.lastName}
-            onChange={(e) => setCurrentStudent({ ...currentStudent, lastName: e.target.value })}
+            value={newStudent.lastName}
+            onChange={(e) => setnewStudent({ ...newStudent, lastName: e.target.value })}
             sx={{ mb: 2, backgroundColor: '#ffffff' }} // רקע לבן בשדות
           />
            <TextField
             fullWidth
             label="טלפון"
             type="number"
-            value={currentStudent.phone}
-            onChange={(e) => setCurrentStudent({ ...currentStudent, phone: e.target.value })}
+            value={newStudent.phone}
+            onChange={(e) => setnewStudent({ ...newStudent, phone: e.target.value })}
             sx={{ mb: 2, backgroundColor: '#ffffff' }} // רקע לבן בשדות
           />
           <TextField
             fullWidth
             label="עיר"
-            value={currentStudent.city}
-            onChange={(e) => setCurrentStudent({ ...currentStudent, city: e.target.value })}
+            value={newStudent.city}
+            onChange={(e) => setnewStudent({ ...newStudent, city: e.target.value })}
             sx={{ mb: 2, backgroundColor: '#ffffff' }}
           />
           <TextField
             fullWidth
             label="בית ספר"
-            value={currentStudent.school}
-            onChange={(e) => setCurrentStudent({ ...currentStudent, school: e.target.value })}
+            value={newStudent.school}
+            onChange={(e) => setnewStudent({ ...newStudent, school: e.target.value })}
             sx={{ mb: 2, backgroundColor: '#ffffff' }}
           />
         </DialogContent>
@@ -217,7 +215,7 @@ useEffect(() => {
             ביטול
           </Button>
           <Button
-            onClick={handleSave}
+            onClick={() => { handleAdd();}}
             color="primary"
             variant="contained"
             sx={{
@@ -225,7 +223,7 @@ useEffect(() => {
               '&:hover': { backgroundColor: '#3B82F6' }, // כחול בהיר בהעברה
             }}
           >
-            {currentStudent.id ? 'שמור שינויים' : 'הוסף תלמיד'}
+         הוסף תלמיד
           </Button>
         </DialogActions>
       </Dialog>

@@ -28,6 +28,7 @@ export default function InstructorsTable() {
   const [open, setOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [currentInstructor, setcurrentInstructor] = useState({ id: null, firstName: '', lastName: '', phone: null, email: '', city: '' });
+  const [newInstructor, setnewInstructor] = useState({ id: null, firstName: '', lastName: '', phone: null, email: '', city: '' });
   const [loading, setLoading] = useState(true);
   const dispatch = useDispatch();
 
@@ -38,9 +39,9 @@ export default function InstructorsTable() {
       setLoading(false);
     };
     loadInstructors();
-  }, [instructors]);
+  }, [dispatch]);
 
-  const handleAdd = async () => {
+  const handleSave = async () => {
     const newinstructor = { firstName: currentInstructor.firstName, lastName: currentInstructor.lastName, phone: currentInstructor.phone, email: currentInstructor.email, city: currentInstructor.city };
     const addedinstructor = await addInstructor(newinstructor);
     setInstructors([...instructors, addedinstructor]);
@@ -53,19 +54,15 @@ export default function InstructorsTable() {
     setOpen(true);
   };
 
-  const handleSave = async () => {
-    if (currentInstructor.id) {
-      const updatedInstructor = await updateInstructor(currentInstructor);
-      setInstructors(instructors.map((instructor) => (instructor.id === updatedInstructor.id ? updatedInstructor : instructor)));
-    } else {
-      dispatch(addInstructor(currentInstructor));
-    }
+  const handleAdd = async () => {
+    await  dispatch(addInstructor(newInstructor));
     setOpen(false);
-    setcurrentInstructor({ id: null, firstName: '', lastName: '', phone: null, email: '', city: '' });
+    setnewInstructor({ id: null, firstName: '', lastName: '', phone: null, email: '', city: '' });
   };
 
   const handleDelete = async (id) => {
-    dispatch(deleteInstructor(id));
+    await  dispatch(deleteInstructor(id));
+  //  await dispatch(fetchInstructors());
   };
 
   const columns = [
@@ -93,7 +90,7 @@ export default function InstructorsTable() {
             variant="outlined"
             color="error"
             startIcon={<Delete />}
-            onClick={() => setDeleteOpen(true)}
+            onClick={() => { setcurrentInstructor({ id: params.row.id, firstName: params.row.firstName, lastName: params.row.lastName, phone: params.row.phone, email: params.row.email, city: params.row.city }); setDeleteOpen(true); }}
           >
             מחק
           </Button>
@@ -124,25 +121,22 @@ export default function InstructorsTable() {
         />
       </Box>
 
-      <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-        <Button
-          startIcon={<Add />}
-          variant="contained"
-          color="primary"
-          onClick={() => { setcurrentInstructor({ id: null, firstName: '', lastName: '', phone: null, email: '', city: '' }); setOpen(true); }}
-          sx={{
-            position: 'fixed',
-            bottom: 20,
-            right: 20,
-            borderRadius: '50%',
-            width: 56,
-            height: 56,
-            boxShadow: 3,
-            transition: 'all 0.3s ease',
-          }}
-        />
-      </motion.div>
-
+      {/* כפתור ודיאלוג הוספת מדריך חדש */}
+      <Button
+        onClick={() => { setnewInstructor({ id: null, firstName: '', lastName: '', phone: null, email: '', city: '' }); setOpen(true); alert(newInstructor.id); }}
+        variant="contained"
+        color="primary"
+        size="large"
+        sx={{
+          borderRadius: '20px',
+          fontSize: '18px',
+          marginTop: '20px',
+          padding: '10px 20px',
+          width: '100%',
+        }}
+      >
+        הוסף מדריך חדש
+      </Button>
       <Dialog
         open={open}
         onClose={() => setOpen(false)}
@@ -156,52 +150,53 @@ export default function InstructorsTable() {
             boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
           },
         }}
-      >
+           >
+         {/* טופס הוספת מדריך */}
         <DialogTitle sx={{ textAlign: 'center', fontWeight: 600, color: '#333' }}>
-          {currentInstructor.id ? "ערוך מדריך" : "הוסף מדריך"}
+          הוסף מדריך
         </DialogTitle>
         <DialogContent>
           <br />
           <TextField
             fullWidth
             label="תעודת זהות"
-            value={currentInstructor.id}
-            onChange={(e) => setcurrentInstructor({ ...currentInstructor, id: e.target.value })}
+            value={newInstructor.id}
+            onChange={(e) => setnewInstructor({ ...newInstructor, id: e.target.value })}
             sx={{ mb: 2 }}
           />
           <TextField
             fullWidth
             label="שם פרטי"
-            value={currentInstructor.firstName}
-            onChange={(e) => setcurrentInstructor({ ...currentInstructor, firstName: e.target.value })}
+            value={newInstructor.firstName}
+            onChange={(e) => setnewInstructor({ ...newInstructor, firstName: e.target.value })}
             sx={{ mb: 2 }}
           />
           <TextField
             fullWidth
             label="שם משפחה"
-            value={currentInstructor.lastName}
-            onChange={(e) => setcurrentInstructor({ ...currentInstructor, lastName: e.target.value })}
+            value={newInstructor.lastName}
+            onChange={(e) => setnewInstructor({ ...newInstructor, lastName: e.target.value })}
             sx={{ mb: 2 }}
           />
           <TextField
             fullWidth
             label="טלפון"
-            value={currentInstructor.phone}
-            onChange={(e) => setcurrentInstructor({ ...currentInstructor, phone: e.target.value })}
+            value={newInstructor.phone}
+            onChange={(e) => setnewInstructor({ ...newInstructor, phone: e.target.value })}
             sx={{ mb: 2 }}
           />
           <TextField
             fullWidth
             label="עיר"
-            value={currentInstructor.city}
-            onChange={(e) => setcurrentInstructor({ ...currentInstructor, city: e.target.value })}
+            value={newInstructor.city}
+            onChange={(e) => setnewInstructor({ ...newInstructor, city: e.target.value })}
             sx={{ mb: 2 }}
           />
           <TextField
             fullWidth
             label="אימייל"
-            value={currentInstructor.email}
-            onChange={(e) => setcurrentInstructor({ ...currentInstructor, email: e.target.value })}
+            value={newInstructor.email}
+            onChange={(e) => setnewInstructor({ ...newInstructor, email: e.target.value })}
             sx={{ mb: 2 }}
           />
         </DialogContent>
@@ -209,8 +204,8 @@ export default function InstructorsTable() {
           <Button onClick={() => setOpen(false)} color="error" variant="outlined">
             ביטול
           </Button>
-          <Button onClick={handleSave} color="primary" variant="contained">
-            {currentInstructor.id ? "שמור שינויים" : "הוסף מדריך"}
+          <Button onClick={() => handleAdd(newInstructor)} color="primary" variant="contained">
+            הוסף מדריך
           </Button>
         </DialogActions>
       </Dialog>
