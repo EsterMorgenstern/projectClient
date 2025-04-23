@@ -3,9 +3,10 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
  import StudentsTable from './studentTable';
 import Home from './home';
 import Layout from './layout';
-import Courses from './courses';
+import Courses from './coursesTable';
 import Assignments from './assignments';
 import InstructorsTable from './InstructorsTable';
+import EntrollStudent from './enrollStudent';
 
 
 
@@ -17,6 +18,7 @@ const Routing = () => {
         <Route path="/students" element={<Layout><StudentsTable /></Layout>} />
         <Route path="/instructors" element={<Layout><InstructorsTable /></Layout>} />
        <Route path="/courses" element={<Layout><Courses /></Layout>} />
+       <Route path="/entrollStudent" element={<Layout><EntrollStudent /></Layout>} />
       <Route path="/assignments" element={<Layout><Assignments /></Layout>} />
       </Routes>
     </Router>

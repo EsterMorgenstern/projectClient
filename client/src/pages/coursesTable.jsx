@@ -8,6 +8,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchInstructors } from '../store/instructorGetAllThunk';
 import { deleteInstructor } from '../store/instuctorDeleteThunk';
 import { addInstructor } from '../store/instructorAddThunk';
+import { fetchCourses } from '../store/CoursesGetAllThunk';
 
 
 // פונקציות גישה לשרת
@@ -23,19 +24,19 @@ const updateInstructor = async (instructor) => {
 };
 
 
-export default function InstructorsTable() {
-  const instructors = useSelector((state) => state.instructors.instructors);
+export default function CoursesTable() {
+  const courses = useSelector((state) => state.courses.courses);
   const [open, setOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [currentInstructor, setcurrentInstructor] = useState({ id: null, firstName: '', lastName: '', phone: null, email: '', city: '' });
-  const [newInstructor, setnewInstructor] = useState({ id: null, firstName: '', lastName: '', phone: null, email: '', city: '' });
+  // const [currentInstructor, setcurrentInstructor] = useState({ id: null, firstName: '', lastName: '', phone: null, email: '', city: '' });
+  // const [newInstructor, setnewInstructor] = useState({ id: null, firstName: '', lastName: '', phone: null, email: '', city: '' });
   const [loading, setLoading] = useState(true);
   const dispatch = useDispatch();
 
 
   useEffect(() => {
     const loadInstructors = async () => {
-      dispatch(fetchInstructors());
+      dispatch(fetchCourses());
       setLoading(false);
     };
     loadInstructors();
@@ -76,7 +77,7 @@ export default function InstructorsTable() {
             variant="outlined"
             color="primary"
             startIcon={<Edit />}
-            onClick={() => handleEdit(params.row)}
+            // onClick={() => handleEdit(params.row)}
           >
             ערוך
           </Button>
@@ -84,49 +85,48 @@ export default function InstructorsTable() {
             variant="outlined"
             color="error"
             startIcon={<Delete />}
-            onClick={() => { setcurrentInstructor({ id: params.row.id, firstName: params.row.firstName, lastName: params.row.lastName, phone: params.row.phone, email: params.row.email, city: params.row.city }); setDeleteOpen(true); }}
+            // onClick={() => { setcurrentInstructor({ id: params.row.id, firstName: params.row.firstName, lastName: params.row.lastName, phone: params.row.phone, email: params.row.email, city: params.row.city }); setDeleteOpen(true); }}
           >
             מחק
           </Button>
         </Box>
       ),
     },
-    { field: 'id', headerName: 'קוד מדריך', width: 120 },
-    { field: 'firstName', headerName: 'שם פרטי', width: 120 },
-    { field: 'lastName', headerName: 'שם משפחה', width: 90 },
-    { field: 'phone', headerName: 'טלפון', width: 100 },
-    { field: 'email', headerName: 'כתובת מייל', width: 150 },
-    { field: 'city', headerName: 'עיר', width: 120 },
-    
+    { field: 'courseId', headerName: 'קוד קורס', width: 90 },
+    { field: 'courseName', headerName: 'שם הקורס', width: 120 },
+    { field: 'instructorId', headerName: 'שם מדריך', width: 120 },
+    { field: 'numOfStudents', headerName: 'מספר תלמידים', width: 110 },
+    { field: 'maxNumOfStudent', headerName: 'מספר תלמידים מקסימלי', width: 170 },
+    { field: 'startDate', headerName: 'תאריך התחלה', width: 110 },
+   
   ];
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-    < div  style={{ direction: 'rtl' }}>
-      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 3, padding: 3 }} >
+         < div  style={{ direction: 'rtl' }}>
+     
+      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 3, padding: 3 }}>
         <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1E3A8A' }}>
-          ניהול מדריכים
+          ניהול חוגים
         </Typography>
 
         <DataGrid
-          rows={instructors}
+          rows={courses}
           columns={columns}
-          getRowId={(row) => row.id}
+          getRowId={(row) => row.courseId}
           pageSize={5}
           rowsPerPageOptions={[10]}
           sx={{
             boxShadow: 5,
             borderRadius: '10px',
-            '& .MuiDataGrid-columnHeader': {
-              // backgroundColor: '#93C5FD',
-            },
+            
           }}
         />
       </Box>
 
       {/* כפתור ודיאלוג הוספת מדריך חדש */}
       <Button
-        onClick={() => { setnewInstructor({ id: null, firstName: '', lastName: '', phone: null, email: '', city: '' }); setOpen(true); }}
+        // onClick={() => { setnewInstructor({ id: null, firstName: '', lastName: '', phone: null, email: '', city: '' }); setOpen(true); }}
         variant="contained"
         color="primary"
         size="large"
@@ -138,7 +138,7 @@ export default function InstructorsTable() {
           width: '100%',
         }}
       >
-        הוסף מדריך חדש
+        הוסף חוג חדש
       </Button>
       <Dialog
         open={open}
@@ -155,58 +155,58 @@ export default function InstructorsTable() {
         }}
       >
         {/*  הוספת מדריך */}
-        <DialogTitle sx={{ textAlign: 'center', fontWeight: 600, color: '#333' }}>
+        {/* <DialogTitle sx={{ textAlign: 'center', fontWeight: 600, color: '#333' }}>
           הוסף מדריך
-        </DialogTitle>
-        <DialogContent>
+        </DialogTitle> */}
+        {/* <DialogContent>
           <br />
           <TextField
             fullWidth
             label="תעודת זהות"
-            onChange={(e) => setnewInstructor({ ...newInstructor, id: e.target.value })}
+            // onChange={(e) => setnewInstructor({ ...newInstructor, id: e.target.value })}
             sx={{ mb: 2 }}
           />
           <TextField
             fullWidth
             label="שם פרטי"
-            onChange={(e) => setnewInstructor({ ...newInstructor, firstName: e.target.value })}
+            // onChange={(e) => setnewInstructor({ ...newInstructor, firstName: e.target.value })}
             sx={{ mb: 2 }}
           />
           <TextField
             fullWidth
             label="שם משפחה"
-            onChange={(e) => setnewInstructor({ ...newInstructor, lastName: e.target.value })}
+            // onChange={(e) => setnewInstructor({ ...newInstructor, lastName: e.target.value })}
             sx={{ mb: 2 }}
           />
           <TextField
             fullWidth
             label="טלפון"
-            onChange={(e) => setnewInstructor({ ...newInstructor, phone: e.target.value })}
+            // onChange={(e) => setnewInstructor({ ...newInstructor, phone: e.target.value })}
             sx={{ mb: 2 }}
           />
           <TextField
             fullWidth
             label="עיר"
-            onChange={(e) => setnewInstructor({ ...newInstructor, city: e.target.value })}
+            // onChange={(e) => setnewInstructor({ ...newInstructor, city: e.target.value })}
             sx={{ mb: 2 }}
           />
           <TextField
             fullWidth
             label="אימייל"
-            onChange={(e) => setnewInstructor({ ...newInstructor, email: e.target.value })}
+            // onChange={(e) => setnewInstructor({ ...newInstructor, email: e.target.value })}
             sx={{ mb: 2 }}
           />
-        </DialogContent>
-        <DialogActions>
+        </DialogContent> */}
+        {/* <DialogActions>
           <Button onClick={() => setOpen(false)} color="error" variant="outlined">
             ביטול
           </Button>
           <Button onClick={() => handleAdd(newInstructor)} color="primary" variant="contained">
             הוסף מדריך
           </Button>
-        </DialogActions>
+        </DialogActions> */}
       </Dialog>
-      {/*דיאלוג מחיקת מדריך */}
+      {/* דיאלוג מחיקת מדריך
       <Dialog
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}
@@ -245,7 +245,7 @@ export default function InstructorsTable() {
             כן, מחק
           </Button>
         </DialogActions>
-      </Dialog>
+      </Dialog> */}
       </div>
     </motion.div>
   );

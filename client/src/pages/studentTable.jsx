@@ -35,6 +35,7 @@ export default function StudentsTable() {
   const students = useSelector((state) => state.students.students);
   // const [students, setStudents] = useState([]);
   const [open, setOpen] = useState(false);
+  const [openEdit, setOpenEdit] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleted, setDeleted] = useState(false);
   const [currentStudent, setCurrentStudent] = useState({ id: null, firstName: '', lastName: '', phone: null, city: '', school: '' });
@@ -49,14 +50,16 @@ useEffect(() => {
 
 
   const handleAdd = async () => {
-    await dispatch(addStudent(newStudent));
+    // await dispatch(addStudent(newStudent));
     setOpen(false);
+    setOpenEdit(false);
+
     setnewStudent({ id: null, firstName: '', lastName: '', phone: null,birthDate:'02/03/2025' , city: '', school: '' });
   };
 
   const handleEdit = (student) => {
     setCurrentStudent(student);
-    setOpen(true);
+    setOpenEdit(true);
   };
 
   const handleSave = async () => {
@@ -76,16 +79,10 @@ useEffect(() => {
   };
 
   const columns = [
-    { field: 'id', headerName: 'קוד תלמיד', width: 120 },
-    { field: 'firstName', headerName: 'שם פרטי', width: 150 },
-    { field: 'lastName', headerName: 'שם משפחה', width: 110 },
-    { field: 'phone', headerName: 'טלפון', width: 110 },
-    { field: 'city', headerName: 'עיר', width: 150 },
-    { field: 'school', headerName: 'בית ספר', width: 100 },
     {
       field: 'actions',
       headerName: 'פעולות',
-      width: 500,
+      width: 200,
       renderCell: (params) => (
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Button
@@ -108,18 +105,28 @@ useEffect(() => {
         </Box>
       ),
     },
+    { field: 'id', headerName: 'קוד תלמיד', width: 120 },
+    { field: 'firstName', headerName: 'שם פרטי', width: 150 },
+    { field: 'lastName', headerName: 'שם משפחה', width: 110 },
+    { field: 'phone', headerName: 'טלפון', width: 110 },
+    { field: 'city', headerName: 'עיר', width: 150 },
+    { field: 'school', headerName: 'בית ספר', width: 100 },
+   
   ];
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        < div  style={{ direction: 'rtl' }}>
+    
       <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 3, padding: 3 }}>
         <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1E3A8A' }}>
-          רשימת תלמידים
+        ניהול תלמידים
         </Typography>
 
         <DataGrid
           rows={students}
           columns={columns}
+          getRowId={(row) => row.id}
           pageSize={5}
           rowsPerPageOptions={[5]}
           sx={{
@@ -156,7 +163,7 @@ useEffect(() => {
           '& .MuiDialog-paper': {
             borderRadius: 12,
             padding: 3,
-            backgroundColor: '#F0F4FF', // צבע רקע כחול בהיר
+            backgroundColor:'linear-gradient(180deg, #1E3A8A 0%, #3B82F6 100%)', // צבע רקע כחול בהיר
             boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
           },
         }}
@@ -227,6 +234,101 @@ useEffect(() => {
           </Button>
         </DialogActions>
       </Dialog>
+        {/* כפתור הוספת תלמיד חדש */}
+        <Button
+             onClick={() => { setnewStudent({id: null, firstName: '', lastName: '', phone: null,birthDate:'02/03/2025' , city: '', school: '' }); setOpen(true); }}
+             variant="contained"
+             color="primary"
+             size="large"
+             sx={{
+               borderRadius: '20px',
+               fontSize: '18px',
+               marginTop: '20px',
+               padding: '10px 20px',
+               width: '100%',
+             }}
+           >
+             הוסף תלמיד חדש
+           </Button>
+      {/*דיאלוג הוספת תלמיד/עריכה */}
+      <Dialog
+        open={openEdit}
+        onClose={() => setOpen(false)}
+        sx={{
+          '& .MuiDialog-paper': {
+            borderRadius: 12,
+            padding: 3,
+            backgroundColor:'linear-gradient(180deg, #1E3A8A 0%, #3B82F6 100%)', // צבע רקע כחול בהיר
+            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
+          },
+        }}
+      >
+        <DialogTitle sx={{ color: '#1E3A8A', fontWeight: 'bold', textAlign: 'center' }}>
+        ערוך תלמיד
+        </DialogTitle>
+        <DialogContent>
+          <br />
+        <TextField
+            fullWidth
+            label="תעודת זהות"
+            value={currentStudent.id}
+            onChange={(e) => setcurrentStudent({ ...currentStudent, id: e.target.value })}
+            sx={{ mb: 2, backgroundColor: '#ffffff' }} // רקע לבן בשדות
+          />
+          <TextField
+            fullWidth
+            label="שם פרטי"
+            value={currentStudent.firstName}
+            onChange={(e) => setcurrentStudent({ ...currentStudent, firstName: e.target.value })}
+            sx={{ mb: 2, backgroundColor: '#ffffff' }} // רקע לבן בשדות
+          />
+           <TextField
+            fullWidth
+            label="שם משפחה"
+            value={currentStudent.lastName}
+            onChange={(e) => setcurrentStudent({ ...currentStudent, lastName: e.target.value })}
+            sx={{ mb: 2, backgroundColor: '#ffffff' }} // רקע לבן בשדות
+          />
+           <TextField
+            fullWidth
+            label="טלפון"
+            type="number"
+            value={currentStudent.phone}
+            onChange={(e) => setcurrentStudent({ ...currentStudent, phone: e.target.value })}
+            sx={{ mb: 2, backgroundColor: '#ffffff' }} // רקע לבן בשדות
+          />
+          <TextField
+            fullWidth
+            label="עיר"
+            value={currentStudent.city}
+            onChange={(e) => setcurrentStudent({ ...currentStudent, city: e.target.value })}
+            sx={{ mb: 2, backgroundColor: '#ffffff' }}
+          />
+          <TextField
+            fullWidth
+            label="בית ספר"
+            value={currentStudent.school}
+            onChange={(e) => setcurrentStudent({ ...currentStudent, school: e.target.value })}
+            sx={{ mb: 2, backgroundColor: '#ffffff' }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenEdit(false)} color="error" variant="outlined">
+            ביטול
+          </Button>
+          <Button
+            onClick={() => { handleAdd();}}
+            color="primary"
+            variant="contained"
+            sx={{
+              backgroundColor: '#1E3A8A', // כחול כהה
+              '&:hover': { backgroundColor: '#3B82F6' }, // כחול בהיר בהעברה
+            }}
+          >
+         שמור תלמיד
+          </Button>
+        </DialogActions>
+      </Dialog>
       {/*דיאלוג מחיקת תלמיד */}
       <Dialog
         open={deleteOpen}
@@ -265,7 +367,7 @@ useEffect(() => {
           </Button>
         </DialogActions>
       </Dialog>
-
+</div>
     </motion.div>
   );
 }
