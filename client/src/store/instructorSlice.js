@@ -1,14 +1,10 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
+import { createSlice } from '@reduxjs/toolkit';
 import { fetchInstructors } from './instructorGetAllThunk';
 import { addInstructor } from './instructorAddThunk';
 import { deleteInstructor } from './instuctorDeleteThunk';
+import { editInstructor } from './instructorEditThunk';
 
 
-export const updateInstructor = createAsyncThunk('instructors/updateInstructor', async (instructor) => {
-  const response = await axios.put(`https://localhost:5000/api/Instructor/Update/${instructor.id}`, student);
-  return response.data;
-});
 
 const instructorsSlice = createSlice({
   name: 'instructors',
@@ -65,12 +61,24 @@ const instructorsSlice = createSlice({
         state.loading = false;
         state.error = action.error.message;
       })
-      .addCase(updateInstructor.fulfilled, (state, action) => {
-        const updateInstructor = state.instructor.map((instructor) =>
-            instructor.id === action.payload.id ? action.payload : instructor
-        );
-        state.instructors = updateInstructor;
-      });
+    //updateInstructor          
+    .addCase(editInstructor.pending, (state) => {
+      console.log('updateInstructor...');
+      state.loading = true;
+    })
+    .addCase(editInstructor.fulfilled, (state, action) => {
+      console.log(action.payload);
+      state.loading = false;
+      const updatedInstructors = state.instructors.map((instructor) =>
+        instructor.id === action.payload.id ? action.payload : instructor
+      );
+      state.instructors = updatedInstructors;
+    })
+    .addCase(editInstructor.rejected, (state, action) => {
+      console.error('Error updateInstructor:', action.error.message);
+      state.loading = false;
+      state.error = action.error.message;
+    });
   },
 });
 

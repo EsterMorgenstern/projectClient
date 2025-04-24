@@ -5,8 +5,10 @@ import GroupIcon from '@mui/icons-material/Group';
 // import CoursesIcon from '@mui/icons-material';
 import EventAvailableIcon from '@mui/icons-material/EventAvailable';
 import {
-   EventNote as CoursesIcon,
- } from '@mui/icons-material';
+  EventNote as CoursesIcon,
+} from '@mui/icons-material';
+import { Link } from 'react-router-dom';
+
 const Home = () => {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }}>
@@ -35,7 +37,7 @@ const Home = () => {
         </Typography>
 
         <Grid container spacing={4} justifyContent="center">
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid item xs={12} sm={6} md={4} component={Link} to="/students">
             <Paper
               elevation={3}
               sx={{
@@ -60,7 +62,7 @@ const Home = () => {
             </Paper>
           </Grid>
 
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid item xs={12} sm={6} md={4} component={Link} to="/instructors">
             <Paper
               elevation={3}
               sx={{
@@ -84,7 +86,8 @@ const Home = () => {
               </Typography>
             </Paper>
           </Grid>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid item xs={12} sm={6} md={4} component={Link} to="/courses"
+          >
             <Paper
               elevation={3}
               sx={{
@@ -99,16 +102,17 @@ const Home = () => {
                 },
               }}
             >
-             <CoursesIcon  sx={{ fontSize: 50, color: '#10B981' }} />
+              <CoursesIcon sx={{ fontSize: 50, color: '#10B981' }} />
               <Typography variant="h6" sx={{ mt: 2, color: '#1E3A8A', fontWeight: 'bold' }}>
                 ניהול חוגים
               </Typography>
               <Typography variant="body2" sx={{ color: '#64748B' }}>
-                 פרטי החוגים, שיבוץ, וניהול קל  .
+                פרטי החוגים, שיבוץ, וניהול קל  .
               </Typography>
             </Paper>
           </Grid>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid item xs={12} sm={6} md={4} component={Link} to="/entrollStudent"
+          >
             <Paper
               elevation={3}
               sx={{
@@ -131,7 +135,7 @@ const Home = () => {
                 כלי חכם לשיבוץ תלמידים לחוגים בהתאמה אישית ויעילה.
               </Typography>
             </Paper>
-            
+
           </Grid>
         </Grid>
 
@@ -148,7 +152,7 @@ const Home = () => {
                 backgroundColor: '#3B82F6',
               },
             }}
-        href="/studentsTable"
+
           >
             התחל בניהול המערכת
           </Button>

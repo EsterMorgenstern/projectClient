@@ -1,4 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
+import { deleteCourse } from './courseDeleteThunk';
+import { addCourse } from './courseAddThunk';
 import { fetchCourses } from './CoursesGetAllThunk';
 
 // export const fetchCourses = createAsyncThunk(
@@ -70,17 +72,18 @@ import { fetchCourses } from './CoursesGetAllThunk';
         state.loading = false;
         state.error = action.error.message;
       })
-    //   .addCase(addCourse.pending, (state) => {
-    //     state.loading = true;
-    //   })
-    //   .addCase(addCourse.fulfilled, (state, action) => {
-    //     state.loading = false;
-    //     state.courses.push(action.payload);
-    //   })
-    //   .addCase(addCourse.rejected, (state, action) => {
-    //     state.loading = false;
-    //     state.error = action.error.message;
-    //   })
+//addCourse      
+      .addCase(addCourse.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(addCourse.fulfilled, (state, action) => {
+        state.loading = false;
+        state.courses.push(action.payload);
+      })
+      .addCase(addCourse.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message;
+      })
     //   .addCase(updateCourse.pending, (state) => {
     //     state.loading = true;
     //   })
@@ -95,17 +98,21 @@ import { fetchCourses } from './CoursesGetAllThunk';
     //     state.loading = false;
     //     state.error = action.error.message;
     //   })
-    //   .addCase(deleteCourse.pending, (state) => {
-    //     state.loading = true;
-    //   })
-    //   .addCase(deleteCourse.fulfilled, (state, action) => {
-    //     state.loading = false;
-    //     state.courses = state.courses.filter((course) => course.id !== action.payload);
-    //   })
-    //   .addCase(deleteCourse.rejected, (state, action) => {
-    //     state.loading = false;
-    //     state.error = action.error.message;
-    //   });
+//deleteCourse    
+      .addCase(deleteCourse.pending, (state) => {
+        console.log('deleteCourse...');
+        state.loading = true;
+      })
+      .addCase(deleteCourse.fulfilled, (state, action) => {
+        console.log(action.payload);
+        state.loading = false;
+        state.courses = state.courses.filter((course) => course.id !== action.payload);
+      })
+      .addCase(deleteCourse.rejected, (state, action) => {
+        console.error('Error deleteCourse:', action.error.message);
+        state.loading = false;
+        state.error = action.error.message;
+      });
   },
 });
 export default courseSlice.reducer;
