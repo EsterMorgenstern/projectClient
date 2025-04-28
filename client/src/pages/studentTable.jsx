@@ -340,7 +340,7 @@ export default function StudentsTable() {
               {healthFundOptions.map((option) => (
                 <MenuItem key={option} value={option}>
                   {option}
-                </MenuItem>
+                                  </MenuItem>
               ))}
             </TextField>
           </DialogContent>
