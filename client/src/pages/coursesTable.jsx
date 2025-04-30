@@ -158,12 +158,6 @@ export default function CoursesTable() {
             <br />
             <TextField
               fullWidth
-              label="קוד חוג"
-              // onChange={(e) => setnewCourse({ ...newCourse, courseId: e.target.value })}
-              sx={{ mb: 2 }}
-            />
-            <TextField
-              fullWidth
               label="שם חוג"
               onChange={(e) => setnewCourse({ ...newCourse, courseName: e.target.value })}
               sx={{ mb: 2 }}
