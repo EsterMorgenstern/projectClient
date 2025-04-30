@@ -34,7 +34,7 @@ const deleteStudent = async (id) => {
 export default function StudentsTable() {
   const students = useSelector((state) => state.students.students);
   const studentCourses = useSelector((state) => state.studentCourses.studentCoursesById);
-  // const [students, setStudents] = useState([]);
+  const courses = useSelector((state) => state.courses.courses);
   const [open, setOpen] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -45,7 +45,10 @@ export default function StudentsTable() {
   const [addStudentCourse, setAddStudentCourse] = useState({ courseId: null, studentId: null, registrationDate: Date.now() });
   const [showAddStudentCorse, setShowAddStudentCorse] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [selectedCourse, setSelectedCourse] = useState(''); 
   const dispatch = useDispatch();
+
+
   const healthFundOptions = [
     'מכבי',
     'מאוחדת',
@@ -186,7 +189,7 @@ export default function StudentsTable() {
             },
           }}
         >
-          <DialogTitle variant="h3" sx={{ fontWeight: 'bold', color: '#1E3A8A' }}>
+          <DialogTitle variant="h4" sx={{ fontWeight: 'bold', color: '#1E3A8A', textAlign: 'center' }}>
             החוגים של {currentStudent.firstName} {currentStudent.lastName}
           </DialogTitle>
           <DialogContent>
@@ -260,7 +263,7 @@ export default function StudentsTable() {
                   backgroundColor: '#3B82F6'
                 }
               }}
-              onClick={()=>{addStudentCorse(), setShowAddStudentCorse(false);}}
+              onClick={() => { addStudentCorse(), setShowAddStudentCorse(false); }}
             >
               שבץ תלמיד לחוג
             </Button>
