@@ -1,16 +1,16 @@
 
 import { configureStore } from '@reduxjs/toolkit';
-import studentsReducer from './studentSlice';
-import instructorsReducer from './instructorSlice';
-import coursesReducer from './courseSlice';
-import studentCoursesReducer from './studentCourseSlice';  
+import studentsReducer from './student/studentSlice';
+import instructorsReducer from './instructor/instructorSlice';
+import coursesReducer from './course/courseSlice';
+import groupStudentReduser from './groupStudent/groupStudentSlice';
 
 const store = configureStore({
   reducer: {
     students: studentsReducer,
     instructors: instructorsReducer,
     courses: coursesReducer,
-    studentCourses: studentCoursesReducer,  
+    groupStudents:groupStudentReduser
   },
 });
 

@@ -5,10 +5,10 @@ import { Add, Edit, Delete, IntegrationInstructions } from '@mui/icons-material'
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchInstructors } from '../store/instructorGetAllThunk';
-import { deleteInstructor } from '../store/instuctorDeleteThunk';
-import { addInstructor } from '../store/instructorAddThunk';
-import { editInstructor } from '../store/instructorEditThunk';
+import { fetchInstructors } from '../store/instructor/instructorGetAllThunk';
+import { deleteInstructor } from '../store/instructor/instuctorDeleteThunk';
+import { addInstructor } from '../store/instructor/instructorAddThunk';
+import { editInstructor } from '../store/instructor/instructorEditThunk';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import CloseIcon from '@mui/icons-material/Close';
 import './customDialog.css';

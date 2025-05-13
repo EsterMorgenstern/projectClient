@@ -1,11 +1,11 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { getStudentCoursesByStudentId } from './studentCorseGetByStudentIdThunk';
-import { addStudentCourse } from './studentCorseAddThunk';
+import { getgroupStudentByStudentId } from './groupStudentGetByStudentIdThunk';
+import { addStudentCourse } from './studentCourseAddThunk';
 
 
 
-// export const fetchStudentCourses = createAsyncThunk(
-//   'studentCourses/fetchStudentCourses',
+// export const fetchgroupStudent = createAsyncThunk(
+//   'groupStudent/fetchgroupStudent',
 //   async (_, { rejectWithValue }) => {
 //     try {
 //       const response = await axios.get('https://localhost:5000/api/StudentCourse/GetAll');
@@ -16,25 +16,25 @@ import { addStudentCourse } from './studentCorseAddThunk';
 //   }       
 // );
 
-const studentCoursesSlice = createSlice({
-  name: 'studentCourses',
+const groupStudentSlice = createSlice({
+  name: 'groupStudent',
   initialState: {
-    studentCourses: [],
+    groupStudent: [],
     loading: false,
     error: null,
-    studentCoursesById: [],
+    groupStudentById: [],
   },
   reducers: {},
   extraReducers: (builder) => {
     builder
-      .addCase(getStudentCoursesByStudentId.pending, (state) => {
+      .addCase(getgroupStudentByStudentId.pending, (state) => {
         state.loading = true;
       })
-      .addCase(getStudentCoursesByStudentId.fulfilled, (state, action) => {
+      .addCase(getgroupStudentByStudentId.fulfilled, (state, action) => {
         state.loading = false;
-        state.studentCoursesById = action.payload;
+        state.groupStudentById = action.payload;
       })  
-      .addCase(getStudentCoursesByStudentId.rejected, (state, action) => {
+      .addCase(getgroupStudentByStudentId.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to fetch student courses';
       }) 
@@ -45,7 +45,7 @@ const studentCoursesSlice = createSlice({
        }) 
        .addCase(addStudentCourse.fulfilled, (state, action) => {
         state.loading = false;
-        state.studentCourses.push(action.payload); // Add the new student course to the state
+        state.groupStudent.push(action.payload); // Add the new student course to the state
         console.log(action.payload);
       })  
       .addCase(addStudentCourse.rejected, (state, action) => {
@@ -54,4 +54,4 @@ const studentCoursesSlice = createSlice({
       }) ;   
   }
 }); 
-export default studentCoursesSlice.reducer;
+export default groupStudentSlice.reducer;

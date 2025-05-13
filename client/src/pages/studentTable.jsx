@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Box, Typography, MenuItem, TableContainer, Paper, TableHead, TableRow } from '@mui/material';
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Box, Typography, MenuItem, TableContainer, Paper, TableHead, TableRow, FormControl, InputLabel, Select } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchStudents } from '../store/studentGetAllThunk';
-import { addStudent } from '../store/studentAddThunk';
+import { fetchStudents } from '../store/student/studentGetAllThunk';
+import { addStudent } from '../store/student/studentAddThunk';
 import { Table } from 'lucide-react';
-import { getStudentCoursesByStudentId } from '../store/studentCorseGetByStudentIdThunk';
-//import { DataGridPro } from '@mui/x-data-grid-pro';
-
-
+import { getStudentCoursesByStudentId } from '../store/groupStudent/groupStudentGetByStudentIdThunk';
+import { fetchCourses } from '../store/course/CoursesGetAllThunk';
+import { addStudentCourse } from '../store/groupStudent/groupStudentAddThunk';
+import TermsDialog from './termDialog';
 const updateStudent = async (student) => {
   try {
     const response = await axios.put(`https://localhost:5000/api/Student/Update/${student.id}`, student);
@@ -40,12 +40,14 @@ export default function StudentsTable() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [openCoursesDialog, setOpenCoursesDialog] = useState(false);
   const [deleted, setDeleted] = useState(false);
-  const [currentStudent, setCurrentStudent] = useState({ id: null, firstName: '', lastName: '', phone: null, city: '', school: '', healthFund: '', community: "", active: true });
-  const [newStudent, setnewStudent] = useState({ id: null, firstName: '', lastName: '', phone: null, birthDate: '02/03/2025', city: '', school: '', healthFund: '', community: "", active: true });
-  const [addStudentCourse, setAddStudentCourse] = useState({ courseId: null, studentId: null, registrationDate: Date.now() });
+  const [currentStudent, setCurrentStudent] = useState({ id: null, firstName: '', lastName: '', phone: null, city: '', school: '', healthFund: '', gender: "", sector: "" });
+  const [newStudent, setnewStudent] = useState({ id: null, firstName: '', lastName: '', phone: null, birthDate: '02/03/2025', city: '', school: '', healthFund: '', gender: "", sector: "" });
+  const [currentStudentCourse, setCurrentStudentCourse] = useState({ courseId: null, studentId: null, registrationDate: Date.now().toISOString });
   const [showAddStudentCorse, setShowAddStudentCorse] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [selectedCourse, setSelectedCourse] = useState(''); 
+  const [selectedCourse, setSelectedCourse] = useState(0);
+  const [termsOpen, setTermsOpen] = useState(false);
+
   const dispatch = useDispatch();
 
 
@@ -59,7 +61,12 @@ export default function StudentsTable() {
     dispatch(fetchStudents());
     setLoading(false);
   }, [dispatch]);
-
+  useEffect(() => {
+    setCurrentStudentCourse((prev) => ({
+      ...prev,
+      courseId: selectedCourse,
+    }));
+  }, [selectedCourse]);
   const refreshTable = async () => {
     await dispatch(fetchStudents());
   }
@@ -68,7 +75,7 @@ export default function StudentsTable() {
     setOpen(false);
     setOpenEdit(false);
 
-    setnewStudent({ id: null, firstName: '', lastName: '', phone: null, birthDate: '02/03/2025', city: '', school: '', healthFund: '', community: "", active: true });
+    setnewStudent({ id: null, firstName: '', lastName: '', phone: null, birthDate: '02/03/2025', city: '', school: '', healthFund: '', gender: "", sector: "" });
   };
 
   const handleEdit = (student) => {
@@ -85,15 +92,19 @@ export default function StudentsTable() {
       await dispatch(addStudent(currentStudent));
     }
     setOpen(false);
-    setCurrentStudent({ id: null, firstName: '', lastName: '', phone: null, city: '', school: '', healthFund: '', community: "", active: true });
+    setCurrentStudent({ id: null, firstName: '', lastName: '', phone: null, city: '', school: '', healthFund: '', gender: "", sector: "" });
   };
 
   const handleDelete = async (id) => {
     await dispatch(deleteStudent(id));
     refreshTable();
   };
+  const fetchCoursesFunc = async () => {
+    await dispatch(fetchCourses());
+    setCurrentStudentCourse({ ...currentStudentCourse, courseId: selectedCourse, studentId: currentStudent.id });
+  }
   const addStudentCorse = async () => {
-    dispatch(addStudentCourse(currentStudentCourse));
+    await dispatch(addStudentCourse(currentStudentCourse));
   }
   const columns = [
     {
@@ -106,7 +117,7 @@ export default function StudentsTable() {
             variant="outlined"
             color="primary"
             startIcon={<Edit />}
-            onClick={() => { setCurrentStudent({ id: params.row.id, firstName: params.row.firstName, lastName: params.row.lastName, phone: params.row.phone, city: params.row.city, school: params.row.school, healthFund: params.row.healthFund, community: params.row.community, active: params.row.active }); setOpenEdit(true); }}
+            onClick={() => { setCurrentStudent({ id: params.row.id, firstName: params.row.firstName, lastName: params.row.lastName, phone: params.row.phone, city: params.row.city, school: params.row.school, healthFund: params.row.healthFund, gender: params.row.gender, sector: params.row.sector }); setOpenEdit(true); }}
           >
             ערוך
           </Button>
@@ -114,7 +125,7 @@ export default function StudentsTable() {
             variant="outlined"
             color="error"
             startIcon={<Delete />}
-            onClick={() => { setCurrentStudent({ id: params.row.id, firstName: params.row.firstName, lastName: params.row.lastName, phone: params.row.phone, city: params.row.city, school: params.row.school, healthFund: params.row.healthFund, community: params.row.community, active: params.row.active }); setDeleteOpen(true); }}
+            onClick={() => { setCurrentStudent({ id: params.row.id, firstName: params.row.firstName, lastName: params.row.lastName, phone: params.row.phone, city: params.row.city, school: params.row.school, healthFund: params.row.healthFund, gender: params.row.gender, sector: params.row.sector }); setDeleteOpen(true); }}
 
           >
             מחק
@@ -129,8 +140,8 @@ export default function StudentsTable() {
     { field: 'city', headerName: 'עיר', width: 100 },
     { field: 'school', headerName: 'בית ספר', width: 90 },
     { field: 'healthFund', headerName: 'קופת חולים', width: 100 },
-    { field: 'community', headerName: 'מגזר', width: 100 },
-    { field: 'active', headerName: 'סטטוס', width: 100 },
+    { field: 'gender', headerName: 'מין', width: 100 },
+    { field: 'sector', headerName: 'מגזר', width: 100 },
 
   ];
   const columnsStudentCorses = [
@@ -212,13 +223,13 @@ export default function StudentsTable() {
             <Button onClick={() => setOpenCoursesDialog(false)} color="error" variant="outlined">
               ביטול
             </Button>
-            <Button onClick={() => setShowAddStudentCorse(true)} color="error" variant="outlined">
+            <Button onClick={() => { setShowAddStudentCorse(true), fetchCoursesFunc() }} color="error" variant="outlined">
               הוסף חוג
             </Button>
           </DialogActions>
         </Dialog>
         {/* דיאלוג הוספת חוג */}
-        {/* <Dialog
+        <Dialog
           open={showAddStudentCorse}
           onClose={() => setShowAddStudentCorse(false)}
           sx={{
@@ -243,7 +254,7 @@ export default function StudentsTable() {
                 onChange={(e) => setSelectedCourse(e.target.value)}
               >
                 {courses.map((course) => (
-                  <MenuItem key={course.curseId} value={course.courseName}>
+                  <MenuItem key={course.courseId} value={course.courseId}>
                     {course.courseName}
                   </MenuItem>
                 ))}
@@ -268,10 +279,11 @@ export default function StudentsTable() {
               שבץ תלמיד לחוג
             </Button>
           </DialogContent>
-        </Dialog> */}
+        </Dialog>
         {/* כפתור הוספת תלמיד חדש */}
+        {/* אישור תקנון */}
         <Button
-          onClick={() => { setnewStudent({ id: null, firstName: '', lastName: '', phone: null, birthDate: '02/03/2025', city: '', school: '', healthFund: '' }); setOpen(true); }}
+          onClick={() => setTermsOpen(true)}
           variant="contained"
           color="primary"
           size="large"
@@ -285,6 +297,16 @@ export default function StudentsTable() {
         >
           הוסף תלמיד חדש
         </Button>
+        <TermsDialog
+          open={termsOpen}
+          onClose={() => setTermsOpen(false)}
+          onAccept={() => {
+            setTermsOpen(false);
+            setnewStudent({ id: null, firstName: '', lastName: '', phone: null, birthDate: '02/03/2025', city: '', school: '', healthFund: '' });
+            setOpen(true);
+          }}
+        />
+
         {/*דיאלוג הוספת תלמיד */}
         <Dialog
           open={open}
@@ -369,6 +391,20 @@ export default function StudentsTable() {
                 </MenuItem>
               ))}
             </TextField>
+            <TextField
+              fullWidth
+              label=" מין"
+              value={newStudent.gender}
+              onChange={(e) => setnewStudent({ ...newStudent, gender: e.target.value })}
+              sx={{ mb: 2, backgroundColor: '#ffffff' }}
+            />
+            <TextField
+              fullWidth
+              label=" מגזר"
+              value={newStudent.sector}
+              onChange={(e) => setnewStudent({ ...newStudent, sector: e.target.value })}
+              sx={{ mb: 2, backgroundColor: '#ffffff' }}
+            />
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setOpen(false)} color="error" variant="outlined">
@@ -388,7 +424,7 @@ export default function StudentsTable() {
           </DialogActions>
         </Dialog>
 
-        {/*דיאלוג הוספת עריכה */}
+        {/*דיאלוג עריכה */}
         <Dialog
           open={openEdit}
           onClose={() => setOpen(false)}
@@ -465,6 +501,20 @@ export default function StudentsTable() {
                 </MenuItem>
               ))}
             </TextField>
+            <TextField
+              fullWidth
+              label=" מין"
+              value={currentStudent.gender}
+              onChange={(e) => setcurrentStudent({ ...currentStudent, gender: e.target.value })}
+              sx={{ mb: 2, backgroundColor: '#ffffff' }}
+            />
+            <TextField
+              fullWidth
+              label=" מגזר"
+              value={currentStudent.sector}
+              onChange={(e) => setcurrentStudent({ ...currentStudent, sector: e.target.value })}
+              sx={{ mb: 2, backgroundColor: '#ffffff' }}
+            />
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setOpenEdit(false)} color="error" variant="outlined">

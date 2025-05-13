@@ -13,8 +13,8 @@ import {
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import axios from 'axios';
-import { fetchStudents } from '../store/studentGetAllThunk';
-import { fetchCourses } from '../store/CoursesGetAllThunk';
+import { fetchStudents } from '../store/student/studentGetAllThunk';
+import { fetchCourses } from '../store/course/CoursesGetAllThunk';
 import { useDispatch, useSelector } from 'react-redux';
 
 export default function EntrollStudent() {

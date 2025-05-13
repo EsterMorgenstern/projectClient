@@ -4,10 +4,10 @@ import { DataGrid } from '@mui/x-data-grid';
 import { Add, Edit, Delete, IntegrationInstructions } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
-import { addInstructor } from '../store/instructorAddThunk';
-import { deleteCourse } from '../store/courseDeleteThunk';
-import { addCourse } from '../store/courseAddThunk';
-import { fetchCourses } from '../store/CoursesGetAllThunk';
+import { addInstructor } from '../store/instructor/instructorAddThunk';
+import { deleteCourse } from '../store/course/courseDeleteThunk';
+import { addCourse } from '../store/course/courseAddThunk';
+import { fetchCourses } from '../store/course/CoursesGetAllThunk';
 
 
 export default function CoursesTable() {

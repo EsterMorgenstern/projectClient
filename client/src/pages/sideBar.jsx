@@ -15,6 +15,7 @@ import {
   AssignmentInd as AssignIcon
 } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
+import { FaRegLightbulb } from 'react-icons/fa';
 
 const Sidebar = () => {
   return (
@@ -52,6 +53,8 @@ const Sidebar = () => {
           </ListItemButton>
         </ListItem>
 
+       
+
         <ListItem disablePadding>
           <ListItemButton component={Link} to="/students">
             <ListItemIcon sx={{ color: 'white' }}>
@@ -85,6 +88,15 @@ const Sidebar = () => {
               <AssignIcon />
             </ListItemIcon>
             <ListItemText primary="שיבוץ תלמידים לחוגים" />
+          </ListItemButton>
+        </ListItem>
+
+         <ListItem disablePadding>
+          <ListItemButton component={Link} to="/aboutSystem">
+            <ListItemIcon sx={{ color: 'white' }}>
+                  <FaRegLightbulb />
+            </ListItemIcon>
+            <ListItemText primary="אודות המערכת" />
           </ListItemButton>
         </ListItem>
       </List>
