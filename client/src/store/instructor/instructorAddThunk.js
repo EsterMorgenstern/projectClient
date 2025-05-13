@@ -6,7 +6,8 @@ export const addInstructor = createAsyncThunk(
     'instructors/addInstructor',
     async (instructorData, { rejectWithValue }) => {
         try {
-            const response = await axios.post('https://localhost:5248/api/instructor/Add', instructorData);
+            const response = await axios.post('http://localhost:5248/api/Instructor/Add', instructorData);
+
             return response.data;
         } catch (error) {
             return rejectWithValue(error.response?.data || 'Failed to add student');

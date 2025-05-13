@@ -8,7 +8,7 @@ import { groupStudentAddThunk } from './groupStudentAddThunk';
 //   'groupStudent/fetchgroupStudent',
 //   async (_, { rejectWithValue }) => {
 //     try {
-//       const response = await axios.get('https://localhost:5000/api/StudentCourse/GetAll');
+//       const response = await axios.get('https://localhost:5248/api/StudentCourse/GetAll');
 //       return response.data;
 //     } catch (error) {
 //       return rejectWithValue(error.response?.data || 'Failed to fetch student courses');

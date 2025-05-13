@@ -40,7 +40,7 @@ export default function EntrollStudent() {
     if (!selectedStudent || !selectedCourse) return;
 
     try {
-      // await axios.post('https://localhost:5000/api/Assign/AssignStudentToCourse', {
+      // await axios.post('https://localhost:5248/api/Assign/AssignStudentToCourse', {
       //   studentId: selectedStudent,
       //   courseId: selectedCourse
       // });

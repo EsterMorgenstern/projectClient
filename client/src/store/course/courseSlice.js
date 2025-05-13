@@ -7,7 +7,7 @@ import { fetchCourses } from './CoursesGetAllThunk';
 //   'courses/fetchCourses',
 //   async (_, { rejectWithValue }) => {
 //     try {
-//       const response = await axios.get('https://localhost:5000/api/Course/GetAll');
+//       const response = await axios.get('https://localhost:5248/api/Course/GetAll');
 //       return response.data;
 //     } catch (error) {
 //       return rejectWithValue(error.response?.data || 'An error occurred');
@@ -19,7 +19,7 @@ import { fetchCourses } from './CoursesGetAllThunk';
 //   'courses/addCourse',
 //   async (course, { rejectWithValue }) => {
 //     try {
-//       const response = await axios.post('https://localhost:5000/api/Course/Add', course);
+//       const response = await axios.post('https://localhost:5248/api/Course/Add', course);
 //       return response.data;
 //     } catch (error) {
 //       return rejectWithValue(error.response?.data || 'An error occurred');
@@ -31,7 +31,7 @@ import { fetchCourses } from './CoursesGetAllThunk';
 //   'courses/updateCourse',
 //   async (course, { rejectWithValue }) => {
 //     try {
-//       const response = await axios.put(`https://localhost:5000/api/Course/Update/${course.id}`, course);
+//       const response = await axios.put(`https://localhost:5248/api/Course/Update/${course.id}`, course);
 //       return response.data;
 //     } catch (error) {
 //       return rejectWithValue(error.response?.data || 'An error occurred');
@@ -43,7 +43,7 @@ import { fetchCourses } from './CoursesGetAllThunk';
 //   'courses/deleteCourse',
 //   async (id, { rejectWithValue }) => {
 //     try {
-//       await axios.delete(`https://localhost:5000/api/Course/Delete/${id}`);
+//       await axios.delete(`https://localhost:5248/api/Course/Delete/${id}`);
 //       return id;
 //     } catch (error) {
 //       return rejectWithValue(error.response?.data || 'An error occurred');

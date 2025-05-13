@@ -22,7 +22,7 @@ import LocationCityIcon from '@mui/icons-material/LocationCity';
 
 const updateInstructor = async (instructor) => {
   try {
-    const response = await axios.put(`https://localhost:5000/api/instructor/Update/${instructor.id}`, instructor);
+    const response = await axios.put(`https://localhost:5248/api/instructor/Update/${instructor.id}`, instructor);
     return response.data;
   } catch (error) {
     console.error('Error updating instructor:', error);
@@ -35,8 +35,8 @@ export default function InstructorsTable() {
   const [open, setOpen] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [currentInstructor, setcurrentInstructor] = useState({ id: null, firstName: '', lastName: '', phone: null, email: '', city: '' });
-  const [newInstructor, setnewInstructor] = useState({ id: null, firstName: '', lastName: '', phone: null, email: '', city: '' });
+  const [currentInstructor, setcurrentInstructor] = useState({ id: null, firstName: '', lastName: '', phone: null, email: '', city: '',sector:'' });
+  const [newInstructor, setnewInstructor] = useState({ id: null, firstName: '', lastName: '', phone: null, email: '', city: '',sector:'' });
   const [loading, setLoading] = useState(true);
   const dispatch = useDispatch();
 
@@ -52,11 +52,11 @@ export default function InstructorsTable() {
 
 
   const handleSave = async () => {
-    const newinstructor = { firstName: currentInstructor.firstName, lastName: currentInstructor.lastName, phone: currentInstructor.phone, email: currentInstructor.email, city: currentInstructor.city };
+    const newinstructor = { firstName: currentInstructor.firstName, lastName: currentInstructor.lastName, phone: currentInstructor.phone, email: currentInstructor.email, city: currentInstructor.city ,sector:currentInstructor.sector};
     const addedinstructor = await addInstructor(newinstructor);
     setInstructors([...instructors, addedinstructor]);
     setOpen(false);
-    setcurrentInstructor({ id: null, firstName: '', lastName: '', phone: null, email: '', city: '' });
+    setcurrentInstructor({ id: null, firstName: '', lastName: '', phone: null, email: '', city: '',sector:'' });
   };
 
   const handleEdit = async (instructor) => {
@@ -66,11 +66,12 @@ export default function InstructorsTable() {
     refreshTable();
   };
 
-  const handleAdd = async (newInstructor) => {
+  const handleAdd = async () => {
+    debugger
     await dispatch(addInstructor(newInstructor));
     refreshTable();
     setOpen(false);
-    setnewInstructor({ id: null, firstName: '', lastName: '', phone: null, email: '', city: '' });
+    setnewInstructor({ id: null, firstName: '', lastName: '', phone: null, email: '', city: '' ,sector:''});
   };
 
   const refreshTable = async () => {
@@ -98,7 +99,7 @@ export default function InstructorsTable() {
             variant="outlined"
             color="primary"
             startIcon={<Edit />}
-            onClick={() => { setcurrentInstructor({ id: params.row.id, firstName: params.row.firstName, lastName: params.row.lastName, phone: params.row.phone, email: params.row.email, city: params.row.city }); setOpenEdit(true); }}
+            onClick={() => { setcurrentInstructor({ id: params.row.id, firstName: params.row.firstName, lastName: params.row.lastName, phone: params.row.phone, email: params.row.email, city: params.row.city,sector:params.row.sector }); setOpenEdit(true); }}
           >
             ערוך
           </Button>
@@ -106,7 +107,7 @@ export default function InstructorsTable() {
             variant="outlined"
             color="error"
             startIcon={<Delete />}
-            onClick={() => { setcurrentInstructor({ id: params.row.id, firstName: params.row.firstName, lastName: params.row.lastName, phone: params.row.phone, email: params.row.email, city: params.row.city }); setDeleteOpen(true); }}
+            onClick={() => { setcurrentInstructor({ id: params.row.id, firstName: params.row.firstName, lastName: params.row.lastName, phone: params.row.phone, email: params.row.email, city: params.row.city ,sector:params.row.sector}); setDeleteOpen(true); }}
           >
             מחק
           </Button>
@@ -117,8 +118,9 @@ export default function InstructorsTable() {
     { field: 'firstName', headerName: 'שם פרטי', width: 120 },
     { field: 'lastName', headerName: 'שם משפחה', width: 90 },
     { field: 'phone', headerName: 'טלפון', width: 100 },
-    { field: 'email', headerName: 'כתובת מייל', width: 150 },
-    { field: 'city', headerName: 'עיר', width: 120 },
+    { field: 'email', headerName: 'כתובת מייל', width: 150 ,type: 'email' },
+    { field: 'city', headerName: 'עיר', width: 100 },
+    { field: 'sector', headerName: 'מגזר', width: 120 },
 
   ];
 
@@ -216,8 +218,15 @@ export default function InstructorsTable() {
             />
             <TextField
               fullWidth
+              type='email'
               label="אימייל"
               onChange={(e) => setnewInstructor({ ...newInstructor, email: e.target.value })}
+              sx={{ mb: 2 }}
+            />
+             <TextField
+              fullWidth
+              label="מגזר"
+              onChange={(e) => setnewInstructor({ ...newInstructor, sector: e.target.value })}
               sx={{ mb: 2 }}
             />
           </DialogContent>
@@ -225,7 +234,7 @@ export default function InstructorsTable() {
             <Button onClick={() => setOpen(false)} color="error" variant="outlined">
               ביטול
             </Button>
-            <Button className='saveIcon' onClick={() => handleAdd(newInstructor)} color="primary" variant="contained">
+            <Button className='saveIcon' onClick={() => handleAdd()} color="primary" variant="contained">
               הוסף מדריך
             </Button>
           </DialogActions>
@@ -319,6 +328,14 @@ export default function InstructorsTable() {
               onChange={(e) => setcurrentInstructor({ ...currentInstructor, phone: e.target.value })}
               sx={{ mb: 2 }}
             />
+            
+            <TextField
+              fullWidth
+              label="אימייל"
+              value={currentInstructor.email}
+              onChange={(e) => setcurrentInstructor({ ...currentInstructor, email: e.target.value })}
+              sx={{ mb: 2 }}
+            />
             <TextField
               fullWidth
               label="עיר"
@@ -327,11 +344,11 @@ export default function InstructorsTable() {
               sx={{ mb: 2 }}
             />
             <TextField
-              fullWidth
-              label="אימייל"
-              value={currentInstructor.email}
-              onChange={(e) => setcurrentInstructor({ ...currentInstructor, email: e.target.value })}
-              sx={{ mb: 2 }}
+            fullWidth
+            label="מגזר"
+            value={currentInstructor.sector}
+            onChange={(e) => setcurrentInstructor({ ...currentInstructor, sector: e.target.value })}
+            sx={{ mb: 2 }}
             />
           </DialogContent>
           <DialogActions>

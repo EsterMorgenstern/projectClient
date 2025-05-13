@@ -420,7 +420,7 @@ const AboutSystem = () => {
   const stats = [
     { number: 1500, label: "מרכזי חוגים" },
     { number: 12000, label: "מדריכים פעילים" },
-    { number: 250000, label: "תלמידים רשומים" },
+    { number: 252480, label: "תלמידים רשומים" },
     { number: 98, label: "אחוזי שביעות רצון" }
   ];
   

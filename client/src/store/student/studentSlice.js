@@ -5,7 +5,7 @@ import { addStudent } from './studentAddThunk';
 import { deleteStudent } from './studentDeleteThunk';
 
 // export const updateStudent = createAsyncThunk('students/updateStudent', async (student) => {
-//   const response = await axios.put(`https://localhost:5000/api/Student/UpdateStudent/${student.id}`, student);
+//   const response = await axios.put(`https://localhost:5248/api/Student/UpdateStudent/${student.id}`, student);
 //   return response.data;
 // });
 
@@ -19,8 +19,9 @@ const studentsSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
-//fetchStudents    
-      .addCase(fetchStudents.pending, (state) => {
+//fetchStudents   
+       .addCase(fetchStudents.pending, (state) => {
+        debugger
         console.log('Fetching students...');
         state.loading = true;
       })

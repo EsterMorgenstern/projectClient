@@ -15,25 +15,17 @@ import { groupStudentAddThunk } from '../store/groupStudent/groupStudentAddThunk
 import TermsDialog from './termDialog';
 const updateStudent = async (student) => {
   try {
-    const response = await axios.put(`https://localhost:5000/api/Student/Update/${student.id}`, student);
+    const response = await axios.put(`https://localhost:5248/api/Student/Update/${student.id}`, student);
     return response.data;
   } catch (error) {
     console.error('Error updating student:', error);
   }
 };
 
-const deleteStudent = async (id) => {
-  try {
-    const response = await axios.delete(`https://localhost:5000/api/Student/Delete/${id}`);
-    return response.data;
-  } catch (error) {
-    console.error('Error deleting student:', error);
-  }
-};
 
 export default function StudentsTable() {
   const students = useSelector((state) => state.students.students);
-  const studentCourses = useSelector((state) => state.groupStudent.groupStudentById);
+  const studentCourses = useSelector((state) => state.groupStudents.groupStudentById);
   const courses = useSelector((state) => state.courses.courses);
   const [open, setOpen] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
@@ -75,7 +67,7 @@ export default function StudentsTable() {
     setOpen(false);
     setOpenEdit(false);
 
-    setnewStudent({ id: null, firstName: '', lastName: '', phone: null, birthDate: '02/03/2025', city: '', school: '', healthFund: '', gender: "", sector: "" });
+   //setnewStudent({ id: null, firstName: '', lastName: '', phone: null, birthDate: '02/03/2025', city: '', school: '', healthFund: '', gender: "", sector: "" });
   };
 
   const handleEdit = (student) => {
