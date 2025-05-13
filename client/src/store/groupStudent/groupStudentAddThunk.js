@@ -1,8 +1,8 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-export const addStudentCourse = createAsyncThunk(
-  'groupStudent/addStudentCourse',
+export const groupStudentAddThunk = createAsyncThunk(
+  'groupStudent/addGroupStudent',
   async (studentCourseData, { rejectWithValue }) => {
     try {
       const response = await axios.post('https://localhost:5000/api/GroupStudent/Add', studentCourseData);

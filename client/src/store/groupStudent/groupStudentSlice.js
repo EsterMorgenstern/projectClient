@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { getgroupStudentByStudentId } from './groupStudentGetByStudentIdThunk';
-import { addStudentCourse } from './studentCourseAddThunk';
+import { groupStudentAddThunk } from './groupStudentAddThunk';
 
 
 
@@ -38,17 +38,17 @@ const groupStudentSlice = createSlice({
         state.loading = false;
         state.error = action.payload || 'Failed to fetch student courses';
       }) 
-//addStudentCourse
-       .addCase(addStudentCourse.pending, (state) => {    
-        console.log('addStudentCourse...');
+//groupStudentAddThunk
+       .addCase(groupStudentAddThunk.pending, (state) => {    
+        console.log('groupStudentAddThunk...');
         state.loading = true; 
        }) 
-       .addCase(addStudentCourse.fulfilled, (state, action) => {
+       .addCase(groupStudentAddThunk.fulfilled, (state, action) => {
         state.loading = false;
         state.groupStudent.push(action.payload); // Add the new student course to the state
         console.log(action.payload);
       })  
-      .addCase(addStudentCourse.rejected, (state, action) => {
+      .addCase(groupStudentAddThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to addStudentCourse';
       }) ;   

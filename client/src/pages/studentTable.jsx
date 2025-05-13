@@ -9,9 +9,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchStudents } from '../store/student/studentGetAllThunk';
 import { addStudent } from '../store/student/studentAddThunk';
 import { Table } from 'lucide-react';
-import { getStudentCoursesByStudentId } from '../store/groupStudent/groupStudentGetByStudentIdThunk';
+import { getgroupStudentByStudentId } from '../store/groupStudent/groupStudentGetByStudentIdThunk';
 import { fetchCourses } from '../store/course/CoursesGetAllThunk';
-import { addStudentCourse } from '../store/groupStudent/groupStudentAddThunk';
+import { groupStudentAddThunk } from '../store/groupStudent/groupStudentAddThunk';
 import TermsDialog from './termDialog';
 const updateStudent = async (student) => {
   try {
@@ -33,7 +33,7 @@ const deleteStudent = async (id) => {
 
 export default function StudentsTable() {
   const students = useSelector((state) => state.students.students);
-  const studentCourses = useSelector((state) => state.studentCourses.studentCoursesById);
+  const studentCourses = useSelector((state) => state.groupStudent.groupStudentById);
   const courses = useSelector((state) => state.courses.courses);
   const [open, setOpen] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
@@ -89,7 +89,7 @@ export default function StudentsTable() {
       const updatedStudent = await updateStudent(currentStudent);
       setStudents(students.map((student) => (student.id === updatedStudent.id ? updatedStudent : student)));
     } else {
-      await dispatch(addStudent(currentStudent));
+      await dispatch(groupStudentAddThunk(currentStudent));
     }
     setOpen(false);
     setCurrentStudent({ id: null, firstName: '', lastName: '', phone: null, city: '', school: '', healthFund: '', gender: "", sector: "" });
@@ -173,7 +173,7 @@ export default function StudentsTable() {
               // פתח את הדיאלוג עם רשימת החוגים
               setOpenCoursesDialog(true);
               setCurrentStudent({ id: params.row.id, firstName: params.row.firstName, lastName: params.row.lastName, phone: params.row.phone, city: params.row.city, school: params.row.school, healthFund: params.row.healthFund, community: params.row.community, active: params.row.active });
-              await dispatch(getStudentCoursesByStudentId(params.row.id)); // קח את החוגים של התלמיד  
+              await dispatch(getgroupStudentByStudentId(params.row.id)); // קח את החוגים של התלמיד  
             }}
             sx={{
               boxShadow: 5,

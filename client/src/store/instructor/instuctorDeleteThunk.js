@@ -5,7 +5,7 @@ export const deleteInstructor = createAsyncThunk(
     async (id, { rejectWithValue }) => {
         try {
 
-            const response = await axios.delete(`https://localhost:5000/api/Instructor/Delete/${id}`);
+            const response = await axios.delete(`https://localhost:5248/api/Instructor/Delete/${id}`);
             return response.data;
         } catch (error) {
             return rejectWithValue(error.response?.data || 'Failed to delete instructor');
