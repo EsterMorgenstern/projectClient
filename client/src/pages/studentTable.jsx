@@ -4,7 +4,7 @@ import { DataGrid } from '@mui/x-data-grid';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
+import { Await, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchStudents } from '../store/student/studentGetAllThunk';
 import { addStudent } from '../store/student/studentAddThunk';
@@ -13,6 +13,8 @@ import { getgroupStudentByStudentId } from '../store/groupStudent/groupStudentGe
 import { fetchCourses } from '../store/course/CoursesGetAllThunk';
 import { groupStudentAddThunk } from '../store/groupStudent/groupStudentAddThunk';
 import TermsDialog from './termDialog';
+import { deleteStudent } from '../store/student/studentDeleteThunk';
+import { editStudent } from '../store/student/studentEditThunk';
 const updateStudent = async (student) => {
   try {
     const response = await axios.put(`https://localhost:5248/api/Student/Update/${student.id}`, student);
@@ -31,7 +33,6 @@ export default function StudentsTable() {
   const [openEdit, setOpenEdit] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [openCoursesDialog, setOpenCoursesDialog] = useState(false);
-  const [deleted, setDeleted] = useState(false);
   const [currentStudent, setCurrentStudent] = useState({ id: null, firstName: '', lastName: '', phone: null, city: '', school: '', healthFund: '', gender: "", sector: "" });
   const [newStudent, setnewStudent] = useState({ id: null, firstName: '', lastName: '', phone: null, birthDate: '02/03/2025', city: '', school: '', healthFund: '', gender: "", sector: "" });
   const [currentStudentCourse, setCurrentStudentCourse] = useState({ courseId: null, studentId: null, registrationDate: Date.now().toISOString });
@@ -63,33 +64,37 @@ export default function StudentsTable() {
     await dispatch(fetchStudents());
   }
   const handleAdd = async () => {
-    refreshTable();
+    if (await dispatch(addStudent(newStudent))) {
+      refreshTable();
+      setnewStudent({ id: null, firstName: '', lastName: '', phone: null, birthDate: '02/03/2025', city: '', school: '', healthFund: '', gender: "", sector: "" });
+    }
     setOpen(false);
     setOpenEdit(false);
 
-   //setnewStudent({ id: null, firstName: '', lastName: '', phone: null, birthDate: '02/03/2025', city: '', school: '', healthFund: '', gender: "", sector: "" });
   };
 
-  const handleEdit = (student) => {
-    setCurrentStudent(student);
-    setOpenEdit(true);
-  };
-
-  const handleSave = async () => {
-
-    if (currentStudent.id) {
-      const updatedStudent = await updateStudent(currentStudent);
-      setStudents(students.map((student) => (student.id === updatedStudent.id ? updatedStudent : student)));
-    } else {
-      await dispatch(groupStudentAddThunk(currentStudent));
+  const handleEdit = async () => {
+    if (await dispatch(editStudent(currentStudent))) {
+      setOpenEdit(false);
+      refreshTable();
     }
-    setOpen(false);
-    setCurrentStudent({ id: null, firstName: '', lastName: '', phone: null, city: '', school: '', healthFund: '', gender: "", sector: "" });
   };
+
+  // const handleSave = async () => {
+
+  //   if (currentStudent.id) {
+  //     const updatedStudent = await updateStudent(currentStudent);
+  //     setStudents(students.map((student) => (student.id === updatedStudent.id ? updatedStudent : student)));
+  //   } else {
+  //     await dispatch(groupStudentAddThunk(currentStudent));
+  //   }
+  //   setOpen(false);
+  //   setCurrentStudent({ id: null, firstName: '', lastName: '', phone: null, city: '', school: '', healthFund: '', gender: "", sector: "" });
+  // };
 
   const handleDelete = async (id) => {
-    await dispatch(deleteStudent(id));
-    refreshTable();
+    if (await dispatch(deleteStudent(id)))
+      refreshTable();
   };
   const fetchCoursesFunc = async () => {
     await dispatch(fetchCourses());
@@ -118,7 +123,6 @@ export default function StudentsTable() {
             color="error"
             startIcon={<Delete />}
             onClick={() => { setCurrentStudent({ id: params.row.id, firstName: params.row.firstName, lastName: params.row.lastName, phone: params.row.phone, city: params.row.city, school: params.row.school, healthFund: params.row.healthFund, gender: params.row.gender, sector: params.row.sector }); setDeleteOpen(true); }}
-
           >
             מחק
           </Button>
@@ -155,8 +159,8 @@ export default function StudentsTable() {
           </Typography>
 
 
-          <DataGrid
-            rows={students}
+          {students.length > 0 && <DataGrid
+            rows={students.filter(row => row?.id != null && row?.id !== '')}
             columns={columns}
             getRowId={(row) => row.id}
             pageSize={5}
@@ -174,7 +178,7 @@ export default function StudentsTable() {
                 // backgroundColor: '#93C5FD',
               },
             }}
-          />
+          />}
         </Box>
         {/* חוגים */}
         <Dialog
@@ -403,7 +407,7 @@ export default function StudentsTable() {
               ביטול
             </Button>
             <Button
-              onClick={() => { handleAdd(); }}
+              onClick={() => handleAdd()}
               color="primary"
               variant="contained"
               sx={{
@@ -438,21 +442,21 @@ export default function StudentsTable() {
               fullWidth
               label="תעודת זהות"
               value={currentStudent.id}
-              onChange={(e) => setcurrentStudent({ ...currentStudent, id: e.target.value })}
+              onChange={(e) => setCurrentStudent({ ...currentStudent, id: e.target.value })}
               sx={{ mb: 2, backgroundColor: '#ffffff' }} // רקע לבן בשדות
             />
             <TextField
               fullWidth
               label="שם פרטי"
               value={currentStudent.firstName}
-              onChange={(e) => setcurrentStudent({ ...currentStudent, firstName: e.target.value })}
+              onChange={(e) => setCurrentStudent({ ...currentStudent, firstName: e.target.value })}
               sx={{ mb: 2, backgroundColor: '#ffffff' }} // רקע לבן בשדות
             />
             <TextField
               fullWidth
               label="שם משפחה"
               value={currentStudent.lastName}
-              onChange={(e) => setcurrentStudent({ ...currentStudent, lastName: e.target.value })}
+              onChange={(e) => setCurrentStudent({ ...currentStudent, lastName: e.target.value })}
               sx={{ mb: 2, backgroundColor: '#ffffff' }} // רקע לבן בשדות
             />
             <TextField
@@ -460,21 +464,21 @@ export default function StudentsTable() {
               label="טלפון"
               type="number"
               value={currentStudent.phone}
-              onChange={(e) => setcurrentStudent({ ...currentStudent, phone: e.target.value })}
+              onChange={(e) => setCurrentStudent({ ...currentStudent, phone: e.target.value })}
               sx={{ mb: 2, backgroundColor: '#ffffff' }} // רקע לבן בשדות
             />
             <TextField
               fullWidth
               label="עיר"
               value={currentStudent.city}
-              onChange={(e) => setcurrentStudent({ ...currentStudent, city: e.target.value })}
+              onChange={(e) => setCurrentStudent({ ...currentStudent, city: e.target.value })}
               sx={{ mb: 2, backgroundColor: '#ffffff' }}
             />
             <TextField
               fullWidth
               label="בית ספר"
               value={currentStudent.school}
-              onChange={(e) => setcurrentStudent({ ...currentStudent, school: e.target.value })}
+              onChange={(e) => setCurrentStudent({ ...currentStudent, school: e.target.value })}
               sx={{ mb: 2, backgroundColor: '#ffffff' }}
             />
             <TextField
@@ -483,7 +487,7 @@ export default function StudentsTable() {
               label="קופת חולים"
               value={currentStudent.healthFund}
               onChange={(e) =>
-                setcurrentStudent({ ...currentStudent, healthFund: e.target.value })
+                setCurrentStudent({ ...currentStudent, healthFund: e.target.value })
               }
               sx={{ mb: 2, backgroundColor: '#ffffff' }}
             >
@@ -497,14 +501,14 @@ export default function StudentsTable() {
               fullWidth
               label=" מין"
               value={currentStudent.gender}
-              onChange={(e) => setcurrentStudent({ ...currentStudent, gender: e.target.value })}
+              onChange={(e) => setCurrentStudent({ ...currentStudent, gender: e.target.value })}
               sx={{ mb: 2, backgroundColor: '#ffffff' }}
             />
             <TextField
               fullWidth
               label=" מגזר"
               value={currentStudent.sector}
-              onChange={(e) => setcurrentStudent({ ...currentStudent, sector: e.target.value })}
+              onChange={(e) => setCurrentStudent({ ...currentStudent, sector: e.target.value })}
               sx={{ mb: 2, backgroundColor: '#ffffff' }}
             />
           </DialogContent>
@@ -513,7 +517,7 @@ export default function StudentsTable() {
               ביטול
             </Button>
             <Button
-              onClick={() => { handleAdd(); }}
+              onClick={() => { handleEdit(); }}
               color="primary"
               variant="contained"
               sx={{

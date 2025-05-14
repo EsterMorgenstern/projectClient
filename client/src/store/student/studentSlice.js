@@ -3,11 +3,8 @@ import axios from 'axios';
 import { fetchStudents } from './studentGetAllThunk';
 import { addStudent } from './studentAddThunk';
 import { deleteStudent } from './studentDeleteThunk';
+import { editStudent } from './studentEditThunk';
 
-// export const updateStudent = createAsyncThunk('students/updateStudent', async (student) => {
-//   const response = await axios.put(`https://localhost:5248/api/Student/UpdateStudent/${student.id}`, student);
-//   return response.data;
-// });
 
 const studentsSlice = createSlice({
   name: 'students',
@@ -50,6 +47,24 @@ const studentsSlice = createSlice({
         state.loading = false;
         state.error = action.error.message;
       })
+//editStudent
+      .addCase(editStudent.pending, (state) => {
+        console.log('editStudent...');
+        state.loading = true;
+      })
+      .addCase(editStudent.fulfilled, (state, action) => {
+        console.log(action.payload);
+        state.loading = false;
+       const updatedStudents = state.students.map((student) =>
+        student.id === action.payload.id ? action.payload : student
+      );
+      state.instructors = updatedStudents;
+      })
+      .addCase(editStudent.rejected, (state, action) => {
+        console.error('Error editStudent:', action.error.message);
+        state.loading = false;
+        state.error = action.error.message;
+      })
 //deleteStudent     
       .addCase(deleteStudent.pending, (state) => {
         console.log('deleteStudent...');
@@ -65,12 +80,7 @@ const studentsSlice = createSlice({
         state.loading = false;
         state.error = action.error.message;
       })
-      // .addCase(updateStudent.fulfilled, (state, action) => {
-      //   const updatedStudents = state.students.map((student) =>
-      //     student.id === action.payload.id ? action.payload : student
-      //   );
-      //   state.students = updatedStudents;
-      // });
+      
   },
 });
 

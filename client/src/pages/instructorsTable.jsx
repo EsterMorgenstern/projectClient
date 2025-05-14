@@ -84,7 +84,7 @@ export default function InstructorsTable() {
   };
 
   const handleDelete = async (id) => {
-    await dispatch(deleteInstructor(id));
+   if( await dispatch(deleteInstructor(id)))
     refreshTable();
   };
 
