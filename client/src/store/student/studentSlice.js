@@ -4,6 +4,7 @@ import { fetchStudents } from './studentGetAllThunk';
 import { addStudent } from './studentAddThunk';
 import { deleteStudent } from './studentDeleteThunk';
 import { editStudent } from './studentEditThunk';
+import { getStudentById } from './studentGetByIdThunk';
 
 
 const studentsSlice = createSlice({
@@ -12,6 +13,7 @@ const studentsSlice = createSlice({
     students: [],
     loading: false,
     error: null,
+    studentById:[]
   },
   reducers: {},
   extraReducers: (builder) => {
@@ -47,6 +49,22 @@ const studentsSlice = createSlice({
         state.loading = false;
         state.error = action.error.message;
       })
+//getStudentById
+      .addCase(getStudentById.pending, (state) => {
+        console.log('getStudentById...');
+        state.loading = true;
+      })
+      .addCase(getStudentById.fulfilled, (state, action) => {
+        console.log(action.payload);
+        state.loading = false;
+        state.studentById = action.payload;
+      })
+      .addCase(getStudentById.rejected, (state, action) => {
+        console.error('Error getStudentById:', action.error.message);
+        state.loading = false;
+        state.error = action.error.message;
+      })
+
 //editStudent
       .addCase(editStudent.pending, (state) => {
         console.log('editStudent...');
@@ -57,7 +75,7 @@ const studentsSlice = createSlice({
         state.loading = false;
        const updatedStudents = state.students.map((student) =>
         student.id === action.payload.id ? action.payload : student
-      );
+      )
       state.instructors = updatedStudents;
       })
       .addCase(editStudent.rejected, (state, action) => {
@@ -79,7 +97,7 @@ const studentsSlice = createSlice({
         console.error('Error deleteStudent:', action.error.message);
         state.loading = false;
         state.error = action.error.message;
-      })
+      });
       
   },
 });
