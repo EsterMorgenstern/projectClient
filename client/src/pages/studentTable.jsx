@@ -4,26 +4,15 @@ import { DataGrid } from '@mui/x-data-grid';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import axios from 'axios';
-import { Await, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchStudents } from '../store/student/studentGetAllThunk';
 import { addStudent } from '../store/student/studentAddThunk';
-import { Table } from 'lucide-react';
 import { getgroupStudentByStudentId } from '../store/groupStudent/groupStudentGetByStudentIdThunk';
 import { fetchCourses } from '../store/course/CoursesGetAllThunk';
 import { groupStudentAddThunk } from '../store/groupStudent/groupStudentAddThunk';
 import TermsDialog from './termDialog';
 import { deleteStudent } from '../store/student/studentDeleteThunk';
 import { editStudent } from '../store/student/studentEditThunk';
-const updateStudent = async (student) => {
-  try {
-    const response = await axios.put(`https://localhost:5248/api/Student/Update/${student.id}`, student);
-    return response.data;
-  } catch (error) {
-    console.error('Error updating student:', error);
-  }
-};
-
 
 export default function StudentsTable() {
   const students = useSelector((state) => state.students.students);
@@ -80,19 +69,7 @@ export default function StudentsTable() {
     }
   };
 
-  // const handleSave = async () => {
-
-  //   if (currentStudent.id) {
-  //     const updatedStudent = await updateStudent(currentStudent);
-  //     setStudents(students.map((student) => (student.id === updatedStudent.id ? updatedStudent : student)));
-  //   } else {
-  //     await dispatch(groupStudentAddThunk(currentStudent));
-  //   }
-  //   setOpen(false);
-  //   setCurrentStudent({ id: null, firstName: '', lastName: '', phone: null, city: '', school: '', healthFund: '', gender: "", sector: "" });
-  // };
-
-  const handleDelete = async (id) => {
+   const handleDelete = async (id) => {
     if (await dispatch(deleteStudent(id)))
       refreshTable();
   };
