@@ -5,7 +5,7 @@ export const addCourse = createAsyncThunk(
     'courses/addCourse',
     async (course, { rejectWithValue }) => {
         try {
-            const response = await axios.post('http://localhost:5248/api/Course/Add', course);
+            const response = await axios.post(`http://localhost:5248/api/Course/Add`, course);
 
             return response.data;
         } catch (error) {

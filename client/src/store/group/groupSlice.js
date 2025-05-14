@@ -1,6 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { fetchGroups } from './groupGellAllThunk';
 import { addGroup } from './groupAddThunk';
+import { getGroupsByCourseId } from './groupGetGroupsByCourseIdThunk';
 
 const groupSlice = createSlice({
   name: 'groups',
@@ -8,6 +9,7 @@ const groupSlice = createSlice({
     groups: [],
     loading: false,
     error: null,
+    groupsByCourseId:[]
   },
   reducers: {},
   extraReducers: (builder) => {
@@ -27,7 +29,21 @@ const groupSlice = createSlice({
         state.loading = false;
         state.error = action.error.message;
       })
-      
+//getGroupsByCourseId   
+     .addCase(getGroupsByCourseId.pending,(state)=>{
+     console.log('getGroupsByCourseId...')
+     state.loading=true;
+     })   
+    .addCase(getGroupsByCourseId.fulfilled,(state,action)=>{
+      console.log(action.payload);
+      state.loading = false;
+      state.groupsByCourseId=action.payload;
+    })
+     .addCase(getGroupsByCourseId.rejected, (state, action) => {
+        console.error('Error adding group:', action.error.message);
+        state.loading = false;
+        state.error = action.error.message;
+      })
 // addGroup
       .addCase(addGroup.pending, (state) => {
         console.log('Adding group...');

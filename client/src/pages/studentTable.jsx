@@ -145,7 +145,7 @@ export default function StudentsTable() {
             onRowClick={async (params) => {
               // פתח את הדיאלוג עם רשימת החוגים
               setOpenCoursesDialog(true);
-              setCurrentStudent({ id: params.row.id, firstName: params.row.firstName, lastName: params.row.lastName, phone: params.row.phone, city: params.row.city, school: params.row.school, healthFund: params.row.healthFund, community: params.row.community, active: params.row.active });
+              setCurrentStudent({ id: params.row.id, firstName: params.row.firstName, lastName: params.row.lastName, phone: params.row.phone, city: params.row.city, school: params.row.school, healthFund: params.row.healthFund , gender: params.row.gender, sector: params.row.sector });
               await dispatch(getgroupStudentByStudentId(params.row.id)); // קח את החוגים של התלמיד  
             }}
             sx={{

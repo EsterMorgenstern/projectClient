@@ -4,7 +4,7 @@ export const deleteCourse = createAsyncThunk(
     'courses/deleteCourse',
     async (course, { rejectWithValue }) => {
         try {
-            const response = axios.delete("https://localhost:5248/api/Course/Delete", {
+            const response = axios.delete(`https://localhost:5248/api/Course/Delete`, {
                 data: course
             });
             return response.data;

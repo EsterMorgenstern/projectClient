@@ -5,7 +5,7 @@ export const addBranch = createAsyncThunk(
     'branches/addBranch',
     async (branch, { rejectWithValue }) => {
         try {
-            const response = await axios.post('http://localhost:5248/api/Branch/Add', branch);
+            const response = await axios.post(`http://localhost:5248/api/Branch/Add`, branch);
 
             return response.data;
         } catch (error) {
