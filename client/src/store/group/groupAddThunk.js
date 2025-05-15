@@ -5,6 +5,8 @@ export const addGroup = createAsyncThunk(
     'groups/addGroup',
     async (group, { rejectWithValue }) => {
         try {
+            
+
             const response = await axios.post(`http://localhost:5248/api/Group/Add`, group);
 
             return response.data;

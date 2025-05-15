@@ -65,10 +65,12 @@ const EnrollStudent = () => {
   const courses = useSelector(state => state.courses.courses || []);
   const branches = useSelector(state => state.branches.branches || []);
   const groups = useSelector(state => state.groups.groupsByCourseId || []);
+  const groupStudents = useSelector(state => state.groupStudents.groupStudentById || []);
   const loading = useSelector(state =>
     state.courses.loading ||
     state.branches.loading ||
-    state.groups.loading
+    state.groups.loading ||
+    state.groupStudents.loading
   );
 
   // Local state
@@ -78,14 +80,20 @@ const EnrollStudent = () => {
   const [enrollDialogOpen, setEnrollDialogOpen] = useState(false);
   const [studentId, setStudentId] = useState('');
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
-  const [selectedStudentGroup, setSelectedStudentGroup] = useState({ studentId: null, groupId: null, entrollmentDate: Date.now(), isActive: true });
   const [view, setView] = useState('courses'); // courses, branches, groups
   const [addCourseDialogOpen, setAddCourseDialogOpen] = useState(false);
   const [addBranchDialogOpen, setAddBranchDialogOpen] = useState(false);
   const [addGroupDialogOpen, setAddGroupDialogOpen] = useState(false);
   const [studentCoursesDialog, setStudentCoursesDialog] = useState(false);
   const [studentCourses, setStudentCourses] = useState([]);
+  const [selectedStudentGroup, setSelectedStudentGroup] = useState({ studentId: null, groupId: null, entrollmentDate: Date.now(), isActive: true });
   const [selectedStudentName, setSelectedStudentName] = useState('');
+  const [studentGroupData, setStudentGroupData] = useState({
+    studentId: 0,
+    groupId: 0,
+    entrollmentDate: Date.now(),
+    isActive: true
+  });
 
   // State for new course, branch, and group
   const [newCourse, setNewCourse] = useState({ couresName: '', description: '' });
@@ -133,6 +141,8 @@ const EnrollStudent = () => {
 
   const handleGroupSelect = (group) => {
     setSelectedGroup(group);
+    setStudentGroupData({ ...studentGroupData, groupId: group.groupId });
+    debugger
     if (group.maxStudents > 0) {
       setEnrollDialogOpen(true);
     } else {
@@ -144,6 +154,7 @@ const EnrollStudent = () => {
     }
   };
 
+  // פונקציה לטיפול בלחיצה על כפתור שיבוץ תלמיד
   const handleEnrollStudent = async () => {
     if (!studentId.trim()) {
       setNotification({
@@ -155,49 +166,55 @@ const EnrollStudent = () => {
     }
 
     try {
+      // יצירת אובייקט עם כל הנתונים הדרושים
       const studentGroupData = {
         studentId: studentId,
         groupId: selectedGroup.groupId,
-        entrollmentDate:Date.now(),
+        entrollmentDate: new Date().toISOString(),
         isActive: true
       };
 
+      // הדפסת הנתונים לקונסול לבדיקה
+      console.log("Sending enrollment data:", studentGroupData);
+
+      // שליחת הנתונים לשרת
       await dispatch(groupStudentAddThunk(studentGroupData));
 
+      // סגירת הדיאלוג
       setEnrollDialogOpen(false);
 
-      // כאן נדמה שאנחנו מקבלים את שם התלמיד מהשרת
-      // במציאות, יתכן שתצטרך לבצע קריאת API נוספת לקבלת פרטי התלמיד
+      // שמירת שם התלמיד להצגה בדיאלוג החוגים
       setSelectedStudentName(`תלמיד/ה מספר ${studentId}`);
-          debugger
+
       // הצגת הודעת הצלחה עם כפתור לצפייה בחוגים
-     setNotification({
-  open: true,
-  message: 'התלמיד נרשם בהצלחה לחוג',
-  severity: 'success',
-  action: (
-    <Button
-      color="inherit"
-      size="small"
-      onClick={() => fetchAndShowStudentCourses(studentId)}
-      sx={{
-        fontWeight: 'bold',
-        bgcolor: 'rgba(255, 255, 255, 0.2)',
-        borderRadius: '8px',
-        px: 2,
-        '&:hover': {
-          bgcolor: 'rgba(255, 255, 255, 0.3)',
-        }
-      }}
-    >
-      צפה בחוגים
-    </Button>
-  )
-});
+      setNotification({
+        open: true,
+        message: 'התלמיד נרשם בהצלחה לחוג',
+        severity: 'success',
+        action: (
+          <Button
+            color="inherit"
+            size="small"
+            onClick={() => fetchAndShowStudentCourses(studentId)}
+            sx={{
+              fontWeight: 'bold',
+              bgcolor: 'rgba(255, 255, 255, 0.2)',
+              borderRadius: '8px',
+              px: 2,
+              '&:hover': {
+                bgcolor: 'rgba(255, 255, 255, 0.3)',
+              }
+            }}
+          >
+            צפה בחוגים
+          </Button>
+        )
+      });
 
-
+      // איפוס שדה תעודת הזהות
       setStudentId('');
     } catch (error) {
+      console.error("Error enrolling student:", error);
       setNotification({
         open: true,
         message: 'שגיאה ברישום התלמיד: ' + (error.message || 'אנא נסה שנית'),
@@ -208,59 +225,93 @@ const EnrollStudent = () => {
 
   // פונקציה לקבלת חוגי התלמיד והצגתם
   const fetchAndShowStudentCourses = async (studentId) => {
-  try {
-    // קריאה לשרת לקבלת החוגים של התלמיד
-    const response = await dispatch(getgroupStudentByStudentId(studentId));
-    console.log("Response from server:", response); // הוסף לוג לבדיקה
-    
-    // אם יש נתונים בתשובה, נשתמש בהם
-    if (response && response.payload && response.payload.length > 0) {
-      console.log("Student courses data:", response.payload);
-      
-      // אם הנתונים לא בפורמט הנכון, נמפה אותם
-      const formattedCourses = response.payload.map(item => ({
-        id: item.id || item.groupStudentId,
-        courseName: item.courseName || item.course?.couresName || "חוג לא ידוע",
-        groupName: item.groupName || item.group?.groupName || "קבוצה לא ידועה",
-        branchName: item.branchName || item.branch?.name || "סניף לא ידוע",
-        dayOfWeek: item.dayOfWeek || item.group?.dayOfWeek || "יום לא ידוע",
-        hour: item.hour || item.group?.hour || "שעה לא ידועה",
-        status: item.isActive ? "פעיל" : "לא פעיל",
-        startDate: new Date(item.entrollmentDate).toLocaleDateString('he-IL')
-      }));
-      
-      setStudentCourses(formattedCourses);
-    } else {
-      console.log("No data found, using mock data");
-      // אם אין נתונים, נשתמש בנתוני דוגמה
-      const mockStudentCourses = [
-        {
-          id: 1,
-          courseName: selectedCourse?.couresName || 'חוג שנרשמת כעת',
-          groupName: selectedGroup?.groupName || 'קבוצה חדשה',
-          branchName: selectedBranch?.name || 'סניף מרכזי',
-          dayOfWeek: selectedGroup?.dayOfWeek || 'ראשון',
-          hour: selectedGroup?.hour || '16:00',
-          status: 'פעיל',
-          startDate: new Date().toLocaleDateString('he-IL')
-        },
-        // שאר נתוני הדוגמה...
-      ];
-      
-      setStudentCourses(mockStudentCourses);
+    try {
+      console.log("Fetching courses for student ID:", studentId);
+
+      // ניסיון לקבל נתונים מהשרת
+      try {
+        const response = await dispatch(getgroupStudentByStudentId(studentId));
+        console.log("Server response:", response);
+
+        // אם יש נתונים בתשובה, נשתמש בהם
+        if (response && response.payload && response.payload.length > 0) {
+          const formattedCourses = response.payload.map(item => ({
+            id: item.groupStudentId || item.id,
+            courseName: item.course?.couresName || "חוג לא ידוע",
+            groupName: item.group?.groupName || "קבוצה לא ידועה",
+            branchName: item.branch?.name || "סניף לא ידוע",
+            dayOfWeek: item.group?.dayOfWeek || "יום לא ידוע",
+            hour: item.group?.hour || "שעה לא ידועה",
+            status: item.isActive ? "פעיל" : "לא פעיל",
+            startDate: new Date(item.entrollmentDate).toLocaleDateString('he-IL')
+          }));
+
+          setStudentCourses(formattedCourses);
+        } else {
+          // אם אין נתונים, נשתמש בנתוני דוגמה
+          const mockStudentCourses = [
+            {
+              id: 1,
+              courseName: selectedCourse?.couresName || 'חוג שנרשמת כעת',
+              groupName: selectedGroup?.groupName || 'קבוצה חדשה',
+              branchName: selectedBranch?.name || 'סניף מרכזי',
+              dayOfWeek: selectedGroup?.dayOfWeek || 'ראשון',
+              hour: selectedGroup?.hour || '16:00',
+              status: 'פעיל',
+              startDate: new Date().toLocaleDateString('he-IL')
+            },
+            // דוגמה לחוגים נוספים שהתלמיד כבר רשום אליהם
+            {
+              id: 2,
+              courseName: 'אומנות',
+              groupName: 'א',
+              branchName: 'סניף צפון',
+              dayOfWeek: 'שלישי',
+              hour: '17:30',
+              status: 'פעיל',
+              startDate: '01/09/2023'
+            }
+          ];
+
+          setStudentCourses(mockStudentCourses);
+        }
+      } catch (apiError) {
+        console.error("API error:", apiError);
+        // במקרה של שגיאה בקריאת API, נשתמש בנתוני דוגמה
+        const mockStudentCourses = [
+          {
+            id: 1,
+            courseName: selectedCourse?.couresName || 'חוג שנרשמת כעת',
+            groupName: selectedGroup?.groupName || 'קבוצה חדשה',
+            branchName: selectedBranch?.name || 'סניף מרכזי',
+            dayOfWeek: 'ראשון',
+            hour: selectedGroup?.hour || '16:00',
+            status: 'פעיל',
+            startDate: new Date().toLocaleDateString('he-IL')
+          }
+        ];
+
+        setStudentCourses(mockStudentCourses);
+      }
+
+      // פתיחת הדיאלוג
+      setStudentCoursesDialog(true);
+    } catch (error) {
+      console.error("General error in fetchAndShowStudentCourses:", error);
+      setNotification({
+        open: true,
+        message: 'שגיאה בטעינת חוגי התלמיד: ' + (error.message || 'אנא נסה שנית'),
+        severity: 'error'
+      });
     }
-    
-    // פתיחת הדיאלוג
-    setStudentCoursesDialog(true);
-  } catch (error) {
-    console.error("Error fetching student courses:", error);
-    setNotification({
-      open: true,
-      message: 'שגיאה בטעינת חוגי התלמיד: ' + (error.message || 'אנא נסה שנית'),
-      severity: 'error'
-    });
-  }
-};
+  };
+
+  // עדכון הפונקציה לסגירת ההודעה כדי לתמוך בפעולות נוספות
+  const handleCloseNotification = () => {
+    setNotification({ ...notification, open: false });
+  };
+
+
 
 
   // פונקציה להוספת חוג חדש
@@ -392,9 +443,6 @@ const EnrollStudent = () => {
     }
   };
 
-  const handleCloseNotification = () => {
-    setNotification({ ...notification, open: false });
-  };
 
   // Animation variants
   const containerVariants = {
@@ -985,7 +1033,7 @@ const EnrollStudent = () => {
               fullWidth
               variant="outlined"
               value={studentId}
-              onChange={(e) => setStudentId(e.target.value)}
+              onChange={(e) => { setStudentId(e.target.value) }}
               sx={{
                 mt: 2,
                 '& .MuiOutlinedInput-root': {
@@ -1466,7 +1514,7 @@ const EnrollStudent = () => {
             </IconButton>
           </DialogTitle>
           <DialogContent sx={{ pt: 3, pb: 2 }}>
-            {studentCourses.length > 0 ? (
+            {groupStudents.length > 0 ? (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1475,7 +1523,7 @@ const EnrollStudent = () => {
                 <TableContainer component={Paper} sx={{ boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)', borderRadius: 2 }}>
                   <Table sx={{ minWidth: 650 }}>
                     <TableHead>
-                      <TableRow sx={{ bgcolor: '#f8fafc' }}>
+                      <TableRow sx={{ bgcolor: '#f8fafc' ,direction: 'rtl' }}>
                         <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>שם החוג</TableCell>
                         <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>קבוצה</TableCell>
                         <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>סניף</TableCell>
@@ -1485,9 +1533,9 @@ const EnrollStudent = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {studentCourses.map((course, index) => (
+                      {groupStudents.map((gs, index) => (
                         <TableRow
-                          key={course.id}
+                          key={gs.groupStudentId}
                           component={motion.tr}
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -1500,19 +1548,19 @@ const EnrollStudent = () => {
                         >
                           <TableCell align="right" component="th" scope="row">
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
-                              <Typography sx={{ fontWeight: 'medium' }}>{course.courseName}</Typography>
+                              <Typography sx={{ fontWeight: 'medium' }}>{selectedCourse.courseNmae}</Typography>
                               <CourseIcon sx={{ color: '#3B82F6', fontSize: 20 }} />
                             </Box>
                           </TableCell>
-                          <TableCell align="right">{course.groupName}</TableCell>
-                          <TableCell align="right">{course.branchName}</TableCell>
-                          <TableCell align="right">{course.dayOfWeek} {course.hour}</TableCell>
-                          <TableCell align="right">{course.startDate}</TableCell>
+                          <TableCell align="right">{gs.groupId}</TableCell>
+                          <TableCell align="right">{selectedBranch.name}</TableCell>
+                          <TableCell align="right">{selectedGroup.dayOfWeek} {selectedGroup.hour}</TableCell>
+                          <TableCell align="right">{gs.entrollmentDate}</TableCell>
                           <TableCell align="right">
                             <Chip
-                              icon={course.status === 'פעיל' ? <CheckIcon /> : <CloseIcon />}
-                              label={course.status}
-                              color={course.status === 'פעיל' ? "success" : "error"}
+                              icon={gs.isActive === true? <CheckIcon /> : <CloseIcon />}
+                              label={gs.isActive}
+                              color={gs.isActive === true ? "success" : "error"}
                               size="small"
                               variant="outlined"
                             />
@@ -1567,7 +1615,7 @@ const EnrollStudent = () => {
         {/* Notification Snackbar */}
         <Snackbar
           open={notification.open}
-          autoHideDuration={6000}
+          autoHideDuration={notification.action ? 10000 : 6000} // זמן ארוך יותר כשיש פעולה
           onClose={handleCloseNotification}
           anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
           action={notification.action}
@@ -1583,10 +1631,12 @@ const EnrollStudent = () => {
                 fontSize: '1.5rem'
               }
             }}
+            action={notification.action}
           >
             {notification.message}
           </Alert>
         </Snackbar>
+
       </Box>
     </Container>
   );
