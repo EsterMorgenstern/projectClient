@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Box, Typography, MenuItem, TableContainer, Paper, TableHead, TableRow, FormControl, InputLabel, Select } from '@mui/material';
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Box, Typography, MenuItem, TableContainer, Paper, TableHead, TableRow, FormControl, InputLabel, Select, TableCell, TableBody, Chip } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
-import { Add, Edit, Delete } from '@mui/icons-material';
+import { Add, Edit, Delete , Info as InfoIcon, Check as CheckIcon, 
+  Close as CloseIcon, School as CourseIcon} from '@mui/icons-material';
 import { motion } from 'framer-motion';
-import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchStudents } from '../store/student/studentGetAllThunk';
 import { addStudent } from '../store/student/studentAddThunk';
@@ -13,11 +13,14 @@ import { groupStudentAddThunk } from '../store/groupStudent/groupStudentAddThunk
 import TermsDialog from './termDialog';
 import { deleteStudent } from '../store/student/studentDeleteThunk';
 import { editStudent } from '../store/student/studentEditThunk';
+import { Table, TableCellsMerge } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+
 
 export default function StudentsTable() {
   const students = useSelector((state) => state.students.students);
   const studentCourses = useSelector((state) => state.groupStudents.groupStudentById);
-  const courses = useSelector((state) => state.courses.courses);
+
   const [open, setOpen] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -25,13 +28,12 @@ export default function StudentsTable() {
   const [currentStudent, setCurrentStudent] = useState({ id: null, firstName: '', lastName: '', phone: null, city: '', school: '', healthFund: '', gender: "", sector: "" });
   const [newStudent, setnewStudent] = useState({ id: null, firstName: '', lastName: '', phone: null, birthDate: '02/03/2025', city: '', school: '', healthFund: '', gender: "", sector: "" });
   const [currentStudentCourse, setCurrentStudentCourse] = useState({ courseId: null, studentId: null, registrationDate: Date.now().toISOString });
-  const [showAddStudentCorse, setShowAddStudentCorse] = useState(false);
   const [loading, setLoading] = useState(true);
   const [selectedCourse, setSelectedCourse] = useState(0);
   const [termsOpen, setTermsOpen] = useState(false);
 
   const dispatch = useDispatch();
-
+ const navigate = useNavigate();
 
   const healthFundOptions = [
     'מכבי',
@@ -69,14 +71,11 @@ export default function StudentsTable() {
     }
   };
 
-   const handleDelete = async (id) => {
+  const handleDelete = async (id) => {
     if (await dispatch(deleteStudent(id)))
       refreshTable();
   };
-  const fetchCoursesFunc = async () => {
-    await dispatch(fetchCourses());
-    setCurrentStudentCourse({ ...currentStudentCourse, courseId: selectedCourse, studentId: currentStudent.id });
-  }
+  
   const addStudentCorse = async () => {
     await dispatch(addStudentCourse(currentStudentCourse));
   }
@@ -145,7 +144,7 @@ export default function StudentsTable() {
             onRowClick={async (params) => {
               // פתח את הדיאלוג עם רשימת החוגים
               setOpenCoursesDialog(true);
-              setCurrentStudent({ id: params.row.id, firstName: params.row.firstName, lastName: params.row.lastName, phone: params.row.phone, city: params.row.city, school: params.row.school, healthFund: params.row.healthFund , gender: params.row.gender, sector: params.row.sector });
+              setCurrentStudent({ id: params.row.id, firstName: params.row.firstName, lastName: params.row.lastName, phone: params.row.phone, city: params.row.city, school: params.row.school, healthFund: params.row.healthFund, gender: params.row.gender, sector: params.row.sector });
               await dispatch(getgroupStudentByStudentId(params.row.id)); // קח את החוגים של התלמיד  
             }}
             sx={{
@@ -164,95 +163,141 @@ export default function StudentsTable() {
           transition={{ duration: 0.5 }}
           open={openCoursesDialog}
           onClose={() => setOpenCoursesDialog(false)}
+          maxWidth="md"
+          fullWidth
           sx={{
             '& .MuiDialog-paper': {
               borderRadius: 12,
-              padding: 3,
-              backgroundColor: 'linear-gradient(180deg, #1E3A8A 0%, #3B82F6 100%)', // צבע רקע כחול בהיר
+              padding: 0, // שינינו ל-0 כדי שהכותרת תהיה מלאה
               boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
             },
           }}
         >
-          <DialogTitle variant="h4" sx={{ fontWeight: 'bold', color: '#1E3A8A', textAlign: 'center' }}>
-            החוגים של {currentStudent.firstName} {currentStudent.lastName}
-          </DialogTitle>
-          <DialogContent>
-            <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 3, padding: 3 }}>
-              {studentCourses.length > 0 && <DataGrid
-                rows={studentCourses.filter(row => row?.courseId != null && row?.courseId !== '')}
-                columns={columnsStudentCorses}
-                getRowId={(row) => row.courseId}
-                pageSize={5}
-                rowsPerPageOptions={[10]}
-                sx={{
-                  boxShadow: 5,
-                  borderRadius: '10px',
-
-                }}
-              />}
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenCoursesDialog(false)} color="error" variant="outlined">
-              ביטול
-            </Button>
-            <Button onClick={() => { setShowAddStudentCorse(true), fetchCoursesFunc() }} color="error" variant="outlined">
+          <DialogTitle
+            sx={{
+              bgcolor: '#3B82F6',
+              color: 'white',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              py: 2
+            }}
+          >
+            <Typography variant="h6" component="div" sx={{ fontWeight: 'bold' }}>
+              החוגים של {currentStudent.firstName} {currentStudent.lastName}
+            </Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<Add />}
+              onClick={() => navigate('/entrollStudent')}
+              sx={{
+                bgcolor: 'rgba(255, 255, 255, 0.2)',
+                '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.3)' }
+              }}
+            >
               הוסף חוג
+            </Button>
+          </DialogTitle>
+          <DialogContent sx={{ pt: 3, pb: 2 }}>
+            {studentCourses.length > 0 ? (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                <TableContainer component={Paper} sx={{ direction: 'rtl', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)', borderRadius: 2 }}>
+                  <Table sx={{ minWidth: 650 }}>
+                    <TableHead>
+                      <TableRow sx={{ bgcolor: '#f8fafc' }}>
+                        <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>שם החוג</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>קבוצה</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>סניף</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>יום ושעה</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>תאריך התחלה</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>סטטוס</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {studentCourses.map((course, index) => (
+                        <TableRow
+                          key={course.groupStudentId || index}
+                          component={motion.tr}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          sx={{
+                            '&:nth-of-type(odd)': { bgcolor: 'rgba(59, 130, 246, 0.03)' },
+                            '&:hover': { bgcolor: 'rgba(59, 130, 246, 0.08)' },
+                            transition: 'background-color 0.3s'
+                          }}
+                        >
+                          <TableCell align="right" component="th" scope="row">
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
+                              <CourseIcon sx={{ color: '#3B82F6', fontSize: 20 }} />
+                              <Typography sx={{ fontWeight: 'medium' }}>{course.courseName}</Typography>
+                            </Box>
+                          </TableCell>
+                          <TableCell align="right">{course.groupName || 'קבוצה א'}</TableCell>
+                          <TableCell align="right">{course.branchName || 'סניף מרכזי'}</TableCell>
+                          <TableCell align="right">{course.dayOfWeek || 'ראשון'} {course.hour || '16:00'}</TableCell>
+                          <TableCell align="right">{new Date(course.registrationDate || course.entrollmentDate).toLocaleDateString('he-IL')}</TableCell>
+                          <TableCell align="right">
+                            <Chip
+                              icon={course.isActive ? <CheckIcon /> : <CloseIcon />}
+                              label={course.isActive ? "פעיל" : "לא פעיל"}
+                              color={course.isActive ? "success" : "error"}
+                              size="small"
+                              variant="outlined"
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </motion.div>
+            ) : (
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  py: 5
+                }}
+              >
+                <InfoIcon sx={{ fontSize: 60, color: '#94a3b8', mb: 2 }} />
+                <Typography variant="h6" color="text.secondary" textAlign="center">
+                  אין חוגים רשומים לתלמיד זה
+                </Typography>
+                <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ mt: 1 }}>
+                  ניתן לרשום את התלמיד לחוגים חדשים דרך כפתור הוסף חוג
+                </Typography>
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 3, justifyContent: 'center' }}>
+            <Button
+              onClick={() => setOpenCoursesDialog(false)}
+              variant="outlined"
+              color="primary"
+              sx={{
+                borderRadius: '8px',
+                px: 4,
+                py: 1,
+                borderWidth: '2px',
+                '&:hover': {
+                  borderWidth: '2px',
+                  bgcolor: 'rgba(59, 130, 246, 0.05)'
+                }
+              }}
+            >
+              סגור
             </Button>
           </DialogActions>
         </Dialog>
-        {/* דיאלוג הוספת חוג */}
-        <Dialog
-          open={showAddStudentCorse}
-          onClose={() => setShowAddStudentCorse(false)}
-          sx={{
-            '& .MuiDialog-paper': {
-              borderRadius: 12,
-              padding: 3,
-              backgroundColor: 'linear-gradient(180deg, #1E3A8A 0%, #3B82F6 100%)', // צבע רקע כחול בהיר
-              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
-            },
-          }}
-        >
 
-          <DialogTitle sx={{ color: '#1E3A8A', fontWeight: 'bold', textAlign: 'center' }}>
-            הוסף חוג לתלמיד
-          </DialogTitle>
-          <DialogContent>
-            <FormControl fullWidth sx={{ mb: 4 }}>
-              <InputLabel>בחר חוג</InputLabel>
-              <Select
-                value={selectedCourse}
-                label="בחר חוג"
-                onChange={(e) => setSelectedCourse(e.target.value)}
-              >
-                {courses.map((course) => (
-                  <MenuItem key={course.courseId} value={course.courseId}>
-                    {course.courseName}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <Button
-              variant="contained"
-              size="large"
-              fullWidth
-              sx={{
-                backgroundColor: '#1E40AF',
-                color: '#fff',
-                borderRadius: 2,
-                fontWeight: 'bold',
-                '&:hover': {
-                  backgroundColor: '#3B82F6'
-                }
-              }}
-              onClick={() => { addStudentCorse(), setShowAddStudentCorse(false); }}
-            >
-              שבץ תלמיד לחוג
-            </Button>
-          </DialogContent>
-        </Dialog>
         {/* כפתור הוספת תלמיד חדש */}
         {/* אישור תקנון */}
         <Button
