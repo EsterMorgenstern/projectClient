@@ -9,6 +9,7 @@ import InstructorsTable from './InstructorsTable';
 import EntrollStudent from './enrollStudent';
 import AboutSystem from './aboutSystem';
 import Menu from './menu';
+import AttendanceCalendar from './attendanceCalendar';
 
 
 
@@ -21,7 +22,7 @@ const Routing = () => {
         <Route path="/aboutSystem" element={<Layout><AboutSystem /></Layout>} />
         <Route path="/students" element={<Layout><StudentsTable /></Layout>} />
         <Route path="/instructors" element={<Layout><InstructorsTable /></Layout>} />
-       <Route path="/courses" element={<Layout><Courses /></Layout>} />
+       <Route path="/courses" element={<Layout><AttendanceCalendar /></Layout>} />
        <Route path="/entrollStudent" element={<Layout><EntrollStudent /></Layout>} />
       <Route path="/assignments" element={<Layout><Assignments /></Layout>} />
       </Routes>
