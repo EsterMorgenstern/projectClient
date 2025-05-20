@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -24,7 +25,6 @@ import {
   ListItemIcon,
   ListItemButton,
   Checkbox,
-  FormControlLabel,
   Avatar,
   Badge,
   Card,
@@ -38,7 +38,13 @@ import {
   MenuItem,
   Collapse,
   Alert,
-  Snackbar
+  Snackbar,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow
 } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -68,7 +74,8 @@ import {
   Comment as CommentIcon,
   Today as TodayIcon,
   ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon
+  ExpandLess as ExpandLessIcon,
+  AccessTime as TimeIcon
 } from '@mui/icons-material';
 import { fetchCourses } from '../store/course/CoursesGetAllThunk';
 import { fetchBranches } from '../store/branch/branchGetAllThunk';
@@ -112,14 +119,54 @@ const AttendanceCalendar = () => {
   const [savedAttendance, setSavedAttendance] = useState({});
   const [attendanceNote, setAttendanceNote] = useState('');
   const [viewMode, setViewMode] = useState('month'); // month, week, day
+  const [weekDays, setWeekDays] = useState([]);
+  const [weekStartDate, setWeekStartDate] = useState(null);
 
   // הגדרת מיקום בישראל לחישוב תאריכים עבריים
   const israelLocation = Location.lookup('Jerusalem');
 
+  // מיפוי חודשים עבריים לעברית
+  const hebrewMonthsMap = {
+    'Nisan': 'ניסן',
+    'Iyyar': 'אייר',
+    'Sivan': 'סיון',
+    'Tamuz': 'תמוז',
+    'Av': 'אב',
+    'Elul': 'אלול',
+    'Tishrei': 'תשרי',
+    'Cheshvan': 'חשון',
+    'Kislev': 'כסלו',
+    'Tevet': 'טבת',
+    'Shvat': 'שבט',
+    'Adar': 'אדר',
+    'Adar I': 'אדר א׳',
+    'Adar II': 'אדר ב׳'
+  };
+
+  // מיפוי חודשים לועזיים לעברית
+  const gregorianMonthsMap = {
+    0: 'ינואר',
+    1: 'פברואר',
+    2: 'מרץ',
+    3: 'אפריל',
+    4: 'מאי',
+    5: 'יוני',
+    6: 'יולי',
+    7: 'אוגוסט',
+    8: 'ספטמבר',
+    9: 'אוקטובר',
+    10: 'נובמבר',
+    11: 'דצמבר'
+  };
+
   // יצירת לוח שנה לחודש הנוכחי
   useEffect(() => {
-    generateCalendarDays();
-  }, [currentDate]);
+    if (viewMode === 'month') {
+      generateCalendarDays();
+    } else if (viewMode === 'week') {
+      generateWeekDays();
+    }
+  }, [currentDate, viewMode]);
 
   // טעינת נתונים ראשונית
   useEffect(() => {
@@ -196,6 +243,40 @@ const AttendanceCalendar = () => {
     setCalendarDays(days);
   };
 
+  // פונקציה ליצירת מערך ימי השבוע
+  const generateWeekDays = () => {
+    // אם לא נבחר תאריך התחלה לשבוע, נשתמש בתאריך הנוכחי
+    const startDate = weekStartDate || new Date(currentDate);
+    
+    // מציאת יום ראשון של השבוע הנוכחי
+    const dayOfWeek = startDate.getDay(); // 0 = ראשון, 6 = שבת
+    startDate.setDate(startDate.getDate() - dayOfWeek);
+    
+    // שמירת תאריך תחילת השבוע
+    setWeekStartDate(new Date(startDate));
+    
+    const days = [];
+    
+    // יצירת 7 ימים החל מיום ראשון
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + i);
+      
+      const hebrewDate = new HDate(date);
+      days.push({
+        date,
+        day: date.getDate(),
+        dayOfWeek: i,
+        currentMonth: date.getMonth() === currentDate.getMonth(),
+        isToday: isSameDay(date, new Date()),
+        hebrewDate: hebrewDate.toString('h'),
+        events: getEventsForDay(date)
+      });
+    }
+    
+    setWeekDays(days);
+  };
+
   // בדיקה אם שני תאריכים הם אותו יום
   const isSameDay = (date1, date2) => {
     return date1.getDate() === date2.getDate() &&
@@ -212,7 +293,18 @@ const AttendanceCalendar = () => {
     const hebrewDayName = hebrewDays[dayOfWeek];
     
     // סינון החוגים שמתקיימים ביום זה
-    return groups.filter(group => group.dayOfWeek === hebrewDayName);
+    const dayEvents = groups.filter(group => group.dayOfWeek === hebrewDayName);
+    
+    // בדיקה אם יש נתוני נוכחות שמורים ליום זה
+    dayEvents.forEach(event => {
+      const attendanceKey = `${date.toDateString()}-${event.groupId}`;
+      if (savedAttendance[attendanceKey]) {
+        event.attendanceRecorded = true;
+        event.presentCount = Object.values(savedAttendance[attendanceKey].attendance).filter(present => present).length;
+      }
+    });
+    
+    return dayEvents;
   };
 
   // פונקציה לטיפול בלחיצה על יום בלוח השנה
@@ -332,7 +424,6 @@ const AttendanceCalendar = () => {
       setSavedAttendance(updatedSavedAttendance);
       
       // כאן יש לשלוח את הנתונים לשרת
-      // כאן יש לשלוח את הנתונים לשרת
       // לדוגמה: dispatch(saveAttendanceThunk({ groupId: selectedCourse.groupId, date: selectedDate, attendance, note: attendanceNote }));
       
       setAttendanceDialog(false);
@@ -360,29 +451,57 @@ const AttendanceCalendar = () => {
 
   // פונקציה לעדכון לוח השנה עם נתוני נוכחות
   const updateCalendarWithAttendance = (date, groupId, presentCount) => {
-    const updatedCalendarDays = calendarDays.map(day => {
-      if (isSameDay(day.date, date)) {
-        // עדכון האירועים של היום
-        const updatedEvents = day.events.map(event => {
-          if (event.groupId === groupId) {
-            return {
-              ...event,
-              attendanceRecorded: true,
-              presentCount
-            };
-          }
-          return event;
-        });
-        
-        return {
-          ...day,
-          events: updatedEvents
-        };
-      }
-      return day;
-    });
-    
-    setCalendarDays(updatedCalendarDays);
+    if (viewMode === 'month') {
+      const updatedCalendarDays = calendarDays.map(day => {
+        if (isSameDay(day.date, date)) {
+          // עדכון האירועים של היום
+          const updatedEvents = day.events.map(event => {
+            if (event.groupId === groupId) {
+              return {
+                ...event,
+                attendanceRecorded: true,
+                presentCount
+              };
+            }
+            return event;
+          });
+          
+          return {
+            ...day,
+            events: updatedEvents,
+            hasAttendance: true // סימון שיש נוכחות ביום זה
+          };
+        }
+        return day;
+      });
+      
+      setCalendarDays(updatedCalendarDays);
+    } else if (viewMode === 'week') {
+      const updatedWeekDays = weekDays.map(day => {
+        if (isSameDay(day.date, date)) {
+          // עדכון האירועים של היום
+          const updatedEvents = day.events.map(event => {
+            if (event.groupId === groupId) {
+              return {
+                ...event,
+                attendanceRecorded: true,
+                presentCount
+              };
+            }
+            return event;
+          });
+          
+          return {
+            ...day,
+            events: updatedEvents,
+            hasAttendance: true // סימון שיש נוכחות ביום זה
+          };
+        }
+        return day;
+      });
+      
+      setWeekDays(updatedWeekDays);
+    }
   };
 
   // פונקציה לטיפול בשינוי חודש
@@ -390,9 +509,19 @@ const AttendanceCalendar = () => {
     setCurrentDate(prevDate => {
       const newDate = new Date(prevDate);
       if (direction === 'prev') {
-        newDate.setMonth(newDate.getMonth() - 1);
+        if (viewMode === 'month') {
+          newDate.setMonth(newDate.getMonth() - 1);
+        } else if (viewMode === 'week') {
+          newDate.setDate(newDate.getDate() - 7);
+          setWeekStartDate(null); // איפוס תאריך התחלת השבוע כדי שיחושב מחדש
+        }
       } else {
-        newDate.setMonth(newDate.getMonth() + 1);
+        if (viewMode === 'month') {
+          newDate.setMonth(newDate.getMonth() + 1);
+        } else if (viewMode === 'week') {
+          newDate.setDate(newDate.getDate() + 7);
+          setWeekStartDate(null); // איפוס תאריך התחלת השבוע כדי שיחושב מחדש
+        }
       }
       return newDate;
     });
@@ -401,12 +530,18 @@ const AttendanceCalendar = () => {
   // פונקציה לחזרה לחודש הנוכחי
   const handleGoToToday = () => {
     setCurrentDate(new Date());
+    setWeekStartDate(null); // איפוס תאריך התחלת השבוע כדי שיחושב מחדש
   };
 
   // פונקציה לטיפול בשינוי מצב תצוגה
   const handleViewModeChange = (event, newMode) => {
     if (newMode !== null) {
       setViewMode(newMode);
+      
+      // איפוס תאריך התחלת השבוע כדי שיחושב מחדש
+      if (newMode === 'week') {
+        setWeekStartDate(null);
+      }
     }
   };
 
@@ -462,14 +597,35 @@ const AttendanceCalendar = () => {
 
   // רינדור ראש הלוח
   const renderCalendarHeader = () => {
-    const monthNames = [
-      'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
-      'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
-    ];
-    
+    // קבלת שם החודש העברי והלועזי
     const hebrewDate = new HDate(currentDate);
-    const hebrewMonthName = hebrewDate.getMonthName('h');
+    const hebrewMonthName = hebrewMonthsMap[hebrewDate.getMonthName('h')] || hebrewDate.getMonthName('h');
     const hebrewYear = hebrewDate.getFullYear();
+    const gregorianMonthName = gregorianMonthsMap[currentDate.getMonth()];
+    
+    // כותרת בהתאם למצב התצוגה
+    let headerTitle = '';
+    if (viewMode === 'month') {
+      headerTitle = `${gregorianMonthName} ${currentDate.getFullYear()}`;
+    } else if (viewMode === 'week') {
+      // אם יש תאריך התחלת שבוע
+      if (weekStartDate) {
+        const weekEndDate = new Date(weekStartDate);
+        weekEndDate.setDate(weekStartDate.getDate() + 6);
+        
+        // פורמט התאריכים
+        const startDay = weekStartDate.getDate();
+        const endDay = weekEndDate.getDate();
+        const startMonth = gregorianMonthsMap[weekStartDate.getMonth()];
+        const endMonth = gregorianMonthsMap[weekEndDate.getMonth()];
+        
+        if (startMonth === endMonth) {
+          headerTitle = `${startDay}-${endDay} ${startMonth} ${weekStartDate.getFullYear()}`;
+        } else {
+          headerTitle = `${startDay} ${startMonth} - ${endDay} ${endMonth} ${weekStartDate.getFullYear()}`;
+        }
+      }
+    }
     
     return (
       <Box sx={{ mb: 3 }}>
@@ -480,7 +636,7 @@ const AttendanceCalendar = () => {
                 <PrevIcon />
               </IconButton>
               <Typography variant="h5" fontWeight="bold" color="#1E3A8A" sx={{ mx: 2 }}>
-                {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                {headerTitle}
               </Typography>
               <IconButton onClick={() => handleMonthChange('next')} color="primary">
                 <NextIcon />
@@ -625,38 +781,48 @@ const AttendanceCalendar = () => {
                 whileTap={{ scale: 0.98 }}
                 sx={{
                   p: { xs: 1, md: 2 },
-                  height: { xs: 80, sm: 100, md: 120 },
+                  height: { xs: 100, sm: 120, md: 140 },
                   borderRadius: 2,
                   cursor: 'pointer',
                   position: 'relative',
                   overflow: 'hidden',
-                  bgcolor: day.isToday 
-                    ? 'rgba(59, 130, 246, 0.1)' 
-                    : day.currentMonth ? 'white' : 'rgba(241, 245, 249, 0.7)',
-                  border: day.isToday ? '2px solid #3B82F6' : '1px solid #E2E8F0',
+                  bgcolor: day.hasAttendance 
+                    ? 'rgba(16, 185, 129, 0.1)' // צבע ירוק בהיר אם יש נוכחות
+                    : day.isToday 
+                      ? 'rgba(59, 130, 246, 0.1)' 
+                      : day.currentMonth ? 'white' : 'rgba(241, 245, 249, 0.7)',
+                  border: day.hasAttendance
+                    ? '2px solid rgba(16, 185, 129, 0.5)'
+                    : day.isToday ? '2px solid #3B82F6' : '1px solid #E2E8F0',
                   opacity: day.currentMonth ? 1 : 0.6,
                   transition: 'all 0.2s ease',
                   '&:hover': {
                     boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                    bgcolor: day.isToday 
-                      ? 'rgba(59, 130, 246, 0.15)' 
-                      : 'rgba(241, 245, 249, 0.5)',
+                    bgcolor: day.hasAttendance
+                      ? 'rgba(16, 185, 129, 0.15)'
+                      : day.isToday 
+                        ? 'rgba(59, 130, 246, 0.15)' 
+                        : 'rgba(241, 245, 249, 0.5)',
                   }
                 }}
                 onClick={() => handleDateClick(day)}
               >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                   <Typography 
-                    variant="body2" 
-                    color={day.isToday ? '#3B82F6' : day.currentMonth ? 'text.primary' : 'text.secondary'}
-                    fontWeight={day.isToday ? 'bold' : 'normal'}
+                    variant="body1" 
+                    color={
+                      day.hasAttendance
+                        ? '#10B981'
+                        : day.isToday ? '#3B82F6' : day.currentMonth ? 'text.primary' : 'text.secondary'
+                    }
+                    fontWeight={day.isToday || day.hasAttendance ? 'bold' : 'normal'}
                   >
                     {day.day}
                   </Typography>
                   <Typography 
                     variant="caption" 
                     color="text.secondary"
-                    sx={{ fontSize: { xs: '0.6rem', sm: '0.7rem' } }}
+                    sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
                   >
                     {day.hebrewDate}
                   </Typography>
@@ -665,7 +831,7 @@ const AttendanceCalendar = () => {
                 {/* אירועים (חוגים) */}
                 <Box sx={{ 
                   mt: 1, 
-                  maxHeight: { xs: 40, sm: 60 }, 
+                  maxHeight: { xs: 60, sm: 70 }, 
                   overflow: 'hidden',
                   display: 'flex',
                   flexDirection: 'column',
@@ -678,11 +844,13 @@ const AttendanceCalendar = () => {
                       label={`${event.courseName || 'חוג'} ${event.groupName}`}
                       sx={{ 
                         height: 'auto',
-                        py: 0.2,
-                        fontSize: { xs: '0.6rem', sm: '0.7rem' },
+                        py: 0.3,
+                        fontSize: { xs: '0.65rem', sm: '0.75rem' },
                         backgroundColor: event.attendanceRecorded 
                           ? 'rgba(16, 185, 129, 0.2)' 
                           : 'rgba(99, 102, 241, 0.2)',
+                        color: event.attendanceRecorded ? '#065F46' : '#4338CA',
+                        fontWeight: event.attendanceRecorded ? 'bold' : 'normal',
                         '& .MuiChip-label': {
                           px: 1,
                           whiteSpace: 'nowrap',
@@ -694,7 +862,7 @@ const AttendanceCalendar = () => {
                   ))}
                   
                   {day.events.length > 3 && (
-                    <Typography variant="caption" color="text.secondary" align="center">
+                    <Typography variant="caption" color="text.secondary" align="center" sx={{ mt: 0.5 }}>
                       +{day.events.length - 3} נוספים
                     </Typography>
                   )}
@@ -709,23 +877,377 @@ const AttendanceCalendar = () => {
 
   // רינדור תצוגת שבוע
   const renderWeekView = () => {
-    // כאן יש לממש את תצוגת השבוע
+    const timeSlots = [
+      '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', 
+      '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'
+    ];
+    
+    // פונקציה עזר לקבלת אירועים בשעה מסוימת
+    const getEventsAtTime = (day, timeSlot) => {
+      return day.events.filter(event => {
+        // הנחה: שדה hour מכיל את השעה בפורמט "HH:MM"
+        const eventHour = event.hour ? event.hour.split(':')[0] : null;
+        const slotHour = timeSlot.split(':')[0];
+        return eventHour === slotHour;
+      });
+    };
+    
     return (
-      <Box sx={{ textAlign: 'center', py: 5 }}>
-        <Typography variant="h6" color="text.secondary">
-          תצוגת שבוע תהיה זמינה בקרוב
-        </Typography>
+      <Box sx={{ overflow: 'auto', maxHeight: 'calc(100vh - 250px)' }}>
+        <TableContainer component={Paper} sx={{ boxShadow: 'none', border: '1px solid #E2E8F0', borderRadius: 2 }}>
+          <Table stickyHeader>
+            <TableHead>
+              <TableRow>
+                <TableCell 
+                  sx={{ 
+                    width: '80px', 
+                    bgcolor: '#F8FAFC', 
+                    borderBottom: '2px solid #E2E8F0',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  שעה
+                </TableCell>
+                {weekDays.map((day, index) => (
+                  <TableCell 
+                    key={index} 
+                    align="center"
+                    sx={{ 
+                      bgcolor: day.isToday ? 'rgba(59, 130, 246, 0.1)' : '#F8FAFC',
+                      borderBottom: '2px solid #E2E8F0',
+                      borderLeft: index === weekDays.length - 1 ? 'none' : '1px solid #E2E8F0',
+                      fontWeight: 'bold',
+                      minWidth: '150px'
+                    }}
+                  >
+                    <Box>
+                      <Typography variant="subtitle2" fontWeight="bold" color={day.isToday ? '#3B82F6' : '#1E293B'}>
+                        {['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'][day.dayOfWeek]}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {day.day} / {day.date.getMonth() + 1}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {day.hebrewDate}
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                ))}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {timeSlots.map((timeSlot, timeIndex) => (
+                <TableRow key={timeIndex} sx={{ '&:nth-of-type(odd)': { bgcolor: 'rgba(241, 245, 249, 0.3)' } }}>
+                  <TableCell 
+                    sx={{ 
+                      width: '80px', 
+                      borderRight: '1px solid #E2E8F0',
+                      bgcolor: '#F8FAFC',
+                      fontWeight: 'bold',
+                      color: '#64748B'
+                    }}
+                  >
+                    {timeSlot}
+                  </TableCell>
+                  {weekDays.map((day, dayIndex) => {
+                    const eventsAtTime = getEventsAtTime(day, timeSlot);
+                    return (
+                      <TableCell 
+                        key={dayIndex} 
+                        align="center"
+                        sx={{ 
+                          position: 'relative',
+                          height: '100px',
+                          p: 1,
+                          borderLeft: dayIndex === weekDays.length - 1 ? 'none' : '1px solid #E2E8F0',
+                          cursor: eventsAtTime.length > 0 ? 'pointer' : 'default',
+                          '&:hover': {
+                            bgcolor: eventsAtTime.length > 0 ? 'rgba(241, 245, 249, 0.5)' : 'inherit'
+                          }
+                        }}
+                        onClick={() => eventsAtTime.length > 0 && handleDateClick(day)}
+                      >
+                        {eventsAtTime.length > 0 ? (
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                            {eventsAtTime.map((event, eventIndex) => (
+                              <Paper
+                                key={eventIndex}
+                                elevation={0}
+                                sx={{
+                                  p: 1,
+                                  borderRadius: 1,
+                                  bgcolor: event.attendanceRecorded 
+                                    ? 'rgba(16, 185, 129, 0.2)' 
+                                    : 'rgba(99, 102, 241, 0.2)',
+                                  border: event.attendanceRecorded 
+                                    ? '1px solid rgba(16, 185, 129, 0.5)' 
+                                    : '1px solid rgba(99, 102, 241, 0.5)',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  alignItems: 'start',
+                                  transition: 'transform 0.2s',
+                                  '&:hover': {
+                                    transform: 'scale(1.02)'
+                                  }
+                                }}
+                              >
+                                <Typography 
+                                  variant="body2" 
+                                  fontWeight="bold"
+                                  color={event.attendanceRecorded ? '#065F46' : '#4338CA'}
+                                >
+                                  {event.courseName} - {event.groupName}
+                                </Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5, gap: 1 }}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                    <TimeIcon sx={{ fontSize: '0.8rem', mr: 0.5, color: 'text.secondary' }} />
+                                    <Typography variant="caption" color="text.secondary">
+                                      {event.hour}
+                                    </Typography>
+                                  </Box>
+                                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                    <BranchIcon sx={{ fontSize: '0.8rem', mr: 0.5, color: 'text.secondary' }} />
+                                    <Typography variant="caption" color="text.secondary">
+                                      {event.branchName}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                                {event.attendanceRecorded && (
+                                  <Chip
+                                    size="small"
+                                    label={`נוכחות: ${event.presentCount || 0}`}
+                                    sx={{ 
+                                      height: 20, 
+                                      mt: 0.5,
+                                      fontSize: '0.65rem',
+                                      bgcolor: 'rgba(16, 185, 129, 0.1)',
+                                      color: '#065F46'
+                                    }}
+                                  />
+                                )}
+                              </Paper>
+                            ))}
+                          </Box>
+                        ) : null}
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       </Box>
     );
   };
+
   // רינדור תצוגת יום
   const renderDayView = () => {
     // כאן יש לממש את תצוגת היום
+    const timeSlots = [
+      '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', 
+      '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'
+    ];
+    
+    // אם אין תאריך נבחר, נשתמש בתאריך הנוכחי
+    const dayToShow = selectedDate || currentDate;
+    const hebrewDate = new HDate(dayToShow);
+    
+    // קבלת היום בשבוע
+    const dayOfWeek = dayToShow.getDay();
+    const hebrewDays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+    const hebrewDayName = hebrewDays[dayOfWeek];
+    
+    // קבלת האירועים ליום זה
+    const dayEvents = getEventsForDay(dayToShow);
+    
+    // פונקציה עזר לקבלת אירועים בשעה מסוימת
+    const getEventsAtTime = (timeSlot) => {
+      return dayEvents.filter(event => {
+        // הנחה: שדה hour מכיל את השעה בפורמט "HH:MM"
+        const eventHour = event.hour ? event.hour.split(':')[0] : null;
+        const slotHour = timeSlot.split(':')[0];
+        return eventHour === slotHour;
+      });
+    };
+    
+    // פורמט התאריך
+    const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+    const formattedDate = dayToShow.toLocaleDateString('he-IL', dateOptions);
+    
     return (
-      <Box sx={{ textAlign: 'center', py: 5 }}>
-        <Typography variant="h6" color="text.secondary">
-          תצוגת יום תהיה זמינה בקרוב
-        </Typography>
+      <Box>
+        <Box sx={{ 
+          mb: 3, 
+          p: 2, 
+          borderRadius: 2, 
+          bgcolor: 'rgba(59, 130, 246, 0.05)', 
+          border: '1px solid rgba(59, 130, 246, 0.2)',
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
+          alignItems: { xs: 'start', sm: 'center' },
+          justifyContent: 'space-between',
+          gap: 2
+        }}>
+          <Box>
+            <Typography variant="h6" fontWeight="bold" color="#1E3A8A">
+              {hebrewDayName}, {formattedDate}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {hebrewDate.toString('h')}
+            </Typography>
+          </Box>
+          
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<PrevIcon />}
+              onClick={() => {
+                const newDate = new Date(dayToShow);
+                newDate.setDate(newDate.getDate() - 1);
+                setSelectedDate(newDate);
+              }}
+              sx={{ borderRadius: '8px' }}
+            >
+              יום קודם
+            </Button>
+            <Button
+              variant="outlined"
+              color="primary"
+              endIcon={<NextIcon />}
+              onClick={() => {
+                const newDate = new Date(dayToShow);
+                newDate.setDate(newDate.getDate() + 1);
+                setSelectedDate(newDate);
+              }}
+              sx={{ borderRadius: '8px' }}
+            >
+              יום הבא
+            </Button>
+          </Box>
+        </Box>
+        
+        <TableContainer component={Paper} sx={{ boxShadow: 'none', border: '1px solid #E2E8F0', borderRadius: 2 }}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell 
+                  sx={{ 
+                    width: '80px', 
+                    bgcolor: '#F8FAFC', 
+                    borderBottom: '2px solid #E2E8F0',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  שעה
+                </TableCell>
+                <TableCell 
+                  sx={{ 
+                    bgcolor: '#F8FAFC',
+                    borderBottom: '2px solid #E2E8F0',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  חוגים
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {timeSlots.map((timeSlot, timeIndex) => {
+                const eventsAtTime = getEventsAtTime(timeSlot);
+                return (
+                  <TableRow 
+                    key={timeIndex} 
+                    sx={{ 
+                      '&:nth-of-type(odd)': { bgcolor: 'rgba(241, 245, 249, 0.3)' },
+                      height: eventsAtTime.length > 0 ? 'auto' : '80px'
+                    }}
+                  >
+                    <TableCell 
+                      sx={{ 
+                        width: '80px', 
+                        borderRight: '1px solid #E2E8F0',
+                        bgcolor: '#F8FAFC',
+                        fontWeight: 'bold',
+                        color: '#64748B'
+                      }}
+                    >
+                      {timeSlot}
+                    </TableCell>
+                    <TableCell sx={{ p: eventsAtTime.length > 0 ? 2 : 1 }}>
+                      {eventsAtTime.length > 0 ? (
+                        <Grid container spacing={2}>
+                          {eventsAtTime.map((event, eventIndex) => (
+                            <Grid item xs={12} sm={6} md={4} key={eventIndex}>
+                              <Paper
+                                elevation={2}
+                                sx={{
+                                  p: 2,
+                                  borderRadius: 2,
+                                  cursor: 'pointer',
+                                  bgcolor: event.attendanceRecorded 
+                                    ? 'rgba(16, 185, 129, 0.1)' 
+                                    : 'white',
+                                  border: event.attendanceRecorded 
+                                    ? '1px solid rgba(16, 185, 129, 0.3)' 
+                                    : '1px solid rgba(0,0,0,0.1)',
+                                  transition: 'all 0.2s ease',
+                                  '&:hover': {
+                                    boxShadow: '0 6px 20px rgba(0,0,0,0.1)',
+                                    transform: 'translateY(-2px)'
+                                  }
+                                }}
+                                onClick={() => handleCourseClick(event)}
+                              >
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                  <Typography variant="subtitle2" fontWeight="bold">
+                                    {event.courseName} - קבוצה {event.groupName}
+                                  </Typography>
+                                  {event.attendanceRecorded && (
+                                    <Tooltip title="נוכחות נרשמה">
+                                      <CheckIcon color="success" fontSize="small" />
+                                    </Tooltip>
+                                  )}
+                                </Box>
+                                
+                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                  <TimeIcon fontSize="small" sx={{ color: '#6366F1', mr: 1 }} />
+                                  <Typography variant="body2">
+                                    {event.hour}
+                                  </Typography>
+                                </Box>
+                                
+                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                  <BranchIcon fontSize="small" sx={{ color: '#6366F1', mr: 1 }} />
+                                  <Typography variant="body2">
+                                    {event.branchName}
+                                  </Typography>
+                                </Box>
+                                
+                                {event.attendanceRecorded && (
+                                  <Box sx={{ mt: 1, pt: 1, borderTop: '1px dashed rgba(0,0,0,0.1)' }}>
+                                    <Typography variant="body2" color="text.secondary">
+                                      נוכחים: {event.presentCount || 0} מתוך {event.maxStudents || '?'}
+                                    </Typography>
+                                  </Box>
+                                )}
+                              </Paper>
+                            </Grid>
+                          ))}
+                        </Grid>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary" align="center">
+                          אין חוגים בשעה זו
+                        </Typography>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </TableContainer>
       </Box>
     );
   };
@@ -886,7 +1408,7 @@ const AttendanceCalendar = () => {
                                       </Box>
                                       
                                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                        <DayIcon fontSize="small" sx={{ color: '#6366F1', mr: 1 }} />
+                                        <TimeIcon fontSize="small" sx={{ color: '#6366F1', mr: 1 }} />
                                         <Typography variant="body2">
                                           {group.hour}
                                         </Typography>
@@ -1312,5 +1834,7 @@ const AttendanceCalendar = () => {
     </Container>
   );
 };
+
+
 
 export default AttendanceCalendar;

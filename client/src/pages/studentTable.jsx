@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Box, Typography, MenuItem, TableContainer, Paper, TableHead, TableRow, FormControl, InputLabel, Select, TableCell, TableBody, Chip } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
-import { Add, Edit, Delete , Info as InfoIcon, Check as CheckIcon, 
-  Close as CloseIcon, School as CourseIcon} from '@mui/icons-material';
+import {
+  Add, Edit, Delete, Info as InfoIcon, Check as CheckIcon,
+  Close as CloseIcon, School as CourseIcon
+} from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchStudents } from '../store/student/studentGetAllThunk';
@@ -33,7 +35,7 @@ export default function StudentsTable() {
   const [termsOpen, setTermsOpen] = useState(false);
 
   const dispatch = useDispatch();
- const navigate = useNavigate();
+  const navigate = useNavigate();
 
   const healthFundOptions = [
     'מכבי',
@@ -75,7 +77,7 @@ export default function StudentsTable() {
     if (await dispatch(deleteStudent(id)))
       refreshTable();
   };
-  
+
   const addStudentCorse = async () => {
     await dispatch(addStudentCourse(currentStudentCourse));
   }
@@ -168,7 +170,7 @@ export default function StudentsTable() {
           sx={{
             '& .MuiDialog-paper': {
               borderRadius: 12,
-              padding: 0, // שינינו ל-0 כדי שהכותרת תהיה מלאה
+              padding: 0, 
               boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
             },
           }}
@@ -207,54 +209,64 @@ export default function StudentsTable() {
                 transition={{ duration: 0.5 }}
               >
                 <TableContainer component={Paper} sx={{ direction: 'rtl', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)', borderRadius: 2 }}>
-                  <Table sx={{ minWidth: 650 }}>
-                    <TableHead>
-                      <TableRow sx={{ bgcolor: '#f8fafc' }}>
-                        <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>שם החוג</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>קבוצה</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>סניף</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>יום ושעה</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>תאריך התחלה</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>סטטוס</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {studentCourses.map((course, index) => (
-                        <TableRow
-                          key={course.groupStudentId || index}
-                          component={motion.tr}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                          sx={{
+
+                  <TableHead >
+                    <TableRow
+                      component={motion.tr}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                     sx={{
                             '&:nth-of-type(odd)': { bgcolor: 'rgba(59, 130, 246, 0.03)' },
                             '&:hover': { bgcolor: 'rgba(59, 130, 246, 0.08)' },
                             transition: 'background-color 0.3s'
-                          }}
-                        >
-                          <TableCell align="right" component="th" scope="row">
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
-                              <CourseIcon sx={{ color: '#3B82F6', fontSize: 20 }} />
-                              <Typography sx={{ fontWeight: 'medium' }}>{course.courseName}</Typography>
-                            </Box>
-                          </TableCell>
-                          <TableCell align="right">{course.groupName || 'קבוצה א'}</TableCell>
-                          <TableCell align="right">{course.branchName || 'סניף מרכזי'}</TableCell>
-                          <TableCell align="right">{course.dayOfWeek || 'ראשון'} {course.hour || '16:00'}</TableCell>
-                          <TableCell align="right">{new Date(course.registrationDate || course.entrollmentDate).toLocaleDateString('he-IL')}</TableCell>
-                          <TableCell align="right">
-                            <Chip
-                              icon={course.isActive ? <CheckIcon /> : <CloseIcon />}
-                              label={course.isActive ? "פעיל" : "לא פעיל"}
-                              color={course.isActive ? "success" : "error"}
-                              size="small"
-                              variant="outlined"
-                            />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                          }}>
+                      <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>שם החוג</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>קבוצה</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>סניף</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>מדריך</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>יום ושעה</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>תאריך התחלה</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>סטטוס</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {studentCourses.map((course, index) => (
+                      <TableRow
+                        key={course.groupStudentId || index}
+                        component={motion.tr}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        sx={{
+                          '&:nth-of-type(odd)': { bgcolor: 'rgba(59, 130, 246, 0.03)' },
+                          '&:hover': { bgcolor: 'rgba(59, 130, 246, 0.08)' },
+                          transition: 'background-color 0.3s'
+                        }}
+                      >
+                        <TableCell align="right" component="th" scope="row">
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
+                            <CourseIcon sx={{ color: '#3B82F6', fontSize: 20 }} />
+
+                            <Typography sx={{ fontWeight: 'medium' }}>{course.courseName}</Typography>
+                          </Box>
+                        </TableCell>
+
+                        <TableCell align="right">{course.groupName}</TableCell>
+                        <TableCell align="right">{course.branchName}</TableCell>
+                        <TableCell align="right">{course.instructorName}</TableCell>
+                        <TableCell align="right">{course.dayOfWeek} {course.hour}</TableCell><TableCell align="right">{course.enrollmentDate}</TableCell>
+                        <TableCell align="right">
+                          <Chip
+                            icon={course.isActive === true ? <CheckIcon /> : <CloseIcon />}
+                            label={course.isActive}
+                            color={course.isActive === true ? "success" : "error"}
+                            size="small"
+                            variant="outlined"
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
                 </TableContainer>
               </motion.div>
             ) : (
