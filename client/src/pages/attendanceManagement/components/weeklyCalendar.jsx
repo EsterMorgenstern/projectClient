@@ -79,28 +79,28 @@ const WeeklyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords }
   };
   
   return (
-    <Box className={styles.weeklyCalendarRoot}>
-      <TableContainer component={Paper} className={styles.tableContainer}>
+    <Box sx={styles.weeklyCalendarRoot}>
+      <TableContainer component={Paper} sx={styles.tableContainer}>
         <Table stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell className={styles.timeHeaderCell}>
+              <TableCell sx={styles.timeHeaderCell}>
                 שעה
               </TableCell>
               {weekDays.map((day, index) => (
                 <TableCell 
                   key={index} 
                   align="center"
-                  className={`${styles.dayHeaderCell} ${day.isToday ? styles.todayHeaderCell : ''}`}
+                  sx={`${styles.dayHeaderCell} ${day.isToday ? styles.todayHeaderCell : ''}`}
                 >
-                  <Box className={styles.dayHeaderContent}>
-                    <Typography variant="subtitle2" className={styles.dayName}>
+                  <Box sx={styles.dayHeaderContent}>
+                    <Typography variant="subtitle2" sx={styles.dayName}>
                       {format(day.date, 'EEEE', { locale: he })}
                     </Typography>
-                    <Typography variant="body2" className={styles.dayDate}>
+                    <Typography variant="body2" sx={styles.dayDate}>
                       {format(day.date, 'd/M')}
                     </Typography>
-                    <Typography variant="caption" className={styles.hebrewDateSmall}>
+                    <Typography variant="caption" sx={styles.hebrewDateSmall}>
                       {getHebrewDate(day.date)}
                     </Typography>
                   </Box>
@@ -110,8 +110,8 @@ const WeeklyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords }
           </TableHead>
           <TableBody>
             {timeSlots.map((timeSlot, timeIndex) => (
-              <TableRow key={timeIndex} className={timeIndex % 2 === 0 ? styles.evenRow : ''}>
-                <TableCell className={styles.timeCell}>
+              <TableRow key={timeIndex} sx={timeIndex % 2 === 0 ? styles.evenRow : ''}>
+                <TableCell sx={styles.timeCell}>
                   {timeSlot}
                 </TableCell>
                 {weekDays.map((day, dayIndex) => {
@@ -120,11 +120,11 @@ const WeeklyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords }
                     <TableCell 
                       key={dayIndex} 
                       align="center"
-                      className={`${styles.eventCell} ${day.isToday ? styles.todayCell : ''}`}
+                      sx={`${styles.eventCell} ${day.isToday ? styles.todayCell : ''}`}
                       onClick={() => eventsAtTime.length > 0 && onDateSelect(day.date)}
                     >
                       {eventsAtTime.length > 0 ? (
-                        <Box className={styles.weeklyEventsContainer}>
+                        <Box sx={styles.weeklyEventsContainer}>
                           {eventsAtTime.map((event, eventIndex) => {
                             const hasAttendance = hasAttendanceRecord(event, day.date);
                             return (
@@ -132,23 +132,23 @@ const WeeklyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords }
                                 key={eventIndex}
                                 whileHover={{ scale: 1.03 }}
                                 whileTap={{ scale: 0.98 }}
-                                className={`${styles.weeklyEventCard} ${hasAttendance ? styles.attendanceRecordedCard : ''}`}
+                                sx={`${styles.weeklyEventCard} ${hasAttendance ? styles.attendanceRecordedCard : ''}`}
                               >
                                 <Typography 
                                   variant="body2" 
-                                  className={styles.eventTitle}
+                                  sx={styles.eventTitle}
                                 >
                                   {event.courseName || 'חוג'} - {event.groupName}
                                 </Typography>
-                                <Box className={styles.eventDetails}>
-                                  <Box className={styles.eventDetail}>
-                                    <AccessTime fontSize="small" className={styles.eventIcon} />
+                                <Box sx={styles.eventDetails}>
+                                  <Box sx={styles.eventDetail}>
+                                    <AccessTime fontSize="small" sx={styles.eventIcon} />
                                     <Typography variant="caption">
                                       {event.hour}
                                     </Typography>
                                   </Box>
-                                  <Box className={styles.eventDetail}>
-                                    <LocationOn fontSize="small" className={styles.eventIcon} />
+                                  <Box sx={styles.eventDetail}>
+                                    <LocationOn fontSize="small" sx={styles.eventIcon} />
                                     <Typography variant="caption">
                                       {event.branchName || 'סניף'}
                                     </Typography>
@@ -159,7 +159,7 @@ const WeeklyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords }
                                     size="small"
                                     icon={<CheckCircle fontSize="small" />}
                                     label={`נוכחות: ${hasAttendance.presentCount || 0}`}
-                                    className={styles.attendanceChip}
+                                    sx={styles.attendanceChip}
                                   />
                                 )}
                               </motion.div>

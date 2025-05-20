@@ -80,12 +80,12 @@ const AttendanceDialog = ({
       onClose={onClose}
       maxWidth="md"
       fullWidth
-      className={styles.dialog}
-      PaperProps={{ className: styles.dialogPaper }}
+      sx={styles.dialog}
+      PaperProps={{ sx: styles.dialogPaper }}
     >
-      <DialogTitle className={styles.attendanceDialogTitle}>
-        <Box className={styles.dialogTitleContent}>
-          <Typography variant="h6" className={styles.dialogTitleText}>
+      <DialogTitle sx={styles.attendanceDialogTitle}>
+        <Box sx={styles.dialogTitleContent}>
+          <Typography variant="h6" sx={styles.dialogTitleText}>
             רישום נוכחות: {selectedCourse.couresName} - קבוצה {selectedGroup.groupName}
           </Typography>
           <IconButton
@@ -93,47 +93,47 @@ const AttendanceDialog = ({
             color="inherit"
             onClick={onClose}
             aria-label="close"
-            className={styles.closeButton}
+            sx={styles.closeButton}
           >
             <Close />
           </IconButton>
         </Box>
-        <Typography variant="body2" className={styles.dialogSubtitle}>
+        <Typography variant="body2" sx={styles.dialogSubtitle}>
           {format(selectedDate, 'EEEE, d MMMM yyyy', { locale: he })} | {selectedGroup.hour ? selectedGroup.hour.toString() : ''}
         </Typography>
       </DialogTitle>
       
-      <DialogContent className={styles.dialogContent}>
-        <Paper className={styles.courseInfoPaper}>
+      <DialogContent sx={styles.dialogContent}>
+        <Paper sx={styles.courseInfoPaper}>
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6} md={3}>
-              <Box className={styles.courseInfoItem}>
-                <School fontSize="small" className={styles.infoIcon} />
-                <Typography variant="body2" className={styles.infoLabel}>
+              <Box sx={styles.courseInfoItem}>
+                <School fontSize="small" sx={styles.infoIcon} />
+                <Typography variant="body2" sx={styles.infoLabel}>
                   <strong>חוג:</strong> {selectedCourse.couresName}
                 </Typography>
               </Box>
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
-              <Box className={styles.courseInfoItem}>
-                <Group fontSize="small" className={styles.infoIcon} />
-                <Typography variant="body2" className={styles.infoLabel}>
+              <Box sx={styles.courseInfoItem}>
+                <Group fontSize="small" sx={styles.infoIcon} />
+                <Typography variant="body2" sx={styles.infoLabel}>
                   <strong>קבוצה:</strong> {selectedGroup.groupName}
                 </Typography>
               </Box>
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
-              <Box className={styles.courseInfoItem}>
-                <LocationOn fontSize="small" className={styles.infoIcon} />
-                <Typography variant="body2" className={styles.infoLabel}>
+              <Box sx={styles.courseInfoItem}>
+                <LocationOn fontSize="small" sx={styles.infoIcon} />
+                <Typography variant="body2" sx={styles.infoLabel}>
                   <strong>סניף:</strong> {selectedBranch.name}
                 </Typography>
               </Box>
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
-              <Box className={styles.courseInfoItem}>
-                <AccessTime fontSize="small" className={styles.infoIcon} />
-                <Typography variant="body2" className={styles.infoLabel}>
+              <Box sx={styles.courseInfoItem}>
+                <AccessTime fontSize="small" sx={styles.infoIcon} />
+                <Typography variant="body2" sx={styles.infoLabel}>
                   <strong>שעה:</strong> {selectedGroup.hour ? selectedGroup.hour.toString() : ''}
                 </Typography>
               </Box>
@@ -141,19 +141,19 @@ const AttendanceDialog = ({
           </Grid>
         </Paper>
         
-        <Box className={styles.attendanceHeader}>
-          <Typography variant="subtitle1" className={styles.studentsListTitle}>
-            <Person className={styles.titleIcon} />
+        <Box sx={styles.attendanceHeader}>
+          <Typography variant="subtitle1" sx={styles.studentsListTitle}>
+            <Person sx={styles.titleIcon} />
             רשימת תלמידים
           </Typography>
           
-          <Box className={styles.attendanceActions}>
+          <Box sx={styles.attendanceActions}>
             <Button 
               variant="outlined" 
               size="small" 
               startIcon={<CheckCircle />}
               onClick={markAllPresent}
-              className={styles.markAllButton}
+              sx={styles.markAllButton}
             >
               סמן הכל כנוכחים
             </Button>
@@ -162,23 +162,23 @@ const AttendanceDialog = ({
               size="small" 
               startIcon={<Cancel />}
               onClick={markAllAbsent}
-              className={styles.markAllButton}
+              sx={styles.markAllButton}
             >
               סמן הכל כנעדרים
             </Button>
           </Box>
         </Box>
-                <Paper className={styles.studentsListPaper}>
-          <List className={styles.studentsList}>
+                <Paper sx={styles.studentsListPaper}>
+          <List sx={styles.studentsList}>
             {students.map((student, index) => (
               <React.Fragment key={student.id}>
                 <ListItem
-                  className={`${styles.studentListItem} ${index % 2 === 0 ? styles.evenRow : ''}`}
+                  sx={`${styles.studentListItem} ${index % 2 === 0 ? styles.evenRow : ''}`}
                 >
-                  <ListItemIcon className={styles.studentAvatar}>
+                  <ListItemIcon sx={styles.studentAvatar}>
                     <Avatar 
                       src={student.imageUrl} 
-                      className={`${styles.avatar} ${attendanceData[student.id] ? styles.presentAvatar : styles.absentAvatar}`}
+                      sx={`${styles.avatar} ${attendanceData[student.id] ? styles.presentAvatar : styles.absentAvatar}`}
                     >
                       {student.name.charAt(0)}
                     </Avatar>
@@ -186,11 +186,11 @@ const AttendanceDialog = ({
                   <ListItemText
                     primary={student.name}
                     secondary={
-                      <Box className={styles.studentDetails}>
-                        <Typography variant="body2" component="span" className={styles.studentAge}>
+                      <Box sx={styles.studentDetails}>
+                        <Typography variant="body2" component="span" sx={styles.studentAge}>
                           גיל: {student.age}
                         </Typography>
-                        <Divider orientation="vertical" flexItem className={styles.detailDivider} />
+                        <Divider orientation="vertical" flexItem sx={styles.detailDivider} />
                         <Chip
                           label={`נוכחות: ${student.attendanceRate}%`}
                           size="small"
@@ -199,11 +199,11 @@ const AttendanceDialog = ({
                             student.attendanceRate > 75 ? 'primary' :
                             student.attendanceRate > 60 ? 'warning' : 'error'
                           }
-                          className={styles.attendanceRateChip}
+                          sx={styles.attendanceRateChip}
                         />
                       </Box>
                     }
-                    className={styles.studentText}
+                    sx={styles.studentText}
                   />
                   <Checkbox
                     edge="end"
@@ -211,7 +211,7 @@ const AttendanceDialog = ({
                     onChange={() => onAttendanceChange(student.id)}
                     icon={<Cancel color="error" />}
                     checkedIcon={<CheckCircle color="success" />}
-                    className={styles.attendanceCheckbox}
+                    sx={styles.attendanceCheckbox}
                   />
                 </ListItem>
                 {index < students.length - 1 && <Divider />}
@@ -220,9 +220,9 @@ const AttendanceDialog = ({
           </List>
         </Paper>
         
-        <Box className={styles.noteSection}>
-          <Typography variant="subtitle2" className={styles.noteSectionTitle}>
-            <Comment className={styles.titleIcon} />
+        <Box sx={styles.noteSection}>
+          <Typography variant="subtitle2" sx={styles.noteSectionTitle}>
+            <Comment sx={styles.titleIcon} />
             הערות לשיעור
           </Typography>
           <TextField
@@ -233,19 +233,19 @@ const AttendanceDialog = ({
             value={note}
             onChange={(e) => setNote(e.target.value)}
             variant="outlined"
-            className={styles.noteTextField}
+            sx={styles.noteTextField}
           />
         </Box>
         
-        <Box className={styles.attendanceStats}>
-          <Typography variant="body2" className={styles.statsText}>
+        <Box sx={styles.attendanceStats}>
+          <Typography variant="body2" sx={styles.statsText}>
             סה"כ נוכחים: {presentCount} מתוך {totalStudents} ({attendancePercentage}%)
           </Typography>
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${attendancePercentage}%` }}
             transition={{ duration: 0.5 }}
-            className={`${styles.progressBar} ${
+            sx={`${styles.progressBar} ${
               attendancePercentage > 80 ? styles.highAttendance :
               attendancePercentage > 60 ? styles.mediumAttendance :
               styles.lowAttendance
@@ -254,19 +254,19 @@ const AttendanceDialog = ({
         </Box>
       </DialogContent>
       
-      <DialogActions className={styles.dialogActions}>
+      <DialogActions sx={styles.dialogActions}>
         <Button
           onClick={onClose}
           variant="outlined"
           color="error"
-          className={styles.cancelButton}
+          sx={styles.cancelButton}
         >
           ביטול
         </Button>
         <Button
           variant="contained"
           startIcon={<Save />}
-          className={styles.saveButton}
+          sx={styles.saveButton}
           onClick={handleSave}
         >
           שמור נוכחות

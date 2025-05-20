@@ -213,14 +213,14 @@ const AttendanceCalendar = () => {
     }
 
     return (
-      <Box className={styles.calendarHeader}>
+      <Box sx={styles.calendarHeader}>
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} md={4}>
-            <Box className={styles.dateNavigation}>
+            <Box sx={styles.dateNavigation}>
               <IconButton onClick={() => handleDateChange('prev')} color="primary">
                 <NavigateBefore />
               </IconButton>
-              <Typography variant="h5" className={styles.dateTitle}>
+              <Typography variant="h5" sx={styles.dateTitle}>
                 {title}
               </Typography>
               <IconButton onClick={() => handleDateChange('next')} color="primary">
@@ -230,7 +230,7 @@ const AttendanceCalendar = () => {
                 <IconButton 
                   onClick={() => setCurrentDate(new Date())} 
                   color="primary" 
-                  className={styles.todayButton}
+                  sx={styles.todayButton}
                 >
                   <Today />
                 </IconButton>
@@ -238,11 +238,11 @@ const AttendanceCalendar = () => {
             </Box>
           </Grid>
           
-          <Grid item xs={12} md={4} className={styles.viewModeSwitcher}>
+          <Grid item xs={12} md={4} sx={styles.viewModeSwitcher}>
             <Tabs 
               value={viewMode} 
               onChange={handleViewModeChange}
-              className={styles.tabs}
+              sx={styles.tabs}
             >
               <Tab value="month" label="חודש" icon={<CalendarMonth />} />
               <Tab value="week" label="שבוע" icon={<Event />} />
@@ -251,7 +251,7 @@ const AttendanceCalendar = () => {
           </Grid>
           
           <Grid item xs={12} md={4}>
-            <Box className={styles.searchAndFilter}>
+            <Box sx={styles.searchAndFilter}>
               <TextField
                 placeholder="חיפוש חוג או סניף..."
                 variant="outlined"
@@ -265,14 +265,14 @@ const AttendanceCalendar = () => {
                     </InputAdornment>
                   ),
                 }}
-                className={styles.searchField}
+                sx={styles.searchField}
               />
               
               <Button
                 variant="outlined"
                 color="primary"
                 startIcon={<FilterList />}
-                className={styles.filterButton}
+                sx={styles.filterButton}
               >
                 סינון
               </Button>
@@ -287,9 +287,9 @@ const AttendanceCalendar = () => {
   const renderCalendarContent = () => {
     if (loading) {
       return (
-        <Box className={styles.loadingContainer}>
+        <Box sx={styles.loadingContainer}>
           <CircularProgress size={60} thickness={4} />
-          <Typography variant="h6" className={styles.loadingText}>
+          <Typography variant="h6" sx={styles.loadingText}>
             טוען נתונים...
           </Typography>
         </Box>
@@ -304,16 +304,19 @@ const AttendanceCalendar = () => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.3 }}
-          className={styles.calendarContainer}
+          sx={styles.calendarContainer}
         >
-         {viewMode === 'month' && (
+       {viewMode === 'month' && (
   <MonthlyCalendar 
     currentDate={currentDate}
     onDateSelect={handleDateSelect}
-    events={groups || []} // הוספת ערך ברירת מחדל
-    attendanceRecords={attendanceRecords || {}}
+    groups={groups || []}
+    courses={courses || []}
+    branches={branches || []}
+    savedAttendanceRecords={attendanceRecords || {}}
   />
 )}
+
           
           {viewMode === 'week' && (
             <WeeklyCalendar 
@@ -338,26 +341,26 @@ const AttendanceCalendar = () => {
   };
 
   return (
-    <Container maxWidth="xl" className={styles.root}>
-      <Box className={styles.pageContainer}>
+    <Container maxWidth="xl" sx={styles.root}>
+      <Box sx={styles.pageContainer}>
          
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.5 }}
-          className={styles.pageHeader}
+          sx={styles.pageHeader}
         >
-          <Typography variant={isMobile ? "h4" : "h3"} className={styles.pageTitle}>
+          <Typography variant={isMobile ? "h4" : "h3"} sx={styles.pageTitle}>
             לוח נוכחות חוגים
           </Typography>
-          <Typography variant="h6" className={styles.pageSubtitle}>
+          <Typography variant="h6" sx={styles.pageSubtitle}>
             ניהול ומעקב אחר נוכחות תלמידים בחוגים
           </Typography>
         </motion.div>
         
         {renderCalendarHeader()}
         
-        <Paper className={styles.calendarPaper}>
+        <Paper sx={styles.calendarPaper}>
           {renderCalendarContent()}
         </Paper>
         
@@ -398,7 +401,7 @@ const AttendanceCalendar = () => {
           <Alert
             onClose={handleCloseNotification}
             severity={notification.severity}
-            className={styles.alert}
+            sx={styles.alert}
           >
             {notification.message}
           </Alert>

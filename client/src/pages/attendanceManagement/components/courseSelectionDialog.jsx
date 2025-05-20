@@ -119,9 +119,9 @@ const CourseSelectionDialog = ({
     }
     
     return (
-      <DialogTitle className={styles.dialogTitle}>
-        <Box className={styles.dialogTitleContent}>
-          <Typography variant="h6" className={styles.dialogTitleText}>
+      <DialogTitle sx={styles.dialogTitle}>
+        <Box sx={styles.dialogTitleContent}>
+          <Typography variant="h6" sx={styles.dialogTitleText}>
             {title}
           </Typography>
           <IconButton
@@ -129,16 +129,16 @@ const CourseSelectionDialog = ({
             color="inherit"
             onClick={onClose}
             aria-label="close"
-            className={styles.closeButton}
+            sx={styles.closeButton}
           >
             <Close />
           </IconButton>
         </Box>
         {step > 1 && (
           <Button
-            startIcon={<NavigateNext className={styles.backButtonIcon} />}
+            startIcon={<NavigateNext sx={styles.backButtonIcon} />}
             onClick={handleBack}
-            className={styles.backButton}
+            sx={styles.backButton}
           >
             חזור
           </Button>
@@ -150,24 +150,24 @@ const CourseSelectionDialog = ({
   // Render courses selection
   const renderCoursesSelection = () => {
     return (
-      <Grid container spacing={2} className={styles.selectionGrid}>
+      <Grid container spacing={2} sx={styles.selectionGrid}>
         {courses.map((course) => (
           <Grid item xs={12} sm={6} md={4} key={course.courseId}>
             <Card 
               component={motion.div}
               whileHover={{ scale: 1.03, y: -5 }}
               whileTap={{ scale: 0.98 }}
-              className={styles.courseCard}
+              sx={styles.courseCard}
               onClick={() => handleCourseSelect(course)}
             >
-              <CardContent className={styles.courseCardContent}>
-                <Avatar className={styles.courseAvatar}>
+              <CardContent sx={styles.courseCardContent}>
+                <Avatar sx={styles.courseAvatar}>
                   <School />
                 </Avatar>
-                <Typography variant="h6" className={styles.courseName}>
+                <Typography variant="h6" sx={styles.courseName}>
                   {course.couresName}
                 </Typography>
-                <Typography variant="body2" className={styles.courseDescription}>
+                <Typography variant="body2" sx={styles.courseDescription}>
                   {course.description || 'אין תיאור'}
                 </Typography>
               </CardContent>
@@ -189,7 +189,7 @@ const CourseSelectionDialog = ({
     );
     
     return (
-      <List className={styles.branchesList}>
+      <List sx={styles.branchesList}>
         {branchesWithCourse.map((branch) => (
           <Paper 
             key={branch.branchId} 
@@ -197,22 +197,22 @@ const CourseSelectionDialog = ({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className={styles.branchItem}
+            sx={styles.branchItem}
           >
             <ListItem 
               button 
               onClick={() => handleBranchSelect(branch)}
-              className={styles.branchListItem}
+              sx={styles.branchListItem}
             >
-              <ListItemIcon className={styles.branchIcon}>
+              <ListItemIcon sx={styles.branchIcon}>
                 <LocationOn color="primary" />
               </ListItemIcon>
               <ListItemText 
                 primary={branch.name} 
                 secondary={branch.city}
-                className={styles.branchText}
+                sx={styles.branchText}
               />
-              <NavigateNext className={styles.nextIcon} />
+              <NavigateNext sx={styles.nextIcon} />
             </ListItem>
           </Paper>
         ))}
@@ -223,7 +223,7 @@ const CourseSelectionDialog = ({
   // Render groups selection
   const renderGroupsSelection = () => {
     return (
-      <List className={styles.groupsList}>
+      <List sx={styles.groupsList}>
         {filteredGroups.length > 0 ? (
           filteredGroups.map((group) => (
             <Paper 
@@ -232,43 +232,43 @@ const CourseSelectionDialog = ({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className={styles.groupItem}
+              sx={styles.groupItem}
             >
               <ListItem 
                 button 
                 onClick={() => handleGroupSelect(group)}
-                className={styles.groupListItem}
+                sx={styles.groupListItem}
               >
-                <ListItemIcon className={styles.groupIcon}>
+                <ListItemIcon sx={styles.groupIcon}>
                   <Group color="primary" />
                 </ListItemIcon>
                 <ListItemText 
                   primary={`קבוצה ${group.groupName}`}
                   secondary={
-                    <Box className={styles.groupDetails}>
-                      <Box className={styles.groupDetail}>
-                        <AccessTime fontSize="small" className={styles.detailIcon} />
+                    <Box sx={styles.groupDetails}>
+                      <Box sx={styles.groupDetail}>
+                        <AccessTime fontSize="small" sx={styles.detailIcon} />
                         <Typography variant="body2" component="span">
                           {group.hour ? group.hour.toString() : 'שעה לא צוינה'}
                         </Typography>
                       </Box>
-                      <Box className={styles.groupDetail}>
-                        <Person fontSize="small" className={styles.detailIcon} />
+                      <Box sx={styles.groupDetail}>
+                        <Person fontSize="small" sx={styles.detailIcon} />
                         <Typography variant="body2" component="span">
                           {group.maxStudents || '?'} תלמידים
                         </Typography>
                       </Box>
                     </Box>
                   }
-                  className={styles.groupText}
+                  sx={styles.groupText}
                 />
-                <NavigateNext className={styles.nextIcon} />
+                <NavigateNext sx={styles.nextIcon} />
               </ListItem>
             </Paper>
           ))
         ) : (
-          <Box className={styles.noGroupsContainer}>
-            <Typography variant="body1" className={styles.noGroupsText}>
+          <Box sx={styles.noGroupsContainer}>
+            <Typography variant="body1" sx={styles.noGroupsText}>
               אין קבוצות זמינות ביום זה עבור החוג והסניף שנבחרו
             </Typography>
           </Box>
@@ -283,12 +283,12 @@ const CourseSelectionDialog = ({
       onClose={onClose}
       maxWidth="md"
       fullWidth
-      className={styles.dialog}
-      PaperProps={{ className: styles.dialogPaper }}
+      sx={styles.dialog}
+      PaperProps={{ sx: styles.dialogPaper }}
     >
       {renderDialogTitle()}
       
-      <DialogContent className={styles.dialogContent}>
+      <DialogContent sx={styles.dialogContent}>
         <AnimatePresence mode="wait">
           <motion.div
             key={step}
@@ -304,12 +304,12 @@ const CourseSelectionDialog = ({
         </AnimatePresence>
       </DialogContent>
       
-      <DialogActions className={styles.dialogActions}>
+      <DialogActions sx={styles.dialogActions}>
         <Button 
           onClick={onClose} 
           variant="outlined" 
           color="primary"
-          className={styles.cancelButton}
+          sx={styles.cancelButton}
         >
           סגור
         </Button>

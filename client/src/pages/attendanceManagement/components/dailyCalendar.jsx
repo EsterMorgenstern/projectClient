@@ -80,12 +80,12 @@ const DailyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords })
     const hebrewDate = getHebrewDate(currentDate);
     
     return (
-      <Box className={`${styles.dayViewHeader} ${isToday(currentDate) ? styles.todayHeader : ''}`}>
+      <Box sx={`${styles.dayViewHeader} ${isToday(currentDate) ? styles.todayHeader : ''}`}>
         <Box>
-          <Typography variant="h6" className={styles.dayViewTitle}>
+          <Typography variant="h6" sx={styles.dayViewTitle}>
             {dayName}, {formattedDate}
           </Typography>
-          <Typography variant="body2" className={styles.dayViewHebrewDate}>
+          <Typography variant="body2" sx={styles.dayViewHebrewDate}>
             {hebrewDate}
           </Typography>
         </Box>
@@ -94,25 +94,25 @@ const DailyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords })
           label={`${dayEvents.length} חוגים`} 
           icon={<School />} 
           color="primary" 
-          className={styles.eventsCountChip}
+          sx={styles.eventsCountChip}
         />
       </Box>
     );
   };
   
   return (
-    <Box className={styles.dailyCalendarRoot}>
+    <Box sx={styles.dailyCalendarRoot}>
       {renderDayHeader()}
       
       {dayEvents.length > 0 ? (
-        <TableContainer component={Paper} className={styles.dailyTableContainer}>
+        <TableContainer component={Paper} sx={styles.dailyTableContainer}>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell className={styles.timeHeaderCell}>
+                <TableCell sx={styles.timeHeaderCell}>
                   שעה
                 </TableCell>
-                <TableCell className={styles.eventsHeaderCell}>
+                <TableCell sx={styles.eventsHeaderCell}>
                   חוגים
                 </TableCell>
               </TableRow>
@@ -123,12 +123,12 @@ const DailyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords })
                 return (
                   <TableRow 
                     key={timeIndex} 
-                    className={`${styles.timeSlotRow} ${timeIndex % 2 === 0 ? styles.evenRow : ''}`}
+                    sx={`${styles.timeSlotRow} ${timeIndex % 2 === 0 ? styles.evenRow : ''}`}
                   >
-                    <TableCell className={styles.timeCell}>
+                    <TableCell sx={styles.timeCell}>
                       {timeSlot}
                     </TableCell>
-                    <TableCell className={styles.dailyEventsCell}>
+                    <TableCell sx={styles.dailyEventsCell}>
                       {eventsAtTime.length > 0 ? (
                         <Grid container spacing={2}>
                           {eventsAtTime.map((event, eventIndex) => (
@@ -137,12 +137,12 @@ const DailyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords })
                                 component={motion.div}
                                 whileHover={{ scale: 1.03, y: -5 }}
                                 whileTap={{ scale: 0.98 }}
-                                className={`${styles.dailyEventCard} ${event.hasAttendance ? styles.attendanceRecordedCard : ''}`}
+                                sx={`${styles.dailyEventCard} ${event.hasAttendance ? styles.attendanceRecordedCard : ''}`}
                                 onClick={() => onDateSelect(currentDate)}
                               >
-                                <CardContent className={styles.dailyEventCardContent}>
-                                  <Box className={styles.dailyEventHeader}>
-                                    <Typography variant="subtitle1" className={styles.dailyEventTitle}>
+                                <CardContent sx={styles.dailyEventCardContent}>
+                                  <Box sx={styles.dailyEventHeader}>
+                                    <Typography variant="subtitle1" sx={styles.dailyEventTitle}>
                                       {event.courseName || 'חוג'} - קבוצה {event.groupName}
                                     </Typography>
                                     {event.hasAttendance && (
@@ -150,25 +150,25 @@ const DailyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords })
                                     )}
                                   </Box>
                                   
-                                  <Divider className={styles.eventDivider} />
+                                  <Divider sx={styles.eventDivider} />
                                   
-                                  <Box className={styles.eventDetailsList}>
-                                    <Box className={styles.eventDetailItem}>
-                                      <AccessTime fontSize="small" className={styles.eventDetailIcon} />
+                                  <Box sx={styles.eventDetailsList}>
+                                    <Box sx={styles.eventDetailItem}>
+                                      <AccessTime fontSize="small" sx={styles.eventDetailIcon} />
                                       <Typography variant="body2">
                                         {event.hour}
                                       </Typography>
                                     </Box>
                                     
-                                    <Box className={styles.eventDetailItem}>
-                                      <LocationOn fontSize="small" className={styles.eventDetailIcon} />
+                                    <Box sx={styles.eventDetailItem}>
+                                      <LocationOn fontSize="small" sx={styles.eventDetailIcon} />
                                       <Typography variant="body2">
                                         {event.branchName || 'סניף'}
                                       </Typography>
                                     </Box>
                                     
-                                    <Box className={styles.eventDetailItem}>
-                                      <Group fontSize="small" className={styles.eventDetailIcon} />
+                                    <Box sx={styles.eventDetailItem}>
+                                      <Group fontSize="small" sx={styles.eventDetailIcon} />
                                       <Typography variant="body2">
                                         {event.maxStudents || '?'} תלמידים
                                       </Typography>
@@ -176,9 +176,9 @@ const DailyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords })
                                   </Box>
                                   
                                   {event.hasAttendance && (
-                                    <Box className={styles.attendanceInfo}>
-                                      <Divider className={styles.eventDivider} />
-                                      <Typography variant="body2" className={styles.attendanceText}>
+                                    <Box sx={styles.attendanceInfo}>
+                                      <Divider sx={styles.eventDivider} />
+                                      <Typography variant="body2" sx={styles.attendanceText}>
                                         נוכחים: {event.presentCount} מתוך {event.maxStudents || '?'}
                                       </Typography>
                                     </Box>
@@ -189,8 +189,8 @@ const DailyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords })
                           ))}
                         </Grid>
                       ) : (
-                        <Box className={styles.noEventsContainer}>
-                          <Typography variant="body2" className={styles.noEventsText}>
+                        <Box sx={styles.noEventsContainer}>
+                          <Typography variant="body2" sx={styles.noEventsText}>
                             אין חוגים בשעה זו
                           </Typography>
                         </Box>
@@ -203,12 +203,12 @@ const DailyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords })
           </Table>
         </TableContainer>
       ) : (
-        <Box className={styles.noEventsForDayContainer}>
-          <Info fontSize="large" className={styles.noEventsIcon} />
-          <Typography variant="h6" className={styles.noEventsTitle}>
+        <Box sx={styles.noEventsForDayContainer}>
+          <Info fontSize="large" sx={styles.noEventsIcon} />
+          <Typography variant="h6" sx={styles.noEventsTitle}>
             אין חוגים ביום זה
           </Typography>
-          <Typography variant="body2" className={styles.noEventsSubtitle}>
+          <Typography variant="body2" sx={styles.noEventsSubtitle}>
             ניתן להוסיף חוגים חדשים דרך מסך ניהול החוגים
           </Typography>
         </Box>
