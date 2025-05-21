@@ -3,91 +3,73 @@ export const styles = {
   // Common styles
   calendarRoot: {
     width: '100%',
+    borderRadius: '16px',
+    overflow: 'hidden',
   },
   
   // Monthly calendar styles
-  weekDaysHeader:(theme) => ({
-    marginBottom: theme.spacing(1),
+  weekDaysHeader: (theme) => ({
+    marginBottom: theme.spacing(2),
     textAlign: 'center',
+    padding: theme.spacing(1.5, 0),
   }),
   weekDayCell: (theme) => ({
     padding: theme.spacing(1),
   }),
   weekDayText: {
-    fontWeight: 'bold',
-    color: '#1E293B',
+    fontSize: '0.95rem',
+    textAlign: 'center',
   },
   sabbathDay: {
     color: '#E11D48',
   },
   daysGrid: {
     width: '100%',
+    gap: '8px',
   },
-  dayCell:(theme) => ({
-    padding: theme.spacing(1, 1, 2, 1),
+  dayCell: (theme) => ({
+    padding: theme.spacing(1.5, 1, 2, 1),
     height: {
-      xs: 100,
-      sm: 120,
-      md: 140,
+      xs: 120,
+      sm: 140,
+      md: 160,
     },
     borderRadius: theme.shape.borderRadius * 2,
     cursor: 'pointer',
-    position: 'relative',
-    overflow: 'hidden',
-    backgroundColor: 'white',
-    border: '1px solid #E2E8F0',
-    transition: 'all 0.2s ease',
-    '&:hover': {
-      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-      backgroundColor: 'rgba(241, 245, 249, 0.5)',
-    },
+    margin: '4px',
+    transition: 'all 0.3s ease',
   }),
-  outsideMonthDay: {
-    opacity: 0.6,
-    backgroundColor: 'rgba(241, 245, 249, 0.7)',
-  },
-  todayCell: {
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-    border: '2px solid #3B82F6',
-    '&:hover': {
-      backgroundColor: 'rgba(59, 130, 246, 0.15)',
-    },
-  },
-  hasAttendanceCell: {
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    border: '2px solid rgba(16, 185, 129, 0.5)',
-    '&:hover': {
-      backgroundColor: 'rgba(16, 185, 129, 0.15)',
-    },
-  },
   dayHeader: (theme) => ({
     display: 'flex',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: theme.spacing(1),
+    padding: theme.spacing(0.5, 0),
   }),
   dayNumber: {
-    color: 'text.primary',
+    fontSize: '1.2rem',
   },
-  todayNumber: {
-    color: '#3B82F6',
-    fontWeight: 'bold',
-  },
-  hasAttendanceNumber: {
-    color: '#10B981',
-    fontWeight: 'bold',
-  },
-  hebrewDate:(theme) => ({
-    color: 'text.secondary',
+  hebrewDate: (theme) => ({
+    fontSize: '0.7rem',
+    [theme.breakpoints.down('sm')]: {
+      fontSize: '0.6rem',
+    },
+    lineHeight: 1,
+    marginTop: '2px',
+  }),
+  dayOfWeek: (theme) => ({
     fontSize: '0.75rem',
     [theme.breakpoints.down('sm')]: {
       fontSize: '0.65rem',
     },
+    fontWeight: 500,
   }),
   eventsContainer: (theme) => ({
     marginTop: theme.spacing(1),
     maxHeight: {
-      xs: 60,
-      sm: 70,
+      xs: 70,
+      sm: 80,
+      md: 90,
     },
     overflow: 'hidden',
     display: 'flex',
@@ -101,35 +83,59 @@ export const styles = {
       xs: '0.65rem',
       sm: '0.75rem',
     },
-    backgroundColor: 'rgba(99, 102, 241, 0.2)',
-    color: '#4338CA',
     '& .MuiChip-label': {
       padding: theme.spacing(0, 1),
       whiteSpace: 'nowrap',
       overflow: 'hidden',
       textOverflow: 'ellipsis',
     },
+    '& .MuiChip-icon': {
+      marginLeft: theme.spacing(0.5),
+      marginRight: theme.spacing(-0.5),
+    },
+    transition: 'all 0.2s ease',
+    '&:hover': {
+      transform: 'translateX(-2px)',
+    },
   }),
-  attendanceRecorded: {
-    backgroundColor: 'rgba(16, 185, 129, 0.2)',
-    color: '#065F46',
-    fontWeight: 'bold',
-  },
-  moreEventsText:(theme) => ({
+  moreEventsText: (theme) => ({
     marginTop: theme.spacing(0.5),
     textAlign: 'center',
-    color: 'text.secondary',
+    fontSize: '0.7rem',
+    fontWeight: 500,
+    borderRadius: '4px',
+    padding: '2px 4px',
   }),
+  attendanceBadge: {
+    position: 'absolute',
+    top: '8px',
+    right: '8px',
+    zIndex: 2,
+  },
+  percentageBadge: {
+    '& .MuiBadge-badge': {
+      fontSize: '0.65rem',
+      height: '18px',
+      minWidth: '18px',
+      padding: '0 4px',
+      fontWeight: 'bold',
+    },
+  },
   
-  // Weekly calendar styles
+  
   weeklyCalendarRoot: {
     width: '100%',
     overflowX: 'auto',
+    borderRadius: '12px',
+    boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+    backgroundColor: 'white',
+    padding: '16px',
   },
   tableContainer: (theme) => ({
     boxShadow: 'none',
     border: '1px solid #E2E8F0',
     borderRadius: theme.shape.borderRadius * 2,
+    overflow: 'hidden',
   }),
   timeHeaderCell: {
     width: '80px',
@@ -183,17 +189,12 @@ export const styles = {
   todayCell: {
     backgroundColor: 'rgba(59, 130, 246, 0.05)',
   },
-  weeklyEventsContainer:(theme) => ({
+  weeklyEventsContainer: (theme) => ({
     display: 'flex',
     flexDirection: 'column',
     gap: theme.spacing(0.5),
   }),
   weeklyEventCard: (theme) => ({
-    padding: theme.spacing(1),
-    borderRadius: theme.shape.borderRadius,
-    backgroundColor: 'rgba(99, 102, 241, 0.2)',
-    border: '1px solid rgba(99, 102, 241, 0.5)',
-       weeklyEventCard: {
     padding: theme.spacing(1),
     borderRadius: theme.shape.borderRadius,
     backgroundColor: 'rgba(99, 102, 241, 0.2)',
@@ -206,7 +207,7 @@ export const styles = {
     '&:hover': {
       transform: 'scale(1.02)'
     }
-  }}),
+  }),
   attendanceRecordedCard: {
     backgroundColor: 'rgba(16, 185, 129, 0.2)',
     border: '1px solid rgba(16, 185, 129, 0.5)',
@@ -242,6 +243,10 @@ export const styles = {
   // Daily calendar styles
   dailyCalendarRoot: {
     width: '100%',
+    borderRadius: '12px',
+    boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+    backgroundColor: 'white',
+    padding: '16px',
   },
   dayViewHeader: (theme) => ({
     marginBottom: theme.spacing(3),
@@ -279,12 +284,17 @@ export const styles = {
     boxShadow: 'none',
     border: '1px solid #E2E8F0',
     borderRadius: theme.shape.borderRadius * 2,
+    overflow: 'hidden',
   }),
   eventsHeaderCell: {
     backgroundColor: '#F8FAFC',
     borderBottom: '2px solid #E2E8F0',
     fontWeight: 'bold',
   },
+
+  
+
+
   timeSlotRow: {
     height: 'auto',
   },
@@ -302,7 +312,7 @@ export const styles = {
       transform: 'translateY(-2px)'
     }
   }),
-  dailyEventCardContent:(theme) => ({
+  dailyEventCardContent: (theme) => ({
     padding: theme.spacing(2),
   }),
   dailyEventHeader: (theme) => ({
@@ -345,7 +355,7 @@ export const styles = {
   noEventsText: {
     color: 'text.secondary',
   },
-  noEventsForDayContainer:(theme) => ({
+  noEventsForDayContainer: (theme) => ({
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
@@ -366,4 +376,3 @@ export const styles = {
     marginTop: theme.spacing(1),
   }),
 }
-
