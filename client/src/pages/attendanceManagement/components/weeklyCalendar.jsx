@@ -1,189 +1,7 @@
-// import React, { useState, useEffect } from 'react';
-// import { 
-//   Box, Table, TableBody, TableCell, TableContainer, 
-//   TableHead, TableRow, Paper, Typography, Chip, 
-//   Tooltip, useMediaQuery, useTheme 
-// } from '@mui/material';
-// import { motion } from 'framer-motion';
-// import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isSameDay } from 'date-fns';
-// import { he } from 'date-fns/locale';
-// import { AccessTime, LocationOn, CheckCircle } from '@mui/icons-material';
-// import { styles } from '../styles/calendarStyles';
-
-// // Hebrew date utilities
-// const getHebrewDate = (date) => {
-//   // Placeholder - use a proper Hebrew calendar library in production
-//   return "כ״ז אייר";
-// };
-
-// const WeeklyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords }) => {
-//   const theme = useTheme();
-//   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  
-//   const [weekDays, setWeekDays] = useState([]);
-//   const [timeSlots, setTimeSlots] = useState([]);
-  
-//   // Generate week days and time slots
-//   useEffect(() => {
-//     // Get days of the week
-//     const start = startOfWeek(currentDate, { weekStartsOn: 0 });
-//     const end = endOfWeek(currentDate, { weekStartsOn: 0 });
-//     const days = eachDayOfInterval({ start, end });
-    
-//     // Process days with events
-//     const processedDays = days.map(day => {
-//       // Find events for this day
-//       const dayEvents = events.filter(event => {
-//         // In a real app, match the day of week with the event's day
-//         return day.getDay() === new Date(event.dayOfWeek === "ראשון" ? 0 : 
-//                                          event.dayOfWeek === "שני" ? 1 :
-//                                          event.dayOfWeek === "שלישי" ? 2 :
-//                                          event.dayOfWeek === "רביעי" ? 3 :
-//                                          event.dayOfWeek === "חמישי" ? 4 :
-//                                          event.dayOfWeek === "שישי" ? 5 : 6).getDay();
-//       });
-      
-//       return {
-//         date: day,
-//         events: dayEvents,
-//         isToday: isToday(day)
-//       };
-//     });
-    
-//     setWeekDays(processedDays);
-    
-//     // Generate time slots from 8:00 to 20:00
-//     const slots = [];
-//     for (let hour = 8; hour <= 20; hour++) {
-//       slots.push(`${hour.toString().padStart(2, '0')}:00`);
-//     }
-//     setTimeSlots(slots);
-    
-//   }, [currentDate, events]);
-  
-//   // Get events for a specific time slot on a specific day
-//   const getEventsAtTime = (day, timeSlot) => {
-//     return day.events.filter(event => {
-//       // In a real app, you would compare the event's time with the time slot
-//       // For demo, we'll use the hour part of the time slot
-//       const eventHour = event.hour ? event.hour.split(':')[0] : null;
-//       const slotHour = timeSlot.split(':')[0];
-//       return eventHour === slotHour;
-//     });
-//   };
-  
-//   // Check if attendance was recorded for an event
-//   const hasAttendanceRecord = (event, date) => {
-//     const dateStr = format(date, 'yyyy-MM-dd');
-//     return attendanceRecords[`${dateStr}-${event.groupId}`];
-//   };
-  
-//   return (
-//     <Box sx={styles.weeklyCalendarRoot}>
-//       <TableContainer component={Paper} sx={styles.tableContainer}>
-//         <Table stickyHeader>
-//           <TableHead>
-//             <TableRow>
-//               <TableCell sx={styles.timeHeaderCell}>
-//                 שעה
-//               </TableCell>
-//               {weekDays.map((day, index) => (
-//                 <TableCell 
-//                   key={index} 
-//                   align="center"
-//                   sx={`${styles.dayHeaderCell} ${day.isToday ? styles.todayHeaderCell : ''}`}
-//                 >
-//                   <Box sx={styles.dayHeaderContent}>
-//                     <Typography variant="subtitle2" sx={styles.dayName}>
-//                       {format(day.date, 'EEEE', { locale: he })}
-//                     </Typography>
-//                     <Typography variant="body2" sx={styles.dayDate}>
-//                       {format(day.date, 'd/M')}
-//                     </Typography>
-//                     <Typography variant="caption" sx={styles.hebrewDateSmall}>
-//                       {getHebrewDate(day.date)}
-//                     </Typography>
-//                   </Box>
-//                 </TableCell>
-//               ))}
-//             </TableRow>
-//           </TableHead>
-//           <TableBody>
-//             {timeSlots.map((timeSlot, timeIndex) => (
-//               <TableRow key={timeIndex} sx={timeIndex % 2 === 0 ? styles.evenRow : ''}>
-//                 <TableCell sx={styles.timeCell}>
-//                   {timeSlot}
-//                 </TableCell>
-//                 {weekDays.map((day, dayIndex) => {
-//                   const eventsAtTime = getEventsAtTime(day, timeSlot);
-//                   return (
-//                     <TableCell 
-//                       key={dayIndex} 
-//                       align="center"
-//                       sx={`${styles.eventCell} ${day.isToday ? styles.todayCell : ''}`}
-//                       onClick={() => eventsAtTime.length > 0 && onDateSelect(day.date)}
-//                     >
-//                       {eventsAtTime.length > 0 ? (
-//                         <Box sx={styles.weeklyEventsContainer}>
-//                           {eventsAtTime.map((event, eventIndex) => {
-//                             const hasAttendance = hasAttendanceRecord(event, day.date);
-//                             return (
-//                               <motion.div
-//                                 key={eventIndex}
-//                                 whileHover={{ scale: 1.03 }}
-//                                 whileTap={{ scale: 0.98 }}
-//                                 sx={`${styles.weeklyEventCard} ${hasAttendance ? styles.attendanceRecordedCard : ''}`}
-//                               >
-//                                 <Typography 
-//                                   variant="body2" 
-//                                   sx={styles.eventTitle}
-//                                 >
-//                                   {event.courseName || 'חוג'} - {event.groupName}
-//                                 </Typography>
-//                                 <Box sx={styles.eventDetails}>
-//                                   <Box sx={styles.eventDetail}>
-//                                     <AccessTime fontSize="small" sx={styles.eventIcon} />
-//                                     <Typography variant="caption">
-//                                       {event.hour}
-//                                     </Typography>
-//                                   </Box>
-//                                   <Box sx={styles.eventDetail}>
-//                                     <LocationOn fontSize="small" sx={styles.eventIcon} />
-//                                     <Typography variant="caption">
-//                                       {event.branchName || 'סניף'}
-//                                     </Typography>
-//                                   </Box>
-//                                 </Box>
-//                                 {hasAttendance && (
-//                                   <Chip
-//                                     size="small"
-//                                     icon={<CheckCircle fontSize="small" />}
-//                                     label={`נוכחות: ${hasAttendance.presentCount || 0}`}
-//                                     sx={styles.attendanceChip}
-//                                   />
-//                                 )}
-//                               </motion.div>
-//                             );
-//                           })}
-//                         </Box>
-//                       ) : null}
-//                     </TableCell>
-//                   );
-//                 })}
-//               </TableRow>
-//             ))}
-//           </TableBody>
-//         </Table>
-//       </TableContainer>
-//     </Box>
-//   );
-// };
-
-// export default WeeklyCalendar;
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, Table, TableBody, TableCell, TableContainer, 
-  TableHead, TableRow, Paper, Typography, Chip, 
+import {
+  Box, Table, TableBody, TableCell, TableContainer,
+  TableHead, TableRow, Paper, Typography, Chip,
   Tooltip, useMediaQuery, useTheme, Avatar, Badge
 } from '@mui/material';
 import { motion } from 'framer-motion';
@@ -220,82 +38,104 @@ const getHebrewDate = (date) => {
   // זו המרה פשוטה לצורך הדגמה
   const day = date.getDate();
   const month = date.getMonth();
-  
+
   // מחזיר מחרוזת פשוטה של יום בחודש עברי
   // במציאות צריך להשתמש בספרייה אמיתית להמרה מדויקת
   return `כ"ז ${HEBREW_JEWISH_MONTHS[month].split('-')[0]}`;
 };
 
-const WeeklyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords }) => {
+const WeeklyCalendar = ({ 
+  currentDate, 
+  onDateSelect, 
+  groups, 
+  courses, 
+  branches, 
+  savedAttendanceRecords 
+}) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  
+
   const [weekDays, setWeekDays] = useState([]);
   const [timeSlots, setTimeSlots] = useState([]);
   const [monthColors, setMonthColors] = useState({});
-  
+
   // קביעת צבעי החודש הנוכחי
   useEffect(() => {
     const monthIndex = getMonth(currentDate);
     setMonthColors(MONTH_COLORS[monthIndex]);
   }, [currentDate]);
+
+ useEffect(() => {
+  // Get days of the week
+  const start = startOfWeek(currentDate, { weekStartsOn: 0 });
+  const end = endOfWeek(currentDate, { weekStartsOn: 0 });
+  const days = eachDayOfInterval({ start, end });
   
-  // Generate week days and time slots
-  useEffect(() => {
-    // Get days of the week
-    const start = startOfWeek(currentDate, { weekStartsOn: 0 });
-    const end = endOfWeek(currentDate, { weekStartsOn: 0 });
-    const days = eachDayOfInterval({ start, end });
+  // Process days with events
+  const processedDays = days.map(day => {
+    // המרת היום בשבוע למחרוזת בעברית
+    const hebrewDayOfWeek = format(day, 'EEEE', { locale: he });
     
-    // Process days with events
-    const processedDays = days.map(day => {
-      // Find events for this day
-      const dayEvents = events.filter(event => {
-        // In a real app, match the day of week with the event's day
-        return day.getDay() === new Date(event.dayOfWeek === "ראשון" ? 0 : 
-                                         event.dayOfWeek === "שני" ? 1 :
-                                         event.dayOfWeek === "שלישי" ? 2 :
-                                         event.dayOfWeek === "רביעי" ? 3 :
-                                         event.dayOfWeek === "חמישי" ? 4 :
-                                         event.dayOfWeek === "שישי" ? 5 : 6).getDay();
-      });
+    // סינון הקבוצות לפי היום בשבוע
+    const dayGroups = groups ? groups.filter(group => {
+      return group.dayOfWeek === hebrewDayOfWeek;
+    }).map(group => {
+      // הוספת מידע על הקורס והסניף
+      const course = courses.find(c => c.courseId === group.courseId);
+      const branch = branches.find(b => b.branchId === group.branchId);
       
       return {
-        date: day,
-        events: dayEvents,
-        isToday: isToday(day),
-        hebrewDate: getHebrewDate(day)
+        ...group,
+        courseName: course ? course.couresName : 'חוג לא ידוע',
+        branchName: branch ? branch.name : 'סניף לא ידוע'
       };
-    });
+    }) : [];
     
-    setWeekDays(processedDays);
-    
-    // Generate time slots from 8:00 to 20:00
-    const slots = [];
-    for (let hour = 8; hour <= 20; hour++) {
-      slots.push(`${hour.toString().padStart(2, '0')}:00`);
-    }
-    setTimeSlots(slots);
-    
-  }, [currentDate, events]);
+    return {
+      date: day,
+      events: dayGroups, // שימוש בקבוצות המעובדות
+      isToday: isToday(day),
+      hebrewDate: getHebrewDate(day)
+    };
+  });
   
+  setWeekDays(processedDays);
+  
+  // Generate time slots from 8:00 to 20:00
+  const slots = [];
+  for (let hour = 8; hour <= 20; hour++) {
+    slots.push(`${hour.toString().padStart(2, '0')}:00`);
+  }
+  setTimeSlots(slots);
+  
+}, [currentDate, groups, courses, branches]); // עדכון התלויות
+
   // Get events for a specific time slot on a specific day
-  const getEventsAtTime = (day, timeSlot) => {
-    return day.events.filter(event => {
-      // In a real app, you would compare the event's time with the time slot
-      // For demo, we'll use the hour part of the time slot
-      const eventHour = event.hour ? event.hour.split(':')[0] : null;
-      const slotHour = timeSlot.split(':')[0];
-      return eventHour === slotHour;
-    });
-  };
-  
-  // Check if attendance was recorded for an event
-  const hasAttendanceRecord = (event, date) => {
-    const dateStr = format(date, 'yyyy-MM-dd');
-    return attendanceRecords[`${dateStr}-${event.groupId}`];
-  };
-  
+const getEventsAtTime = (day, timeSlot) => {
+  return day.events.filter(event => {
+    // בדיקה אם יש שעה לאירוע
+    if (!event.hour) return false;
+    
+    // המרת השעה מהשרת (TimeOnly) למחרוזת שעה
+    const eventHourStr = event.hour.toString();
+    const eventHour = eventHourStr.split(':')[0];
+    const slotHour = timeSlot.split(':')[0];
+    
+    return eventHour === slotHour;
+  });
+};
+
+
+ // Check if attendance was recorded for an event
+const hasAttendanceRecord = (event, date) => {
+  const dateStr = format(date, 'yyyy-MM-dd');
+  const attendanceKey = `${dateStr}-${event.groupId}`;
+  return savedAttendanceRecords[attendanceKey];
+};
+
+
+
+
   // Render week header with dates
   const renderWeekHeader = () => {
     return (
@@ -320,14 +160,14 @@ const WeeklyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords }
         </Box>
         <Box sx={{ display: 'flex', gap: '8px' }}>
           {weekDays.map((day, index) => (
-            <Tooltip 
-              key={index} 
+            <Tooltip
+              key={index}
               title={format(day.date, 'EEEE, dd/MM', { locale: he })}
               arrow
             >
-              <Avatar 
-                sx={{ 
-                  width: 36, 
+              <Avatar
+                sx={{
+                  width: 36,
                   height: 36,
                   backgroundColor: day.isToday ? 'white' : `${monthColors.primary}80`,
                   color: day.isToday ? monthColors.primary : 'white',
@@ -345,19 +185,19 @@ const WeeklyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords }
       </Box>
     );
   };
-  
+
   // Create a simple hash function for consistent colors
   const getColorFromString = (str) => {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       hash = str.charCodeAt(i) + ((hash << 5) - hash);
     }
-    
+
     // Convert to hex color
     const hue = Math.abs(hash % 360);
     return `hsl(${hue}, 70%, 45%)`;
   };
-  
+
   return (
     <Box sx={{
       ...styles.weeklyCalendarRoot,
@@ -367,9 +207,9 @@ const WeeklyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords }
       boxShadow: '0 8px 30px rgba(0,0,0,0.08)'
     }}>
       {renderWeekHeader()}
-      
-      <TableContainer 
-        component={Paper} 
+
+      <TableContainer
+        component={Paper}
         sx={{
           ...styles.tableContainer,
           borderRadius: '12px',
@@ -380,7 +220,7 @@ const WeeklyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords }
         <Table stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell 
+              <TableCell
                 sx={{
                   ...styles.timeHeaderCell,
                   backgroundColor: monthColors.secondary,
@@ -396,8 +236,8 @@ const WeeklyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords }
                 </Typography>
               </TableCell>
               {weekDays.map((day, index) => (
-                <TableCell 
-                  key={index} 
+                <TableCell
+                  key={index}
                   align="center"
                   sx={{
                     ...styles.dayHeaderCell,
@@ -417,9 +257,9 @@ const WeeklyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords }
                     alignItems: 'center',
                     gap: '4px'
                   }}>
-                    <Typography 
-                      variant="subtitle1" 
-                      sx={{ 
+                    <Typography
+                      variant="subtitle1"
+                      sx={{
                         ...styles.dayName,
                         color: day.isToday ? monthColors.primary : monthColors.accent,
                         fontWeight: 'bold'
@@ -436,18 +276,18 @@ const WeeklyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords }
                       padding: day.isToday ? '4px 8px' : '0',
                       boxShadow: day.isToday ? '0 2px 8px rgba(0,0,0,0.1)' : 'none'
                     }}>
-                      <Typography 
-                        variant="h6" 
-                        sx={{ 
+                      <Typography
+                        variant="h6"
+                        sx={{
                           fontWeight: day.isToday ? 'bold' : 'medium',
                           color: day.isToday ? monthColors.primary : 'inherit'
                         }}
                       >
                         {format(day.date, 'd')}
                       </Typography>
-                      <Typography 
-                        variant="caption" 
-                        sx={{ 
+                      <Typography
+                        variant="caption"
+                        sx={{
                           ...styles.dayDate,
                           color: day.isToday ? monthColors.primary : 'text.secondary'
                         }}
@@ -455,9 +295,9 @@ const WeeklyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords }
                         {format(day.date, 'MM/yyyy')}
                       </Typography>
                     </Box>
-                    <Typography 
-                      variant="caption" 
-                      sx={{ 
+                    <Typography
+                      variant="caption"
+                      sx={{
                         ...styles.hebrewDateSmall,
                         color: day.isToday ? monthColors.primary : 'text.secondary',
                         fontWeight: day.isToday ? 'bold' : 'normal'
@@ -465,7 +305,7 @@ const WeeklyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords }
                     >
                       {day.hebrewDate}
                     </Typography>
-                    
+
                     {day.events.length > 0 && (
                       <Chip
                         size="small"
@@ -487,8 +327,8 @@ const WeeklyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords }
           </TableHead>
           <TableBody>
             {timeSlots.map((timeSlot, timeIndex) => (
-              <TableRow 
-                key={timeIndex} 
+              <TableRow
+                key={timeIndex}
                 sx={{
                   ...timeIndex % 2 === 0 ? styles.evenRow : {},
                   '&:hover': {
@@ -496,7 +336,7 @@ const WeeklyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords }
                   }
                 }}
               >
-                <TableCell 
+                <TableCell
                   sx={{
                     ...styles.timeCell,
                     backgroundColor: `${monthColors.secondary}50`,
@@ -513,10 +353,10 @@ const WeeklyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords }
                 {weekDays.map((day, dayIndex) => {
                   const eventsAtTime = getEventsAtTime(day, timeSlot);
                   const hasEvents = eventsAtTime.length > 0;
-                  
+
                   return (
-                    <TableCell 
-                      key={dayIndex} 
+                    <TableCell
+                      key={dayIndex}
                       align="center"
                       sx={{
                         ...styles.eventCell,
@@ -543,15 +383,15 @@ const WeeklyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords }
                           {eventsAtTime.map((event, eventIndex) => {
                             const hasAttendance = hasAttendanceRecord(event, day.date);
                             const courseColor = getColorFromString(event.courseName || 'חוג');
-                            
+
                             return (
                               <motion.div
                                 key={eventIndex}
                                 whileHover={{ scale: 1.03, y: -2 }}
                                 whileTap={{ scale: 0.98 }}
                                 style={{
-                                  backgroundColor: hasAttendance 
-                                    ? 'rgba(16, 185, 129, 0.1)' 
+                                  backgroundColor: hasAttendance
+                                    ? 'rgba(16, 185, 129, 0.1)'
                                     : `${courseColor}10`,
                                   borderRadius: '8px',
                                   border: `1px solid ${hasAttendance ? 'rgba(16, 185, 129, 0.3)' : `${courseColor}30`}`,
@@ -567,8 +407,8 @@ const WeeklyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords }
                                   alignItems: 'flex-start',
                                   marginBottom: '6px'
                                 }}>
-                                  <Typography 
-                                    variant="subtitle2" 
+                                  <Typography
+                                    variant="subtitle2"
                                     sx={{
                                       fontWeight: 'bold',
                                       color: hasAttendance ? '#065F46' : courseColor,
@@ -577,12 +417,12 @@ const WeeklyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords }
                                   >
                                     {event.courseName || 'חוג'} - {event.groupName}
                                   </Typography>
-                                  
+
                                   {hasAttendance && (
-                                    <Badge 
+                                    <Badge
                                       badgeContent={
                                         Math.round((hasAttendance.presentCount / hasAttendance.totalCount) * 100) + '%'
-                                      } 
+                                      }
                                       color="success"
                                       sx={{
                                         '& .MuiBadge-badge': {
@@ -593,14 +433,14 @@ const WeeklyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords }
                                         }
                                       }}
                                     >
-                                      <CheckCircle 
-                                        fontSize="small" 
-                                        sx={{ color: '#10B981' }} 
+                                      <CheckCircle
+                                        fontSize="small"
+                                        sx={{ color: '#10B981' }}
                                       />
                                     </Badge>
                                   )}
                                 </Box>
-                                
+
                                 <Box sx={{
                                   display: 'flex',
                                   flexWrap: 'wrap',
@@ -613,19 +453,19 @@ const WeeklyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords }
                                     borderRadius: '4px',
                                     padding: '2px 6px'
                                   }}>
-                                    <AccessTime 
-                                      fontSize="small" 
-                                      sx={{ 
-                                        fontSize: '0.8rem', 
+                                    <AccessTime
+                                      fontSize="small"
+                                      sx={{
+                                        fontSize: '0.8rem',
                                         marginRight: '4px',
                                         color: 'text.secondary'
-                                      }} 
+                                      }}
                                     />
                                     <Typography variant="caption">
-                                      {event.hour || timeSlot}
+                                      {event.hour ? event.hour.toString() : timeSlot}
                                     </Typography>
                                   </Box>
-                                  
+
                                   <Box sx={{
                                     display: 'flex',
                                     alignItems: 'center',
@@ -633,20 +473,20 @@ const WeeklyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords }
                                     borderRadius: '4px',
                                     padding: '2px 6px'
                                   }}>
-                                    <LocationOn 
-                                      fontSize="small" 
-                                      sx={{ 
-                                        fontSize: '0.8rem', 
+                                    <LocationOn
+                                      fontSize="small"
+                                      sx={{
+                                        fontSize: '0.8rem',
                                         marginRight: '4px',
                                         color: 'text.secondary'
-                                      }} 
+                                      }}
                                     />
                                     <Typography variant="caption">
                                       {event.branchName || 'סניף'}
                                     </Typography>
                                   </Box>
                                 </Box>
-                                
+
                                 {hasAttendance && (
                                   <Box sx={{
                                     display: 'flex',
@@ -656,15 +496,15 @@ const WeeklyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords }
                                     borderRadius: '4px',
                                     padding: '3px 6px'
                                   }}>
-                                    <People 
-                                      fontSize="small" 
-                                      sx={{ 
-                                        fontSize: '0.8rem', 
+                                    <People
+                                      fontSize="small"
+                                      sx={{
+                                        fontSize: '0.8rem',
                                         marginRight: '4px',
                                         color: '#065F46'
-                                      }} 
+                                      }}
                                     />
-                                    <Typography 
+                                    <Typography
                                       variant="caption"
                                       sx={{ color: '#065F46', fontWeight: 'medium' }}
                                     >
@@ -675,6 +515,7 @@ const WeeklyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords }
                               </motion.div>
                             );
                           })}
+
                         </Box>
                       ) : (
                         <Box sx={{
@@ -700,8 +541,11 @@ const WeeklyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords }
 };
 
 WeeklyCalendar.defaultProps = {
-  events: [],
-  attendanceRecords: {}
+  groups: [],
+  courses: [],
+  branches: [],
+  savedAttendanceRecords: {}
 };
+
 
 export default WeeklyCalendar;

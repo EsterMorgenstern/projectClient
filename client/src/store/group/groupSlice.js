@@ -35,7 +35,7 @@ const groupSlice = createSlice({
      state.loading=true;
      })   
     .addCase(getGroupsByCourseId.fulfilled,(state,action)=>{
-      console.log(action.payload);
+      console.log("groupsByCourseId",action.payload);
       state.loading = false;
       state.groupsByCourseId=action.payload;
     })

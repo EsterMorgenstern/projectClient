@@ -3,10 +3,11 @@ import axios from 'axios';
 
 export const groupStudentAddThunk = createAsyncThunk(
   'groupStudent/addGroupStudent',
-  async (studentCourseData, { rejectWithValue }) => {
+  async (groupStudentData, { rejectWithValue }) => {
     try {
       
-      const response = await axios.post(`https://localhost:5248/api/GroupStudent/Add`, studentCourseData);
+      const response = await axios.post(`http://localhost:5248/api/GroupStudent/Add`, groupStudentData);
+
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || 'Failed to add student course');
