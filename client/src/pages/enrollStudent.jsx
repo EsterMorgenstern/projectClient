@@ -209,7 +209,6 @@ const EnrollStudent = () => {
 
     setEnrollDialogOpen(false);
 
-    setSelectedStudentName(`תלמיד/ה מספר ${studentId}`);
     await dispatch(getGroupsByCourseId(selectedCourse.courseId));
     // הצגת הודעת הצלחה עם כפתור לצפייה בחוגים
     setNotification({
@@ -277,6 +276,7 @@ const fetchAndShowStudentCourses = async (studentId) => {
           maxStudents: item.group?.maxStudents || 0
         }));
 
+        setSelectedStudentName(`תלמיד/ה מספר ${studentId}`);
 
         setStudentCourses(formattedCourses);
       } else {

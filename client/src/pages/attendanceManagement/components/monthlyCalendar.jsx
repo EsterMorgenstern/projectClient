@@ -74,8 +74,47 @@ const MonthlyCalendar = ({
   courses, 
   branches, 
   onDateSelect,
-  savedAttendanceRecords 
+  savedAttendanceRecords ,
+  attendanceRecords
 }) => {
+   const getAttendanceForDate = (date) => {
+        const dateString = format(date, 'yyyy-MM-dd');
+        return attendanceRecords[dateString] || [];
+    };
+ // פונקציה לחישוב סטטיסטיקות נוכחות ליום
+    const getAttendanceStats = (date) => {
+        const attendance = getAttendanceForDate(date);
+        if (attendance.length === 0) return null;
+        
+        const present = attendance.filter(a => a.wasPresent).length;
+        const total = attendance.length;
+        
+        return { present, total, percentage: Math.round((present / total) * 100) };
+    };
+
+    // ברינדור של כל יום, הוסף אינדיקטור נוכחות
+    const renderDayContent = (date) => {
+        const stats = getAttendanceStats(date);
+        
+        return (
+            <Box sx={styles.dayContent}>
+                {/* תוכן קיים של היום */}
+                
+                {stats && (
+                    <Box sx={styles.attendanceIndicator}>
+                        <Chip
+                            label={`${stats.present}/${stats.total}`}
+                            size="small"
+                            color={stats.percentage >= 80 ? "success" : 
+                                   stats.percentage >= 60 ? "warning" : "error"}
+                            sx={styles.attendanceChip}
+                        />
+                    </Box>
+                )}
+            </Box>
+        );
+    };
+    
   const [calendarDays, setCalendarDays] = useState([]);
   const [monthColors, setMonthColors] = useState({});
   

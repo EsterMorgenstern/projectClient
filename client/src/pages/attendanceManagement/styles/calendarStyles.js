@@ -291,11 +291,7 @@ export const styles = {
     borderBottom: '2px solid #E2E8F0',
     fontWeight: 'bold',
   },
-
-  
-
-
-  timeSlotRow: {
+    timeSlotRow: {
     height: 'auto',
   },
   dailyEventsCell: (theme) => ({
@@ -375,4 +371,48 @@ export const styles = {
     color: 'text.secondary',
     marginTop: theme.spacing(1),
   }),
+  attendanceIndicator: (theme) => ({
+        position: 'absolute',
+        bottom: theme.spacing(0.5),
+        right: theme.spacing(0.5),
+    }),
+    
+    attendanceChip: {
+        height: 18,
+        fontSize: '0.6rem',
+        '& .MuiChip-label': {
+            padding: '0 4px',
+        },
+    },
+    
+    studentItem: (theme) => ({
+        borderRadius: theme.shape.borderRadius,
+        marginBottom: theme.spacing(1),
+        backgroundColor: theme.palette.background.paper,
+        '&:hover': {
+            backgroundColor: theme.palette.action.hover,
+        },
+    }),
+    
+    studentAvatar: (theme) => ({
+        backgroundColor: theme.palette.primary.main,
+        width: 40,
+        height: 40,
+    }),
+    
+    attendanceControls: (theme) => ({
+        display: 'flex',
+        gap: theme.spacing(1),
+    }),
+    
+    attendanceButton: (theme) => ({
+        minWidth: 80,
+        borderRadius: theme.shape.borderRadius * 2,
+    }),
+    
+    emptyState: (theme) => ({
+        textAlign: 'center',
+        padding: theme.spacing(4),
+    }),
+
 }

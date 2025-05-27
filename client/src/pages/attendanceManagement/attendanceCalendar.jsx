@@ -18,15 +18,13 @@ import {
 } from '@mui/icons-material';
 
 // Import date utilities
-import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, isSameDay, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
+import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, isSameDay, startOfWeek, endOfWeek, eachDayOfInterval, startOfMonth, endOfMonth } from 'date-fns';
 import { he } from 'date-fns/locale';
 
 // Import Redux actions
 import { fetchCourses } from '../../store/course/CoursesGetAllThunk';
 import { fetchBranches } from '../../store/branch/branchGetAllThunk';
 import { fetchGroups } from '../../store/group/groupGellAllThunk';
-// import { fetchStudentsByGroup } from '../../store/student/studentsThunks';
-// import { fetchAttendance, saveAttendance } from '../../store/attendance/attendanceThunks';
 
 // Import custom components
 import MonthlyCalendar from './components/monthlyCalendar'
@@ -37,6 +35,11 @@ import CourseSelectionDialog from './components/courseSelectionDialog';
 
 // Import styles
 import { styles } from './styles/attendanceCalendarStyles';
+import { getStudentsByGroupId } from '../../store/student/studentGetByGroup';
+import { fetchAttendanceByDate } from '../../store/attendance/fetchAttendanceByDate';
+import { saveAttendance } from '../../store/attendance/saveAttendance';
+import { updateLocalAttendance } from '../../store/attendance/attendanceSlice';
+import { fetchAttendanceRange } from '../../store/attendance/fetchAttendanceRange';
 const AttendanceCalendar = () => {
   const dispatch = useDispatch();
   const theme = useTheme();
@@ -83,14 +86,12 @@ const AttendanceCalendar = () => {
     { id: 8, name: 'טליה רוזנברג', age: 9, imageUrl: '/avatars/student8.jpg', attendanceRate: 93 },
   ];
 
-  // Load initial data
   useEffect(() => {
     dispatch(fetchCourses());
     dispatch(fetchBranches());
     dispatch(fetchGroups());
     
-    // For demo purposes, we'll use mock data
-    // In production, you would fetch real data from the server
+    
   }, [dispatch]);
 
   // Handle view mode change
@@ -142,56 +143,115 @@ const AttendanceCalendar = () => {
   };
 
   // Handle group selection
-  const handleGroupSelect = (group) => {
+  const handleGroupSelect = async (group) => {
     setSelectedGroup(group);
-    // In a real app, you would fetch students for this group
-    // dispatch(fetchStudentsByGroup(group.id));
-    
-    // For demo, we'll use mock data
-    const initialAttendance = {};
-    mockStudents.forEach(student => {
-      initialAttendance[student.id] = true; // Default: all present
-    });
-    setAttendanceData(initialAttendance);
+dispatch(getStudentsByGroupId(group.groupId));    
+   const dateString = format(selectedDate, 'yyyy-MM-dd');
+    try {
+        await dispatch(fetchAttendanceByDate({ 
+            groupId: group.groupId, 
+            date: dateString 
+        })).unwrap();
+      const existingAttendance = attendanceRecords[dateString] || [];
+        const initialAttendance = {};
+        
+        students.forEach(student => {
+            const existingRecord = existingAttendance.find(r => r.studentId === student.studentId);
+            initialAttendance[student.studentId] = existingRecord ? existingRecord.wasPresent : true;
+        });
+        
+        setAttendanceData(initialAttendance);
+    } catch (error) {
+        // אם אין נתונים קיימים, אתחל עם ברירת מחדל
+        const initialAttendance = {};
+        students.forEach(student => {
+            initialAttendance[student.studentId] = true; // ברירת מחדל: נוכח
+        });
+        setAttendanceData(initialAttendance);
+    }
     
     setCourseSelectionOpen(false);
     setAttendanceDialogOpen(true);
   };
 
   // Handle attendance change
-  const handleAttendanceChange = (studentId) => {
+const handleAttendanceChange = (studentId, wasPresent) => {
     setAttendanceData(prev => ({
-      ...prev,
-      [studentId]: !prev[studentId]
+        ...prev,
+        [studentId]: wasPresent
     }));
-  };
+    
+    const dateString = format(selectedDate, 'yyyy-MM-dd');
 
+    // dispatch(updateLocalAttendance({
+    //     date: dateString,
+    //     studentId,
+    //     wasPresent
+    // }));
+};
   // Handle attendance save
-  const handleSaveAttendance = () => {
-    // Prepare data for saving
-    const attendanceToSave = Object.keys(attendanceData).map(studentId => ({
-      groupId: selectedGroup.id,
-      studentId: parseInt(studentId),
-      date: format(selectedDate, 'yyyy-MM-dd'),
-      wasPresent: attendanceData[studentId]
-    }));
+  const handleSaveAttendance = async () => {
+    try {
+        const attendanceToSave = {
+            groupId: selectedGroup.groupId,
+            date: format(selectedDate, 'yyyy-MM-dd'),
+            attendanceRecords: Object.keys(attendanceData).map(studentId => ({
+                studentId: parseInt(studentId),
+                wasPresent: attendanceData[studentId],
+                studentName: students.find(s => s.studentId === parseInt(studentId))?.studentName || ''
+            }))
+        };
 
-    // In a real app, you would dispatch an action to save this data
-    // dispatch(saveAttendance(attendanceToSave));
-    
-    // For demo, we'll just show a success message
-    setAttendanceDialogOpen(false);
-    setNotification({
-      open: true,
-      message: 'נתוני הנוכחות נשמרו בהצלחה',
-      severity: 'success'
-    });
-    
-    // Reset selection
-    setSelectedCourse(null);
-    setSelectedBranch(null);
-    setSelectedGroup(null);
-  };
+        await dispatch(saveAttendance(attendanceToSave)).unwrap();
+        
+        setAttendanceDialogOpen(false);
+        setNotification({
+            open: true,
+            message: 'נתוני הנוכחות נשמרו בהצלחה',
+            severity: 'success'
+        });
+        
+        // Reset selection
+        setSelectedCourse(null);
+        setSelectedBranch(null);
+        setSelectedGroup(null);
+        setAttendanceData({});
+        
+    } catch (error) {
+        setNotification({
+            open: true,
+            message: 'שגיאה בשמירת נתוני הנוכחות',
+            severity: 'error'
+        });
+    }
+};
+useEffect(() => {
+    const loadMonthlyAttendance = async () => {
+        if (groups.length > 0 && viewMode === 'month') {
+            const startDate = format(startOfMonth(currentDate), 'yyyy-MM-dd');
+            const endDate = format(endOfMonth(currentDate), 'yyyy-MM-dd');
+            
+            // טען נוכחות לכל הקבוצות הפעילות
+            const activeGroups = groups.filter(group => group.isActive !== false);
+            
+            for (const group of activeGroups) {
+                try {
+                    // רק אם יש לך את הפונקציה fetchAttendanceRange
+                    // await dispatch(fetchAttendanceRange({
+                    //     groupId: group.groupId,
+                    //     startDate,
+                    //     endDate
+                    // }));
+                } catch (error) {
+                    console.error(`Failed to load attendance for group ${group.groupId}:`, error);
+                }
+            }
+        }
+    };
+
+    loadMonthlyAttendance();
+}, [currentDate, viewMode, groups, dispatch]);
+
 
   // Handle notification close
   const handleCloseNotification = () => {
@@ -385,7 +445,7 @@ const AttendanceCalendar = () => {
           selectedCourse={selectedCourse}
           selectedBranch={selectedBranch}
           selectedGroup={selectedGroup}
-          students={mockStudents} // In production, use students from Redux
+          students={students}
           attendanceData={attendanceData}
           onAttendanceChange={handleAttendanceChange}
           onSave={handleSaveAttendance}

@@ -5,6 +5,7 @@ import { addStudent } from './studentAddThunk';
 import { deleteStudent } from './studentDeleteThunk';
 import { editStudent } from './studentEditThunk';
 import { getStudentById } from './studentGetByIdThunk';
+import { getStudentsByGroupId } from './studentGetByGroup';
 
 
 const studentsSlice = createSlice({
@@ -13,7 +14,8 @@ const studentsSlice = createSlice({
     students: [],
     loading: false,
     error: null,
-    studentById:[]
+    studentById:[],
+    studentsByGroup:[]
   },
   reducers: {},
   extraReducers: (builder) => {
@@ -64,7 +66,21 @@ const studentsSlice = createSlice({
         state.loading = false;
         state.error = action.error.message;
       })
-
+//getStudentByGroupId
+      .addCase(getStudentsByGroupId.pending, (state) => {
+        console.log('getStudentsByGroupId...');
+        state.loading = true;
+      })
+      .addCase(getStudentsByGroupId.fulfilled, (state, action) => {
+        console.log(action.payload);
+        state.loading = false;
+        state.studentsByGroup = action.payload;
+      })
+      .addCase(getStudentsByGroupId.rejected, (state, action) => {
+        console.error('Error getStudentsByGroupId:', action.error.message);
+        state.loading = false;
+        state.error = action.error.message;
+      })
 //editStudent
       .addCase(editStudent.pending, (state) => {
         console.log('editStudent...');
