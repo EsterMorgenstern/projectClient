@@ -23,37 +23,42 @@ const AttendanceDialog = ({
   selectedCourse,
   selectedBranch,
   selectedGroup,
-  students,
-  attendanceData,
+  students = [], // ברירת מחדל למערך ריק
+  attendanceData = {}, // ברירת מחדל לאובייקט ריק
   onAttendanceChange,
   onSave
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [note, setNote] = useState('');
-  
+
   // קבלת נתוני נוכחות מ-Redux
   const attendanceRecords = useSelector(state => state.attendance?.records || {});
   const dateString = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
   const hasExistingAttendance = attendanceRecords[dateString]?.length > 0;
 
-  // חישוב סטטיסטיקות נוכחות
-  const presentCount = students ? Object.values(attendanceData).filter(present => present).length : 0;
+  // חישוב סטטיסטיקות נוכחות - עם בדיקת תקינות
+  const presentCount = students && Object.keys(attendanceData).length > 0 ?
+    Object.values(attendanceData).filter(present => present).length : 0;
   const totalStudents = students ? students.length : 0;
   const attendancePercentage = totalStudents > 0 ? Math.round((presentCount / totalStudents) * 100) : 0;
 
   // סימון כל התלמידים כנוכחים
   const markAllPresent = () => {
-    students.forEach(student => {
-      onAttendanceChange(student.studentId, true);
-    });
+    if (students && students.length > 0) {
+      students.forEach(student => {
+        onAttendanceChange(student.studentId, true);
+      });
+    }
   };
 
   // סימון כל התלמידים כנעדרים
   const markAllAbsent = () => {
-    students.forEach(student => {
-      onAttendanceChange(student.studentId, false);
-    });
+    if (students && students.length > 0) {
+      students.forEach(student => {
+        onAttendanceChange(student.studentId, false);
+      });
+    }
   };
 
   // טיפול בשמירה עם הערות
@@ -196,32 +201,33 @@ const AttendanceDialog = ({
                       {student.studentName.charAt(0)}
                     </Avatar>
                   </ListItemIcon>
-                  <ListItemText
-                    primary={student.studentName}
-                    secondary={
-                      <Box sx={styles.studentDetails}>
-                        <Typography variant="body2" component="span" sx={styles.studentAge}>
-                          גיל: {student.age || 'לא צוין'}
-                        </Typography>
-                        {student.attendanceRate && (
-                          <>
-                            <Divider orientation="vertical" flexItem sx={styles.detailDivider} />
-                            <Chip
-                              label={`נוכחות: ${student.attendanceRate}%`}
-                              size="small"
-                              color={
-                                student.attendanceRate > 90 ? 'success' :
+
+                  <Box sx={{ flex: 1, mr: 2 }}> {/* החלף את ListItemText */}
+                    <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
+                      {student.studentName}
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                      <Typography variant="body2" color="textSecondary">
+                        גיל: {student.age || 'לא צוין'}
+                      </Typography>
+                      {student.attendanceRate && (
+                        <>
+                          <Typography variant="body2" color="textSecondary">•</Typography>
+                          <Chip
+                            label={`נוכחות: ${student.attendanceRate}%`}
+                            size="small"
+                            color={
+                              student.attendanceRate > 90 ? 'success' :
                                 student.attendanceRate > 75 ? 'primary' :
-                                student.attendanceRate > 60 ? 'warning' : 'error'
-                              }
-                              sx={styles.attendanceRateChip}
-                            />
-                          </>
-                        )}
-                      </Box>
-                    }
-                    sx={styles.studentText}
-                  />
+                                  student.attendanceRate > 60 ? 'warning' : 'error'
+                            }
+                            sx={styles.attendanceRateChip}
+                          />
+                        </>
+                      )}
+                    </Box>
+                  </Box>
+
                   <Checkbox
                     edge="end"
                     checked={attendanceData[student.studentId] || false}
@@ -273,7 +279,7 @@ const AttendanceDialog = ({
             style={{
               height: '8px',
               backgroundColor: attendancePercentage > 80 ? '#4caf50' :
-                              attendancePercentage > 60 ? '#ff9800' : '#f44336',
+                attendancePercentage > 60 ? '#ff9800' : '#f44336',
               borderRadius: '4px',
               marginTop: '8px'
             }}

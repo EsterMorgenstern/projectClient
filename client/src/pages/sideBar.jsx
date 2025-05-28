@@ -21,7 +21,7 @@ const Sidebar = () => {
   return (
     <Box
       sx={{
-        width: 250,
+        width: 200,
         minHeight: '100vh',
         background: 'linear-gradient(180deg, #1E3A8A 0%, #3B82F6 100%)',
         color: 'white',

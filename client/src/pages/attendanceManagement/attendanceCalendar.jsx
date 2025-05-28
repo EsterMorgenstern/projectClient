@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Container, Box, Typography, Paper, Tabs, Tab, 
+import {
+  Container, Box, Typography, Paper, Tabs, Tab,
   IconButton, Button, Chip, Avatar, Badge,
   Grid, Card, CardContent, CardHeader, Divider,
   Dialog, DialogTitle, DialogContent, DialogActions,
@@ -50,12 +50,14 @@ const AttendanceCalendar = () => {
   const courses = useSelector(state => state.courses.courses || []);
   const branches = useSelector(state => state.branches.branches || []);
   const groups = useSelector(state => state.groups.groups || []);
-  const students = useSelector(state => state.students.studentsByGroup || []);
-  const attendanceRecords = useSelector(state => state.attendances.records || []);
-  const loading = useSelector(state => 
-    state.courses.loading || 
-    state.branches.loading || 
-    state.groups.loading || 
+  const students = useSelector(state => {
+
+    return state.students?.studentsByGroup || [];
+  }); const attendanceRecords = useSelector(state => state.attendances.records || []);
+  const loading = useSelector(state =>
+    state.courses.loading ||
+    state.branches.loading ||
+    state.groups.loading ||
     state.students.loading ||
     state.attendances.loading
   );
@@ -73,26 +75,32 @@ const AttendanceCalendar = () => {
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
-
-  // Mock data for initial development
-  const mockStudents = [
-    { id: 1, name: 'דניאל כהן', age: 10, imageUrl: '/avatars/student1.jpg', attendanceRate: 92 },
-    { id: 2, name: 'נועה לוי', age: 9, imageUrl: '/avatars/student2.jpg', attendanceRate: 88 },
-    { id: 3, name: 'איתמר גולדברג', age: 11, imageUrl: '/avatars/student3.jpg', attendanceRate: 95 },
-    { id: 4, name: 'מיכל ברקוביץ', age: 10, imageUrl: '/avatars/student4.jpg', attendanceRate: 78 },
-    { id: 5, name: 'יובל שטיין', age: 9, imageUrl: '/avatars/student5.jpg', attendanceRate: 90 },
-    { id: 6, name: 'שירה אברהמי', age: 10, imageUrl: '/avatars/student6.jpg', attendanceRate: 85 },
-    { id: 7, name: 'אורי פרידמן', age: 11, imageUrl: '/avatars/student7.jpg', attendanceRate: 82 },
-    { id: 8, name: 'טליה רוזנברג', age: 9, imageUrl: '/avatars/student8.jpg', attendanceRate: 93 },
-  ];
+  const [studentsLoaded, setStudentsLoaded] = useState(false);
 
   useEffect(() => {
     dispatch(fetchCourses());
     dispatch(fetchBranches());
     dispatch(fetchGroups());
-    
-    
+
   }, [dispatch]);
+
+  useEffect(() => {
+    if (students.length > 0 && selectedGroup && selectedDate && studentsLoaded) {
+      console.log('Students loaded, initializing attendance data:', students);
+
+      const dateString = format(selectedDate, 'yyyy-MM-dd');
+      const existingAttendance = attendanceRecords[dateString] || [];
+
+      const initialAttendance = {};
+      students.forEach(student => {
+        const existingRecord = existingAttendance.find(r => r.studentId === student.studentId);
+        initialAttendance[student.studentId] = existingRecord ? existingRecord.wasPresent : true;
+      });
+
+      setAttendanceData(initialAttendance);
+      setStudentsLoaded(false); // איפוס הדגל
+    }
+  }, [students, selectedGroup, selectedDate, studentsLoaded, attendanceRecords]);
 
   // Handle view mode change
   const handleViewModeChange = (event, newMode) => {
@@ -114,6 +122,19 @@ const AttendanceCalendar = () => {
 
   // Handle date selection
   const handleDateSelect = (date) => {
+    console.log('handleDateSelect called with:', date, typeof date);
+
+    // וודא שזה תאריך תקין
+    if (!date || (date instanceof Date && isNaN(date.getTime()))) {
+      console.error('Invalid date selected:', date);
+      setNotification({
+        open: true,
+        message: 'תאריך לא תקין',
+        severity: 'error'
+      });
+      return;
+    }
+
     setSelectedDate(date);
     setCourseSelectionOpen(true);
   };
@@ -122,7 +143,7 @@ const AttendanceCalendar = () => {
   const handleCourseSelect = (course) => {
     setSelectedCourse(course);
     // In a real app, you would filter branches by course
-    const branchesForCourse = branches.filter(branch => 
+    const branchesForCourse = branches.filter(branch =>
       groups.some(group => group.courseId === course.id && group.branchId === branch.id)
     );
     if (branchesForCourse.length === 1) {
@@ -134,7 +155,7 @@ const AttendanceCalendar = () => {
   const handleBranchSelect = (branch) => {
     setSelectedBranch(branch);
     // In a real app, you would filter groups by course and branch
-    const groupsForBranchAndCourse = groups.filter(group => 
+    const groupsForBranchAndCourse = groups.filter(group =>
       group.courseId === selectedCourse.id && group.branchId === branch.id
     );
     if (groupsForBranchAndCourse.length === 1) {
@@ -144,43 +165,49 @@ const AttendanceCalendar = () => {
 
   // Handle group selection
   const handleGroupSelect = async (group) => {
+    console.log('handleGroupSelect called with group:', group);
     setSelectedGroup(group);
-dispatch(getStudentsByGroupId(group.groupId));    
-   const dateString = format(selectedDate, 'yyyy-MM-dd');
+
     try {
-        await dispatch(fetchAttendanceByDate({ 
-            groupId: group.groupId, 
-            date: dateString 
-        })).unwrap();
-      const existingAttendance = attendanceRecords[dateString] || [];
-        const initialAttendance = {};
-        
-        students.forEach(student => {
-            const existingRecord = existingAttendance.find(r => r.studentId === student.studentId);
-            initialAttendance[student.studentId] = existingRecord ? existingRecord.wasPresent : true;
-        });
-        
-        setAttendanceData(initialAttendance);
+      console.log('Dispatching getStudentsByGroupId with:', group.groupId);
+      await dispatch(getStudentsByGroupId(group.groupId)).unwrap();
+
+      // סמן שהסטודנטים נטענו - זה יפעיל את ה-useEffect
+      setStudentsLoaded(true);
+
     } catch (error) {
-        // אם אין נתונים קיימים, אתחל עם ברירת מחדל
-        const initialAttendance = {};
-        students.forEach(student => {
-            initialAttendance[student.studentId] = true; // ברירת מחדל: נוכח
-        });
-        setAttendanceData(initialAttendance);
+      console.error('Failed to load students:', error);
+      setNotification({
+        open: true,
+        message: 'שגיאה בטעינת רשימת התלמידים',
+        severity: 'error'
+      });
+      return;
     }
-    
+
+    // טען נוכחות קיימת
+    const dateString = format(selectedDate, 'yyyy-MM-dd');
+
+    try {
+      await dispatch(fetchAttendanceByDate({
+        groupId: group.groupId,
+        date: dateString
+      })).unwrap();
+
+    } catch (error) {
+      console.warn('No existing attendance found');
+    }
+
     setCourseSelectionOpen(false);
     setAttendanceDialogOpen(true);
   };
-
   // Handle attendance change
-const handleAttendanceChange = (studentId, wasPresent) => {
+  const handleAttendanceChange = (studentId, wasPresent) => {
     setAttendanceData(prev => ({
-        ...prev,
-        [studentId]: wasPresent
+      ...prev,
+      [studentId]: wasPresent
     }));
-    
+
     const dateString = format(selectedDate, 'yyyy-MM-dd');
 
     // dispatch(updateLocalAttendance({
@@ -188,71 +215,107 @@ const handleAttendanceChange = (studentId, wasPresent) => {
     //     studentId,
     //     wasPresent
     // }));
-};
+  };
   // Handle attendance save
-  const handleSaveAttendance = async () => {
-    try {
-        const attendanceToSave = {
-            groupId: selectedGroup.groupId,
-            date: format(selectedDate, 'yyyy-MM-dd'),
-            attendanceRecords: Object.keys(attendanceData).map(studentId => ({
-                studentId: parseInt(studentId),
-                wasPresent: attendanceData[studentId],
-                studentName: students.find(s => s.studentId === parseInt(studentId))?.studentName || ''
-            }))
-        };
-
-        await dispatch(saveAttendance(attendanceToSave)).unwrap();
-        
-        setAttendanceDialogOpen(false);
-        setNotification({
-            open: true,
-            message: 'נתוני הנוכחות נשמרו בהצלחה',
-            severity: 'success'
-        });
-        
-        // Reset selection
-        setSelectedCourse(null);
-        setSelectedBranch(null);
-        setSelectedGroup(null);
-        setAttendanceData({});
-        
-    } catch (error) {
-        setNotification({
-            open: true,
-            message: 'שגיאה בשמירת נתוני הנוכחות',
-            severity: 'error'
-        });
+  const handleSaveAttendance = async (note = '') => {
+    if (!selectedGroup || !selectedDate || !students || students.length === 0) {
+      setNotification({
+        open: true,
+        message: 'חסרים נתונים לשמירת הנוכחות',
+        severity: 'error'
+      });
+      return;
     }
-};
-useEffect(() => {
+
+    try {
+      const attendanceToSave = {
+        groupId: selectedGroup.groupId,
+        date: format(selectedDate, 'yyyy-MM-dd'),
+        note: note || '',
+        attendanceRecords: Object.keys(attendanceData).map(studentId => {
+          const student = students.find(s => s.studentId === parseInt(studentId));
+          return {
+            studentId: parseInt(studentId),
+            wasPresent: attendanceData[studentId],
+            studentName: student?.studentName || '',
+            note: ''
+          };
+        })
+      };
+
+      console.log('Saving attendance:', attendanceToSave);
+      await dispatch(saveAttendance(attendanceToSave)).unwrap();
+
+      setAttendanceDialogOpen(false);
+      setNotification({
+        open: true,
+        message: 'נתוני הנוכחות נשמרו בהצלחה',
+        severity: 'success'
+      });
+
+      // איפוס הבחירות
+      setSelectedCourse(null);
+      setSelectedBranch(null);
+      setSelectedGroup(null);
+      setAttendanceData({});
+      setSelectedDate(null);
+
+    } catch (error) {
+      console.error('Save attendance error:', error);
+      setNotification({
+        open: true,
+        message: 'שגיאה בשמירת נתוני הנוכחות',
+        severity: 'error'
+      });
+    }
+  };
+  useEffect(() => {
     const loadMonthlyAttendance = async () => {
-        if (groups.length > 0 && viewMode === 'month') {
-            const startDate = format(startOfMonth(currentDate), 'yyyy-MM-dd');
-            const endDate = format(endOfMonth(currentDate), 'yyyy-MM-dd');
-            
-            // טען נוכחות לכל הקבוצות הפעילות
-            const activeGroups = groups.filter(group => group.isActive !== false);
-            
-            for (const group of activeGroups) {
-                try {
-                    // רק אם יש לך את הפונקציה fetchAttendanceRange
-                    // await dispatch(fetchAttendanceRange({
-                    //     groupId: group.groupId,
-                    //     startDate,
-                    //     endDate
-                    // }));
-                } catch (error) {
-                    console.error(`Failed to load attendance for group ${group.groupId}:`, error);
-                }
-            }
+      if (groups.length > 0 && viewMode === 'month') {
+        const startDate = format(startOfMonth(currentDate), 'yyyy-MM-dd');
+        const endDate = format(endOfMonth(currentDate), 'yyyy-MM-dd');
+
+        // טען נוכחות לכל הקבוצות הפעילות
+        const activeGroups = groups.filter(group => group.isActive !== false);
+
+        for (const group of activeGroups) {
+          try {
+            // רק אם יש לך את הפונקציה fetchAttendanceRange
+            // await dispatch(fetchAttendanceRange({
+            //     groupId: group.groupId,
+            //     startDate,
+            //     endDate
+            // }));
+          } catch (error) {
+            console.error(`Failed to load attendance for group ${group.groupId}:`, error);
+          }
         }
+      }
     };
 
     loadMonthlyAttendance();
-}, [currentDate, viewMode, groups, dispatch]);
+  }, [currentDate, viewMode, groups, dispatch]);
 
+  useEffect(() => {
+    // סנכרן נתוני נוכחות כאשר הסטודנטים משתנים
+    if (students.length > 0 && selectedGroup && selectedDate) {
+      const dateString = format(selectedDate, 'yyyy-MM-dd');
+      const existingAttendance = attendanceRecords[dateString] || [];
 
+      const updatedAttendanceData = {};
+      students.forEach(student => {
+        const existingRecord = existingAttendance.find(r => r.studentId === student.studentId);
+        updatedAttendanceData[student.studentId] = existingRecord ? existingRecord.wasPresent :
+          (attendanceData[student.studentId] !== undefined ? attendanceData[student.studentId] : true);
+      });
+
+      // עדכן רק אם יש שינוי
+      if (Object.keys(updatedAttendanceData).length !== Object.keys(attendanceData).length ||
+        Object.keys(updatedAttendanceData).some(key => updatedAttendanceData[key] !== attendanceData[key])) {
+        setAttendanceData(updatedAttendanceData);
+      }
+    }
+  }, [students, selectedGroup, selectedDate]);
   // Handle notification close
   const handleCloseNotification = () => {
     setNotification({ ...notification, open: false });
@@ -261,7 +324,7 @@ useEffect(() => {
   // Render calendar header
   const renderCalendarHeader = () => {
     let title = '';
-    
+
     if (viewMode === 'month') {
       title = format(currentDate, 'MMMM yyyy', { locale: he });
     } else if (viewMode === 'week') {
@@ -287,9 +350,9 @@ useEffect(() => {
                 <NavigateNext />
               </IconButton>
               <Tooltip title="חזור להיום">
-                <IconButton 
-                  onClick={() => setCurrentDate(new Date())} 
-                  color="primary" 
+                <IconButton
+                  onClick={() => setCurrentDate(new Date())}
+                  color="primary"
                   sx={styles.todayButton}
                 >
                   <Today />
@@ -297,10 +360,10 @@ useEffect(() => {
               </Tooltip>
             </Box>
           </Grid>
-          
+
           <Grid item xs={12} md={4} sx={styles.viewModeSwitcher}>
-            <Tabs 
-              value={viewMode} 
+            <Tabs
+              value={viewMode}
               onChange={handleViewModeChange}
               sx={styles.tabs}
             >
@@ -309,7 +372,7 @@ useEffect(() => {
               <Tab value="day" label="יום" icon={<Today />} />
             </Tabs>
           </Grid>
-          
+
           <Grid item xs={12} md={4}>
             <Box sx={styles.searchAndFilter}>
               <TextField
@@ -327,7 +390,7 @@ useEffect(() => {
                 }}
                 sx={styles.searchField}
               />
-              
+
               <Button
                 variant="outlined"
                 color="primary"
@@ -358,7 +421,7 @@ useEffect(() => {
 
     return (
       <AnimatePresence mode="wait">
-        <motion.div
+        <Box
           key={viewMode}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -366,36 +429,35 @@ useEffect(() => {
           transition={{ duration: 0.3 }}
           sx={styles.calendarContainer}
         >
-       {viewMode === 'month' && (
-  <MonthlyCalendar 
-    currentDate={currentDate}
-    onDateSelect={handleDateSelect}
-    groups={groups || []}
-    courses={courses || []}
-    branches={branches || []}
-    savedAttendanceRecords={attendanceRecords || {}}
-  />
-)}
+          {viewMode === 'month' && (
+            <MonthlyCalendar
+              currentDate={currentDate}
+              onDateSelect={handleDateSelect}
+              groups={groups || []}
+              courses={courses || []}
+              branches={branches || []}
+              savedAttendanceRecords={attendanceRecords || {}}
+            />
+          )}
 
-          
           {viewMode === 'week' && (
-            <WeeklyCalendar 
+            <WeeklyCalendar
               currentDate={currentDate}
               onDateSelect={handleDateSelect}
               events={groups} // In a real app, you would transform groups into events
               attendanceRecords={attendanceRecords}
             />
           )}
-          
+
           {viewMode === 'day' && (
-            <DailyCalendar 
+            <DailyCalendar
               currentDate={currentDate}
               onDateSelect={handleDateSelect}
               events={groups} // In a real app, you would transform groups into events
               attendanceRecords={attendanceRecords}
             />
           )}
-        </motion.div>
+        </Box>
       </AnimatePresence>
     );
   };
@@ -403,7 +465,7 @@ useEffect(() => {
   return (
     <Container maxWidth="xl" sx={styles.root}>
       <Box sx={styles.pageContainer}>
-         
+
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -417,26 +479,25 @@ useEffect(() => {
             ניהול ומעקב אחר נוכחות תלמידים בחוגים
           </Typography>
         </motion.div>
-        
+
         {renderCalendarHeader()}
-        
+
         <Paper sx={styles.calendarPaper}>
           {renderCalendarContent()}
         </Paper>
-        
+
         {/* Course Selection Dialog */}
         <CourseSelectionDialog
           open={courseSelectionOpen}
           onClose={() => setCourseSelectionOpen(false)}
-          selectedDate={selectedDate}
-          courses={courses}
-          branches={branches}
-          groups={groups}
+          selectedDate={selectedDate} // וודא שזה לא null
+          courses={courses || []}
+          branches={branches || []}
+          groups={groups || []}
           onCourseSelect={handleCourseSelect}
           onBranchSelect={handleBranchSelect}
           onGroupSelect={handleGroupSelect}
         />
-        
         {/* Attendance Dialog */}
         <AttendanceDialog
           open={attendanceDialogOpen}
@@ -450,7 +511,7 @@ useEffect(() => {
           onAttendanceChange={handleAttendanceChange}
           onSave={handleSaveAttendance}
         />
-        
+
         {/* Notifications */}
         <Snackbar
           open={notification.open}

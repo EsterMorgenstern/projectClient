@@ -6,8 +6,8 @@ export const saveAttendance = createAsyncThunk(
     async (attendanceData, { rejectWithValue }) => {
         try {
             const response = await axios.post(
-                'http://localhost:5248/api/Attendance/SaveAttendance',
-                attendanceData
+               `http://localhost:5248/api/Attendance/SaveAttendanceForDate`, attendanceData
+             
             );
             return response.data;
         } catch (error) {
