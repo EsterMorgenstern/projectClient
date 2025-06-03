@@ -1,5 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchAttendanceHistory } from '../store/attendance/fetchAttendanceHistory';
+import { fetchStudentAttendanceSummary } from '../store/attendance/fetchStudentAttendanceSummary';
 import {
   Dialog,
   DialogTitle,
@@ -34,66 +36,52 @@ import {
 import { motion } from 'framer-motion';
 
 const StudentAttendanceHistory = ({ open, onClose, student }) => {
-  const [attendanceData, setAttendanceData] = useState([]);
-  const [summaryData, setSummaryData] = useState(null);
+  const dispatch = useDispatch();
+  
+  const attendanceData= useSelector((state) => state.attendances.attendanceData);
+  const attendanceSummary = useSelector((state) => state.attendances.attendanceSummary);
+  const loading= useSelector((state) => state.attendances.loading);
+
   const [filteredData, setFilteredData] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState('');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedCourse, setSelectedCourse] = useState('');
-  const [loading, setLoading] = useState(false);
 
   // פונקציה לטעינת נתוני נוכחות
-  const fetchAttendanceHistory = async () => {
-    if (!student?.id) return;
-
-    setLoading(true);
-    try {
-      let url = `https://localhost:5248/api/attendance/student/${student.id}/history`;
-      const params = new URLSearchParams();
-
-      if (selectedMonth) params.append('month', selectedMonth);
-      if (selectedYear) params.append('year', selectedYear);
-
-      if (params.toString()) {
-        url += `?${params.toString()}`;
-      }
-
-      const response = await fetch(url);
-      if (response.ok) {
-        const data = await response.json();
-        setAttendanceData(data);
-      } else {
-        console.error('Failed to fetch attendance history');
-        setAttendanceData([]);
-      }
-    } catch (error) {
-      console.error('Error fetching attendance history:', error);
-      setAttendanceData([]);
-    } finally {
-      setLoading(false);
+const fetchAttendanceHistoryData = async () => {
+    if (!student?.id) {
+        console.log('No student ID available');
+        return;
     }
-  };
+
+    console.log('Fetching attendance history for:', {
+        studentId: student.id,
+        selectedMonth,
+        selectedYear
+    });
+
+    try {
+        const result = await dispatch(fetchAttendanceHistory({
+            studentId: student.id,
+            selectedMonth,
+            selectedYear
+        })).unwrap();
+        console.log('Attendance history result:', result);
+    } catch (error) {
+        console.error('Error fetching attendance history:', error);
+    }
+};
 
   // פונקציה לטעינת סיכום נוכחות
-  const fetchAttendanceSummary = async () => {
+  const fetchAttendanceSummaryData = async () => {
     if (!student?.id) return;
 
     try {
-      let url = `https://localhost:5248/api/attendance/student/${student.id}/summary`;
-      const params = new URLSearchParams();
-
-      if (selectedMonth) params.append('month', selectedMonth);
-      if (selectedYear) params.append('year', selectedYear);
-
-      if (params.toString()) {
-        url += `?${params.toString()}`;
-      }
-
-      const response = await fetch(url);
-      if (response.ok) {
-        const data = await response.json();
-        setSummaryData(data);
-      }
+      await dispatch(fetchStudentAttendanceSummary({
+        studentId: student.id,
+        month: selectedMonth,
+        year: selectedYear
+      })).unwrap();
     } catch (error) {
       console.error('Error fetching attendance summary:', error);
     }
@@ -101,14 +89,14 @@ const StudentAttendanceHistory = ({ open, onClose, student }) => {
 
   useEffect(() => {
     if (student?.id && open) {
-      fetchAttendanceHistory();
-      fetchAttendanceSummary();
+      fetchAttendanceHistoryData();
+      fetchAttendanceSummaryData();
     }
   }, [student, open, selectedMonth, selectedYear]);
 
   // סינון לפי קורס
   useEffect(() => {
-    let filtered = attendanceData;
+    let filtered = Array.isArray(attendanceData) ? attendanceData : [];
 
     if (selectedCourse) {
       filtered = filtered.filter(record =>
@@ -125,7 +113,7 @@ const StudentAttendanceHistory = ({ open, onClose, student }) => {
   const attendanceRate = totalLessons > 0 ? ((attendedLessons / totalLessons) * 100).toFixed(1) : 0;
 
   // קבלת רשימת קורסים ייחודיים
-  const uniqueCourses = [...new Set(attendanceData.map(record => record.courseName))];
+  const uniqueCourses = [...new Set((Array.isArray(attendanceData) ? attendanceData : []).map(record => record.courseName))];
 
   const monthNames = [
     'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
@@ -134,6 +122,11 @@ const StudentAttendanceHistory = ({ open, onClose, student }) => {
 
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
+
+  const handleRefreshData = () => {
+    fetchAttendanceHistoryData();
+    fetchAttendanceSummaryData();
+  };
 
   return (
     <Dialog
@@ -144,7 +137,9 @@ const StudentAttendanceHistory = ({ open, onClose, student }) => {
       sx={{
         '& .MuiDialog-paper': {
           borderRadius: 12,
-          minHeight: '70vh'
+          minHeight: '70vh',
+          direction:'rtl',
+          textAlign:'right'
         }
       }}
     >
@@ -154,7 +149,9 @@ const StudentAttendanceHistory = ({ open, onClose, student }) => {
           color: 'white',
           display: 'flex',
           alignItems: 'center',
-          gap: 2
+          gap: 2,
+          direction:'rtl',
+          justifyContent:'flex-start'
         }}
       >
         <CalendarToday />
@@ -162,7 +159,7 @@ const StudentAttendanceHistory = ({ open, onClose, student }) => {
           היסטוריית נוכחות - {student?.firstName} {student?.lastName}
         </Typography>
       </DialogTitle>
-
+<br />
       <DialogContent sx={{ p: 3 }}>
         {/* פילטרים */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
@@ -186,6 +183,8 @@ const StudentAttendanceHistory = ({ open, onClose, student }) => {
               select
               fullWidth
               label="בחר חודש"
+                              sx={{ 'width': '106px' }}
+
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
             >
@@ -203,6 +202,7 @@ const StudentAttendanceHistory = ({ open, onClose, student }) => {
               fullWidth
               label="בחר קורס"
               value={selectedCourse}
+                sx={{ 'width': '106px' }}
               onChange={(e) => setSelectedCourse(e.target.value)}
             >
               <MenuItem value="">כל הקורסים</MenuItem>
@@ -217,11 +217,9 @@ const StudentAttendanceHistory = ({ open, onClose, student }) => {
             <Button
               fullWidth
               variant="contained"
-              onClick={() => {
-                fetchAttendanceHistory();
-                fetchAttendanceSummary();
-              }}
+              onClick={handleRefreshData}
               sx={{ height: '56px' }}
+              disabled={loading}
             >
               רענן נתונים
             </Button>
@@ -344,7 +342,7 @@ const StudentAttendanceHistory = ({ open, onClose, student }) => {
       </DialogContent>
 
       <DialogActions sx={{ p: 3 }}>
-        <Button onClick={onClose} variant="outlined" color="primary">
+        <Button onClick={onClose} variant="outlined" color="primary" > 
           סגור
         </Button>
       </DialogActions>

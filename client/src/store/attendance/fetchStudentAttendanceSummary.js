@@ -5,11 +5,23 @@ export const fetchStudentAttendanceSummary = createAsyncThunk(
     'attendance/fetchStudentSummary',
     async ({ studentId, month, year }, { rejectWithValue }) => {
         try {
-            const response = await axios.get(
-`https://localhost:5248/api/attendance/student/${studentId}/summary?month=${month}&year=${year}`            );
+            const params = new URLSearchParams();
+            if (month) params.append('month', month);
+            if (year) params.append('year', year);
+            
+            const url = `http://localhost:5248/api/Attendance/student/${studentId}/summary${params.toString() ? `?${params.toString()}` : ''}`;
+            
+            console.log('Fetching attendance summary from URL:', url);
+            const response = await axios.get(url);
+            console.log('Attendance summary response:', response.data);
             return response.data;
         } catch (error) {
-            return rejectWithValue(error.response?.data || 'Failed to fetch attendance range');
+            console.error('fetchStudentAttendanceSummary error:', {
+                status: error.response?.status,
+                data: error.response?.data,
+                message: error.message
+            });
+            return rejectWithValue(error.response?.data || 'Failed to fetch attendance summary');
         }
     }
 );

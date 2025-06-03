@@ -128,107 +128,105 @@ export default function StudentsTable() {
     await dispatch(addStudentCourse(currentStudentCourse));
   }
   const columns = [
-  {
-    field: 'actions',
-    headerName: 'פעולות',
-    width: 300,
-    renderCell: (params) => (
-      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-        <Button
-          variant="outlined"
-          color="primary"
-          startIcon={<Edit />}
-          size="small"
-          onClick={(e) => {
-            e.stopPropagation(); // מונע את הפעלת onRowClick
-            setCurrentStudent({
-              id: params.row.id,
-              firstName: params.row.firstName,
-              lastName: params.row.lastName,
-              phone: params.row.phone,
-              city: params.row.city,
-              school: params.row.school,
-              healthFund: params.row.healthFund,
-              gender: params.row.gender,
-              sector: params.row.sector
-            });
-            setOpenEdit(true);
-          }}
-        >
-          ערוך
-        </Button>
-        <Button
-          variant="outlined"
-          color="error"
-          startIcon={<Delete />}
-          size="small"
-          onClick={(e) => {
-            e.stopPropagation(); // מונע את הפעלת onRowClick
-            setCurrentStudent({
-              id: params.row.id,
-              firstName: params.row.firstName,
-              lastName: params.row.lastName,
-              phone: params.row.phone,
-              city: params.row.city,
-              school: params.row.school,
-              healthFund: params.row.healthFund,
-              gender: params.row.gender,
-              sector: params.row.sector
-            });
-            setDeleteOpen(true);
-          }}
-        >
-          מחק
-        </Button>
-        <Button
-          variant="outlined"
-          color="info"
-          startIcon={<HistoryIcon />}
-          size="small"
-          onClick={(e) => {
-            e.stopPropagation(); // מונע את הפעלת onRowClick
-            setSelectedStudentForHistory(params.row);
-            setAttendanceHistoryOpen(true);
-          }}
-        >
-          נוכחות
-        </Button>
-      </Box>
-    ),
-  },
+    {
+      field: 'actions',
+      headerName: 'פעולות',
+      width: 300,
+      renderCell: (params) => (
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <Button
+            variant="outlined"
+            color="primary"
+            startIcon={<Edit />}
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation(); // מונע את הפעלת onRowClick
+              setCurrentStudent({
+                id: params.row.id,
+                firstName: params.row.firstName,
+                lastName: params.row.lastName,
+                phone: params.row.phone,
+                city: params.row.city,
+                school: params.row.school,
+                healthFund: params.row.healthFund,
+                gender: params.row.gender,
+                sector: params.row.sector
+              });
+              setOpenEdit(true);
+            }}
+          >
+            ערוך
+          </Button>
+          <Button
+            variant="outlined"
+            color="error"
+            startIcon={<Delete />}
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation(); // מונע את הפעלת onRowClick
+              setCurrentStudent({
+                id: params.row.id,
+                firstName: params.row.firstName,
+                lastName: params.row.lastName,
+                phone: params.row.phone,
+                city: params.row.city,
+                school: params.row.school,
+                healthFund: params.row.healthFund,
+                gender: params.row.gender,
+                sector: params.row.sector
+              });
+              setDeleteOpen(true);
+            }}
+          >
+            מחק
+          </Button>
+          <Button
+            variant="outlined"
+            color="info"
+            startIcon={<HistoryIcon />}
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation(); // מונע את הפעלת onRowClick
+              setSelectedStudentForHistory(params.row);
+              setAttendanceHistoryOpen(true);
+            }}
+          >
+            נוכחות
+          </Button>
+        </Box>
+      ),
+    },
     { field: 'id', headerName: 'קוד תלמיד', width: 120 },
-    { 
-    field: 'firstName', 
-    headerName: 'שם פרטי', 
-    width: 90,
-    renderCell: (params) => (
-      <Box 
-        sx={{ 
-          cursor: 'pointer', 
-          color: '#1976d2',
-          '&:hover': { textDecoration: 'underline' }
-        }}
-      >
-        {params.value}
-      </Box>
-    )
-  },
-  { 
-    field: 'lastName', 
-    headerName: 'שם משפחה', 
-    width: 110,
-    renderCell: (params) => (
-      <Box 
-        sx={{ 
-          cursor: 'pointer', 
-          color: '#1976d2',
-          '&:hover': { textDecoration: 'underline' }
-        }}
-      >
-        {params.value}
-      </Box>
-    )
-  },
+    {
+      field: 'firstName',
+      headerName: 'שם פרטי',
+      width: 90,
+      renderCell: (params) => (
+        <Box
+          sx={{
+            cursor: 'pointer',
+            '&:hover': { textDecoration: 'underline' }
+          }}
+        >
+          {params.value}
+        </Box>
+      )
+    },
+    {
+      field: 'lastName',
+      headerName: 'שם משפחה',
+      width: 110,
+      renderCell: (params) => (
+        <Box
+          sx={{
+            cursor: 'pointer',
+            '&:hover': { textDecoration: 'underline' }
+          }}
+        >
+          {params.value}
+        </Box>
+      )
+    },
     { field: 'phone', headerName: 'טלפון', width: 110 },
     { field: 'city', headerName: 'עיר', width: 100 },
     { field: 'school', headerName: 'בית ספר', width: 90 },
@@ -237,15 +235,7 @@ export default function StudentsTable() {
     { field: 'sector', headerName: 'מגזר', width: 100 },
 
   ];
-  const columnsStudentCorses = [
-
-    { field: 'courseId', headerName: 'קוד קורס', width: 90 },
-    { field: 'courseName', headerName: 'שם הקורס', width: 90 },
-    { field: 'instructorId', headerName: 'קוד מדריך', width: 120 },
-    { field: 'registrationDate', headerName: 'תאריך התחלה', width: 110 },
-
-
-  ];
+ 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
       < div style={{ direction: 'rtl' }}>
@@ -290,43 +280,43 @@ export default function StudentsTable() {
             </Typography>
           )}
 
-        {filteredStudents.length > 0 && <DataGrid
-  rows={filteredStudents.filter(row => row?.id != null && row?.id !== '')}
-  columns={columns}
-  getRowId={(row) => row.id}
-  pageSize={5}
-  rowsPerPageOptions={[5]}
-  onCellClick={(params, event) => {
-    // רק אם לחצו על שם פרטי או שם משפחה
-    if (params.field === 'firstName' || params.field === 'lastName') {
-      setOpenCoursesDialog(true);
-      setCurrentStudent({
-        id: params.row.id,
-        firstName: params.row.firstName,
-        lastName: params.row.lastName,
-        phone: params.row.phone,
-        city: params.row.city,
-        school: params.row.school,
-        healthFund: params.row.healthFund,
-        gender: params.row.gender,
-        sector: params.row.sector
-      });
-      dispatch(getgroupStudentByStudentId(params.row.id));
-    }
-  }}
-  sx={{
-    boxShadow: 5,
-    borderRadius: '10px',
-    '& .MuiDataGrid-columnHeader': {
-      // backgroundColor: '#93C5FD',
-    },
-  }}
-/>}
-         <StudentAttendanceHistory
-  open={attendanceHistoryOpen}
-  onClose={() => setAttendanceHistoryOpen(false)}
-  student={selectedStudentForHistory}
-/>
+          {filteredStudents.length > 0 && <DataGrid
+            rows={filteredStudents.filter(row => row?.id != null && row?.id !== '')}
+            columns={columns}
+            getRowId={(row) => row.id}
+            pageSize={5}
+            rowsPerPageOptions={[5]}
+            onCellClick={(params, event) => {
+              // רק אם לחצו על שם פרטי או שם משפחה
+              if (params.field === 'firstName' || params.field === 'lastName') {
+                setOpenCoursesDialog(true);
+                setCurrentStudent({
+                  id: params.row.id,
+                  firstName: params.row.firstName,
+                  lastName: params.row.lastName,
+                  phone: params.row.phone,
+                  city: params.row.city,
+                  school: params.row.school,
+                  healthFund: params.row.healthFund,
+                  gender: params.row.gender,
+                  sector: params.row.sector
+                });
+                dispatch(getgroupStudentByStudentId(params.row.id));
+              }
+            }}
+            sx={{
+              boxShadow: 5,
+              borderRadius: '10px',
+              '& .MuiDataGrid-columnHeader': {
+                // backgroundColor: '#93C5FD',
+              },
+            }}
+          />}
+          <StudentAttendanceHistory
+            open={attendanceHistoryOpen}
+            onClose={() => setAttendanceHistoryOpen(false)}
+            student={selectedStudentForHistory}
+          />
           {/* הודעה כאשר אין תוצאות */}
           {searchTerm && filteredStudents.length === 0 && (
             <Box sx={{ textAlign: 'center', py: 4 }}>
@@ -346,10 +336,14 @@ export default function StudentsTable() {
           transition={{ duration: 0.5 }}
           open={openCoursesDialog}
           onClose={() => setOpenCoursesDialog(false)}
-          maxWidth="md"
+          // maxWidth="md"
           fullWidth
           sx={{
+             direction: 'rtl',
+            textAlign: 'right',
+            justifyContent: 'flex-start',
             '& .MuiDialog-paper': {
+             width:'900px' ,minWidth:'800px',
               borderRadius: 12,
               padding: 0,
               boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
@@ -399,14 +393,14 @@ export default function StudentsTable() {
                       sx={{
                         '&:nth-of-type(odd)': { bgcolor: 'rgba(59, 130, 246, 0.03)' },
                         '&:hover': { bgcolor: 'rgba(59, 130, 246, 0.08)' },
-                        transition: 'background-color 0.3s'
+                        transition: 'background-color 0.3s',
                       }}>
                       <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>שם החוג</TableCell>
                       <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>קבוצה</TableCell>
                       <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>סניף</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>מדריך</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>יום ושעה</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>תאריך התחלה</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem',width:'90px' ,minWidth:'80px' }}>מדריך</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem',width:'130px' ,minWidth:'100px'}}>יום ושעה</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem',width:'150px' ,minWidth:'120px' }}>תאריך התחלה</TableCell>
                       <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>סטטוס</TableCell>
                     </TableRow>
                   </TableHead>

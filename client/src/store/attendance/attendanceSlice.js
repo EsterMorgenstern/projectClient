@@ -8,12 +8,12 @@ import { fetchStudentAttendanceSummary } from './fetchStudentAttendanceSummary';
 const attendanceSlice = createSlice({
     name: 'attendance',
     initialState: {
-        records: {}, // { "2024-01-15": [{ studentId: 1, wasPresent: true, studentName: "..." }] }
+        records: {},
         loading: false,
         error: null,
         lastSaved: null,
-        attendanceData:[],
-        attendanceSummary:[]
+        attendanceData: [],
+        attendanceSummary: {}
     },
     reducers: {
         clearAttendanceError: (state) => {
@@ -54,11 +54,31 @@ const attendanceSlice = createSlice({
             .addCase(fetchAttendanceRange.fulfilled, (state, action) => {
                 state.records = { ...state.records, ...action.payload };
             })
-            .addCase(fetchStudentAttendanceSummary.fulfilled, (state, action) => {
-                state.attendanceSummary = { ...state.attendanceSummary, ...action.payload };
+            // Fetch student attendance summary
+            .addCase(fetchStudentAttendanceSummary.pending, (state) => {
+                state.loading = true;
+                state.error = null;
             })
-             .addCase(fetchAttendanceHistory.fulfilled, (state, action) => {
-                state.attendanceData = { ...state.attendanceData, ...action.payload };
+            .addCase(fetchStudentAttendanceSummary.fulfilled, (state, action) => {
+                state.loading = false;
+                state.attendanceSummary = action.payload;
+            })
+            .addCase(fetchStudentAttendanceSummary.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            })
+            // Fetch attendance history
+            .addCase(fetchAttendanceHistory.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchAttendanceHistory.fulfilled, (state, action) => {
+                state.loading = false;
+                state.attendanceData = action.payload;
+            })
+            .addCase(fetchAttendanceHistory.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
             });
     }
 });
