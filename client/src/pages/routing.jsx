@@ -4,11 +4,12 @@ import Home from './home';
 import Layout from './layout';
 import Courses from './coursesTable';
 import Assignments from './assignments';
-import InstructorsTable from './InstructorsTable';
+import InstructorsTable from './instructorsTable';
 import EntrollStudent from './enrollStudent';
 import AboutSystem from './aboutSystem';
 import Menu from './menu';
 import AttendanceCalendar from './attendanceManagement/attendanceCalendar';
+import LessonManagement from './lessonManagement';
 
 const Routing = () => {
   return (
@@ -22,6 +23,7 @@ const Routing = () => {
         <Route path="/courses" element={<Layout><AttendanceCalendar /></Layout>} />
         <Route path="/entrollStudent" element={<Layout><EntrollStudent /></Layout>} />
         <Route path="/assignments" element={<Layout><Assignments /></Layout>} />
+        <Route path="/lesson-management" element={<Layout><LessonManagement /></Layout>} />
       </Routes>
     </Router>
   );

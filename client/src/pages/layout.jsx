@@ -1,6 +1,6 @@
 import { Box } from '@mui/material';
 import Sidebar from './Sidebar';
-import Navbar from '../components/Navbar/Navbar';
+import Navbar from './Navbar/Navbar';
 import { motion } from 'framer-motion';
 
 const Layout = ({ children }) => {
@@ -28,7 +28,7 @@ const Layout = ({ children }) => {
         </motion.main>
         
         {/* Sidebar - אם אתה רוצה לשמור עליו */}
-        <Sidebar />
+        {/* <Sidebar /> */}
       </Box>
     </Box>
   );

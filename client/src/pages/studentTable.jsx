@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Box, Typography, MenuItem, TableContainer, Paper, TableHead, TableRow, FormControl, InputLabel, Select, TableCell, TableBody, Chip } from '@mui/material';
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Box, Typography, MenuItem, TableContainer, Paper, TableHead, TableRow, FormControl, InputLabel, Select, TableCell, TableBody, Chip, InputAdornment } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import {
   Add, Edit, Delete, Info as InfoIcon, Check as CheckIcon,
-  Close as CloseIcon, School as CourseIcon
+  Close as CloseIcon, School as CourseIcon, Search as SearchIcon
 } from '@mui/icons-material';
+import { History as HistoryIcon } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
+import StudentAttendanceHistory from './studentAttendanceHistory'
 import { fetchStudents } from '../store/student/studentGetAllThunk';
 import { addStudent } from '../store/student/studentAddThunk';
 import { getgroupStudentByStudentId } from '../store/groupStudent/groupStudentGetByStudentIdThunk';
@@ -34,6 +36,12 @@ export default function StudentsTable() {
   const [selectedCourse, setSelectedCourse] = useState(0);
   const [termsOpen, setTermsOpen] = useState(false);
 
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredStudents, setFilteredStudents] = useState([]);
+
+  const [attendanceHistoryOpen, setAttendanceHistoryOpen] = useState(false);
+  const [selectedStudentForHistory, setSelectedStudentForHistory] = useState(null);
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -43,16 +51,54 @@ export default function StudentsTable() {
     'לאומית',
     'כללית'
   ];
+
+  // פונקציה לחיפוש חכם
+  const smartSearch = (students, searchTerm) => {
+    if (!searchTerm.trim()) return students;
+
+    const term = searchTerm.toLowerCase().trim();
+
+    return students.filter(student => {
+      // חיפוש לפי שם פרטי
+      const firstNameMatch = student.firstName?.toLowerCase().includes(term);
+
+      // חיפוש לפי שם משפחה
+      const lastNameMatch = student.lastName?.toLowerCase().includes(term);
+
+      // חיפוש לפי שם מלא (שם פרטי + משפחה)
+      const fullNameMatch = `${student.firstName} ${student.lastName}`.toLowerCase().includes(term);
+
+      // חיפוש לפי ת"ז (חלקי או מלא)
+      const idMatch = student.id?.toString().includes(term);
+
+      // חיפוש לפי טלפון (חלקי או מלא)
+      const phoneMatch = student.phone?.toString().includes(term);
+
+      // חיפוש לפי עיר
+      const cityMatch = student.city?.toLowerCase().includes(term);
+
+      return firstNameMatch || lastNameMatch || fullNameMatch || idMatch || phoneMatch || cityMatch;
+    });
+  };
+
   useEffect(() => {
     dispatch(fetchStudents());
     setLoading(false);
   }, [dispatch]);
+
+  // עדכון הרשימה המסוננת כאשר משתנה החיפוש או רשימת התלמידים
+  useEffect(() => {
+    const filtered = smartSearch(students, searchTerm);
+    setFilteredStudents(filtered);
+  }, [students, searchTerm]);
+
   useEffect(() => {
     setCurrentStudentCourse((prev) => ({
       ...prev,
       courseId: selectedCourse,
     }));
   }, [selectedCourse]);
+
   const refreshTable = async () => {
     await dispatch(fetchStudents());
   }
@@ -82,34 +128,107 @@ export default function StudentsTable() {
     await dispatch(addStudentCourse(currentStudentCourse));
   }
   const columns = [
-    {
-      field: 'actions',
-      headerName: 'פעולות',
-      width: 200,
-      renderCell: (params) => (
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button
-            variant="outlined"
-            color="primary"
-            startIcon={<Edit />}
-            onClick={() => { setCurrentStudent({ id: params.row.id, firstName: params.row.firstName, lastName: params.row.lastName, phone: params.row.phone, city: params.row.city, school: params.row.school, healthFund: params.row.healthFund, gender: params.row.gender, sector: params.row.sector }); setOpenEdit(true); }}
-          >
-            ערוך
-          </Button>
-          <Button
-            variant="outlined"
-            color="error"
-            startIcon={<Delete />}
-            onClick={() => { setCurrentStudent({ id: params.row.id, firstName: params.row.firstName, lastName: params.row.lastName, phone: params.row.phone, city: params.row.city, school: params.row.school, healthFund: params.row.healthFund, gender: params.row.gender, sector: params.row.sector }); setDeleteOpen(true); }}
-          >
-            מחק
-          </Button>
-        </Box>
-      ),
-    },
+  {
+    field: 'actions',
+    headerName: 'פעולות',
+    width: 300,
+    renderCell: (params) => (
+      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+        <Button
+          variant="outlined"
+          color="primary"
+          startIcon={<Edit />}
+          size="small"
+          onClick={(e) => {
+            e.stopPropagation(); // מונע את הפעלת onRowClick
+            setCurrentStudent({
+              id: params.row.id,
+              firstName: params.row.firstName,
+              lastName: params.row.lastName,
+              phone: params.row.phone,
+              city: params.row.city,
+              school: params.row.school,
+              healthFund: params.row.healthFund,
+              gender: params.row.gender,
+              sector: params.row.sector
+            });
+            setOpenEdit(true);
+          }}
+        >
+          ערוך
+        </Button>
+        <Button
+          variant="outlined"
+          color="error"
+          startIcon={<Delete />}
+          size="small"
+          onClick={(e) => {
+            e.stopPropagation(); // מונע את הפעלת onRowClick
+            setCurrentStudent({
+              id: params.row.id,
+              firstName: params.row.firstName,
+              lastName: params.row.lastName,
+              phone: params.row.phone,
+              city: params.row.city,
+              school: params.row.school,
+              healthFund: params.row.healthFund,
+              gender: params.row.gender,
+              sector: params.row.sector
+            });
+            setDeleteOpen(true);
+          }}
+        >
+          מחק
+        </Button>
+        <Button
+          variant="outlined"
+          color="info"
+          startIcon={<HistoryIcon />}
+          size="small"
+          onClick={(e) => {
+            e.stopPropagation(); // מונע את הפעלת onRowClick
+            setSelectedStudentForHistory(params.row);
+            setAttendanceHistoryOpen(true);
+          }}
+        >
+          נוכחות
+        </Button>
+      </Box>
+    ),
+  },
     { field: 'id', headerName: 'קוד תלמיד', width: 120 },
-    { field: 'firstName', headerName: 'שם פרטי', width: 90 },
-    { field: 'lastName', headerName: 'שם משפחה', width: 110 },
+    { 
+    field: 'firstName', 
+    headerName: 'שם פרטי', 
+    width: 90,
+    renderCell: (params) => (
+      <Box 
+        sx={{ 
+          cursor: 'pointer', 
+          color: '#1976d2',
+          '&:hover': { textDecoration: 'underline' }
+        }}
+      >
+        {params.value}
+      </Box>
+    )
+  },
+  { 
+    field: 'lastName', 
+    headerName: 'שם משפחה', 
+    width: 110,
+    renderCell: (params) => (
+      <Box 
+        sx={{ 
+          cursor: 'pointer', 
+          color: '#1976d2',
+          '&:hover': { textDecoration: 'underline' }
+        }}
+      >
+        {params.value}
+      </Box>
+    )
+  },
     { field: 'phone', headerName: 'טלפון', width: 110 },
     { field: 'city', headerName: 'עיר', width: 100 },
     { field: 'school', headerName: 'בית ספר', width: 90 },
@@ -136,27 +255,89 @@ export default function StudentsTable() {
             ניהול תלמידים
           </Typography>
 
-
-          {students.length > 0 && <DataGrid
-            rows={students.filter(row => row?.id != null && row?.id !== '')}
-            columns={columns}
-            getRowId={(row) => row.id}
-            pageSize={5}
-            rowsPerPageOptions={[5]}
-            onRowClick={async (params) => {
-              // פתח את הדיאלוג עם רשימת החוגים
-              setOpenCoursesDialog(true);
-              setCurrentStudent({ id: params.row.id, firstName: params.row.firstName, lastName: params.row.lastName, phone: params.row.phone, city: params.row.city, school: params.row.school, healthFund: params.row.healthFund, gender: params.row.gender, sector: params.row.sector });
-              await dispatch(getgroupStudentByStudentId(params.row.id)); // קח את החוגים של התלמיד  
+          {/* שדה חיפוש */}
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="חפש תלמיד לפי שם, ת״ז, טלפון או עיר..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: '#1E3A8A' }} />
+                </InputAdornment>
+              ),
             }}
             sx={{
-              boxShadow: 5,
-              borderRadius: '10px',
-              '& .MuiDataGrid-columnHeader': {
-                // backgroundColor: '#93C5FD',
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '12px',
+                backgroundColor: '#F8FAFC',
+                '&:hover fieldset': {
+                  borderColor: '#3B82F6',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#1E3A8A',
+                },
               },
             }}
-          />}
+          />
+
+          {/* הצגת מספר התוצאות */}
+          {searchTerm && (
+            <Typography variant="body2" sx={{ color: '#64748B' }}>
+              נמצאו {filteredStudents.length} תוצאות עבור "{searchTerm}"
+            </Typography>
+          )}
+
+        {filteredStudents.length > 0 && <DataGrid
+  rows={filteredStudents.filter(row => row?.id != null && row?.id !== '')}
+  columns={columns}
+  getRowId={(row) => row.id}
+  pageSize={5}
+  rowsPerPageOptions={[5]}
+  onCellClick={(params, event) => {
+    // רק אם לחצו על שם פרטי או שם משפחה
+    if (params.field === 'firstName' || params.field === 'lastName') {
+      setOpenCoursesDialog(true);
+      setCurrentStudent({
+        id: params.row.id,
+        firstName: params.row.firstName,
+        lastName: params.row.lastName,
+        phone: params.row.phone,
+        city: params.row.city,
+        school: params.row.school,
+        healthFund: params.row.healthFund,
+        gender: params.row.gender,
+        sector: params.row.sector
+      });
+      dispatch(getgroupStudentByStudentId(params.row.id));
+    }
+  }}
+  sx={{
+    boxShadow: 5,
+    borderRadius: '10px',
+    '& .MuiDataGrid-columnHeader': {
+      // backgroundColor: '#93C5FD',
+    },
+  }}
+/>}
+         <StudentAttendanceHistory
+  open={attendanceHistoryOpen}
+  onClose={() => setAttendanceHistoryOpen(false)}
+  student={selectedStudentForHistory}
+/>
+          {/* הודעה כאשר אין תוצאות */}
+          {searchTerm && filteredStudents.length === 0 && (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography variant="h6" color="text.secondary">
+                לא נמצאו תוצאות עבור "{searchTerm}"
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                נסה לחפש עם מילות מפתח אחרות
+              </Typography>
+            </Box>
+          )}
         </Box>
         {/* חוגים */}
         <Dialog
@@ -170,7 +351,7 @@ export default function StudentsTable() {
           sx={{
             '& .MuiDialog-paper': {
               borderRadius: 12,
-              padding: 0, 
+              padding: 0,
               boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
             },
           }}
@@ -215,11 +396,11 @@ export default function StudentsTable() {
                       component={motion.tr}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                     sx={{
-                            '&:nth-of-type(odd)': { bgcolor: 'rgba(59, 130, 246, 0.03)' },
-                            '&:hover': { bgcolor: 'rgba(59, 130, 246, 0.08)' },
-                            transition: 'background-color 0.3s'
-                          }}>
+                      sx={{
+                        '&:nth-of-type(odd)': { bgcolor: 'rgba(59, 130, 246, 0.03)' },
+                        '&:hover': { bgcolor: 'rgba(59, 130, 246, 0.08)' },
+                        transition: 'background-color 0.3s'
+                      }}>
                       <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>שם החוג</TableCell>
                       <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>קבוצה</TableCell>
                       <TableCell align="right" sx={{ fontWeight: 'bold', fontSize: '0.95rem' }}>סניף</TableCell>
@@ -311,7 +492,6 @@ export default function StudentsTable() {
         </Dialog>
 
         {/* כפתור הוספת תלמיד חדש */}
-        {/* אישור תקנון */}
         <Button
           onClick={() => setTermsOpen(true)}
           variant="contained"
@@ -345,7 +525,7 @@ export default function StudentsTable() {
             '& .MuiDialog-paper': {
               borderRadius: 12,
               padding: 3,
-              backgroundColor: 'linear-gradient(180deg, #1E3A8A 0%, #3B82F6 100%)', // צבע רקע כחול בהיר
+              backgroundColor: 'linear-gradient(180deg, #1E3A8A 0%, #3B82F6 100%)',
               boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
             },
           }}
@@ -354,34 +534,33 @@ export default function StudentsTable() {
             הוסף תלמיד
           </DialogTitle>
           <DialogContent>
-
             <TextField
               fullWidth
               label="תעודת זהות"
               value={newStudent.id}
               onChange={(e) => setnewStudent({ ...newStudent, id: e.target.value })}
-              sx={{ mb: 2, backgroundColor: '#ffffff' }} // רקע לבן בשדות
+              sx={{ mb: 2, backgroundColor: '#ffffff' }}
             />
             <TextField
               fullWidth
               label="שם פרטי"
               value={newStudent.firstName}
               onChange={(e) => setnewStudent({ ...newStudent, firstName: e.target.value })}
-              sx={{ mb: 2, backgroundColor: '#ffffff' }} // רקע לבן בשדות
+              sx={{ mb: 2, backgroundColor: '#ffffff' }}
             />
             <TextField
               fullWidth
               label="שם משפחה"
               value={newStudent.lastName}
               onChange={(e) => setnewStudent({ ...newStudent, lastName: e.target.value })}
-              sx={{ mb: 2, backgroundColor: '#ffffff' }} // רקע לבן בשדות
+              sx={{ mb: 2, backgroundColor: '#ffffff' }}
             />
             <TextField
               fullWidth
               label="טלפון"
               value={newStudent.phone}
               onChange={(e) => setnewStudent({ ...newStudent, phone: e.target.value })}
-              sx={{ mb: 2, backgroundColor: '#ffffff' }} // רקע לבן בשדות
+              sx={{ mb: 2, backgroundColor: '#ffffff' }}
             />
             <TextField
               fullWidth
@@ -389,7 +568,7 @@ export default function StudentsTable() {
               type="date"
               value={newStudent.birthDate}
               onChange={(e) => setnewStudent({ ...newStudent, birthDate: e.target.value })}
-              sx={{ mb: 2, backgroundColor: '#ffffff' }} // רקע לבן בשדות
+              sx={{ mb: 2, backgroundColor: '#ffffff' }}
             />
             <TextField
               fullWidth
@@ -445,8 +624,8 @@ export default function StudentsTable() {
               color="primary"
               variant="contained"
               sx={{
-                backgroundColor: '#1E3A8A', // כחול כהה
-                '&:hover': { backgroundColor: '#3B82F6' }, // כחול בהיר בהעברה
+                backgroundColor: '#1E3A8A',
+                '&:hover': { backgroundColor: '#3B82F6' },
               }}
             >
               הוסף תלמיד
@@ -462,7 +641,7 @@ export default function StudentsTable() {
             '& .MuiDialog-paper': {
               borderRadius: 12,
               padding: 3,
-              backgroundColor: 'linear-gradient(180deg, #1E3A8A 0%, #3B82F6 100%)', // צבע רקע כחול בהיר
+              backgroundColor: 'linear-gradient(180deg, #1E3A8A 0%, #3B82F6 100%)',
               boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
             },
           }}
@@ -477,21 +656,21 @@ export default function StudentsTable() {
               label="תעודת זהות"
               value={currentStudent.id}
               onChange={(e) => setCurrentStudent({ ...currentStudent, id: e.target.value })}
-              sx={{ mb: 2, backgroundColor: '#ffffff' }} // רקע לבן בשדות
+              sx={{ mb: 2, backgroundColor: '#ffffff' }}
             />
             <TextField
               fullWidth
               label="שם פרטי"
               value={currentStudent.firstName}
               onChange={(e) => setCurrentStudent({ ...currentStudent, firstName: e.target.value })}
-              sx={{ mb: 2, backgroundColor: '#ffffff' }} // רקע לבן בשדות
+              sx={{ mb: 2, backgroundColor: '#ffffff' }}
             />
             <TextField
               fullWidth
               label="שם משפחה"
               value={currentStudent.lastName}
               onChange={(e) => setCurrentStudent({ ...currentStudent, lastName: e.target.value })}
-              sx={{ mb: 2, backgroundColor: '#ffffff' }} // רקע לבן בשדות
+              sx={{ mb: 2, backgroundColor: '#ffffff' }}
             />
             <TextField
               fullWidth
@@ -499,7 +678,7 @@ export default function StudentsTable() {
               type="number"
               value={currentStudent.phone}
               onChange={(e) => setCurrentStudent({ ...currentStudent, phone: e.target.value })}
-              sx={{ mb: 2, backgroundColor: '#ffffff' }} // רקע לבן בשדות
+              sx={{ mb: 2, backgroundColor: '#ffffff' }}
             />
             <TextField
               fullWidth
@@ -555,8 +734,8 @@ export default function StudentsTable() {
               color="primary"
               variant="contained"
               sx={{
-                backgroundColor: '#1E3A8A', // כחול כהה
-                '&:hover': { backgroundColor: '#3B82F6' }, // כחול בהיר בהעברה
+                backgroundColor: '#1E3A8A',
+                '&:hover': { backgroundColor: '#3B82F6' },
               }}
             >
               שמור תלמיד
@@ -571,7 +750,7 @@ export default function StudentsTable() {
             '& .MuiDialog-paper': {
               borderRadius: 12,
               padding: 3,
-              backgroundColor: '#F0F4FF', // רקע כחול בהיר
+              backgroundColor: '#F0F4FF',
               boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
             },
           }}
@@ -593,7 +772,7 @@ export default function StudentsTable() {
               color="primary"
               variant="contained"
               sx={{
-                backgroundColor: '#D32F2F', // אדום למחיקה
+                backgroundColor: '#D32F2F',
                 '&:hover': { backgroundColor: '#F44336' },
               }}
             >
@@ -601,6 +780,7 @@ export default function StudentsTable() {
             </Button>
           </DialogActions>
         </Dialog>
+
       </div>
     </motion.div>
   );

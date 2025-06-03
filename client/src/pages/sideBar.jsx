@@ -90,7 +90,14 @@ const Sidebar = () => {
             <ListItemText primary="שיבוץ תלמידים לחוגים" />
           </ListItemButton>
         </ListItem>
-
+ <ListItem disablePadding>
+          <ListItemButton component={Link} to="/lesson-management">
+            <ListItemIcon sx={{ color: 'white' }}>
+              <AssignIcon />
+            </ListItemIcon>
+            <ListItemText primary="ניהול שיעורים" />
+          </ListItemButton>
+        </ListItem>
          <ListItem disablePadding>
           <ListItemButton component={Link} to="/aboutSystem">
             <ListItemIcon sx={{ color: 'white' }}>

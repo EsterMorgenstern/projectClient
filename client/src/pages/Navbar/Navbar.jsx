@@ -101,12 +101,20 @@ const Navbar = () => {
       description: 'רישום תלמיד חדש'
     },
     { 
+      title: 'שיעורים', 
+      path: '/lesson-management', 
+      icon: <Assignment />, 
+      color: '#795548',
+      description: 'ניהול שיעורים'
+    },
+    { 
       title: 'מטלות', 
       path: '/assignments', 
       icon: <Assignment />, 
       color: '#795548',
       description: 'ניהול מטלות'
     },
+    
     { 
       title: 'אודות המערכת', 
       path: '/aboutSystem', 
@@ -298,7 +306,7 @@ const Navbar = () => {
           {/* תפריט דסקטופ */}
           {!isMobile && (
             <Box sx={{ display: 'flex', gap: 1 }}>
-              {navigationItems.slice(0, 6).map((item) => (
+              {navigationItems.slice(0, 7).map((item) => (
                 <Tooltip key={item.path} title={item.description}>
                   <Button
                     color="inherit"
@@ -418,8 +426,7 @@ const Navbar = () => {
           <Typography variant="subtitle1">שלום, משתמש</Typography>
           <Typography variant="body2" color="text.secondary">admin@system.com</Typography>
         </Box>
-        
-        <MenuItem onClick={handleProfileMenuClose}>
+             <MenuItem onClick={handleProfileMenuClose}>
           <ListItemIcon><AccountCircle /></ListItemIcon>
           <ListItemText>פרופיל אישי</ListItemText>
         </MenuItem>
@@ -438,3 +445,4 @@ const Navbar = () => {
 };
 
 export default Navbar;
+   

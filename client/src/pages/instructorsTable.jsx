@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Box, Typography } from '@mui/material';
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Box, Typography, InputAdornment } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
-import { Add, Edit, Delete, IntegrationInstructions } from '@mui/icons-material';
+import { Add, Edit, Delete, IntegrationInstructions, Search as SearchIcon } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
@@ -38,8 +38,47 @@ export default function InstructorsTable() {
   const [currentInstructor, setcurrentInstructor] = useState({ id: null, firstName: '', lastName: '', phone: null, email: '', city: '',sector:'' });
   const [newInstructor, setnewInstructor] = useState({ id: null, firstName: '', lastName: '', phone: null, email: '', city: '',sector:'' });
   const [loading, setLoading] = useState(true);
+  
+  // הוספת state לחיפוש
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredInstructors, setFilteredInstructors] = useState([]);
+  
   const dispatch = useDispatch();
 
+  // פונקציה לחיפוש חכם למדריכים
+  const smartSearchInstructors = (instructors, searchTerm) => {
+    if (!searchTerm.trim()) return instructors;
+    
+    const term = searchTerm.toLowerCase().trim();
+    
+    return instructors.filter(instructor => {
+      // חיפוש לפי שם פרטי
+      const firstNameMatch = instructor.firstName?.toLowerCase().includes(term);
+      
+      // חיפוש לפי שם משפחה
+      const lastNameMatch = instructor.lastName?.toLowerCase().includes(term);
+      
+      // חיפוש לפי שם מלא (שם פרטי + משפחה)
+      const fullNameMatch = `${instructor.firstName} ${instructor.lastName}`.toLowerCase().includes(term);
+      
+      // חיפוש לפי ת"ז (חלקי או מלא)
+      const idMatch = instructor.id?.toString().includes(term);
+      
+      // חיפוש לפי טלפון (חלקי או מלא)
+      const phoneMatch = instructor.phone?.toString().includes(term);
+      
+      // חיפוש לפי עיר
+      const cityMatch = instructor.city?.toLowerCase().includes(term);
+      
+      // חיפוש לפי אימייל
+      const emailMatch = instructor.email?.toLowerCase().includes(term);
+      
+      // חיפוש לפי מגזר
+      const sectorMatch = instructor.sector?.toLowerCase().includes(term);
+      
+      return firstNameMatch || lastNameMatch || fullNameMatch || idMatch || phoneMatch || cityMatch || emailMatch || sectorMatch;
+    });
+  };
 
   useEffect(() => {
     const loadInstructors = async () => {
@@ -49,7 +88,11 @@ export default function InstructorsTable() {
     loadInstructors();
   }, [dispatch]);
 
-
+  // עדכון הרשימה המסוננת כאשר משתנה החיפוש או רשימת המדריכים
+  useEffect(() => {
+    const filtered = smartSearchInstructors(instructors, searchTerm);
+    setFilteredInstructors(filtered);
+  }, [instructors, searchTerm]);
 
   const handleSave = async () => {
     const newinstructor = { firstName: currentInstructor.firstName, lastName: currentInstructor.lastName, phone: currentInstructor.phone, email: currentInstructor.email, city: currentInstructor.city ,sector:currentInstructor.sector};
@@ -132,20 +175,69 @@ export default function InstructorsTable() {
             ניהול מדריכים
           </Typography>
 
-          {instructors.length > 0 && <DataGrid
-            rows={instructors.filter(row => row?.id != null && row?.id !== '')}
-            columns={columns}
-            getRowId={(row) => row.id}
-            pageSize={5}
-            rowsPerPageOptions={[10]}
+          {/* שדה חיפוש למדריכים */}
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="חפש מדריך לפי שם, ת״ז, טלפון, אימייל או עיר..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: '#1E3A8A' }} />
+                </InputAdornment>
+              ),
+            }}
             sx={{
-              boxShadow: 5,
-              borderRadius: '10px',
-              '& .MuiDataGrid-columnHeader': {
-                // backgroundColor: '#93C5FD',
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '12px',
+                backgroundColor: '#F8FAFC',
+                '&:hover fieldset': {
+                  borderColor: '#3B82F6',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#1E3A8A',
+                },
               },
             }}
-          />}
+          />
+
+          {/* הצגת מספר התוצאות */}
+          {searchTerm && (
+            <Typography variant="body2" sx={{ color: '#64748B' }}>
+              נמצאו {filteredInstructors.length} תוצאות עבור "{searchTerm}"
+            </Typography>
+          )}
+
+          {filteredInstructors.length > 0 && (
+            <DataGrid
+              rows={filteredInstructors.filter(row => row?.id != null && row?.id !== '')}
+              columns={columns}
+              getRowId={(row) => row.id}
+              pageSize={5}
+              rowsPerPageOptions={[10]}
+              sx={{
+                boxShadow: 5,
+                borderRadius: '10px',
+                '& .MuiDataGrid-columnHeader': {
+                  // backgroundColor: '#93C5FD',
+                },
+              }}
+            />
+          )}
+
+          {/* הודעה כאשר אין תוצאות */}
+          {searchTerm && filteredInstructors.length === 0 && (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography variant="h6" color="text.secondary">
+                לא נמצאו תוצאות עבור "{searchTerm}"
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                נסה לחפש עם מילות מפתח אחרות
+              </Typography>
+            </Box>
+          )}
         </Box>
 
         {/* כפתור ודיאלוג הוספת מדריך חדש */}
@@ -258,7 +350,6 @@ export default function InstructorsTable() {
           <DialogContent>
             <Typography variant="body1" sx={{ color: '#333' }}>
               ?  האם אתה בטוח שברצונך למחוק את המדריך   {currentInstructor.firstName} {currentInstructor.lastName}
-
             </Typography>
           </DialogContent>
           <DialogActions>
@@ -270,8 +361,7 @@ export default function InstructorsTable() {
               color="primary"
               variant="contained"
               sx={{
-
-                backgroundColor: '#D32F2F', // אדום למחיקה
+                backgroundColor: '#D32F2F',
                 '&:hover': { backgroundColor: '#F44336' },
               }}
             >
@@ -328,7 +418,6 @@ export default function InstructorsTable() {
               onChange={(e) => setcurrentInstructor({ ...currentInstructor, phone: e.target.value })}
               sx={{ mb: 2 }}
             />
-            
             <TextField
               fullWidth
               label="אימייל"

@@ -2,6 +2,8 @@ import { createSlice } from '@reduxjs/toolkit';
 import { saveAttendance } from './saveAttendance';
 import { fetchAttendanceByDate } from './fetchAttendanceByDate';
 import { fetchAttendanceRange } from './fetchAttendanceRange';
+import { fetchAttendanceHistory } from './fetchAttendanceHistory';
+import { fetchStudentAttendanceSummary } from './fetchStudentAttendanceSummary';
 
 const attendanceSlice = createSlice({
     name: 'attendance',
@@ -9,7 +11,9 @@ const attendanceSlice = createSlice({
         records: {}, // { "2024-01-15": [{ studentId: 1, wasPresent: true, studentName: "..." }] }
         loading: false,
         error: null,
-        lastSaved: null
+        lastSaved: null,
+        attendanceData:[],
+        attendanceSummary:[]
     },
     reducers: {
         clearAttendanceError: (state) => {
@@ -49,6 +53,12 @@ const attendanceSlice = createSlice({
             // Fetch attendance range
             .addCase(fetchAttendanceRange.fulfilled, (state, action) => {
                 state.records = { ...state.records, ...action.payload };
+            })
+            .addCase(fetchStudentAttendanceSummary.fulfilled, (state, action) => {
+                state.attendanceSummary = { ...state.attendanceSummary, ...action.payload };
+            })
+             .addCase(fetchAttendanceHistory.fulfilled, (state, action) => {
+                state.attendanceData = { ...state.attendanceData, ...action.payload };
             });
     }
 });
