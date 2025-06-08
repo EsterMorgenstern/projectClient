@@ -4,6 +4,8 @@ import { fetchAttendanceByDate } from './fetchAttendanceByDate';
 import { fetchAttendanceRange } from './fetchAttendanceRange';
 import { fetchAttendanceHistory } from './fetchAttendanceHistory';
 import { fetchStudentAttendanceSummary } from './fetchStudentAttendanceSummary';
+import { fetchAttendanceReportsMonthly } from './fetchAttendenceReportsMonthly';
+import { fetchAttendanceReportsOverall } from './fetchAttendanceReportsOverall';
 
 const attendanceSlice = createSlice({
     name: 'attendance',
@@ -13,7 +15,9 @@ const attendanceSlice = createSlice({
         error: null,
         lastSaved: null,
         attendanceData: [],
-        attendanceSummary: {}
+        attendanceSummary: {},
+        attendanceReportsMonthly: null, // שנה מ-{} ל-null
+        attendanceReportsOverall: null  // שנה מ-{} ל-null
     },
     reducers: {
         clearAttendanceError: (state) => {
@@ -67,6 +71,41 @@ const attendanceSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload;
             })
+
+            // fetchAttendanceReportsMonthly
+            .addCase(fetchAttendanceReportsMonthly.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchAttendanceReportsMonthly.fulfilled, (state, action) => {
+                state.loading = false;
+                state.error = null;
+                state.attendanceReportsMonthly = action.payload;
+                console.log('Stored monthly reports in Redux:', action.payload);
+            })
+            .addCase(fetchAttendanceReportsMonthly.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+                state.attendanceReportsMonthly = null;
+            })
+
+            // fetchAttendanceReportsOverall
+            .addCase(fetchAttendanceReportsOverall.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchAttendanceReportsOverall.fulfilled, (state, action) => {
+                state.loading = false;
+                state.error = null;
+                state.attendanceReportsOverall = action.payload;
+                console.log('Stored overall reports in Redux:', action.payload);
+            })
+            .addCase(fetchAttendanceReportsOverall.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+                state.attendanceReportsOverall = null;
+            })
+
             // Fetch attendance history
             .addCase(fetchAttendanceHistory.pending, (state) => {
                 state.loading = true;

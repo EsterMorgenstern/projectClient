@@ -61,6 +61,7 @@ import { getgroupStudentByStudentId } from '../store/groupStudent/groupStudentGe
 import { addCourse } from '../store/course/courseAddThunk';
 import { addBranch } from '../store/branch/branchAddThunk';
 import { addGroup } from '../store/group/groupAddThunk';
+import StudentCoursesDialog from './studentCoursesDialog';
 
 const EnrollStudent = () => {
   const dispatch = useDispatch();
@@ -92,6 +93,10 @@ const EnrollStudent = () => {
   const [addBranchDialogOpen, setAddBranchDialogOpen] = useState(false);
   const [addGroupDialogOpen, setAddGroupDialogOpen] = useState(false);
   const [studentCoursesDialog, setStudentCoursesDialog] = useState(false);
+  const [viewCoursesDialog, setViewCoursesDialog] = useState(false);
+  const [selectedStudentForView, setSelectedStudentForView] = useState(null);
+  const [selectedStudentCourses, setSelectedStudentCourses] = useState([]);
+
   const [studentCourses, setStudentCourses] = useState([]);
   const [selectedStudentName, setSelectedStudentName] = useState('');
   const [studentGroupData, setStudentGroupData] = useState({
@@ -161,6 +166,7 @@ const EnrollStudent = () => {
       });
     }
   };
+  
 
   // פונקציה לטיפול בלחיצה על כפתור שיבוץ תלמיד
   const handleEnrollStudent = async () => {

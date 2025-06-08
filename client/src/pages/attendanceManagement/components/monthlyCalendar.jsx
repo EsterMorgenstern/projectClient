@@ -266,16 +266,17 @@ const MonthlyCalendar = ({
         justifyContent: 'space-between',
         alignItems: 'center',
         boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+        ,direction:'rtl'
       }}>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center'}}>
           <Typography variant="h5" sx={{ fontWeight: 'bold', marginRight: '12px' }}>
             {hebrewMonthName}
           </Typography>
           <Box>
-            <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+            <Typography variant="h4" sx={{ fontWeight: 'bold',marginRight:'12px' }}>
               {monthName} {year}
             </Typography>
-            <Typography variant="subtitle1">
+            <Typography variant="subtitle1" sx={{marginRight:'12px'}} >
               {calendarDays.filter(day => day.events.length > 0).length} ימים עם פעילות
             </Typography>
           </Box>

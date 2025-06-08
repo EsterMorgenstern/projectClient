@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+         import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -30,15 +30,34 @@ import {
   TrendingUp
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchAttendanceReportsOverall } from '../../../store/attendance/fetchAttendanceReportsOverall';
+import { fetchAttendanceReportsMonthly } from '../../../store/attendance/fetchAttendenceReportsMonthly';
 
 const AttendanceReports = ({ open, onClose }) => {
   const [reportType, setReportType] = useState('monthly');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedGroup, setSelectedGroup] = useState('');
-  const [reportData, setReportData] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [groups, setGroups] = useState([]);
+
+  const dispatch = useDispatch();
+  
+  // תיקון: קבלת נתונים מ-Redux store בצורה נכונה
+  const attendanceState = useSelector(state => state.attendances);
+  const { 
+    attendanceReportsMonthly, 
+    attendanceReportsOverall, 
+    loading, 
+    error 
+  } = attendanceState;
+
+  // תיקון: הסרת הפונקציות מה-console.log
+  console.log('Redux State:', attendanceState);
+  console.log('Monthly Reports:', attendanceReportsMonthly);
+  console.log('Overall Reports:', attendanceReportsOverall);
+  console.log('Loading:', loading);
+  console.log('Error:', error);
 
   const monthNames = [
     'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
@@ -52,10 +71,13 @@ const AttendanceReports = ({ open, onClose }) => {
   useEffect(() => {
     const fetchGroups = async () => {
       try {
-        const response = await fetch('https://localhost:5248/api/group/GetAll');
+        const response = await fetch('http://localhost:5248/api/Group/GetAll');
         if (response.ok) {
           const data = await response.json();
+          console.log('Groups loaded:', data);
           setGroups(data);
+        } else {
+          console.error('Failed to fetch groups:', response.status);
         }
       } catch (error) {
         console.error('Error fetching groups:', error);
@@ -69,32 +91,30 @@ const AttendanceReports = ({ open, onClose }) => {
 
   // טעינת נתוני דוח
   const fetchReportData = async () => {
-    setLoading(true);
-    try {
-      let url = '';
-      
-      if (reportType === 'monthly') {
-        url = `https://localhost:5248/api/attendance/reports/monthly?month=${selectedMonth}&year=${selectedYear}`;
-        if (selectedGroup) {
-          url += `&groupId=${selectedGroup}`;
-        }
-      } else if (reportType === 'overall') {
-        url = `https://localhost:5248/api/attendance/reports/overall?month=${selectedMonth}&year=${selectedYear}`;
-      }
+    console.log('Fetching report data:', {
+      reportType,
+      selectedMonth,
+      selectedYear,
+      selectedGroup
+    });
 
-      const response = await fetch(url);
-      if (response.ok) {
-        const data = await response.json();
-        setReportData(data);
-      } else {
-        console.error('Failed to fetch report data');
-        setReportData(null);
+    try {
+      if (reportType === 'monthly') {
+        const result = await dispatch(fetchAttendanceReportsMonthly({ 
+          groupId: selectedGroup, 
+          selectedMonth, 
+          selectedYear 
+        }));
+        console.log('Monthly report result:', result);
+      } else if (reportType === 'overall') {
+        const result = await dispatch(fetchAttendanceReportsOverall({ 
+          selectedMonth, 
+          selectedYear 
+        }));
+        console.log('Overall report result:', result);
       }
     } catch (error) {
-      console.error('Error fetching report data:', error);
-      setReportData(null);
-    } finally {
-      setLoading(false);
+      console.error('Error in fetchReportData:', error);
     }
   };
 
@@ -104,8 +124,26 @@ const AttendanceReports = ({ open, onClose }) => {
     }
   }, [open, reportType, selectedMonth, selectedYear, selectedGroup]);
 
+  // תיקון: קבלת הנתונים הנכונים לפי סוג הדוח
+  const reportData = reportType === 'monthly' ? attendanceReportsMonthly : attendanceReportsOverall;
+  
+  console.log('Current report data:', reportData);
+  console.log('Report data type:', typeof reportData);
+  console.log('Report data keys:', reportData ? Object.keys(reportData) : 'null');
+
   const renderMonthlyReport = () => {
-    if (!reportData) return null;
+    if (!reportData || typeof reportData !== 'object') {
+      return (
+        <Box sx={{ textAlign: 'center', py: 4 }}>
+          <Typography variant="h6" color="text.secondary">
+            אין נתונים להצגה
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            נתונים: {JSON.stringify(reportData)}
+          </Typography>
+        </Box>
+      );
+    }
 
     return (
       <Box>
@@ -166,58 +204,77 @@ const AttendanceReports = ({ open, onClose }) => {
         </Grid>
 
         {/* טבלת קבוצות */}
-        <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
-          <Table>
-            <TableHead>
-              <TableRow sx={{ bgcolor: '#F8FAFC' }}>
-                <TableCell align="right" sx={{ fontWeight: 'bold' }}>קבוצה</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 'bold' }}>קורס</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 'bold' }}>סניף</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 'bold' }}>תלמידים</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 'bold' }}>שיעורים</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 'bold' }}>אחוז נוכחות</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {reportData.groups?.map((group, index) => (
-                <TableRow
-                  key={group.groupId}
-                  component={motion.tr}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  sx={{
-                    '&:nth-of-type(odd)': { bgcolor: 'rgba(59, 130, 246, 0.03)' },
-                    '&:hover': { bgcolor: 'rgba(59, 130, 246, 0.08)' }
-                  }}
-                >
-                  <TableCell align="right">{group.groupName}</TableCell>
-                  <TableCell align="right">{group.courseName}</TableCell>
-                  <TableCell align="right">{group.branchName}</TableCell>
-                  <TableCell align="right">{group.totalStudents}</TableCell>
-                  <TableCell align="right">{group.totalLessons}</TableCell>
-                  <TableCell align="right">
-                    <Chip
-                      label={`${group.averageAttendanceRate}%`}
-                      color={
-                        group.averageAttendanceRate >= 90 ? 'success' :
-                        group.averageAttendanceRate >= 75 ? 'primary' :
-                        group.averageAttendanceRate >= 60 ? 'warning' : 'error'
-                      }
-                      size="small"
-                    />
-                  </TableCell>
+        {reportData.groups && Array.isArray(reportData.groups) && reportData.groups.length > 0 ? (
+          <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ bgcolor: '#F8FAFC' }}>
+                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>קבוצה</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>קורס</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>סניף</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>תלמידים</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>שיעורים</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>אחוז נוכחות</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
+              <TableBody>
+                {reportData.groups.map((group, index) => (
+                  <TableRow
+                    key={group.groupId || index}
+                    component={motion.tr}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    sx={{
+                      '&:nth-of-type(odd)': { bgcolor: 'rgba(59, 130, 246, 0.03)' },
+                      '&:hover': { bgcolor: 'rgba(59, 130, 246, 0.08)' }
+                    }}
+                  >
+                    <TableCell align="right">{group.groupName || 'לא זמין'}</TableCell>
+                    <TableCell align="right">{group.courseName || 'לא זמין'}</TableCell>
+                    <TableCell align="right">{group.branchName || 'לא זמין'}</TableCell>
+                    <TableCell align="right">{group.totalStudents || 0}</TableCell>
+                    <TableCell align="right">{group.totalLessons || 0}</TableCell>
+                    <TableCell align="right">
+                      <Chip
+                        label={`${group.averageAttendanceRate || 0}%`}
+                        color={
+                          (group.averageAttendanceRate || 0) >= 90 ? 'success' :
+                          (group.averageAttendanceRate || 0) >= 75 ? 'primary' :
+                          (group.averageAttendanceRate || 0) >= 60 ? 'warning' : 'error'
+                        }
+                        size="small"
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        ) : (
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Typography variant="h6" color="text.secondary">
+              אין נתוני קבוצות להצגה
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Groups data: {JSON.stringify(reportData.groups)}
+            </Typography>
+          </Box>
+        )}
       </Box>
     );
   };
 
   const renderOverallReport = () => {
-    if (!reportData) return null;
+    if (!reportData || typeof reportData !== 'object') {
+      return (
+        <Box sx={{ textAlign: 'center', py: 4 }}>
+          <Typography variant="h6" color="text.secondary">
+            אין נתונים להצגה
+          </Typography>
+        </Box>
+      );
+    }
 
     return (
       <Box>
@@ -231,24 +288,24 @@ const AttendanceReports = ({ open, onClose }) => {
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Typography>סה״כ קבוצות:</Typography>
-                    <Typography fontWeight="bold">{reportData.totalGroups}</Typography>
+                    <Typography fontWeight="bold">{reportData.totalGroups || 0}</Typography>
                   </Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Typography>סה״כ תלמידים:</Typography>
-                    <Typography fontWeight="bold">{reportData.totalStudents}</Typography>
+                    <Typography fontWeight="bold">{reportData.totalStudents || 0}</Typography>
                   </Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Typography>סה״כ שיעורים:</Typography>
-                    <Typography fontWeight="bold">{reportData.totalLessons}</Typography>
+                    <Typography fontWeight="bold">{reportData.totalLessons || 0}</Typography>
                   </Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Typography>אחוז נוכחות כללי:</Typography>
                     <Chip
-                      label={`${reportData.overallAttendanceRate}%`}
+                      label={`${reportData.overallAttendanceRate || 0}%`}
                       color={
-                        reportData.overallAttendanceRate >= 90 ? 'success' :
-                        reportData.overallAttendanceRate >= 75 ? 'primary' :
-                        reportData.overallAttendanceRate >= 60 ? 'warning' : 'error'
+                        (reportData.overallAttendanceRate || 0) >= 90 ? 'success' :
+                        (reportData.overallAttendanceRate || 0) >= 75 ? 'primary' :
+                        (reportData.overallAttendanceRate || 0) >= 60 ? 'warning' : 'error'
                       }
                     />
                   </Box>
@@ -268,6 +325,7 @@ const AttendanceReports = ({ open, onClose }) => {
       maxWidth="xl"
       fullWidth
       sx={{
+        direction:'rtl',
         '& .MuiDialog-paper': {
           borderRadius: 12,
           minHeight: '80vh'
@@ -284,11 +342,9 @@ const AttendanceReports = ({ open, onClose }) => {
         }}
       >
         <Assessment />
-        <Typography variant="h6">
-          דוחות נוכחות
-        </Typography>
+        דוחות נוכחות
       </DialogTitle>
-
+<br />
       <DialogContent sx={{ p: 3 }}>
         {/* פילטרים */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
@@ -304,7 +360,9 @@ const AttendanceReports = ({ open, onClose }) => {
               <MenuItem value="overall">סטטיסטיקות כלליות</MenuItem>
             </TextField>
           </Grid>
-          <Grid item xs={12} md={2}>
+
+         
+         <Grid item xs={12} md={2}>
             <TextField
               select
               fullWidth
@@ -346,7 +404,7 @@ const AttendanceReports = ({ open, onClose }) => {
                 <MenuItem value="">כל הקבוצות</MenuItem>
                 {groups.map(group => (
                   <MenuItem key={group.groupId} value={group.groupId}>
-                    {group.groupName} - {group.courseName}
+                    {group.groupName} - {group.courseId}
                   </MenuItem>
                 ))}
               </TextField>
@@ -358,16 +416,32 @@ const AttendanceReports = ({ open, onClose }) => {
               variant="contained"
               onClick={fetchReportData}
               sx={{ height: '56px' }}
+              disabled={Boolean(loading)}
             >
-              עדכן דוח
+              {loading ? <CircularProgress size={24} color="inherit" /> : 'עדכן דוח'}
             </Button>
           </Grid>
         </Grid>
 
+        {/* הצגת שגיאות */}
+        {error && (
+          <Box sx={{ mb: 3, p: 2, bgcolor: '#FEF2F2', borderRadius: 2, border: '1px solid #FECACA' }}>
+            <Typography color="error" variant="h6" gutterBottom>
+              שגיאה בטעינת הנתונים
+            </Typography>
+            <Typography color="error" variant="body2">
+              {typeof error === 'string' ? error : JSON.stringify(error)}
+            </Typography>
+          </Box>
+        )}
+
+       
+
         {/* תוכן הדוח */}
         {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
             <CircularProgress />
+            <Typography sx={{ ml: 2 }}>טוען נתונים...</Typography>
           </Box>
         ) : (
           <Box>
@@ -382,7 +456,7 @@ const AttendanceReports = ({ open, onClose }) => {
           startIcon={<Download />}
           variant="outlined"
           color="primary"
-          disabled={!reportData}
+          disabled={!reportData || Boolean(loading)}
         >
           ייצא לאקסל
         </Button>

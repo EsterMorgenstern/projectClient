@@ -988,6 +988,7 @@ import { editStudent } from '../store/student/studentEditThunk';
 import TermsDialog from './termDialog';
 import { useNavigate } from 'react-router-dom';
 import './styles/tableStyles.css';
+import StudentCoursesDialog from './studentCoursesDialog';
 
 // קומפוננטת Loading Skeleton מתקדמת
 const LoadingSkeleton = () => (
@@ -1048,6 +1049,7 @@ export default function StudentsTable() {
   const [openEdit, setOpenEdit] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [openCoursesDialog, setOpenCoursesDialog] = useState(false);
+  const [selectedStudentForCourses, setSelectedStudentForCourses] = useState(null);
   const [currentStudent, setCurrentStudent] = useState({
     id: null, firstName: '', lastName: '', phone: null, city: '',
     school: '', healthFund: '', gender: "", sector: ""
@@ -1149,7 +1151,7 @@ export default function StudentsTable() {
   };
 
   const handleViewCourses = async (student) => {
-    setCurrentStudent(student);
+    setSelectedStudentForCourses(student);
     setOpenCoursesDialog(true);
     await dispatch(getgroupStudentByStudentId(student.id));
   };
@@ -1216,7 +1218,7 @@ export default function StudentsTable() {
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <FormControl size="small" className="page-size-selector">
-                <InputLabel>תוצאות בעמוד</InputLabel>
+                <InputLabel >תוצאות בעמוד</InputLabel>
                 <Select
                   value={pageSize}
                   onChange={handlePageSizeChange}

@@ -5,10 +5,9 @@ export const deleteStudent = createAsyncThunk(
     'students/deleteStudent',
     async (studentId, { rejectWithValue }) => {
         try {
-            await axios.delete(`http://localhost:5248/api/Student/Delete/${studentId}`);
-
-
-            return response.data;
+            const response = await axios.delete(`http://localhost:5248/api/Student/Delete/${studentId}`);
+            
+            return { id: studentId };
         } catch (error) {
             return rejectWithValue(error.response?.data || 'Failed to delete student');
         }

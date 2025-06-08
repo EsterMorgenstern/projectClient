@@ -1,5 +1,6 @@
 // import { makeStyles } from '@mui/styles';
 
+
 // export const useStyles = makeStyles((theme) => ({
 //   root: {
 //     width: '100%',
@@ -143,16 +144,21 @@ export const styles = {
     color: '#1E3A8A',
     marginBottom: theme.spacing(1),
     fontFamily: 'Heebo, sans-serif',
-  }),
+    direction:'rtl',
+ }),
   pageSubtitle: (theme) => ({
     color: '#334155',
     fontSize: '1.25rem',
+        direction:'rtl',
+
     [theme.breakpoints.down('sm')]: {
       fontSize: '1rem',
     },
   }),
   calendarHeader: (theme) => ({
     marginBottom: theme.spacing(3),
+        direction:'rtl',
+
   }),
   dateNavigation: (theme) => ({
     display: 'flex',
@@ -166,6 +172,7 @@ export const styles = {
     fontWeight: 'bold',
     color: '#1E3A8A',
     margin: theme.spacing(0, 2),
+    
   }),
   todayButton: (theme) => ({
     marginLeft: theme.spacing(1),

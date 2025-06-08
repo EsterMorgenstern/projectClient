@@ -123,6 +123,7 @@
 
 .page-size-selector .MuiOutlinedInput-root {
   border-radius: 12px !important;
+  width: 100px !important;
   background: #f8fafc !important;
 }
 
