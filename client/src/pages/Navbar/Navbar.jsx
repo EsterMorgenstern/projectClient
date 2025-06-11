@@ -88,7 +88,7 @@ const Navbar = () => {
     },
     { 
       title: 'חוגים', 
-      path: '/courses', 
+      path: '/attendanceCalendar', 
       icon: <School />, 
       color: '#F44336',
       description: 'ניהול חוגים ונוכחות'

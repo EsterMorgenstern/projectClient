@@ -1,66 +1,175 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog, DialogActions, DialogContent, DialogTitle, Button,
   Box, Typography, TableContainer, Paper, Table, TableHead,
   TableRow, TableCell, TableBody, Chip, Avatar, Divider,
-  Card, CardContent, Grid, IconButton, Fade, Slide
+  Card, CardContent, Grid, IconButton, Tabs, Tab,
+  Accordion, AccordionSummary, AccordionDetails
 } from '@mui/material';
 import {
-  Add, Check as CheckIcon, Close as CloseIcon, 
+  Add, Check as CheckIcon, Close as CloseIcon,
   School as CourseIcon, Info as InfoIcon, Person as PersonIcon,
   Schedule as ScheduleIcon, LocationOn as LocationIcon,
   Group as GroupIcon, CalendarToday as CalendarIcon,
-  Assignment as AssignmentIcon, AccountCircle
+  Assignment as AssignmentIcon, Notes as NotesIcon,
+  ExpandMore as ExpandMoreIcon, Warning as WarningIcon,
+  Error as ErrorIcon, CheckCircle as CheckCircleIcon
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { getNotesByStudentId } from '../store/studentNotes/studentNotesGetById';
+import AddStudentNoteDialog from './addStudentNoteDialog';
+import { addStudentNote } from '../store/studentNotes/studentNoteAddThunk';
 
-const StudentCoursesDialog = ({ 
-  open, 
-  onClose, 
-  student, 
-  studentCourses = [], 
+const StudentCoursesDialog = ({
+  open,
+  onClose,
+  student,
+  studentCourses = [],
   showAddButton = true,
   title = null,
   subtitle = null
 }) => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  // אם אין תלמיד נבחר, לא להציג כלום
+  const [currentTab, setCurrentTab] = useState(0);
+  const [addNoteDialogOpen, setAddNoteDialogOpen] = useState(false);
+
+  const studentNotes = useSelector((state) => state.studentNotes.studentNotes);
+  const notesLoading = useSelector((state) => state.studentNotes.loading);
+
+  useEffect(() => {
+    if (open && student?.id) {
+      dispatch(getNotesByStudentId(student.id));
+    }
+  }, [open, student?.id, dispatch]);
+
   if (!student) return null;
 
-  const dialogTitle = title || `החוגים של ${student.firstName} ${student.lastName}`;
+  const dialogTitle = title || `${student.firstName} ${student.lastName}`;
   const dialogSubtitle = subtitle || `ת"ז: ${student.id}`;
 
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0, scale: 0.8 },
-    visible: { 
-      opacity: 1, 
-      scale: 1,
-      transition: { 
-        duration: 0.4,
-        ease: "easeOut"
-      }
-    },
-    exit: { 
-      opacity: 0, 
-      scale: 0.8,
-      transition: { duration: 0.3 }
+  const getNoteTypeColor = (noteType) => {
+    switch (noteType?.toLowerCase()) {
+      case 'חיובי': return { color: '#059669', bg: '#d1fae5', icon: CheckCircleIcon };
+      case 'שלילי': return { color: '#dc2626', bg: '#fee2e2', icon: ErrorIcon };
+      case 'אזהרה': return { color: '#d97706', bg: '#fef3c7', icon: WarningIcon };
+      case 'כללי': return { color: '#3b82f6', bg: '#dbeafe', icon: InfoIcon };
+      default: return { color: '#6b7280', bg: '#f3f4f6', icon: NotesIcon };
     }
   };
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: (index) => ({
-      opacity: 1,
-      y: 0,
-      transition: {
-        delay: index * 0.1,
-        duration: 0.5,
-        ease: "easeOut"
-      }
-    })
+  const handleSaveNote = async (noteData) => {
+    try {
+      await dispatch(addStudentNote(noteData));
+      dispatch(getNotesByStudentId(student.id));
+    } catch (error) {
+      console.error('Error saving note:', error);
+    }
+  };
+
+  const renderStudentNotes = () => {
+    if (notesLoading) {
+      return (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+          <Typography variant="body1">טוען הערות...</Typography> {/* ✅ הגדלתי */}
+        </Box>
+      );
+    }
+
+    if (!studentNotes || studentNotes.length === 0) {
+      return (
+        <Box sx={{ textAlign: 'center', py: 6 }}>
+          <NotesIcon sx={{ fontSize: 60, color: '#94a3b8', mb: 2 }} />
+          <Typography variant="h6" color="text.secondary">
+            אין הערות לתלמיד זה
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}> {/* ✅ הגדלתי מ-body2 */}
+            ניתן להוסיף הערות חדשות דרך כפתור "הוסף הערה"
+          </Typography>
+        </Box>
+      );
+    }
+
+    return (
+      <Box sx={{ maxHeight: '400px', overflow: 'auto' }}>
+        {studentNotes.map((note, index) => {
+          const noteTypeConfig = getNoteTypeColor(note.noteType);
+          const IconComponent = noteTypeConfig.icon;
+
+          return (
+            <motion.div
+              key={note.noteId}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <Accordion sx={{ mb: 1, borderRadius: '12px !important' }}>
+                <AccordionSummary
+                  expandIcon={<ExpandMoreIcon />}
+                  sx={{
+                    background: noteTypeConfig.bg,
+                    borderRadius: '12px',
+                    minHeight: '64px', // ✅ הגדלתי
+                    '&:hover': { background: noteTypeConfig.bg }
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
+                    <Avatar sx={{
+                      bgcolor: noteTypeConfig.color,
+                      width: 40, // ✅ הגדלתי
+                      height: 40
+                    }}>
+                      <IconComponent sx={{ fontSize: 20 }} /> {/* ✅ הגדלתי */}
+                    </Avatar>
+
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="body1" fontWeight="bold"> {/* ✅ הגדלתי מ-subtitle2 */}
+                        {note.noteType || 'הערה כללית'}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary"> {/* ✅ הגדלתי מ-caption */}
+                        {new Date(note.createdDate).toLocaleDateString('he-IL')} • {note.authorName}
+                      </Typography>
+                    </Box>
+
+                    {note.priority && (
+                      <Chip
+                        label={note.priority}
+                        size="medium" // ✅ הגדלתי מ-small
+                        color={note.priority === 'גבוה' ? 'error' : note.priority === 'בינוני' ? 'warning' : 'default'}
+                      />
+                    )}
+                  </Box>
+                </AccordionSummary>
+
+                <AccordionDetails sx={{ pt: 2 }}>
+                  <Typography variant="body1" sx={{ mb: 2, lineHeight: 1.6 }}> {/* ✅ הגדלתי מ-body2 */}
+                    {note.noteContent}
+                  </Typography>
+
+                  <Divider sx={{ my: 1.5 }} />
+
+                  <Grid container spacing={1}>
+                    <Grid item xs={6}>
+                      <Typography variant="body2" color="text.secondary"> {/* ✅ הגדלתי מ-caption */}
+                        נוצר על ידי: {note.authorName}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="body2" color="text.secondary"> {/* ✅ הגדלתי מ-caption */}
+                        עודכן: {new Date(note.updatedDate).toLocaleDateString('he-IL')}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                </AccordionDetails>
+              </Accordion>
+            </motion.div>
+          );
+        })}
+      </Box>
+    );
   };
 
   return (
@@ -83,613 +192,542 @@ const StudentCoursesDialog = ({
               maxHeight: '90vh',
             },
           }}
-          TransitionComponent={Slide}
-          TransitionProps={{
-            direction: 'up',
-            timeout: 400
-          }}
         >
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-          >
-            {/* Header מעוצב */}
-            <DialogTitle
-              sx={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                color: 'white',
-                padding: 0,
-                position: 'relative',
-                overflow: 'hidden'
-              }}
-            >
-              {/* Background Pattern */}
-              <Box
-                sx={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  background: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-                  opacity: 0.3
-                }}
-              />
-              
-              <Box sx={{ 
-                position: 'relative', 
-                zIndex: 1, 
-                p: 3,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between'
-              }}>
+          {/* Header */}
+          <DialogTitle sx={{
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white',
+            padding: 0,
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <Box sx={{ position: 'relative', zIndex: 1, p: 2.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Avatar
-                    sx={{
-                      width: 60,
-                      height: 60,
-                      background: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
-                      fontSize: '1.5rem',
-                      fontWeight: 'bold',
-                      boxShadow: '0 8px 16px rgba(0,0,0,0.2)'
-                    }}
-                  >
-                    <PersonIcon sx={{ fontSize: 30 }} />
+                  <Avatar sx={{
+                    width: 50,
+                    height: 50,
+                    background: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+                    fontSize: '1.2rem',
+                    fontWeight: 'bold',
+                    boxShadow: '0 8px 16px rgba(0,0,0,0.2)'
+                  }}>
+                    <PersonIcon sx={{ fontSize: 24 }} />
                   </Avatar>
                   <Box>
-                    <Typography 
-                      variant="h4" 
-                      sx={{ 
-                        fontWeight: 'bold',
-                        textShadow: '0 2px 4px rgba(0,0,0,0.3)',
-                        mb: 0.5
-                      }}
-                    >
+                    <Typography variant="h5" sx={{ fontWeight: 'bold', textShadow: '0 2px 4px rgba(0,0,0,0.3)', mb: 0.5 }}>
                       {dialogTitle}
                     </Typography>
-                    <Typography 
-                      variant="subtitle1" 
-                      sx={{ 
-                        opacity: 0.9,
-                        fontSize: '1.1rem'
-                      }}
-                    >
+                    <Typography variant="body1" sx={{ opacity: 0.9 }}> {/* ✅ הגדלתי מ-body2 */}
                       {dialogSubtitle}
                     </Typography>
                   </Box>
                 </Box>
 
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  {showAddButton && (
-                    <Button
-                      variant="contained"
-                      startIcon={<Add />}
-                      onClick={() => {
-                        navigate('/entrollStudent');
-                        onClose();
-                      }}
-                      sx={{
-                        background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                        borderRadius: '25px',
-                        px: 3,
-                        py: 1.5,
-                        fontSize: '1rem',
-                        fontWeight: 'bold',
-                        boxShadow: '0 8px 16px rgba(79, 172, 254, 0.4)',
-                        '&:hover': {
-                          background: 'linear-gradient(135deg, #43a3f5 0%, #00e8f5 100%)',
-                          transform: 'translateY(-2px)',
-                          boxShadow: '0 12px 20px rgba(79, 172, 254, 0.5)',
-                        },
-                        transition: 'all 0.3s ease'
-                      }}
-                    >
-                      הוסף חוג חדש
-                    </Button>
-                  )}
-                  
-                  <IconButton
-                    onClick={onClose}
-                    sx={{
-                      color: 'white',
-                      background: 'rgba(255, 255, 255, 0.2)',
-                      '&:hover': {
-                        background: 'rgba(255, 255, 255, 0.3)',
-                        transform: 'rotate(90deg)'
-                      },
-                      transition: 'all 0.3s ease'
-                    }}
-                  >
-                    <CloseIcon />
-                  </IconButton>
-                </Box>
+                <IconButton onClick={onClose} sx={{ color: 'white' }}>
+                  <CloseIcon />
+                </IconButton>
               </Box>
-            </DialogTitle>
+            </Box>
+          </DialogTitle>
 
-            <DialogContent sx={{ p: 0, background: '#f8fafc' }}>
-              {studentCourses && studentCourses.length > 0 ? (
-                <Box sx={{ p: 3 }}>
-                  {/* סטטיסטיקות מהירות */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    <Grid container spacing={2} sx={{ mb: 3 }}>
-                      <Grid item xs={12} sm={4}>
-                        <Card sx={{ 
-                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                          color: 'white',
-                          borderRadius: '15px',
-                          boxShadow: '0 8px 16px rgba(102, 126, 234, 0.3)'
-                        }}>
-                          <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                            <CourseIcon sx={{ fontSize: 40, mb: 1 }} />
-                            <Typography variant="h4" fontWeight="bold">
-                              {studentCourses.length}
-                            </Typography>
-                            <Typography variant="body2">
-                              חוגים רשומים
-                            </Typography>
-                          </CardContent>
-                        </Card>
-                      </Grid>
-                      <Grid item xs={12} sm={4}>
-                        <Card sx={{ 
-                          background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-                          color: '#8b4513',
-                          borderRadius: '15px',
-                          boxShadow: '0 8px 16px rgba(252, 182, 159, 0.3)'
-                        }}>
-                          <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                            <CheckIcon sx={{ fontSize: 40, mb: 1 }} />
-                            <Typography variant="h4" fontWeight="bold">
-                              {studentCourses.filter(c => c.isActive).length}
-                            </Typography>
-                            <Typography variant="body2">
-                              חוגים פעילים
-                            </Typography>
-                          </CardContent>
-                        </Card>
-                      </Grid>
-                      <Grid item xs={12} sm={4}>
-                        <Card sx={{ 
-                          background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-                          color: '#2d3748',
-                          borderRadius: '15px',
-                          boxShadow: '0 8px 16px rgba(168, 237, 234, 0.3)'
-                        }}>
-                          <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                            <LocationIcon sx={{ fontSize: 40, mb: 1 }} />
-                            <Typography variant="h4" fontWeight="bold">
-                              {new Set(studentCourses.map(c => c.branchName)).size}
-                            </Typography>
-                            <Typography variant="body2">
-                              סניפים שונים
-                            </Typography>
-                          </CardContent>
-                        </Card>
-                      </Grid>
-                    </Grid>
-                  </motion.div>
+          <DialogContent sx={{ p: 0, background: '#f8fafc' }}>
+            {/* טאבים */}
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: 'white' }}>
+              <Tabs
+                value={currentTab}
+                onChange={(e, newValue) => setCurrentTab(newValue)}
+                sx={{ px: 2 }}
+              >
+                <Tab
+                  icon={<CourseIcon />}
+                  label={`חוגים (${studentCourses.length})`}
+                  iconPosition="start"
+                  sx={{
+                    minHeight: '60px', // ✅ הגדלתי
+                    fontSize: '0.95rem' // ✅ הגדלתי
+                  }}
+                />
+                <Tab
+                  icon={<NotesIcon />}
+                  label={`הערות (${studentNotes?.length || 0})`}
+                  iconPosition="start"
+                  sx={{
+                    minHeight: '60px', // ✅ הגדלתי
+                    fontSize: '0.95rem' // ✅ הגדלתי
+                  }}
+                />
+              </Tabs>
+            </Box>
 
-                  {/* טבלת החוגים המעוצבת */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.2 }}
-                  >
-                    <Card sx={{ 
-                      borderRadius: '20px',
-                      overflow: 'hidden',
-                      boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-                      background: 'white'
-                    }}>
-                      <Box sx={{ 
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        color: 'white',
-                        p: 2,
-                        textAlign: 'center'
+            {/* תוכן הטאבים */}
+            <Box sx={{ p: 2.5 }}>
+              {currentTab === 0 && (
+                // טאב החוגים
+                <>
+                  {studentCourses && studentCourses.length > 0 ? (
+                    <Box>
+                      {/* סטטיסטיקות */}
+                      <Grid container spacing={2} sx={{ mb: 2.5 }}>
+                        <Grid item xs={12} sm={4}>
+                          <Card sx={{
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            color: 'white',
+                            borderRadius: '12px',
+                            boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
+                          }}>
+                            <CardContent sx={{ textAlign: 'center', py: 1.5 }}>
+                              <CourseIcon sx={{ fontSize: 32, mb: 0.5 }} />
+                              <Typography variant="h5" fontWeight="bold">
+                                {studentCourses.length}
+                              </Typography>
+                              <Typography variant="body2"> {/* ✅ הגדלתי מ-caption */}
+                                חוגים רשומים
+                              </Typography>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                        <Grid item xs={12} sm={4}>
+                          <Card sx={{
+                            background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+                            color: '#8b4513',
+                            borderRadius: '12px',
+                            boxShadow: '0 4px 12px rgba(252, 182, 159, 0.3)'
+                          }}>
+                            <CardContent sx={{ textAlign: 'center', py: 1.5 }}>
+                              <CheckIcon sx={{ fontSize: 32, mb: 0.5 }} />
+                              <Typography variant="h5" fontWeight="bold">
+                                {studentCourses.filter(c => c.isActive).length}
+                              </Typography>
+                              <Typography variant="body2"> {/* ✅ הגדלתי מ-caption */}
+                                חוגים פעילים
+                              </Typography>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                        <Grid item xs={12} sm={4}>
+                          <Card sx={{
+                            background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+                            color: '#2d3748',
+                            borderRadius: '12px',
+                            boxShadow: '0 4px 12px rgba(168, 237, 234, 0.3)'
+                          }}>
+                            <CardContent sx={{ textAlign: 'center', py: 1.5 }}>
+                              <LocationIcon sx={{ fontSize: 32, mb: 0.5 }} />
+                              <Typography variant="h5" fontWeight="bold">
+                                {new Set(studentCourses.map(c => c.branchName)).size}
+                              </Typography>
+                              <Typography variant="body2"> {/* ✅ הגדלתי מ-caption */}
+                                סניפים שונים
+                              </Typography>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                      </Grid>
+
+                      {/* טבלת החוגים */}
+                      <Card sx={{
+                        borderRadius: '16px',
+                        overflow: 'hidden',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                        background: 'white'
                       }}>
-                        <Typography variant="h6" fontWeight="bold">
-                          פירוט החוגים
-                        </Typography>
-                      </Box>
-                      
-                      <TableContainer sx={{ maxHeight: '400px' }}>
-                        <Table stickyHeader>
-                          <TableHead>
-                            <TableRow>
-                              <TableCell 
-                                align="right" 
-                                sx={{ 
-                                  fontWeight: 'bold', 
-                                  fontSize: '1rem',
-                                  background: '#f8fafc',
-                                  borderBottom: '2px solid #e2e8f0'
-                                }}
-                              >
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
-                                  <CourseIcon sx={{ color: '#667eea' }} />
-                                  שם החוג
-                                </Box>
-                              </TableCell>
-                              <TableCell 
-                                align="right" 
-                                sx={{ 
-                                  fontWeight: 'bold', 
-                                  fontSize: '1rem',
-                                  background: '#f8fafc',
-                                  borderBottom: '2px solid #e2e8f0'
-                                }}
-                              >
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
-                                  <GroupIcon sx={{ color: '#667eea' }} />
-                                  קבוצה
-                                </Box>
-                              </TableCell>
-                              <TableCell 
-                                align="right" 
-                                sx={{ 
-                                  fontWeight: 'bold', 
-                                  fontSize: '1rem',
-                                  background: '#f8fafc',
-                                  borderBottom: '2px solid #e2e8f0'
-                                }}
-                              >
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
-                                  <LocationIcon sx={{ color: '#667eea' }} />
-                                  סניף
-                                </Box>
-                              </TableCell>
-                              <TableCell 
-                                align="right" 
-                                sx={{ 
-                                  fontWeight: 'bold', 
-                                  fontSize: '1rem',
-                                  background: '#f8fafc',
-                                  borderBottom: '2px solid #e2e8f0'
-                                }}
-                              >
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
-                                  <PersonIcon sx={{ color: '#667eea' }} />
-                                  מדריך
-                                </Box>
-                              </TableCell>
-                              <TableCell 
-                                align="right" 
-                                sx={{ 
-                                  fontWeight: 'bold', 
-                                  fontSize: '1rem',
-                                  background: '#f8fafc',
-                                  borderBottom: '2px solid #e2e8f0'
-                                }}
-                              >
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
-                                  <ScheduleIcon sx={{ color: '#667eea' }} />
-                                  יום ושעה
-                                </Box>
-                              </TableCell>
-                              <TableCell 
-                                align="right" 
-                                sx={{ 
-                                  fontWeight: 'bold', 
-                                  fontSize: '1rem',
-                                  background: '#f8fafc',
-                                  borderBottom: '2px solid #e2e8f0'
-                                }}
-                              >
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
-                                  <CalendarIcon sx={{ color: '#667eea' }} />
-                                  תאריך התחלה
-                                </Box>
-                              </TableCell>
-                              <TableCell 
-                                align="right" 
-                                sx={{ 
-                                  fontWeight: 'bold', 
-                                  fontSize: '1rem',
-                                  background: '#f8fafc',
-                                  borderBottom: '2px solid #e2e8f0'
-                                }}
-                              >
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
-                                  <AssignmentIcon sx={{ color: '#667eea' }} />
-                                  סטטוס
-                                </Box>
-                              </TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            <AnimatePresence>
-                              {studentCourses.map((course, index) => (
-                                <motion.tr
-                                  key={course.groupStudentId || index}
-                                  component={TableRow}
-                                  custom={index}
-                                  variants={itemVariants}
-                                  initial="hidden"
-                                  animate="visible"
-                                  exit="hidden"
-                                  whileHover={{ 
-                                    backgroundColor: 'rgba(102, 126, 234, 0.05)',
-                                    scale: 1.01
-                                  }}
-                                  transition={{ duration: 0.2 }}
+                        <TableContainer sx={{ maxHeight: '350px' }}>
+                          <Table stickyHeader size="medium"> {/* ✅ שיניתי מ-small ל-medium */}
+                            <TableHead>
+                              <TableRow>
+                                <TableCell
+                                  align="right"
                                   sx={{
-                                    cursor: 'pointer',
-                                    '&:nth-of-type(even)': { 
-                                      backgroundColor: 'rgba(248, 250, 252, 0.8)' 
-                                    },
-                                    '&:hover': {
-                                      boxShadow: '0 4px 12px rgba(102, 126, 234, 0.15)',
-                                    },
-                                    transition: 'all 0.3s ease'
+                                    fontWeight: 'bold',
+                                    fontSize: '1rem',
+                                    background: '#f8fafc',
+                                    py: 2,
+                                    textAlign: 'right', // ✅ הוספתי
+                                    direction: 'rtl' // ✅ הוספתי
                                   }}
                                 >
-                                  <TableCell align="right" sx={{ py: 2 }}>
-                                    <Box sx={{ 
-                                      display: 'flex', 
-                                      alignItems: 'center', 
-                                      justifyContent: 'flex-end', 
-                                      gap: 2 
-                                    }}>
-                                      <Box sx={{
-                                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                        borderRadius: '50%',
-                                        p: 1,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center'
+                                  <Box sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'flex-start', // ✅ שיניתי מ-flex-end
+                                    gap: 1,
+                                    direction: 'rtl' // ✅ הוספתי
+                                  }}>
+                                    <CourseIcon sx={{ color: '#667eea', fontSize: 18 }} />
+                                    שם החוג
+                                  </Box>
+                                </TableCell>
+                                <TableCell
+                                  align="right"
+                                  sx={{
+                                    fontWeight: 'bold',
+                                    fontSize: '1rem',
+                                    background: '#f8fafc',
+                                    py: 2,
+                                    textAlign: 'right',
+                                    direction: 'rtl'
+                                  }}
+                                >
+                                  <Box sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'flex-start', // ✅ שיניתי
+                                    gap: 1,
+                                    direction: 'rtl'
+                                  }}>
+                                    <Typography sx={{ fontWeight: 'bold' }}>קבוצה</Typography>
+                                    <GroupIcon sx={{ color: '#667eea', fontSize: 18 }} />
+                                  </Box>
+                                </TableCell>
+
+                                <TableCell
+                                  align="right"
+                                  sx={{
+                                    fontWeight: 'bold',
+                                    fontSize: '1rem',
+                                    background: '#f8fafc',
+                                    py: 2,
+                                    textAlign: 'right',
+                                    direction: 'rtl'
+                                  }}
+                                >
+                                  <Box sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'flex-start', // ✅ שיניתי
+                                    gap: 1,
+                                    direction: 'rtl'
+                                  }}>
+                                    <Typography sx={{ fontWeight: 'bold' }}>סניף</Typography>
+                                    <LocationIcon sx={{ color: '#667eea', fontSize: 18 }} />
+                                  </Box>
+                                </TableCell>
+
+                                <TableCell
+                                  align="right"
+                                  sx={{
+                                    fontWeight: 'bold',
+                                    fontSize: '1rem',
+                                    background: '#f8fafc',
+                                    py: 2,
+                                    textAlign: 'right',
+                                    direction: 'rtl'
+                                  }}
+                                >
+                                  <Box sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'flex-start', // ✅ שיניתי
+                                    gap: 1,
+                                    direction: 'rtl'
+                                  }}>
+                                    <Typography sx={{ fontWeight: 'bold' }}>מדריך</Typography>
+                                    <PersonIcon sx={{ color: '#667eea', fontSize: 18 }} />
+                                  </Box>
+                                </TableCell>
+
+                                <TableCell
+                                  align="right"
+                                  sx={{
+                                    fontWeight: 'bold',
+                                    fontSize: '1rem',
+                                    background: '#f8fafc',
+                                    py: 2,
+                                    textAlign: 'right',
+                                    direction: 'rtl'
+                                  }}
+                                >
+                                  <Box sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'flex-start', // ✅ שיניתי
+                                    gap: 1,
+                                    direction: 'rtl'
+                                  }}>
+                                    <Typography sx={{ fontWeight: 'bold' }}>יום ושעה</Typography>
+                                    <ScheduleIcon sx={{ color: '#667eea', fontSize: 18 }} />
+                                  </Box>
+                                </TableCell>
+
+                                <TableCell
+                                  align="right"
+                                  sx={{
+                                    fontWeight: 'bold',
+                                    fontSize: '1rem',
+                                    background: '#f8fafc',
+                                    py: 2,
+                                    textAlign: 'right',
+                                    direction: 'rtl'
+                                  }}
+                                >
+                                  <Box sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'flex-start', // ✅ שיניתי
+                                    gap: 1,
+                                    direction: 'rtl'
+                                  }}>
+                                    <Typography sx={{ fontWeight: 'bold' }}>תאריך התחלה</Typography>
+                                    <CalendarIcon sx={{ color: '#667eea', fontSize: 18 }} />
+                                  </Box>
+                                </TableCell>
+
+                                <TableCell
+                                  align="right"
+                                  sx={{
+                                    fontWeight: 'bold',
+                                    fontSize: '1rem',
+                                    background: '#f8fafc',
+                                    py: 2,
+                                    textAlign: 'right',
+                                    direction: 'rtl'
+                                  }}
+                                >
+                                  <Box sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'flex-start', // ✅ שיניתי
+                                    gap: 1,
+                                    direction: 'rtl'
+                                  }}>
+                                    <Typography sx={{ fontWeight: 'bold' }}>סטטוס</Typography>
+                                    <AssignmentIcon sx={{ color: '#667eea', fontSize: 18 }} />
+                                  </Box>
+                                </TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              <AnimatePresence>
+                                {studentCourses.map((course, index) => (
+                                  <motion.tr
+                                    key={course.groupStudentId || index}
+                                    component={TableRow}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: index * 0.05 }}
+                                    sx={{
+                                      '&:nth-of-type(even)': { backgroundColor: 'rgba(248, 250, 252, 0.8)' },
+                                      '&:hover': { backgroundColor: 'rgba(102, 126, 234, 0.05)' }
+                                    }}
+                                  >
+                                    <TableCell align="right" sx={{ py: 2 }}> {/* ✅ הגדלתי מ-1.5 */}
+                                      <Typography sx={{
+                                        fontWeight: 'medium',
+                                        fontSize: '1rem', // ✅ הגדלתי מ-0.875rem
+                                        color: '#2d3748'
                                       }}>
-                                        <CourseIcon sx={{ color: 'white', fontSize: 20 }} />
-                                      </Box>
-                                      <Typography 
-                                        sx={{ 
-                                          fontWeight: 'bold',
-                                          fontSize: '1.1rem',
-                                          color: '#2d3748'
-                                        }}
-                                      >
                                         {course.courseName}
                                       </Typography>
-                                    </Box>
-                                  </TableCell>
-                                  
-                                  <TableCell align="right" sx={{ py: 2 }}>
-                                    <Chip
-                                      label={course.groupName}
-                                      sx={{
-                                        background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-                                        color: '#8b4513',
-                                        fontWeight: 'bold',
-                                        borderRadius: '15px'
-                                      }}
-                                    />
-                                  </TableCell>
-                                  
-                                  <TableCell align="right" sx={{ py: 2 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
-                                      <LocationIcon sx={{ color: '#667eea', fontSize: 18 }} />
-                                      <Typography sx={{ fontWeight: 'medium' }}>
+                                    </TableCell>
+
+                                    <TableCell align="right" sx={{ py: 2 }}>
+                                      <Chip
+                                        label={course.groupName}
+                                        size="medium" // ✅ הגדלתי מ-small
+                                        sx={{
+                                          background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+                                          color: '#8b4513',
+                                          fontWeight: 'medium',
+                                          borderRadius: '12px',
+                                          fontSize: '0.875rem' // ✅ הגדלתי מ-0.75rem
+                                        }}
+                                      />
+                                    </TableCell>
+
+                                    <TableCell align="right" sx={{ py: 2 }}>
+                                      <Typography sx={{ fontSize: '1rem' }}> {/* ✅ הגדלתי מ-0.875rem */}
                                         {course.branchName}
                                       </Typography>
-                                    </Box>
-                                  </TableCell>
-                                  
-                                  <TableCell align="right" sx={{ py: 2 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
-                                      <Avatar sx={{ 
-                                        width: 32, 
-                                        height: 32, 
-                                        background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-                                        color: '#2d3748',
-                                        fontSize: '0.8rem'
+                                    </TableCell>
+
+                                    <TableCell align="right" sx={{ py: 2 }}>
+                                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 1 }}>
+                                        <Avatar sx={{
+                                          width: 32, // ✅ הגדלתי מ-28
+                                          height: 32,
+                                          background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+                                          color: '#2d3748',
+                                          fontSize: '0.875rem' // ✅ הגדלתי מ-0.75rem
+                                        }}>
+                                          {course.instructorName?.charAt(0)}
+                                        </Avatar>
+                                        <Typography sx={{ fontSize: '0.85rem' }}> {/* ✅ הגדלתי מ-0.875rem */}
+                                          {course.instructorName}
+                                        </Typography>
+                                      </Box>
+                                    </TableCell>
+ <TableCell align="right" sx={{ py: 2 }}>
+                                      <Box sx={{
+                                        background: 'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)',
+                                        borderRadius: '8px',
+                                        p: 1.5, // ✅ הגדלתי מ-1
+                                        textAlign: 'center'
                                       }}>
-                                        {course.instructorName?.charAt(0)}
-                                      </Avatar>
-                                      <Typography sx={{ fontWeight: 'medium' }}>
-                                        {course.instructorName}
-                                      </Typography>
-                                    </Box>
-                                  </TableCell>
-                                  
-                                  <TableCell align="right" sx={{ py: 2 }}>
-                                    <Box sx={{ 
-                                      background: 'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)',
-                                      borderRadius: '10px',
-                                      p: 1,
-                                      textAlign: 'center'
-                                    }}>
-                                      <Typography sx={{ 
-                                        fontWeight: 'bold',
-                                        color: '#3730a3',
-                                        fontSize: '0.9rem'
-                                      }}>
-                                        {course.dayOfWeek}
-                                      </Typography>
-                                      <Typography sx={{ 
-                                        fontSize: '0.8rem',
-                                        color: '#5b21b6'
-                                      }}>
-                                        {course.hour}
-                                      </Typography>
-                                    </Box>
-                                  </TableCell>
-                                  
-                                  <TableCell align="right" sx={{ py: 2 }}>
-                                    <Typography sx={{ 
-                                      fontWeight: 'medium',
-                                      color: '#4a5568'
-                                    }}>
-                                      {course.enrollmentDate}
-                                    </Typography>
-                                  </TableCell>
-                                  
-                                  <TableCell align="right" sx={{ py: 2 }}>
-                                    <Chip
-                                      icon={course.isActive === true ? <CheckIcon /> : <CloseIcon />}
-                                      label={course.isActive ? 'פעיל' : 'לא פעיל'}
-                                      color={course.isActive === true ? "success" : "error"}
-                                      variant="outlined"
-                                      sx={{
-                                        fontWeight: 'bold',
-                                        borderWidth: '2px',
-                                        '&.MuiChip-colorSuccess': {
-                                          background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
-                                          borderColor: '#10b981',
-                                          color: '#065f46'
-                                        },
-                                        '&.MuiChip-colorError': {
-                                          background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
-                                          borderColor: '#ef4444',
-                                          color: '#991b1b'
-                                        }
-                                      }}
-                                    />
-                                  </TableCell>
-                                </motion.tr>
-                              ))}
-                            </AnimatePresence>
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
-                    </Card>
-                  </motion.div>
-                </Box>
-              ) : (
+                                        <Typography sx={{
+                                          fontWeight: 'medium',
+                                          color: '#3730a3',
+                                          fontSize: '0.9rem' // ✅ הגדלתי מ-0.8rem
+                                        }}>
+                                          {course.dayOfWeek}
+                                        </Typography>
+                                        <Typography sx={{
+                                          fontSize: '0.85rem', // ✅ הגדלתי מ-0.75rem
+                                          color: '#5b21b6'
+                                        }}>
+                                          {course.hour}
+                                        </Typography>
+                                      </Box>
+                                    </TableCell>
+                                    <TableCell align="center" sx={{ py: 2 }}>
+                                                                                                                  
+                                        <Typography sx={{
+                                          fontSize: '0.85rem', 
+                                        }}>
+                                          {course.enrollmentDate}
+                                        </Typography>
+                                      
+                                    </TableCell>
+
+                                    <TableCell align="right" sx={{ py: 2 }}>
+                                      <Chip
+                                        icon={course.isActive === true ? <CheckIcon sx={{ fontSize: 18 }} /> : <CloseIcon sx={{ fontSize: 18 }} />}
+                                        label={course.isActive ? 'פעיל' : 'לא פעיל'}
+                                        color={course.isActive === true ? "success" : "error"}
+                                        variant="outlined"
+                                        size="medium" // ✅ הגדלתי מ-small
+                                        sx={{ fontSize: '0.875rem' }} // ✅ הגדלתי מ-0.75rem
+                                      />
+                                    </TableCell>
+                                  </motion.tr>
+                                ))}
+                              </AnimatePresence>
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      </Card>
+                    </Box>
+                  ) : (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 6 }}>
+                      <InfoIcon sx={{ fontSize: 50, color: '#94a3b8', mb: 2 }} />
+                      <Typography variant="h6" sx={{ fontWeight: 'medium', color: '#2d3748', mb: 2, textAlign: 'center' }}>
+                        אין חוגים רשומים לתלמיד זה
+                      </Typography>
+                      {showAddButton && (
+                        <Button
+                          variant="contained"
+                          size="medium"
+                          startIcon={<Add />}
+                          onClick={() => {
+                            navigate('/entrollStudent');
+                            onClose();
+                          }}
+                          sx={{
+                            background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                            borderRadius: '20px',
+                            px: 3,
+                            py: 1.5,
+                            fontSize: '1rem', // ✅ הגדלתי מ-0.95rem
+                            fontWeight: 'medium'
+                          }}
+                        >
+                          הוסף חוג ראשון
+                        </Button>
+                      )}
+                    </Box>
+                  )}
+                </>
+              )}
+
+              {/* טאב ההערות */}
+              {currentTab === 1 && (
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.5 }}
                 >
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      py: 8,
-                      px: 4
-                    }}
-                  >
-                    <motion.div
-                      animate={{ 
-                        rotate: [0, 10, -10, 0],
-                        scale: [1, 1.1, 1]
-                      }}
-                      transition={{ 
-                        duration: 2,
-                        repeat: Infinity,
-                        repeatType: "reverse"
-                      }}
-                    >
-                      <Box sx={{
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        borderRadius: '50%',
-                        p: 3,
-                        mb: 3,
-                        boxShadow: '0 10px 25px rgba(102, 126, 234, 0.3)'
-                      }}>
-                        <InfoIcon sx={{ fontSize: 60, color: 'white' }} />
-                      </Box>
-                    </motion.div>
-                    
-                    <Typography 
-                      variant="h5" 
-                      sx={{ 
-                        fontWeight: 'bold',
-                        color: '#2d3748',
-                        mb: 2,
-                        textAlign: 'center'
-                      }}
-                    >
-                      אין חוגים רשומים לתלמיד זה
-                    </Typography>
-                    
-                    <Typography 
-                      variant="body1" 
-                      sx={{ 
-                        color: '#718096',
-                        textAlign: 'center',
-                        mb: 4,
-                        maxWidth: '400px'
-                      }}
-                    >
-                      התלמיד עדיין לא רשום לאף חוג. ניתן לרשום אותו לחוגים חדשים דרך כפתור "הוסף חוג חדש"
-                    </Typography>
-
-                    {showAddButton && (
-                      <Button
-                        variant="contained"
-                        size="large"
-                        startIcon={<Add />}
-                        onClick={() => {
-                          navigate('/entrollStudent');
-                          onClose();
-                        }}
-                        sx={{
-                          background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                          borderRadius: '25px',
-                          px: 4,
-                          py: 2,
-                          fontSize: '1.1rem',
-                          fontWeight: 'bold',
-                          boxShadow: '0 8px 16px rgba(79, 172, 254, 0.4)',
-                          '&:hover': {
-                            background: 'linear-gradient(135deg, #43a3f5 0%, #00e8f5 100%)',
-                            transform: 'translateY(-2px)',
-                            boxShadow: '0 12px 20px rgba(79, 172, 254, 0.5)',
-                          },
-                          transition: 'all 0.3s ease'
-                        }}
-                      >
-                        הוסף חוג ראשון
-                      </Button>
-                    )}
-                  </Box>
+                  {renderStudentNotes()}
                 </motion.div>
               )}
-            </DialogContent>
+            </Box>
+          </DialogContent>
 
-            <Divider sx={{ background: 'linear-gradient(90deg, transparent, #e2e8f0, transparent)' }} />
+          <Divider sx={{ background: 'linear-gradient(90deg, transparent, #e2e8f0, transparent)' }} />
 
-            <DialogActions sx={{ 
-              p: 3, 
-              background: 'white',
-              justifyContent: 'center',
-              gap: 2
-            }}>
-              <Button
-                onClick={onClose}
-                variant="outlined"
-                size="large"
-                sx={{
-                  borderRadius: '25px',
-                  px: 4,
-                  py: 1.5,
-                  fontSize: '1rem',
-                  fontWeight: 'bold',
-                  borderWidth: '2px',
-                  borderColor: '#667eea',
-                  color: '#667eea',
-                  '&:hover': {
-                    borderWidth: '2px',
-                    borderColor: '#5a67d8',
-                    background: 'rgba(102, 126, 234, 0.05)',
-                    transform: 'translateY(-1px)',
-                    boxShadow: '0 4px 12px rgba(102, 126, 234, 0.2)'
-                  },
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                סגור
-              </Button>
-            </DialogActions>
-          </motion.div>
+          <DialogActions sx={{ p: 2.5, background: 'white', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', gap: 1.5 }}>
+              {showAddButton && currentTab === 0 && (
+                <Button
+                  variant="contained"
+                  size="medium" // ✅ הגדלתי מ-small
+                  startIcon={<Add sx={{ fontSize: 20 }} />}
+                  onClick={() => {
+                    navigate('/entrollStudent');
+                    onClose();
+                  }}
+                  sx={{
+                    background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                    borderRadius: '20px',
+                    px: 3, // ✅ הגדלתי מ-2.5
+                    py: 1.2, // ✅ הגדלתי מ-1
+                    fontSize: '1rem', // ✅ הגדלתי מ-0.875rem
+                    fontWeight: 'medium'
+                  }}
+                >
+                  הוסף חוג
+                </Button>
+              )}
+
+              {currentTab === 1 && (
+                <Button
+                  variant="contained"
+                  size="medium" // ✅ הגדלתי מ-small
+                  startIcon={<Add sx={{ fontSize: 20 }} />}
+                  onClick={() => setAddNoteDialogOpen(true)}
+                  sx={{
+                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    borderRadius: '20px',
+                    px: 3, // ✅ הגדלתי מ-2.5
+                    py: 1.2, // ✅ הגדלתי מ-1
+                    fontSize: '1rem', // ✅ הגדלתי מ-0.875rem
+                    fontWeight: 'medium'
+                  }}
+                >
+                  הוסף הערה
+                </Button>
+              )}
+            </Box>
+
+            <Button
+              onClick={onClose}
+              variant="outlined"
+              size="medium" // ✅ הגדלתי מ-small
+              sx={{
+                borderRadius: '20px',
+                px: 4, // ✅ הגדלתי מ-3
+                py: 1.2, // ✅ הגדלתי מ-1
+                fontSize: '1rem', // ✅ הגדלתי מ-0.875rem
+                fontWeight: 'medium',
+                borderColor: '#667eea',
+                color: '#667eea',
+                '&:hover': {
+                  borderColor: '#764ba2',
+                  color: '#764ba2',
+                  background: 'rgba(102, 126, 234, 0.05)'
+                }
+              }}
+            >
+              סגור
+            </Button>
+          </DialogActions>
+
+          {/* דיאלוג הוספת הערה */}
+          <AddStudentNoteDialog
+            open={addNoteDialogOpen}
+            onClose={() => setAddNoteDialogOpen(false)}
+            student={student}
+            onSave={handleSaveNote}
+          />
         </Dialog>
       )}
     </AnimatePresence>

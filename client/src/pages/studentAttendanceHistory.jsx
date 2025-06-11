@@ -128,18 +128,17 @@ const fetchAttendanceHistoryData = async () => {
     fetchAttendanceSummaryData();
   };
 
-  return (
+    return (
     <Dialog
       open={open}
       onClose={onClose}
       maxWidth="lg"
       fullWidth
       sx={{
+        direction:'rtl',
         '& .MuiDialog-paper': {
           borderRadius: 12,
-          minHeight: '70vh',
-          direction:'rtl',
-          textAlign:'right'
+          minHeight: '70vh'
         }
       }}
     >
@@ -149,9 +148,7 @@ const fetchAttendanceHistoryData = async () => {
           color: 'white',
           display: 'flex',
           alignItems: 'center',
-          gap: 2,
-          direction:'rtl',
-          justifyContent:'flex-start'
+          gap: 2
         }}
       >
         <CalendarToday />
@@ -159,11 +156,11 @@ const fetchAttendanceHistoryData = async () => {
           היסטוריית נוכחות - {student?.firstName} {student?.lastName}
         </Typography>
       </DialogTitle>
-<br />
+
       <DialogContent sx={{ p: 3 }}>
-        {/* פילטרים */}
+        <br />
         <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} md={3}>
+          <Grid size={{ xs: 12, md: 3 }}>
             <TextField
               select
               fullWidth
@@ -178,13 +175,11 @@ const fetchAttendanceHistoryData = async () => {
               ))}
             </TextField>
           </Grid>
-          <Grid item xs={12} md={3}>
+          <Grid size={{ xs: 12, md: 3 }}>
             <TextField
               select
               fullWidth
               label="בחר חודש"
-                              sx={{ 'width': '106px' }}
-
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
             >
@@ -196,13 +191,12 @@ const fetchAttendanceHistoryData = async () => {
               ))}
             </TextField>
           </Grid>
-          <Grid item xs={12} md={3}>
+          <Grid size={{ xs: 12, md: 3 }}>
             <TextField
               select
               fullWidth
               label="בחר קורס"
               value={selectedCourse}
-                sx={{ 'width': '106px' }}
               onChange={(e) => setSelectedCourse(e.target.value)}
             >
               <MenuItem value="">כל הקורסים</MenuItem>
@@ -213,13 +207,15 @@ const fetchAttendanceHistoryData = async () => {
               ))}
             </TextField>
           </Grid>
-          <Grid item xs={12} md={3}>
+          <Grid size={{ xs: 12, md: 3 }}>
             <Button
               fullWidth
               variant="contained"
-              onClick={handleRefreshData}
+              onClick={() => {
+                fetchAttendanceHistory();
+                fetchAttendanceSummary();
+              }}
               sx={{ height: '56px' }}
-              disabled={loading}
             >
               רענן נתונים
             </Button>
@@ -230,11 +226,10 @@ const fetchAttendanceHistoryData = async () => {
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
             <CircularProgress />
           </Box>
-        ) : (
+        ) : ( 
           <>
-            {/* סטטיסטיקות */}
             <Grid container spacing={2} sx={{ mb: 3 }}>
-              <Grid item xs={12} md={4}>
+              <Grid size={{ xs: 12, md: 4 }}>
                 <Card sx={{ bgcolor: '#EBF8FF' }}>
                   <CardContent sx={{ textAlign: 'center' }}>
                     <School sx={{ fontSize: 40, color: '#3B82F6', mb: 1 }} />
@@ -247,7 +242,7 @@ const fetchAttendanceHistoryData = async () => {
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid item xs={12} md={4}>
+              <Grid size={{ xs: 12, md: 4 }}>
                 <Card sx={{ bgcolor: '#F0FDF4' }}>
                   <CardContent sx={{ textAlign: 'center' }}>
                     <CheckCircle sx={{ fontSize: 40, color: '#10B981', mb: 1 }} />
@@ -260,7 +255,7 @@ const fetchAttendanceHistoryData = async () => {
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid item xs={12} md={4}>
+              <Grid size={{ xs: 12, md: 4 }}>
                 <Card sx={{ bgcolor: '#FEF3F2' }}>
                   <CardContent sx={{ textAlign: 'center' }}>
                     <Person sx={{ fontSize: 40, color: '#EF4444', mb: 1 }} />
@@ -317,7 +312,6 @@ const fetchAttendanceHistoryData = async () => {
                             label={record.isPresent ? 'נוכח' : 'נעדר'}
                             color={record.isPresent ? 'success' : 'error'}
                             size="small"
-                            variant="outlined"
                           />
                         </TableCell>
                       </TableRow>
@@ -325,11 +319,8 @@ const fetchAttendanceHistoryData = async () => {
                   ) : (
                     <TableRow>
                       <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                        <Typography variant="h6" color="text.secondary">
-                          לא נמצאו נתוני נוכחות
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          נסה לשנות את הפילטרים או לבדוק שהתלמיד רשום לחוגים
+                        <Typography variant="body1" color="text.secondary">
+                          לא נמצאו נתוני נוכחות עבור הפילטרים שנבחרו
                         </Typography>
                       </TableCell>
                     </TableRow>
@@ -342,7 +333,7 @@ const fetchAttendanceHistoryData = async () => {
       </DialogContent>
 
       <DialogActions sx={{ p: 3 }}>
-        <Button onClick={onClose} variant="outlined" color="primary" > 
+        <Button onClick={onClose} variant="outlined" color="primary">
           סגור
         </Button>
       </DialogActions>

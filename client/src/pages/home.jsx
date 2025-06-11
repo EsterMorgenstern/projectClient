@@ -1,857 +1,1472 @@
-import { Box, Typography, Button, Grid, Paper } from '@mui/material';
-import { motion } from 'framer-motion';
-import SchoolIcon from '@mui/icons-material/School';
-import GroupIcon from '@mui/icons-material/Group';
-// import CoursesIcon from '@mui/icons-material';
-import EventAvailableIcon from '@mui/icons-material/EventAvailable';
+import React, { useState, useEffect } from 'react';
 import {
-  EventNote as CoursesIcon,
+  Box,
+  Typography,
+  Grid,
+  Card,
+  CardContent,
+  Button,
+  Avatar,
+  Chip,
+  IconButton,
+  Stack,
+  Container,
+  Badge,
+  Tooltip,
+  Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  Paper,
+  Fab,
+  Slide,
+  useMediaQuery,
+  useTheme
+} from '@mui/material';
+import {
+  Dashboard as DashboardIcon,
+  People as StudentsIcon,
+  School as CoursesIcon,
+  Person as InstructorsIcon,
+  Assignment as EnrollIcon,
+  Assessment as ReportsIcon,
+  Today as TodayIcon,
+  CalendarMonth as CalendarIcon,
+  TrendingUp as TrendingUpIcon,
+  Notifications as NotificationsIcon,
+  Schedule as ScheduleIcon,
+  CheckCircle as AttendanceIcon,
+  Add as AddIcon,
+  ArrowForward as ArrowIcon,
+  Business as BusinessIcon,
+  Star as StarIcon,
+  Verified as VerifiedIcon,
+  Psychology as PsychologyIcon,
+  Security as SecurityIcon,
+  FlashOn as FlashOnIcon,
+  Info as InfoIcon,
+  Rocket as RocketIcon,
+  Shield as ShieldIcon,
+  Cloud as CloudIcon,
+  Speed as SpeedIcon,
+  Chat as ChatIcon,
+  Send as SendIcon,
+  Close as CloseIcon,
+  SupportAgent as SupportIcon,
+  SmartToy as BotIcon
 } from '@mui/icons-material';
-import { Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchStudents } from '../store/student/studentGetAllThunk';
+import { fetchCourses } from '../store/course/CoursesGetAllThunk';
+import { fetchInstructors } from '../store/instructor/instructorGetAllThunk';
+
+// Transition component for Dialog
+const Transition = React.forwardRef(function Transition(props, ref) {
+  return <Slide direction="up" ref={ref} {...props} />;
+});
 
 const Home = () => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  
+  // Redux state
+  const students = useSelector(state => state.students.students || []);
+  const courses = useSelector(state => state.courses.courses || []);
+  const instructors = useSelector(state => state.instructors.instructors || []);
+
+  // Local state
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState([
+    {
+      id: 1,
+      text: '? שלום! אני כאן לעזור לך עם המערכת. איך אוכל לסייע',
+      sender: 'bot',
+      timestamp: new Date()
+    }
+  ]);
+  const [newMessage, setNewMessage] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+
+  // Chat support responses
+  const chatResponses = {
+    'שלום': 'שלום! איך אוכל לעזור לך היום?',
+    'עזרה': 'אני כאן לעזור! על מה תרצה לשמוע? תלמידים, חוגים, מדריכים או נוכחות?',
+    'תלמידים': 'לניהול תלמידים: לך לתפריט "ניהול תלמידים" או לחץ על הקישור המהיר. שם תוכל להוסיף, לערוך ולצפות בפרטי התלמידים.',
+    'חוגים': 'לניהול חוגים: בתפריט "ניהול חוגים" תוכל ליצור חוגים חדשים, לערוך קיימים ולנהל קבוצות.',
+    'נוכחות': 'לרישום נוכחות: השתמש בתפריט "ניהול נוכחות" או בפעולה המהירה "רשום נוכחות".',
+    'בעיה': 'מה הבעיה שאתה נתקל בה? אני אעזור לך לפתור אותה.',
+    'תודה': 'בשמחה! אם יש עוד שאלות, אני כאן.',
+    'default': 'מצטער, לא הבנתי את השאלה. נסה לשאול על: תלמידים, חוגים, מדריכים, נוכחות או עזרה כללית.'
+  };
+
+  useEffect(() => {
+    // טעינת נתונים בסיסיים
+    dispatch(fetchStudents());
+    dispatch(fetchCourses());
+    dispatch(fetchInstructors());
+
+    // עדכון שעה כל דקה
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000);
+
+    return () => clearInterval(timer);
+  }, [dispatch]);
+
+  // נתונים סטטיסטיים
+  const stats = {
+    totalUsers: 12547,
+    activeToday: 1834,
+    systemUptime: 99.9,
+    dataProcessed: 2.4
+  };
+
+  const systemStats = [
+    { title: 'תלמידים', value: students.length, icon: StudentsIcon, color: '#3B82F6', unit: '' },
+    { title: 'חוגים', value: courses.length, icon: CoursesIcon, color: '#10B981', unit: '' },
+    { title: 'מדריכים', value: instructors.length, icon: InstructorsIcon, color: '#F59E0B', unit: '' },
+    { title: 'נוכחות', value: 94, icon: AttendanceIcon, color: '#8B5CF6', unit: '%' }
+  ];
+
+  // ברכה דינמית
+  const getGreeting = () => {
+    const hour = currentTime.getHours();
+    if (hour < 12) return 'בוקר טוב';
+    if (hour < 17) return 'צהריים טובים';
+    if (hour < 21) return 'ערב טוב';
+    return 'לילה טוב';
+  };
+
+  const greeting = getGreeting();
+
+  // פעולות מהירות
+  const quickActions = [
+    {
+      title: 'הוסף תלמיד',
+      subtitle: 'רישום מהיר',
+      description: 'הוסף תלמיד חדש למערכת בקלות ובמהירות',
+      icon: AddIcon,
+      action: () => navigate('/students'),
+      color: '#3B82F6'
+    },
+    {
+      title: 'שבץ לחוג',
+      subtitle: 'שיבוץ חכם',
+      description: 'שבץ תלמידים לחוגים עם המלצות אוטומטיות',
+      icon: EnrollIcon,
+      action: () => navigate('/entrollStudent'),
+      color: '#10B981'
+    },
+    {
+      title: 'רשום נוכחות',
+      subtitle: 'מעקב יומי',
+      description: 'רשום נוכחות תלמידים במהירות ובדיוק',
+      icon: AttendanceIcon,
+      action: () => navigate('/attendanceCalendar'),
+      color: '#F59E0B'
+    },
+    {
+      title: 'צפה בדוחות',
+      subtitle: 'ניתוח נתונים',
+      description: 'דוחות מפורטים וסטטיסטיקות מתקדמות',
+      icon: ReportsIcon,
+      action: () => navigate('/reports'),
+      color: '#8B5CF6'
+    }
+  ];
+
+  // תפריט ראשי
+  const mainMenuItems = [
+    {
+      title: 'ניהול תלמידים',
+      description: 'הוספה, עריכה וצפיה בפרטי תלמידים עם כלים מתקדמים',
+      icon: StudentsIcon,
+      path: '/students',
+      color: '#3B82F6',
+      gradient: 'linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%)',
+      badge: 'מתקדם',
+      stats: `${students.length} תלמידים`
+    },
+    {
+      title: 'ניהול חוגים',
+      description: 'ניהול חוגים, קבוצות וסניפים עם מערכת שיבוץ חכמה',
+      icon: CoursesIcon,
+      path: '/attendanceCalendar',
+      color: '#10B981',
+      gradient: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+      badge: 'פופולרי',
+      stats: `${courses.length} חוגים`
+    },
+    {
+      title: 'ניהול מדריכים',
+      description: 'הוספה ועריכת פרטי מדריכים עם מערכת הערכות',
+      icon: InstructorsIcon,
+      path: '/instructors',
+      color: '#F59E0B',
+      gradient: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+      badge: 'חדש',
+      stats: `${instructors.length} מדריכים`
+    },
+    {
+      title: 'שיבוץ תלמידים',
+      description: 'רישום תלמידים לחוגים וקבוצות עם בינה מלאכותית',
+      icon: EnrollIcon,
+      path: '/entrollStudent',
+      color: '#EF4444',
+      gradient: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+      badge: 'AI',
+      stats: 'שיבוץ חכם'
+    },
+    {
+      title: 'ניהול נוכחות',
+      description: 'רישום נוכחות ומעקב אחר השתתפות עם התראות',
+      icon: TodayIcon,
+      path: '/attendanceCalendar',
+      color: '#8B5CF6',
+      gradient: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
+      badge: 'חיוני',
+      stats: '94% נוכחות'
+    },
+    {
+      title: 'דוחות וסטטיסטיקות',
+      description: 'דוחות מפורטים ואנליטיקה מתקדמת עם גרפים',
+      icon: ReportsIcon,
+      path: '/reports',
+      color: '#06B6D4',
+      gradient: 'linear-gradient(135deg, #06B6D4 0%, #0891B2 100%)',
+      badge: 'פרו',
+      stats: 'ניתוח מתקדם'
+    }
+  ];
+
+  // Chat functions
+  const handleSendMessage = () => {
+    if (!newMessage.trim()) return;
+
+    const userMessage = {
+      id: Date.now(),
+      text: newMessage,
+      sender: 'user',
+      timestamp: new Date()
+    };
+
+    setChatMessages(prev => [...prev, userMessage]);
+    setNewMessage('');
+    setIsTyping(true);
+
+    // Simulate bot response
+    setTimeout(() => {
+      const botResponse = getBotResponse(newMessage);
+      const botMessage = {
+        id: Date.now() + 1,
+        text: botResponse,
+        sender: 'bot',
+        timestamp: new Date()
+      };
+      setChatMessages(prev => [...prev, botMessage]);
+      setIsTyping(false);
+    }, 1000 + Math.random() * 2000);
+  };
+
+  const getBotResponse = (message) => {
+    const lowerMessage = message.toLowerCase();
+    
+    for (const [key, response] of Object.entries(chatResponses)) {
+      if (lowerMessage.includes(key)) {
+        return response;
+      }
+    }
+    
+    return chatResponses.default;
+  };
+
+  const handleKeyPress = (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2,
+        duration: 0.8
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 50, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: { duration: 0.8, ease: "easeOut" }
+    }
+  };
+
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }}>
-      <Box
-        sx={{
-          padding: 4,
-          background: 'linear-gradient(to right, #e0f2fe, #f8fafc)',
-          minHeight: '100vh',
+    <Box sx={{
+      minHeight: '100vh',
+      background: `
+        linear-gradient(135deg, rgba(106, 130, 239, 0.1) 0%, rgba(75, 162, 159, 0.1) 100%),
+        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.3) 0%, transparent 50%)
+      `,
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
+      {/* Animated Background Elements */}
+      <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0 }}>
+        {[...Array(6)].map((_, i) => (
+          <motion.div
+            key={i}
+            style={{
+              position: 'absolute',
+              width: Math.random() * 300 + 100,
+              height: Math.random() * 300 + 100,
+              borderRadius: '50%',
+              background: `radial-gradient(circle, ${
+                           ['rgba(102, 126, 234, 0.1)', 'rgba(118, 75, 162, 0.1)', 'rgba(16, 185, 129, 0.1)', 'rgba(245, 158, 11, 0.1)'][i % 4]
+              } 0%, transparent 70%)`,
+              top: `${Math.random() * 100}%`,
+              left: `${Math.random() * 100}%`,
+            }}
+            animate={{
+              x: [0, Math.random() * 100 - 50],
+              y: [0, Math.random() * 100 - 50],
+              scale: [1, 1.2, 1],
+            }}
+            transition={{
+              duration: Math.random() * 20 + 10,
+              repeat: Infinity,
+              repeatType: "reverse",
+              ease: "easeInOut"
+            }}
+          />
+        ))}
+      </Box>
+
+      <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 1, py: 4 }}>
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          {/* Hero Section */}
+          <motion.div variants={itemVariants}>
+            <Box sx={{ textAlign: 'center', mb: 8 }}>
+              <motion.div
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 1, delay: 0.2 }}
+              >
+                <Typography 
+                  variant="h2" 
+                  fontWeight="800" 
+                  sx={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    color: 'transparent',
+                    mb: 2,
+                    fontSize: { xs: '2.5rem', md: '3.5rem' }
+                  }}
+                >
+                👋 !{greeting} 
+                </Typography>
+              </motion.div>
+
+              <motion.div
+                initial={{ y: 30, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.5 }}
+              >
+                <Typography 
+                  variant="h4" 
+                  sx={{
+                    color: '#1e293b',
+                    mb: 3,
+                    fontWeight: 600,
+                    fontSize: { xs: '1.5rem', md: '2rem' }
+                  }}
+                >
+                  ברוכים הבאים למערכת ניהול החוגים  
+                </Typography>
+              </motion.div>
+
+              <motion.div
+                initial={{ y: 30, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.7 }}
+              >
+                <Typography 
+                  variant="h6" 
+                  sx={{
+                    color: '#64748b',
+                    mb: 4,
+                    maxWidth: '800px',
+                    mx: 'auto',
+                    lineHeight: 1.6
+                  }}
+                >
+                  {currentTime.toLocaleDateString('he-IL', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })} • {currentTime.toLocaleTimeString('he-IL', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  })}
+                </Typography>
+              </motion.div>
+            </Box>
+          </motion.div>
+
+          {/* Statistics Cards */}
+          <motion.div variants={itemVariants}>
+            <Grid container spacing={3} sx={{ mb: 6 }}>
+              {systemStats.map((stat, index) => (
+                <Grid item xs={12} sm={6} md={3} key={index}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ delay: index * 0.1 + 0.8, duration: 0.6 }}
+                    whileHover={{ scale: 1.05, y: -10 }}
+                  >
+                    <Card
+                      sx={{
+                        background: 'rgba(255, 255, 255, 0.95)',
+                        backdropFilter: 'blur(20px)',
+                        borderRadius: '20px',
+                        width:'250px',
+                        border: '2px solid rgba(255, 255, 255, 0.8)',
+                        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
+                        overflow: 'hidden',
+                        position: 'relative',
+                        transition: 'all 0.4s ease',
+                        '&:hover': {
+                          boxShadow: `0 30px 60px ${stat.color}20`,
+                          borderColor: stat.color,
+                          '& .stat-icon': {
+                            transform: 'scale(1.2) rotate(10deg)',
+                            background: `linear-gradient(135deg, ${stat.color} 0%, ${stat.color}80 100%)`
+                          }
+                        }
+                      }}
+                    >
+                      <CardContent sx={{ p: 4, textAlign: 'center' }}>
+                        <Avatar
+                          className="stat-icon"
+                          sx={{
+                            width: 70,
+                            height: 70,
+                            mx: 'auto',
+                            mb: 3,
+                            background: `linear-gradient(135deg, ${stat.color}20, ${stat.color}30)`,
+                            border: `3px solid ${stat.color}40`,
+                            transition: 'all 0.4s ease',
+                            boxShadow: `0 8px 24px ${stat.color}25`
+                          }}
+                        >
+                          <stat.icon sx={{ fontSize: 35, color: stat.color }} />
+                        </Avatar>
+                        
+                        <Typography variant="h3" fontWeight="700" sx={{ color: stat.color, mb: 1 }}>
+                          {stat.value}{stat.unit}
+                        </Typography>
+                        
+                        <Typography variant="h6" fontWeight="600" sx={{ color: '#1e293b' }}>
+                          {stat.title}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                </Grid>
+              ))}
+            </Grid>
+          </motion.div>
+
+          {/* Quick Actions */}
+          <motion.div variants={itemVariants}>
+            <Box sx={{ mb: 8 }}>
+              <Typography 
+                variant="h4" 
+                fontWeight="700" 
+                sx={{ 
+                  mb: 4,
+                  textAlign: 'center',
+                  color: '#1e293b'
+                }}
+              >
+                ⚡ פעולות מהירות
+              </Typography>
+              
+              <Grid container spacing={3}>
+                {quickActions.map((action, index) => (
+                  <Grid item xs={12} sm={6} md={3} key={index}>
+                    <motion.div
+                      initial={{ opacity: 0, y: 30 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 + 1, duration: 0.6 }}
+                      whileHover={{ scale: 1.03, y: -5 }}
+                      whileTap={{ scale: 0.97 }}
+                    >
+                      <Card
+                        sx={{
+                          borderRadius: '16px',
+                          cursor: 'pointer',
+                          width:'260px',
+                          background: 'rgba(255, 255, 255, 0.95)',
+                          backdropFilter: 'blur(20px)',
+                          border: '2px solid rgba(255, 255, 255, 0.8)',
+                          boxShadow: '0 15px 30px rgba(0, 0, 0, 0.1)',
+                          transition: 'all 0.3s ease',
+                          '&:hover': {
+                            boxShadow: `0 25px 50px ${action.color}25`,
+                            borderColor: action.color,
+                            '& .action-icon': {
+                              background: action.color,
+                              color: 'white',
+                              transform: 'scale(1.1)'
+                            }
+                          }
+                        }}
+                        onClick={action.action}
+                      >
+                        <CardContent sx={{ p: 3, textAlign: 'center' }}>
+                          <Avatar
+                            className="action-icon"
+                            sx={{
+                              width: 60,
+                              height: 60,
+                              mx: 'auto',
+                              mb: 2,
+                              bgcolor: `${action.color}15`,
+                              color: action.color,
+                              transition: 'all 0.3s ease'
+                            }}
+                          >
+                            <action.icon sx={{ fontSize: 30 }} />
+                          </Avatar>
+                          
+                          <Typography variant="h6" fontWeight="600" sx={{ color: '#1e293b', mb: 1 }}>
+                            {action.title}
+                          </Typography>
+                          
+                          <Typography variant="body2" sx={{ color: action.color, fontWeight: 600, mb: 1 }}>
+                            {action.subtitle}
+                          </Typography>
+                          
+                          <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.85rem' }}>
+                            {action.description}
+                          </Typography>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  </Grid>
+                ))}
+              </Grid>
+            </Box>
+          </motion.div>
+
+          {/* Main Menu */}
+          <motion.div variants={itemVariants}>
+            <Box sx={{
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(30px)',
+              borderRadius: '32px',
+              p: { xs: 4, md: 6 },
+              border: '2px solid rgba(255, 255, 255, 0.8)',
+              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.1)',
+              mb: 8
+            }}>
+              <Box sx={{ textAlign: 'center', mb: 6 }}>
+                <Typography 
+                  variant="h4" 
+                  fontWeight="700" 
+                  sx={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    color: 'transparent',
+                    mb: 2
+                  }}
+                >
+                  🚀 תפריט ראשי מתקדם
+                </Typography>
+                <Typography variant="h6" color="#64748b" fontWeight="500">
+                  כל הכלים שאתה צריך במקום אחד
+                </Typography>
+              </Box>
+              
+              <Grid container spacing={4}>
+                {mainMenuItems.map((item, index) => (
+                  <Grid item xs={12} sm={6} lg={4} key={index}>
+                    <motion.div
+                    
+                      initial={{ opacity: 0, y: 100, scale: 0.8 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ 
+                        delay: index * 0.1 + 0.5, 
+                        duration: 1,
+                        type: "spring",
+                        bounce: 0.3
+                      }}
+                      whileHover={{ 
+                        scale: 1.05, 
+                        y: -20,
+                        rotateY: 8,
+                        transition: { duration: 0.4 }
+                      }}
+                      whileTap={{ scale: 0.95 }}
+                      style={{ perspective: '1000px' }}
+                    >
+                      <Card
+                        sx={{
+                          borderRadius: '28px',
+                          cursor: 'pointer',
+                          width:'310px',
+                          height: '350px',
+                          position: 'relative',
+                          overflow: 'hidden',
+                          background: 'rgba(255, 255, 255, 0.95)',
+                          backdropFilter: 'blur(30px)',
+                          border: '2px solid rgba(255, 255, 255, 0.8)',
+                          boxShadow: `
+                            0 25px 50px rgba(0, 0, 0, 0.15),
+                            0 12px 24px rgba(0, 0, 0, 0.1),
+                            inset 0 1px 0 rgba(255, 255, 255, 0.9)
+                          `,
+                          transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                          '&:hover': {
+                            boxShadow: `
+                              0 40px 80px ${item.color}25,
+                              0 20px 40px rgba(0, 0, 0, 0.2),
+                              inset 0 1px 0 rgba(255, 255, 255, 0.9)
+                            `,
+                            borderColor: item.color,
+                            '& .card-icon': {
+                              transform: 'scale(1.15) rotate(5deg)',
+                              background: item.gradient,
+                            },
+                            '& .card-badge': {
+                              transform: 'scale(1.1)',
+                              boxShadow: `0 4px 15px ${item.color}40`
+                            },
+                            '& .card-glow': {
+                              opacity: 1,
+                              transform: 'scale(2)'
+                            },
+                            '& .card-stats': {
+                              color: item.color,
+                              transform: 'translateY(-2px)'
+                            }
+                          }
+                        }}
+                        onClick={() => navigate(item.path)}
+                      >
+                        {/* Animated Background Glow */}
+                        <Box
+                          className="card-glow"
+                          sx={{
+                            position: 'absolute',
+                            top: '20%',
+                            right: '20%',
+                            width: '120px',
+                            height: '120px',
+                            background: `radial-gradient(circle, ${item.color}15 0%, transparent 70%)`,
+                            borderRadius: '50%',
+                            opacity: 0,
+                            transition: 'all 0.6s ease',
+                            zIndex: 0
+                          }}
+                        />
+
+                        {/* Premium Badge */}
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            top: 16,
+                            right: 16,
+                            zIndex: 3
+                          }}
+                        >
+                          <motion.div
+                            className="card-badge"
+                            whileHover={{ rotate: [0, -10, 10, 0] }}
+                            // transition={{ duration: 0
+                            transition={{ duration: 0.5 }}
+                          >
+                            <Chip
+                              label={item.badge}
+                              size="small"
+                              sx={{
+                                background: item.gradient,
+                                color: 'white',
+                                fontWeight: 700,
+                                fontSize: '0.7rem',
+                                height: '24px',
+                                boxShadow: `0 4px 12px ${item.color}30`,
+                                border: '1px solid rgba(255, 255, 255, 0.3)',
+                                transition: 'all 0.3s ease'
+                              }}
+                            />
+                          </motion.div>
+                        </Box>
+                        
+                        <CardContent sx={{ p: 4, height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 2 }}>
+                          <Box sx={{ flex: 1 }}>
+                            <Avatar
+                              className="card-icon"
+                              sx={{
+                                width: 80,
+                                height: 80,
+                                mb: 3,
+                                background: `linear-gradient(135deg, ${item.color}20, ${item.color}30)`,
+                                border: `3px solid ${item.color}40`,
+                                boxShadow: `0 12px 30px ${item.color}25`,
+                                transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+                              }}
+                            >
+                              <item.icon sx={{ fontSize: 40, color: item.color }} />
+                            </Avatar>
+                            
+                            <Typography variant="h5" fontWeight="700" sx={{ color: '#1e293b', mb: 2, lineHeight: 1.3 }}>
+                              {item.title}
+                            </Typography>
+                            
+                            <Typography 
+                              variant="body2" 
+                              sx={{ 
+                                color: '#64748b', 
+                                mb: 3, 
+                                lineHeight: 1.6,
+                                fontSize: '0.9rem'
+                              }}
+                            >
+                              {item.description}
+                            </Typography>
+                          </Box>
+                          
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 'auto' }}>
+                            <Typography 
+                              className="card-stats"
+                              variant="body2" 
+                              fontWeight="600"
+                              sx={{ 
+                                color: '#94a3b8',
+                                transition: 'all 0.3s ease'
+                              }}
+                            >
+                              {item.stats}
+                            </Typography>
+                            
+                            <IconButton
+                              size="small"
+                              sx={{
+                                color: item.color,
+                                bgcolor: `${item.color}15`,
+                                border: `2px solid ${item.color}30`,
+                                '&:hover': {
+                                  bgcolor: item.color,
+                                  color: 'white',
+                                  transform: 'translateX(-5px) scale(1.1)',
+                                  boxShadow: `0 8px 20px ${item.color}40`
+                                },
+                                transition: 'all 0.3s ease'
+                              }}
+                            >
+                              <ArrowIcon />
+                            </IconButton>
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  </Grid>
+                ))}
+              </Grid>
+            </Box>
+          </motion.div>
+
+          {/* Call to Action Section */}
+          <motion.div variants={itemVariants}>
+            <Box sx={{
+              textAlign: 'center',
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(30px)',
+              borderRadius: '32px',
+              p: { xs: 6, md: 10 },
+              border: '2px solid rgba(255, 255, 255, 0.8)',
+              boxShadow: `
+                0 32px 64px rgba(0, 0, 0, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8)
+              `,
+              position: 'relative',
+              overflow: 'hidden',
+              mb: 8
+            }}>
+              {/* Animated Background Pattern */}
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: `
+                    radial-gradient(circle at 20% 20%, rgba(102, 126, 234, 0.1) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 80%, rgba(118, 75, 162, 0.1) 0%, transparent 50%)
+                  `,
+                  zIndex: 0
+                }}
+              />
+
+              <Box sx={{ position: 'relative', zIndex: 1 }}>
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 1, delay: 1.2 }}
+                >
+                  <Stack direction="row" spacing={2} justifyContent="center" sx={{ mb: 4 }}>
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                    >
+                      <Avatar sx={{
+                        width: 100,
+                        height: 100,
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        boxShadow: '0 15px 35px rgba(102, 126, 234, 0.4)',
+                        border: '4px solid rgba(255, 255, 255, 0.9)'
+                      }}>
+                        <RocketIcon sx={{ fontSize: 50, color: 'white' }} />
+                      </Avatar>
+                    </motion.div>
+                  </Stack>
+                </motion.div>
+
+                <Typography 
+                  variant="h3" 
+                  fontWeight="800" 
+                  sx={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    color: 'transparent',
+                    mb: 3,
+                    lineHeight: 1.2
+                  }}
+                >
+                  ? מוכן להתחיל 🚀
+                </Typography>
+
+               
+
+                <Typography 
+                  variant="h6" 
+                  sx={{
+                    color: '#64748b',
+                    mb: 6,
+                    fontWeight: 400,
+                    maxWidth: '600px',
+                    mx: 'auto',
+                    lineHeight: 1.6
+                  }}
+                >
+                  התחל את המסע שלך עם המערכת המתקדמת ביותר לניהול חוגים
+                </Typography>
+
+                <Stack 
+                  direction={{ xs: 'column', sm: 'row' }} 
+                  spacing={3} 
+                  justifyContent="center"
+                  alignItems="center"
+                  sx={{ mb: 6 }}
+                >
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Button
+                      variant="contained"
+                      size="large"
+                      startIcon={<DashboardIcon />}
+                      onClick={() => navigate('/menu')}
+                      sx={{
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        borderRadius: '20px',
+                        px: 6,
+                        py: 2.5,
+                        fontSize: '1.2rem',
+                        fontWeight: 700,
+                        textTransform: 'none',
+                        boxShadow: '0 12px 30px rgba(102, 126, 234, 0.4)',
+                        border: '2px solid rgba(255, 255, 255, 0.3)',
+                        '&:hover': {
+                          boxShadow: '0 20px 40px rgba(102, 126, 234, 0.6)',
+                          transform: 'translateY(-3px)'
+                        },
+                        transition: 'all 0.3s ease'
+                      }}
+                    >
+                      כניסה למערכת
+                    </Button>
+                  </motion.div>
+
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Button
+                      variant="outlined"
+                      size="large"
+                      startIcon={<InfoIcon />}
+                      onClick={() => navigate('/aboutSystem')}
+                      sx={{
+                        borderColor: '#667eea',
+                        color: '#667eea',
+                        borderRadius: '20px',
+                        px: 6,
+                        py: 2.5,
+                        fontSize: '1.2rem',
+                        fontWeight: 700,
+                        textTransform: 'none',
+                        borderWidth: '2px',
+                        '&:hover': {
+                          borderColor: '#764ba2',
+                          color: '#764ba2',
+                          backgroundColor: 'rgba(102, 126, 234, 0.05)',
+                          transform: 'translateY(-3px)',
+                          boxShadow: '0 12px 25px rgba(102, 126, 234, 0.2)'
+                        },
+                        transition: 'all 0.3s ease'
+                      }}
+                    >
+                      למד עוד
+                    </Button>
+                  </motion.div>
+                </Stack>
+
+                {/* Trust Indicators
+                <Box sx={{
+                  background: 'rgba(16, 185, 129, 0.05)',
+                  borderRadius: '20px',
+                  p: 4,
+                  border: '1px solid rgba(16, 185, 129, 0.2)'
+                }}>
+                  <Typography variant="h6" fontWeight="600" sx={{ color: '#10B981', mb: 3 }}>
+                    למה בוחרים בנו? ✨
+                  </Typography>
+                  
+                  <Grid container spacing={3} justifyContent="center">
+                    {[
+                      { icon: VerifiedIcon, text: 'מוסדות מובילים', value: '500+' },
+                      { icon: StudentsIcon, text: 'תלמידים פעילים', value: '50K+' },
+                      { icon: ShieldIcon, text: 'זמינות מערכת', value: '99.9%' },
+                      { icon: StarIcon, text: 'דירוג שביעות רצון', value: '4.9/5' }
+                    ].map((item, index) => (
+                      <Grid item xs={6} sm={3} key={index}>
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 1.5 + index * 0.1 }}
+                        >
+                          <Box sx={{ textAlign: 'center' }}>
+                            <Avatar sx={{
+                              width: 50,
+                              height: 50,
+                              mx: 'auto',
+                              mb: 2,
+                              bgcolor: 'rgba(16, 185, 129, 0.1)',
+                              border: '2px solid rgba(16, 185, 129, 0.3)'
+                            }}>
+                              <item.icon sx={{ color: '#10B981' }} />
+                            </Avatar>
+                            <Typography variant="h6" fontWeight="700" color="#10B981">
+                              {item.value}
+                            </Typography>
+                            <Typography variant="body2" color="#64748b" fontSize="0.85rem">
+                              {item.text}
+                            </Typography>
+                          </Box>
+                        </motion.div>
+                      </Grid>
+                    ))}
+                  </Grid> */}
+                {/* </Box> */}
+              </Box>
+            </Box>
+          </motion.div>
+
+          {/* Premium Footer */}
+          <motion.div variants={itemVariants}>
+            <Box sx={{
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(30px)',
+              borderRadius: '24px',
+              p: 6,
+              border: '2px solid rgba(255, 255, 255, 0.8)',
+              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
+              textAlign: 'center',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'linear-gradient(45deg, rgba(102, 126, 234, 0.02) 0%, transparent 100%)',
+                  zIndex: 0
+                }}
+              />
+
+              <Box sx={{ position: 'relative', zIndex: 1 }}>
+                <Stack direction="row" spacing={3} justifyContent="center" alignItems="center" sx={{ mb: 4 }}>
+                  <Avatar sx={{
+                    width: 60,
+                    height: 60,
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    boxShadow: '0 8px 25px rgba(102, 126, 234, 0.3)'
+                  }}>
+                    <BusinessIcon sx={{ fontSize: 30 }} />
+                  </Avatar>
+                  
+                  <Box sx={{ textAlign: 'left' }}>
+                    <Typography variant="h5" fontWeight="700" color="#1e293b">
+                      מערכת ניהול חוגים פרימיום
+                    </Typography>
+                    <Typography variant="body1" color="#64748b">
+                      הפתרון המתקדם ביותר לניהול מוסדות חינוך
+                    </Typography>
+                  </Box>
+                </Stack>
+
+                <Divider sx={{ mb: 4, opacity: 0.3 }} />
+
+                <Grid container spacing={4} sx={{ mb: 4 ,alignItems:'center',marginLeft:'290px'}}>
+                  <Grid item xs={12} md={4}>
+                    <Typography variant="h6" fontWeight="600" color="#1e293b" sx={{ mb: 2 }}>
+                      🌟 תכונות
+                    </Typography>
+                    <Stack spacing={1}>
+                      {['ניהול חכם', 'דוחות מתקדמים', 'אבטחה מקסימלית', 'תמיכה 24/7'].map((feature, index) => (
+                        <Typography key={index} variant="body2" color="#64748b">
+                          • {feature}
+                        </Typography>
+                      ))}
+                    </Stack>
+                  </Grid>
+                  
+                  <Grid item xs={12} md={4}>
+                    <Typography variant="h6" fontWeight="600" color="#1e293b" sx={{ mb: 2 }}>
+                      📞 יצירת קשר
+                    </Typography>
+                    <Stack spacing={1}>
+                      <Typography variant="body2" color="#64748b">
+                        📧 support@system.co.il
+                      </Typography>
+                      <Typography variant="body2" color="#64748b">
+                        📱 03-1234567
+                      </Typography>
+                      <Typography variant="body2" color="#64748b">
+                        🌐 www.system.co.il
+                      </Typography>
+                    </Stack>
+                  </Grid>
+                  
+                  <Grid item xs={12} md={4}>
+                    <Typography variant="h6" fontWeight="600" color="#1e293b" sx={{ mb: 2 }}>
+                      🔒 אמינות
+                    </Typography>
+                    <Stack spacing={1}>
+                      <Typography variant="body2" color="#64748b">
+                        ✓ הצפנה מתקדמת
+                      </Typography>
+                      <Typography variant="body2" color="#64748b">
+                        ✓ גיבוי אוטומטי
+                      </Typography>
+                      <Typography variant="body2" color="#64748b">
+                        ✓ תקן ISO 27001
+                      </Typography>
+                    </Stack>
+                  </Grid>
+                </Grid>
+
+                <Divider sx={{ mb: 4, opacity: 0.3 }} />
+
+                <Box>
+                  <Typography variant="body2" color="#94a3b8" sx={{ fontSize: '0.9rem' }}>
+                    © 2025 מערכת ניהול חוגים פרימיום • גרסה 2.0 • כל הזכויות שמורות
+                  </Typography>
+                  
+                  <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 3 }}>
+                    {[
+                      { icon: SecurityIcon, tooltip: 'אבטחה מתקדמת' },
+                      { icon: CloudIcon, tooltip: 'טכנולוגיית ענן' },
+                      { icon: SpeedIcon, tooltip: 'ביצועים מהירים' },
+                      { icon: ShieldIcon, tooltip: 'הגנה מקסימלית' }
+                    ].map((item, index) => (
+                      <Tooltip key={index} title={item.tooltip}>
+                        <IconButton
+                          size="small"
+                          sx={{
+                            color: '#667eea',
+                            bgcolor: 'rgba(102, 126, 234, 0.1)',
+                            border: '1px solid rgba(102, 126, 234, 0.2)',
+                            '&:hover': {
+                              bgcolor: 'rgba(102, 126, 234, 0.2)',
+                              transform: 'scale(1.1)'
+                            },
+                            transition: 'all 0.3s ease'
+                          }}
+                        >
+                          <item.icon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    ))}
+                  </Stack>
+                </Box>
+              </Box>
+            </Box>
+          </motion.div>
+
+          {/* Floating Chat Button */}
+          <motion.div
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ delay: 2, duration: 0.8, type: "spring", bounce: 0.6 }}
+            style={{
+              position: 'fixed',
+              bottom: 30,
+              left: 30,
+              zIndex: 1000
+            }}
+          >
+            <Tooltip title="צ'אט תמיכה מהיר" placement="top">
+              <motion.div
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                animate={{ 
+                  boxShadow: [
+                    '0 0 20px rgba(102, 126, 234, 0.3)',
+                    '0 0 30px rgba(102, 126, 234, 0.6)',
+                    '0 0 20px rgba(102, 126, 234, 0.3)'
+                  ]
+                }}
+                transition={{ 
+                  boxShadow: { duration: 2, repeat: Infinity },
+                  scale: { duration: 0.2 }
+                }}
+              >
+                <Fab
+                  size="large"
+                  sx={{
+                    width: 70,
+                    height: 70,
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    boxShadow: '0 8px 25px rgba(102, 126, 234, 0.4)',
+                    border: '3px solid rgba(255, 255, 255, 0.9)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
+                      boxShadow: '0 12px 35px rgba(102, 126, 234, 0.6)'
+                    },
+                    transition: 'all 0.3s ease'
+                  }}
+                  onClick={() => setChatOpen(true)}
+                >
+                  <Badge badgeContent="1" color="error">
+                    <ChatIcon sx={{ fontSize: 30 }} />
+                  </Badge>
+                </Fab>
+              </motion.div>
+            </Tooltip>
+          </motion.div>
+
+          {/* Scroll to Top Button */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 3 }}
+            style={{
+              position: 'fixed',
+              bottom: 30,
+              right: 30,
+              zIndex: 1000
+            }}
+          >
+            <Tooltip title="חזור למעלה" placement="top">
+              <motion.div
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <Fab
+                  size="medium"
+                  sx={{
+                    background: 'rgba(255, 255, 255, 0.95)',
+                    backdropFilter: 'blur(20px)',
+                    color: '#667eea',
+                    boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)',
+                    border: '2px solid rgba(102, 126, 234, 0.2)',
+                    '&:hover': {
+                      background: 'rgba(102, 126, 234, 0.1)',
+                      borderColor: '#667eea',
+                      boxShadow: '0 12px 35px rgba(102, 126, 234, 0.3)'
+                    },
+                    transition: 'all 0.3s ease'
+                  }}
+                  onClick={() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                >
+                  <ArrowIcon sx={{ fontSize: 28, transform: 'rotate(-90deg)' }} />
+                </Fab>
+              </motion.div>
+            </Tooltip>
+          </motion.div>
+
+          {/* Progress Indicator */}
+          <motion.div
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 2, delay: 1 }}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '4px',
+              background: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)',
+              zIndex: 1001,
+              transformOrigin: 'left'
+            }}
+          />
+
+        </motion.div>
+      </Container>
+
+      {/* Chat Support Dialog */}
+      <Dialog
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+        TransitionComponent={Transition}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '20px',
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(30px)',
+            border: '2px solid rgba(255, 255, 255, 0.8)',
+            boxShadow: '0 25px 50px rgba(0, 0, 0, 0.15)',
+            overflow: 'hidden'
+          }
         }}
       >
-        <Typography
-          variant="h3"
+        <DialogTitle
           sx={{
-            fontWeight: 'bold',
-            color: '#1E3A8A',
-            mb: 2,
-            fontFamily: 'Heebo, sans-serif',
-            textAlign: 'center',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white',
+            p: 3,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
           }}
         >
-          ברוכים הבאים למערכת ניהול החוגים
-        </Typography>
-
-        <Typography variant="h6" sx={{ color: '#334155', textAlign: 'center', mb: 5 }}>
-          מערכת חכמה לניהול תלמידים, מדריכים וחוגים – הכל במקום אחד, בקלות וביעילות
-        </Typography>
-
-        <Grid container spacing={4} justifyContent="center">
-          <Grid item xs={12} sm={6} md={4} component={Link} to="/students">
-            <Paper
-              elevation={3}
-              sx={{
-                padding: 3,
-                borderRadius: 3,
-                textAlign: 'center',
-                background: '#ffffff',
-                transition: '0.3s',
-                '&:hover': {
-                  boxShadow: '0 10px 20px rgba(0,0,0,0.2)',
-                  transform: 'scale(1.03)',
-                },
-              }}
-            >
-              <GroupIcon sx={{ fontSize: 50, color: '#3B82F6' }} />
-              <Typography variant="h6" sx={{ mt: 2, color: '#1E3A8A', fontWeight: 'bold' }}>
-                ניהול תלמידים
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)' }}>
+              <SupportIcon />
+            </Avatar>
+            <Box>
+              <Typography variant="h6" fontWeight="bold">
+                צ'אט תמיכה
               </Typography>
-              <Typography variant="body2" sx={{ color: '#64748B' }}>
-                הוספה, עריכה ומחיקה של תלמידים, כולל פרטים אישיים ומעקב.
+              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                אנחנו כאן לעזור לך 24/7
               </Typography>
-            </Paper>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={4} component={Link} to="/instructors">
-            <Paper
-              elevation={3}
-              sx={{
-                padding: 3,
-                borderRadius: 3,
-                textAlign: 'center',
-                background: '#ffffff',
-                transition: '0.3s',
-                '&:hover': {
-                  boxShadow: '0 10px 20px rgba(0,0,0,0.2)',
-                  transform: 'scale(1.03)',
-                },
-              }}
-            >
-              <SchoolIcon sx={{ fontSize: 50, color: '#10B981' }} />
-              <Typography variant="h6" sx={{ mt: 2, color: '#1E3A8A', fontWeight: 'bold' }}>
-                ניהול מדריכים
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#64748B' }}>
-                שמירה על פרטי מדריכים, שיבוץ, וניהול קל של הצוות.
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} sm={6} md={4} component={Link} to="/courses"
+            </Box>
+          </Box>
+          <IconButton
+            onClick={() => setChatOpen(false)}
+            sx={{ color: 'white' }}
           >
-            <Paper
-              elevation={3}
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent sx={{ p: 0, height: '400px', display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ flex: 1, p: 2, overflowY: 'auto' }}>
+            <List>
+              <AnimatePresence>
+                {chatMessages.map((message) => (
+                  <motion.div
+                    key={message.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <ListItem
+                      sx={{
+                        flexDirection: message.sender === 'user' ? 'row-reverse' : 'row',
+                        alignItems: 'flex-start',
+                        mb: 2
+                      }}
+                    >
+                      <ListItemAvatar sx={{ minWidth: 'auto', mr: message.sender === 'user' ? 0 : 1, ml: message.sender === 'user' ? 1 : 0 }}>
+                        <Avatar
+                          sx={{
+                            bgcolor: message.sender === 'user' ? '#3B82F6' : '#10B981',
+                            width: 35,
+                            height: 35
+                          }}
+                        >
+                          {message.sender === 'user' ? (
+                            <Typography variant="body2" fontWeight="bold">
+                              א
+                            </Typography>
+                          ) : (
+                            <BotIcon fontSize="small" />
+                          )}
+                        </Avatar>
+                      </ListItemAvatar>
+                      
+                      <Paper
+                        sx={{
+                          p: 2,
+                          maxWidth: '70%',
+                          bgcolor: message.sender === 'user' ? '#3B82F6' : '#F8FAFC',
+                          color: message.sender === 'user' ? 'white' : '#1E293B',
+                          borderRadius: message.sender === 'user' ? '20px 20px 5px 20px' : '20px 20px 20px 5px',
+                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                        }}
+                      >
+                        <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
+                          {message.text}
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            opacity: 0.7,
+                            display: 'block',
+                            mt: 0.5,
+                            fontSize: '0.7rem'
+                          }}
+                        >
+                          {message.timestamp.toLocaleTimeString('he-IL', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </Typography>
+                      </Paper>
+                    </ListItem>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+              
+              {isTyping && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <ListItem>
+                    <ListItemAvatar>
+                      <Avatar sx={{ bgcolor: '#10B981', width: 35, height: 35 }}>
+                        <BotIcon fontSize="small" />
+                      </Avatar>
+                    </ListItemAvatar>
+                    <Paper
+                      sx={{
+                        p: 2,
+                        bgcolor: '#F8FAFC',
+                        borderRadius: '20px 20px 20px 5px',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                      }}
+                    >
+                      <motion.div
+                        animate={{ opacity: [0.5, 1, 0.5] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                      >
+                        <Typography variant="body2" color="#64748B">
+                          מקליד...
+                        </Typography>
+                      </motion.div>
+                    </Paper>
+                  </ListItem>
+                </motion.div>
+              )}
+            </List>
+          </Box>
+        </DialogContent>
+
+        <DialogActions sx={{ p: 3, borderTop: '1px solid #E2E8F0' }}>
+          <Box sx={{ display: 'flex', gap: 1, width: '100%' }}>
+            <TextField
+              fullWidth
+              multiline
+              maxRows={3}
+              placeholder="הקלד את הודעתך כאן..."
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
               sx={{
-                padding: 3,
-                borderRadius: 3,
-                textAlign: 'center',
-                background: '#ffffff',
-                transition: '0.3s',
-                '&:hover': {
-                  boxShadow: '0 10px 20px rgba(0,0,0,0.2)',
-                  transform: 'scale(1.03)',
-                },
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '15px',
+                  bgcolor: '#F8FAFC'
+                }
               }}
+            />
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              <CoursesIcon sx={{ fontSize: 50, color: '#10B981' }} />
-              <Typography variant="h6" sx={{ mt: 2, color: '#1E3A8A', fontWeight: 'bold' }}>
-                ניהול חוגים
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#64748B' }}>
-                פרטי החוגים, שיבוץ, וניהול קל  .
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} sm={6} md={4} component={Link} to="/entrollStudent"
-          >
-            <Paper
-              elevation={3}
-              sx={{
-                padding: 3,
-                borderRadius: 3,
-                textAlign: 'center',
-                background: '#ffffff',
-                transition: '0.3s',
-                '&:hover': {
-                  boxShadow: '0 10px 20px rgba(0,0,0,0.2)',
-                  transform: 'scale(1.03)',
-                },
-              }}
-            >
-              <EventAvailableIcon sx={{ fontSize: 50, color: '#F59E0B' }} />
-              <Typography variant="h6" sx={{ mt: 2, color: '#1E3A8A', fontWeight: 'bold' }}>
-                שיבוץ לחוגים
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#64748B' }}>
-                כלי חכם לשיבוץ תלמידים לחוגים בהתאמה אישית ויעילה.
-              </Typography>
-            </Paper>
-
-          </Grid>
-        </Grid>
-
-        <Box sx={{ textAlign: 'center', mt: 6 }}>
-          <Button
-            variant="contained"
-            size="large"
-            sx={{
-              backgroundColor: '#1E3A8A',
-              borderRadius: '30px',
-              px: 5,
-              fontSize: '1.1rem',
-              '&:hover': {
-                backgroundColor: '#3B82F6',
-              },
-            }}
-
-          >
-            התחל בניהול המערכת
-          </Button>
-        </Box>
-      </Box>
-    </motion.div>
+              <IconButton
+                onClick={handleSendMessage}
+                disabled={!newMessage.trim()}
+                sx={{
+                  bgcolor: '#667eea',
+                  color: 'white',
+                  width: 50,
+                  height: 50,
+                  '&:hover': {
+                    bgcolor: '#764ba2'
+                  },
+                  '&:disabled': {
+                    bgcolor: '#E2E8F0',
+                    color: '#94A3B8'
+                  }
+                }}
+              >
+                <SendIcon />
+              </IconButton>
+            </motion.div>
+          </Box>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 };
 
 export default Home;
 
-// import React, { useState, useEffect } from 'react';
-// import {
-//   Box,
-//   Typography,
-//   Grid,
-//   Card,
-//   CardContent,
-//   Button,
-//   Paper,
-//   Avatar,
-//   Chip,
-//   IconButton,
-//   Divider,
-//   LinearProgress,
-//   Badge
-// } from '@mui/material';
-// import {
-//   Dashboard as DashboardIcon,
-//   People as StudentsIcon,
-//   School as CoursesIcon,
-//   Group as GroupsIcon,
-//   Person as InstructorsIcon,
-//   LocationOn as BranchesIcon,
-//   Assignment as EnrollIcon,
-//   Assessment as ReportsIcon,
-//   Today as TodayIcon,
-//   CalendarMonth as CalendarIcon,
-//   TrendingUp as StatsIcon,
-//   Notifications as NotificationsIcon,
-//   Schedule as ScheduleIcon,
-//   CheckCircle as AttendanceIcon,
-//   Add as AddIcon,
-//   ArrowForward as ArrowIcon
-// } from '@mui/icons-material';
-// import { motion } from 'framer-motion';
-// import { useNavigate } from 'react-router-dom';
-// import { useDispatch, useSelector } from 'react-redux';
-// import { fetchStudents } from '../store/student/studentGetAllThunk';
-// import { fetchCourses } from '../store/course/CoursesGetAllThunk';
-// import { fetchInstructors } from '../store/instructor/instructorGetAllThunk';
 
-// const Home = () => {
-//   const navigate = useNavigate();
-//   const dispatch = useDispatch();
-  
-//   // Redux state
-//   const students = useSelector(state => state.students.students || []);
-//   const courses = useSelector(state => state.courses.courses || []);
-//   const instructors = useSelector(state => state.instructors.instructors || []);
-
-//   // Local state
-//   const [currentTime, setCurrentTime] = useState(new Date());
-//   const [todayStats, setTodayStats] = useState({
-//     totalLessons: 8,
-//     completedLessons: 5,
-//     attendanceRate: 87,
-//     activeStudents: 156
-//   });
-
-//   useEffect(() => {
-//     // טעינת נתונים בסיסיים
-//     dispatch(fetchStudents());
-//     dispatch(fetchCourses());
-//     dispatch(fetchInstructors());
-
-//     // עדכון שעה כל דקה
-//     const timer = setInterval(() => {
-//       setCurrentTime(new Date());
-//     }, 60000);
-
-//     return () => clearInterval(timer);
-//   }, [dispatch]);
-
-//   // נתונים סטטיסטיים
-//   const stats = [
-//     {
-//       title: 'סה״כ תלמידים',
-//       value: students.length,
-//       icon: StudentsIcon,
-//       color: '#3B82F6',
-//       gradient: 'linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%)',
-//       change: '+12%',
-//       changeType: 'positive'
-//     },
-//     {
-//       title: 'חוגים פעילים',
-//       value: courses.length,
-//       icon: CoursesIcon,
-//       color: '#10B981',
-//       gradient: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-//       change: '+5%',
-//       changeType: 'positive'
-//     },
-//     {
-//       title: 'מדריכים',
-//       value: instructors.length,
-//       icon: InstructorsIcon,
-//       color: '#F59E0B',
-//       gradient: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
-//       change: '+2%',
-//       changeType: 'positive'
-//     },
-//     {
-//       title: 'אחוז נוכחות היום',
-//       value: `${todayStats.attendanceRate}%`,
-//       icon: AttendanceIcon,
-//       color: '#8B5CF6',
-//       gradient: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
-//       change: '+3%',
-//       changeType: 'positive'
-//     }
-//   ];
-
-//   // תפריט ראשי
-//   const mainMenuItems = [
-//     {
-//       title: 'ניהול תלמידים',
-//       description: 'הוספה, עריכה וצפיה בפרטי תלמידים',
-//       icon: StudentsIcon,
-//       path: '/students',
-//       color: '#3B82F6',
-//       gradient: 'linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%)'
-//     },
-//     {
-//       title: 'ניהול חוגים',
-//       description: 'ניהול חוגים, קבוצות וסניפים',
-//       icon: CoursesIcon,
-//       path: '/courses',
-//       color: '#10B981',
-//       gradient: 'linear-gradient(135deg, #10B981 0%, #059669 100%)'
-//     },
-//     {
-//       title: 'ניהול מדריכים',
-//       description: 'הוספה ועריכת פרטי מדריכים',
-//       icon: InstructorsIcon,
-//       path: '/instructors',
-//       color: '#F59E0B',
-//       gradient: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)'
-//     },
-//     {
-//       title: 'שיבוץ תלמידים',
-//       description: 'רישום תלמידים לחוגים וקבוצות',
-//       icon: EnrollIcon,
-//       path: '/entrollStudent',
-//       color: '#EF4444',
-//       gradient: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)'
-//     },
-//     {
-//       title: 'ניהול נוכחות',
-//       description: 'רישום נוכחות ומעקב אחר השתתפות',
-//       icon: TodayIcon,
-//       path: '/attendance',
-//       color: '#8B5CF6',
-//       gradient: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)'
-//     },
-//     {
-//       title: 'דוחות וסטטיסטיקות',
-//       description: 'דוחות מפורטים ואנליטיקה',
-//       icon: ReportsIcon,
-//       path: '/reports',
-//       color: '#06B6D4',
-//       gradient: 'linear-gradient(135deg, #06B6D4 0%, #0891B2 100%)'
-//     }
-//   ];
-
-//   // פעולות מהירות
-//   const quickActions = [
-//     {
-//       title: 'הוסף תלמיד חדש',
-//       icon: AddIcon,
-//       action: () => navigate('/students'),
-//       color: '#3B82F6'
-//     },
-//     {
-//       title: 'שבץ תלמיד לחוג',
-//       icon: EnrollIcon,
-//       action: () => navigate('/entrollStudent'),
-//       color: '#10B981'
-//     },
-//     {
-//       title: 'רשום נוכחות',
-//       icon: AttendanceIcon,
-//       action: () => navigate('/attendance'),
-//       color: '#F59E0B'
-//     },
-//     {
-//       title: 'צפה בדוחות',
-//       icon: ReportsIcon,
-//       action: () => navigate('/reports'),
-//       color: '#8B5CF6'
-//     }
-//   ];
-
-//   // Animation variants
-//   const containerVariants = {
-//     hidden: { opacity: 0 },
-//     visible: {
-//       opacity: 1,
-//       transition: {
-//         staggerChildren: 0.1,
-//         duration: 0.5
-//       }
-//     }
-//   };
-
-//   const itemVariants = {
-//     hidden: { y: 20, opacity: 0 },
-//     visible: {
-//       y: 0,
-//       opacity: 1,
-//       transition: { duration: 0.5 }
-//     }
-//   };
-
-//   return (
-//     <Box sx={{ p: 3, direction: 'rtl', minHeight: '100vh', bgcolor: '#f8fafc' }}>
-//       <motion.div
-//         variants={containerVariants}
-//         initial="hidden"
-//         animate="visible"
-//       >
-//         {/* Header */}
-//         <motion.div variants={itemVariants}>
-//           <Box sx={{ mb: 4 }}>
-//             <Typography 
-//               variant="h3" 
-//               fontWeight="bold" 
-//               sx={{
-//                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-//                 backgroundClip: 'text',
-//                 WebkitBackgroundClip: 'text',
-//                 color: 'transparent',
-//                 mb: 1
-//               }}
-//             >
-//               ברוכים הבאים למערכת ניהול החוגים
-//             </Typography>
-//             <Typography variant="h6" color="text.secondary">
-//               {currentTime.toLocaleDateString('he-IL', { 
-//                 weekday: 'long', 
-//                 year: 'numeric', 
-//                 month: 'long', 
-//                 day: 'numeric' 
-//               })} • {currentTime.toLocaleTimeString('he-IL', { 
-//                 hour: '2-digit', 
-//                 minute: '2-digit' 
-//               })}
-//             </Typography>
-//           </Box>
-//         </motion.div>
-
-//         {/* Statistics Cards */}
-//         <motion.div variants={itemVariants} >
-//           <Grid container spacing={3} sx={{ mb: 4 }}>
-//             {stats.map((stat, index) => (
-//               <Grid item xs={12} sm={6} md={3} key={index}>
-//                 <motion.div
-//                   whileHover={{ scale: 1.05 }}
-//                   whileTap={{ scale: 0.95 }}
-//                 >
-//                   <Card
-//                     sx={{
-//                       background: stat.gradient,
-//                       color: 'white',
-//                       borderRadius: '16px',
-//                       overflow: 'hidden',
-//                       position: 'relative',
-//                       '&::before': {
-//                         content: '""',
-//                         position: 'absolute',
-//                         top: 0,
-//                         left: 0,
-//                         right: 0,
-//                         bottom: 0,
-//                         background: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-//                         opacity: 0.3
-//                       }
-//                     }}
-//                   >
-//                     <CardContent sx={{ position: 'relative', zIndex: 1 }}>
-//                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-//                         <stat.icon sx={{ fontSize: 40 }} />
-//                         <Chip
-//                           label={stat.change}
-//                           size="small"
-//                           sx={{
-//                             bgcolor: 'rgba(255, 255, 255, 0.2)',
-//                             color: 'white',
-//                             fontWeight: 'bold'
-//                           }}
-//                         />
-//                       </Box>
-//                       <Typography variant="h4" fontWeight="bold" gutterBottom>
-//                         {stat.value}
-//                       </Typography>
-//                       <Typography variant="body2" sx={{ opacity: 0.9 }}>
-//                         {stat.title}
-//                       </Typography>
-//                     </CardContent>
-//                   </Card>
-//                 </motion.div>
-//               </Grid>
-//             ))}
-
-           
-//           </Grid>
-//         </motion.div>
-
-//         {/* Today's Overview */}
-//         <motion.div variants={itemVariants}>
-//           <Grid container spacing={3} sx={{ mb: 4 }}>
-//             {/* Today's Lessons Progress */}
-//             <Grid item xs={12} md={8}>
-//               <Card sx={{ borderRadius: '16px', height: '100%' }}>
-//                 <CardContent sx={{ p: 3 }}>
-//                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-//                     <TodayIcon sx={{ color: '#3B82F6', mr: 2 }} />
-//                     <Typography variant="h6" fontWeight="bold">
-//                       סקירת היום
-//                     </Typography>
-//                   </Box>
-                  
-//                   <Grid container spacing={3}>
-//                     <Grid item xs={6}>
-//                       <Box sx={{ textAlign: 'center' }}>
-//                         <Typography variant="h4" fontWeight="bold" color="#10B981">
-//                           {todayStats.completedLessons}
-//                         </Typography>
-//                         <Typography variant="body2" color="text.secondary">
-//                           שיעורים שהסתיימו
-//                         </Typography>
-//                       </Box>
-//                     </Grid>
-//                     <Grid item xs={6}>
-//                       <Box sx={{ textAlign: 'center' }}>
-//                         <Typography variant="h4" fontWeight="bold" color="#F59E0B">
-//                           {todayStats.totalLessons - todayStats.completedLessons}
-//                         </Typography>
-//                         <Typography variant="body2" color="text.secondary">
-//                           שיעורים נותרים
-//                         </Typography>
-//                       </Box>
-//                     </Grid>
-//                   </Grid>
-
-//                   <Box sx={{ mt: 3 }}>
-//                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-//                       <Typography variant="body2" color="text.secondary">
-//                         התקדמות יומית
-//                       </Typography>
-//                       <Typography variant="body2" fontWeight="bold">
-//                         {Math.round((todayStats.completedLessons / todayStats.totalLessons) * 100)}%
-//                       </Typography>
-//                     </Box>
-//                     <LinearProgress
-//                       variant="determinate"
-//                       value={(todayStats.completedLessons / todayStats.totalLessons) * 100}
-//                       sx={{
-//                         height: 8,
-//                         borderRadius: 4,
-//                         bgcolor: '#E5E7EB',
-//                         '& .MuiLinearProgress-bar': {
-//                           background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-//                           borderRadius: 4
-//                         }
-//                       }}
-//                     />
-//                   </Box>
-//                 </CardContent>
-//               </Card>
-//             </Grid>
-
-//             {/* Quick Stats */}
-//             <Grid item xs={12} md={4}>
-//               <Card sx={{ borderRadius: '16px', height: '100%' }}>
-//                 <CardContent sx={{ p: 3 }}>
-//                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-//                     <StatsIcon sx={{ color: '#8B5CF6', mr: 2 }} />
-//                     <Typography variant="h6" fontWeight="bold">
-//                       סטטיסטיקות מהירות
-//                     </Typography>
-//                   </Box>
-                  
-//                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-//                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-//                       <Typography variant="body2" color="text.secondary">
-//                         תלמידים פעילים היום
-//                       </Typography>
-//                       <Typography variant="h6" fontWeight="bold" color="#3B82F6">
-//                         {todayStats.activeStudents}
-//                       </Typography>
-//                     </Box>
-                    
-//                     <Divider />
-                    
-//                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-//                       <Typography variant="body2" color="text.secondary">
-//                         אחוז נוכחות ממוצע
-//                       </Typography>
-//                       <Chip
-//                         label={`${todayStats.attendanceRate}%`}
-//                         color="success"
-//                         size="small"
-//                         sx={{ fontWeight: 'bold' }}
-//                       />
-//                     </Box>
-                    
-//                     <Divider />
-                    
-//                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-//                       <Typography variant="body2" color="text.secondary">
-//                         שיעורים מתוכננים מחר
-//                       </Typography>
-//                       <Typography variant="h6" fontWeight="bold" color="#F59E0B">
-//                         12
-//                       </Typography>
-//                     </Box>
-//                   </Box>
-//                 </CardContent>
-//               </Card>
-//             </Grid>
-//           </Grid>
-//         </motion.div>
-
-//         {/* Quick Actions */}
-//         <motion.div variants={itemVariants}>
-//           <Card sx={{ borderRadius: '16px', mb: 4 }}>
-//             <CardContent sx={{ p: 3 }}>
-//               <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-//                 <ScheduleIcon sx={{ color: '#EF4444', mr: 2 }} />
-//                 <Typography variant="h6" fontWeight="bold">
-//                   פעולות מהירות
-//                 </Typography>
-//               </Box>
-              
-//               <Grid container spacing={2}>
-//                 {quickActions.map((action, index) => (
-//                   <Grid item xs={12} sm={6} md={3} key={index}>
-//                     <motion.div
-//                       whileHover={{ scale: 1.05 }}
-//                       whileTap={{ scale: 0.95 }}
-//                     >
-//                       <Button
-//                         fullWidth
-//                         variant="outlined"
-//                         startIcon={<action.icon />}
-//                         onClick={action.action}
-//                         sx={{
-//                           borderRadius: '12px',
-//                           py: 2,
-//                           borderColor: action.color,
-//                           color: action.color,
-//                           '&:hover': {
-//                             borderColor: action.color,
-//                             bgcolor: `${action.color}15`,
-//                             transform: 'translateY(-2px)',
-//                             boxShadow: `0 8px 16px ${action.color}30`
-//                           },
-//                           transition: 'all 0.3s ease'
-//                         }}
-//                       >
-//                         {action.title}
-//                       </Button>
-//                     </motion.div>
-//                   </Grid>
-//                 ))}
-//               </Grid>
-//             </CardContent>
-//           </Card>
-//         </motion.div>
-
-//         {/* Main Menu */}
-//         <motion.div variants={itemVariants}>
-//           <Typography variant="h5" fontWeight="bold" sx={{ mb: 3, color: '#374151' }}>
-//             תפריט ראשי
-//           </Typography>
-          
-//           <Grid container spacing={3}>
-//             {mainMenuItems.map((item, index) => (
-//               <Grid item xs={12} sm={6} md={4} key={index}>
-//                 <motion.div
-//                   variants={itemVariants}
-//                   whileHover={{ scale: 1.03 }}
-//                   whileTap={{ scale: 0.97 }}
-//                 >
-//                   <Card
-//                     sx={{
-//                       borderRadius: '16px',
-//                       cursor: 'pointer',
-//                       height: '200px',
-//                       position: 'relative',
-//                       overflow: 'hidden',
-//                       background: 'white',
-//                       border: '1px solid #E5E7EB',
-//                       transition: 'all 0.3s ease',
-//                       '&:hover': {
-//                         boxShadow: `0 10px 25px ${item.color}30`,
-//                         transform: 'translateY(-5px)',
-//                         borderColor: item.color
-//                       }
-//                     }}
-//                     onClick={() => navigate(item.path)}
-//                   >
-//                     {/* Background Pattern */}
-//                     <Box
-//                       sx={{
-//                         position: 'absolute',
-//                         top: 0,
-//                         right: 0,
-//                         width: '100px',
-//                         height: '100px',
-//                         background: item.gradient,
-//                         borderRadius: '50%',
-//                         transform: 'translate(30px, -30px)',
-//                         opacity: 0.1
-//                       }}
-//                     />
-                    
-//                     <CardContent sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-//                       <Box>
-//                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-//                           <Avatar
-//                             sx={{
-//                               background: item.gradient,
-//                               width: 50,
-//                               height: 50,
-//                               mr: 2
-//                             }}
-//                           >
-//                             <item.icon sx={{ fontSize: 28 }} />
-//                           </Avatar>
-//                           <Typography variant="h6" fontWeight="bold" color="#374151">
-//                             {item.title}
-//                           </Typography>
-//                         </Box>
-                        
-//                         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-//                           {item.description}
-//                         </Typography>
-//                       </Box>
-                      
-//                       <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-//                         <IconButton
-//                           size="small"
-//                           sx={{
-//                             color: item.color,
-//                             bgcolor: `${item.color}15`,
-//                             '&:hover': {
-//                               bgcolor: `${item.color}25`,
-//                               transform: 'translateX(-5px)'
-//                             },
-//                             transition: 'all 0.3s ease'
-//                           }}
-//                         >
-//                           <ArrowIcon />
-//                         </IconButton>
-//                       </Box>
-//                     </CardContent>
-//                   </Card>
-//                 </motion.div>
-//               </Grid>
-//             ))}
-//           </Grid>
-//         </motion.div>
-
-//         {/* Calendar and Notifications Section */}
-//         <motion.div variants={itemVariants}>
-//           <Grid container spacing={3} sx={{ mt: 2 }}>
-//             {/* Upcoming Events */}
-//             <Grid item xs={12} md={6}>
-//               <Card sx={{ borderRadius: '16px' }}>
-//                 <CardContent sx={{ p: 3 }}>
-//                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-//                     <CalendarIcon sx={{ color: '#06B6D4', mr: 2 }} />
-//                     <Typography variant="h6" fontWeight="bold">
-//                       אירועים קרובים
-//                     </Typography>
-//                   </Box>
-                  
-//                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-//                     <Paper sx={{ p: 2, borderRadius: '12px', bgcolor: '#F0F9FF', border: '1px solid #E0F2FE' }}>
-//                       <Typography variant="subtitle2" fontWeight="bold" color="#0369A1">
-//                         מחר • 14:00
-//                       </Typography>
-//                       <Typography variant="body2" color="text.secondary">
-//                         שיעור יוגה לילדים - קבוצה א'
-//                       </Typography>
-//                     </Paper>
-                    
-//                     <Paper sx={{ p: 2, borderRadius: '12px', bgcolor: '#F0FDF4', border: '1px solid #DCFCE7' }}>
-//                       <Typography variant="subtitle2" fontWeight="bold" color="#059669">
-//                         יום רביעי • 16:30
-//                       </Typography>
-//                       <Typography variant="body2" color="text.secondary">
-//                         חוג ציור - קבוצה מתקדמים
-//                       </Typography>
-//                     </Paper>
-                    
-//                     <Paper sx={{ p: 2, borderRadius: '12px', bgcolor: '#FEF3F2', border: '1px solid #FECACA' }}>
-//                       <Typography variant="subtitle2" fontWeight="bold" color="#DC2626">
-//                         יום חמישי • 10:00
-//                       </Typography>
-//                       <Typography variant="body2" color="text.secondary">
-//                         פגישת הורים - חוג מוזיקה
-//                       </Typography>
-//                     </Paper>
-//                   </Box>
-                  
-//                   <Button
-//                     fullWidth
-//                     variant="outlined"
-//                     sx={{ mt: 3, borderRadius: '12px' }}
-//                     onClick={() => navigate('/calendar')}
-//                   >
-//                     צפה בלוח השנה המלא
-//                   </Button>
-//                 </CardContent>
-//               </Card>
-//             </Grid>
-
-//             {/* Notifications */}
-//             <Grid item xs={12} md={6}>
-//               <Card sx={{ borderRadius: '16px' }}>
-//                 <CardContent sx={{ p: 3 }}>
-//                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-//                     <Badge badgeContent={3} color="error">
-//                       <NotificationsIcon sx={{ color: '#F59E0B', mr: 2 }} />
-//                     </Badge>
-//                     <Typography variant="h6" fontWeight="bold">
-//                       התראות ועדכונים
-//                     </Typography>
-//                   </Box>
-                  
-//                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-//                     <Paper sx={{ p: 2, borderRadius: '12px', bgcolor: '#FEF3F2', border: '1px solid #FECACA' }}>
-//                       <Typography variant="subtitle2" fontWeight="bold" color="#DC2626">
-//                         חסרה נוכחות
-//                       </Typography>
-//                       <Typography variant="body2" color="text.secondary">
-//                         לא נרשמה נוכחות לקבוצת יוגה של יום ראשון
-//                       </Typography>
-//                     </Paper>
-                    
-//                     <Paper sx={{ p: 2, borderRadius: '12px', bgcolor: '#FFFBEB', border: '1px solid #FDE68A' }}>
-//                       <Typography variant="subtitle2" fontWeight="bold" color="#D97706">
-//                         תלמיד חדש נרשם
-//                       </Typography>
-//                       <Typography variant="body2" color="text.secondary">
-//                         יוסי כהן נרשם לחוג ציור - קבוצה מתחילים
-//                       </Typography>
-//                     </Paper>
-                    
-//                     <Paper sx={{ p: 2, borderRadius: '12px', bgcolor: '#F0FDF4', border: '1px solid #DCFCE7' }}>
-//                       <Typography variant="subtitle2" fontWeight="bold" color="#059669">
-//                         דוח חודשי מוכן
-//                       </Typography>
-
-//                       <Typography variant="body2" color="text.secondary">
-//                         דוח הנוכחות לחודש נובמבר מוכן לצפיה
-//                       </Typography>
-//                     </Paper>
-//                   </Box>
-                  
-//                   <Button
-//                     fullWidth
-//                     variant="outlined"
-//                     sx={{ mt: 3, borderRadius: '12px' }}
-//                     onClick={() => navigate('/notifications')}
-//                   >
-//                     צפה בכל התראות
-//                   </Button>
-//                 </CardContent>
-//               </Card>
-//             </Grid>
-//           </Grid>
-//         </motion.div>
-
-//         {/* Footer */}
-//         <motion.div variants={itemVariants}>
-//           <Box sx={{ mt: 6, textAlign: 'center' }}>
-//             <Typography variant="body2" color="text.secondary">
-//               מערכת ניהול חוגים • גרסה 1.0 • © 2024 כל הזכויות שמורות
-//             </Typography>
-//           </Box>
-//         </motion.div>
-//       </motion.div>
-//     </Box>
-//   );
-// };
-
-// export default Home;

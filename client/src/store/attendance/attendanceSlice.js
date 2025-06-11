@@ -16,8 +16,8 @@ const attendanceSlice = createSlice({
         lastSaved: null,
         attendanceData: [],
         attendanceSummary: {},
-        attendanceReportsMonthly: null, // שנה מ-{} ל-null
-        attendanceReportsOverall: null  // שנה מ-{} ל-null
+        attendanceReportsMonthly: null,
+        attendanceReportsOverall: null
     },
     reducers: {
         clearAttendanceError: (state) => {
@@ -76,12 +76,12 @@ const attendanceSlice = createSlice({
             .addCase(fetchAttendanceReportsMonthly.pending, (state) => {
                 state.loading = true;
                 state.error = null;
+                state.attendanceReportsMonthly = null;
             })
             .addCase(fetchAttendanceReportsMonthly.fulfilled, (state, action) => {
                 state.loading = false;
-                state.error = null;
                 state.attendanceReportsMonthly = action.payload;
-                console.log('Stored monthly reports in Redux:', action.payload);
+                state.error = null;
             })
             .addCase(fetchAttendanceReportsMonthly.rejected, (state, action) => {
                 state.loading = false;
@@ -93,12 +93,12 @@ const attendanceSlice = createSlice({
             .addCase(fetchAttendanceReportsOverall.pending, (state) => {
                 state.loading = true;
                 state.error = null;
+                state.attendanceReportsOverall = null;
             })
             .addCase(fetchAttendanceReportsOverall.fulfilled, (state, action) => {
                 state.loading = false;
-                state.error = null;
                 state.attendanceReportsOverall = action.payload;
-                console.log('Stored overall reports in Redux:', action.payload);
+                 state.error = null;
             })
             .addCase(fetchAttendanceReportsOverall.rejected, (state, action) => {
                 state.loading = false;

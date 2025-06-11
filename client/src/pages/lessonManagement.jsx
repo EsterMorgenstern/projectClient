@@ -151,7 +151,7 @@ const LessonManagement = () => {
                 <Button
                   variant="contained"
                   size="large"
-                  onClick={() => navigate('/attendance-calendar')}
+                  onClick={() => navigate('/attendanceCalendar')}
                   sx={{
                     bgcolor: '#3B82F6',
                     '&:hover': { bgcolor: '#2563EB' },

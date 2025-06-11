@@ -1,4 +1,661 @@
-         import React, { useState, useEffect } from 'react';
+// import React, { useState, useEffect } from 'react';
+// import {
+//   Dialog,
+//   DialogTitle,
+//   DialogContent,
+//   DialogActions,
+//   Button,
+//   Typography,
+//   Box,
+//   Grid,
+//   Card,
+//   CardContent,
+//   TextField,
+//   MenuItem,
+//   Table,
+//   TableBody,
+//   TableCell,
+//   TableContainer,
+//   TableHead,
+//   TableRow,
+//   Paper,
+//   CircularProgress,
+//   Chip,
+//   FormControl,
+//   InputLabel,
+//   Select,
+//   Alert
+// } from '@mui/material';
+// import {
+//   Assessment,
+//   Download,
+//   DateRange,
+//   Group,
+//   TrendingUp,
+//   Refresh
+// } from '@mui/icons-material';
+// import { motion } from 'framer-motion';
+// import { useDispatch, useSelector } from 'react-redux';
+// import { fetchAttendanceReportsOverall } from '../../../store/attendance/fetchAttendanceReportsOverall';
+// import { fetchAttendanceReportsMonthly } from '../../../store/attendance/fetchAttendenceReportsMonthly';
+// import { fetchCourses } from '../../../store/course/CoursesGetAllThunk';
+// import { fetchBranches } from '../../../store/branch/branchGetAllThunk';
+// import { fetchGroups } from '../../../store/group/groupGellAllThunk';
+// import * as XLSX from 'xlsx';
+// import { saveAs } from 'file-saver';
+
+// const AttendanceReports = ({ open, onClose }) => {
+//   const [reportType, setReportType] = useState('monthly');
+//   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+//   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+//   const [selectedCourse, setSelectedCourse] = useState('');
+//   const [selectedBranch, setSelectedBranch] = useState('');
+//   const [selectedGroup, setSelectedGroup] = useState('');
+//   const [dataLoading, setDataLoading] = useState(false);
+
+//   const dispatch = useDispatch();
+
+//   // Redux selectors
+//   const attendanceState = useSelector(state => state.attendances || {});
+//   const coursesState = useSelector(state => state.courses || {});
+//   const branchesState = useSelector(state => state.branches || {});
+//   const groupsState = useSelector(state => state.groups || {});
+
+//   const courses = coursesState.courses || [];
+//   const branches = branchesState.branches || [];
+//   const groups = groupsState.groups || [];
+
+//   const {
+//     attendanceReportsMonthly = null,
+//     attendanceReportsOverall = null,
+//     loading = false,
+//     error = null
+//   } = attendanceState;
+
+//   const monthNames = [
+//     'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
+//     'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
+//   ];
+
+//   const currentYear = new Date().getFullYear();
+//   const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
+
+//   // טעינת נתונים בסיסיים
+//   const loadBasicData = async () => {
+//     setDataLoading(true);
+//     try {
+//       console.log('Loading basic data...');
+//       await Promise.all([
+//         dispatch(fetchCourses()),
+//         dispatch(fetchBranches()),
+//         dispatch(fetchGroups())
+//       ]);
+//       console.log('Basic data loaded successfully');
+//     } catch (error) {
+//       console.error('Error loading basic data:', error);
+//     } finally {
+//       setDataLoading(false);
+//     }
+//   };
+
+//   useEffect(() => {
+//     if (open) {
+//       loadBasicData();
+//     }
+//   }, [open]);
+
+//   // סינון סניפים לפי חוג נבחר
+//   const filteredBranches = selectedCourse
+//     ? branches.filter(branch =>
+//       groups.some(group =>
+//         group.courseId === parseInt(selectedCourse) && group.branchId === branch.branchId
+//       )
+//     )
+//     : [];
+
+//   // סינון קבוצות לפי חוג וסניף נבחרים
+//   const filteredGroups = selectedCourse && selectedBranch
+//     ? groups.filter(group =>
+//       group.courseId === parseInt(selectedCourse) && group.branchId === parseInt(selectedBranch)
+//     )
+//     : selectedCourse
+//       ? groups.filter(group => group.courseId === parseInt(selectedCourse))
+//       : [];
+
+//   // איפוס בחירות כאשר משנים חוג
+//   const handleCourseChange = (courseId) => {
+//     setSelectedCourse(courseId);
+//     setSelectedBranch('');
+//     setSelectedGroup('');
+//   };
+
+//   // איפוס קבוצה כאשר משנים סניף
+//   const handleBranchChange = (branchId) => {
+//     setSelectedBranch(branchId);
+//     setSelectedGroup('');
+//   };
+
+//   // טעינת נתוני דוח
+//   const fetchReportData = async () => {
+//     console.log('Fetching report data:', {
+//       reportType,
+//       selectedMonth,
+//       selectedYear,
+//       selectedGroup
+//     });
+
+//     try {
+//       if (reportType === 'monthly') {
+//         const result = await dispatch(fetchAttendanceReportsMonthly({
+//           groupId: selectedGroup || null,
+//           selectedMonth,
+//           selectedYear
+//         }));
+//         console.log('Monthly report result:', result);
+//       } else if (reportType === 'overall') {
+//         const result = await dispatch(fetchAttendanceReportsOverall({
+//           selectedMonth,
+//           selectedYear
+//         }));
+//         console.log('Overall report result:', result);
+//       }
+//     } catch (error) {
+//       console.error('Error in fetchReportData:', error);
+//     }
+//   };
+
+//   // ייצוא לאקסל
+//   const exportToExcel = () => {
+//     const reportData = reportType === 'monthly' ? attendanceReportsMonthly : attendanceReportsOverall;
+
+//     if (!reportData) {
+//       alert('אין נתונים לייצוא');
+//       return;
+//     }
+
+//     try {
+//       const workbook = XLSX.utils.book_new();
+
+//       if (reportType === 'monthly') {
+//         // יצירת גיליון סטטיסטיקות כלליות
+//         if (reportData.overallStatistics) {
+//           const statsData = [
+//             ['סטטיסטיקות כלליות', ''],
+//             ['סה״כ קבוצות', reportData.overallStatistics.totalGroups || 0],
+//             ['סה״כ תלמידים', reportData.overallStatistics.totalStudents || 0],
+//             ['סה״כ שיעורים', reportData.overallStatistics.totalLessons || 0],
+//             ['אחוז נוכחות כללי', `${reportData.overallStatistics.overallAttendanceRate || 0}%`]
+//           ];
+
+//           const statsWorksheet = XLSX.utils.aoa_to_sheet(statsData);
+//           XLSX.utils.book_append_sheet(workbook, statsWorksheet, 'סטטיסטיקות כלליות');
+//         }
+
+//         // יצירת גיליון קבוצות
+//         if (reportData.groups && Array.isArray(reportData.groups)) {
+//           const groupsData = [
+//             ['קבוצה', 'קורס', 'סניף', 'תלמידים', 'שיעורים', 'אחוז נוכחות'],
+//             ...reportData.groups.map(group => [
+//               group.groupName || 'לא זמין',
+//               group.courseName || 'לא זמין',
+//               group.branchName || 'לא זמין',
+//               group.totalStudents || 0,
+//               group.totalLessons || 0,
+//               `${group.averageAttendanceRate || 0}%`
+//             ])
+//           ];
+
+//           const groupsWorksheet = XLSX.utils.aoa_to_sheet(groupsData);
+//           XLSX.utils.book_append_sheet(workbook, groupsWorksheet, 'קבוצות');
+//         }
+//       } else if (reportType === 'overall') {
+//         const overallData = [
+//           ['סטטיסטיקות כלליות', ''],
+//           ['סה״כ קבוצות', reportData.totalGroups || 0],
+//           ['סה״כ תלמידים', reportData.totalStudents || 0],
+//           ['סה״כ שיעורים', reportData.totalLessons || 0],
+//           ['אחוז נוכחות כללי', `${reportData.overallAttendanceRate || 0}%`]
+//         ];
+
+//         const overallWorksheet = XLSX.utils.aoa_to_sheet(overallData);
+//         XLSX.utils.book_append_sheet(workbook, overallWorksheet, 'דוח כללי');
+//       }
+
+//       // שמירת הקובץ
+//       const fileName = `דוח_נוכחות_${reportType === 'monthly' ? 'חודשי' : 'כללי'}_${monthNames[selectedMonth - 1]}_${selectedYear}.xlsx`;
+//       const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+//       const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+//       saveAs(data, fileName);
+
+//     } catch (error) {
+//       console.error('Error exporting to Excel:', error);
+//       alert('שגיאה בייצוא הקובץ');
+//     }
+//   };
+
+//   const reportData = reportType === 'monthly' ? attendanceReportsMonthly : attendanceReportsOverall;
+
+//   const renderMonthlyReport = () => {
+//     if (!reportData || typeof reportData !== 'object') {
+//       return (
+//         <Box sx={{ textAlign: 'center', py: 4 }}>
+//           <Typography variant="h6" color="text.secondary">
+//             אין נתונים להצגה
+//           </Typography>
+//           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+//             בחר פרמטרים ולחץ על "עדכן דוח"
+//           </Typography>
+//         </Box>
+//       );
+//     }
+
+//     return (
+//       <Box>
+//         {/* סטטיסטיקות כלליות */}
+//         <Grid container spacing={2} sx={{ mb: 3 }}>
+//           <Grid item xs={12} md={3}>
+//             <Card sx={{ bgcolor: '#EBF8FF' }}>
+//               <CardContent sx={{ textAlign: 'center' }}>
+//                 <Group sx={{ fontSize: 40, color: '#3B82F6', mb: 1 }} />
+//                 <Typography variant="h4" color="#1E40AF">
+//                   {reportData.overallStatistics?.totalGroups || 0}
+//                 </Typography>
+//                 <Typography variant="body2" color="text.secondary">
+//                   קבוצות
+//                 </Typography>
+//               </CardContent>
+//             </Card>
+//           </Grid>
+//           <Grid item xs={12} md={3}>
+//             <Card sx={{ bgcolor: '#FEF3F2' }}>
+//               <CardContent sx={{ textAlign: 'center' }}>
+//                 <DateRange sx={{ fontSize: 40, color: '#EF4444', mb: 1 }} />
+//                 <Typography variant="h4" color="#DC2626">
+//                   {reportData.overallStatistics?.totalLessons || 0}
+//                 </Typography>
+//                 <Typography variant="body2" color="text.secondary">
+//                   שיעורים
+//                 </Typography>
+//               </CardContent>
+//             </Card>
+//           </Grid>
+//           <Grid item xs={12} md={3}>
+//             <Card sx={{ bgcolor: '#FEF7CD' }}>
+//               <CardContent sx={{ textAlign: 'center' }}>
+//                 <TrendingUp sx={{ fontSize: 40, color: '#F59E0B', mb: 1 }} />
+//                 <Typography variant="h4" color="#D97706">
+//                   {reportData.overallStatistics?.overallAttendanceRate || 0}%
+//                 </Typography>
+//                 <Typography variant="body2" color="text.secondary">
+//                   אחוז נוכחות כללי
+//                 </Typography>
+//               </CardContent>
+//             </Card>
+//           </Grid>
+//         </Grid>
+
+//         {/* טבלת קבוצות */}
+//         {reportData.groups && Array.isArray(reportData.groups) && reportData.groups.length > 0 ? (
+//           <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+//             <Table>
+//               <TableHead>
+//                 <TableRow sx={{ bgcolor: '#F8FAFC' }}>
+//                   <TableCell align="right" sx={{ fontWeight: 'bold' }}>קבוצה</TableCell>
+//                   <TableCell align="right" sx={{ fontWeight: 'bold' }}>קורס</TableCell>
+//                   <TableCell align="right" sx={{ fontWeight: 'bold' }}>סניף</TableCell>
+//                   <TableCell align="right" sx={{ fontWeight: 'bold' }}>תלמידים</TableCell>
+//                   <TableCell align="right" sx={{ fontWeight: 'bold' }}>שיעורים</TableCell>
+//                   <TableCell align="right" sx={{ fontWeight: 'bold' }}>אחוז נוכחות</TableCell>
+//                 </TableRow>
+//               </TableHead>
+//               <TableBody>
+//                 {reportData.groups.map((group, index) => (
+//                   <TableRow
+//                     key={group.groupId || index}
+//                     sx={{
+//                       '&:nth-of-type(odd)': { bgcolor: 'rgba(59, 130, 246, 0.03)' },
+//                       '&:hover': { bgcolor: 'rgba(59, 130, 246, 0.08)' }
+//                     }}
+//                   >
+//                     <TableCell align="right">{group.groupName || 'לא זמין'}</TableCell>
+//                     <TableCell align="right">{group.courseName || 'לא זמין'}</TableCell>
+//                     <TableCell align="right">{group.branchName || 'לא זמין'}</TableCell>
+//                     <TableCell align="right">{group.totalStudents || 0}</TableCell>
+//                     <TableCell align="right">{group.totalLessons || 0}</TableCell>
+//                     <TableCell align="right">
+//                       <Chip
+//                         label={`${group.averageAttendanceRate || 0}%`}
+//                         color={
+//                           (group.averageAttendanceRate || 0) >= 90 ? 'success' :
+//                             (group.averageAttendanceRate || 0) >= 75 ? 'primary' :
+//                               (group.averageAttendanceRate || 0) >= 60 ? 'warning' : 'error'
+//                         }
+//                         size="small"
+//                       />
+//                     </TableCell>
+//                   </TableRow>
+//                 ))}
+//               </TableBody>
+//             </Table>
+//           </TableContainer>
+//         ) : (
+//           <Box sx={{ textAlign: 'center', py: 4 }}>
+//             <Typography variant="h6" color="text.secondary">
+//               אין נתוני קבוצות להצגה
+//             </Typography>
+//           </Box>
+//         )}
+//       </Box>
+//     );
+//   };
+
+//   const renderOverallReport = () => {
+//     if (!reportData || typeof reportData !== 'object') {
+//       return (
+//         <Box sx={{ textAlign: 'center', py: 4 }}>
+//           <Typography variant="h6" color="text.secondary">
+//             אין נתונים להצגה
+//           </Typography>
+//         </Box>
+//       );
+//     }
+
+//     return (
+//       <Box>
+//         <Grid container spacing={3}>
+//           <Grid item xs={12} md={6}>
+//             <Card>
+//               <CardContent>
+//                 <Typography variant="h6" gutterBottom>
+//                   סטטיסטיקות כלליות
+//                 </Typography>
+//                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+//                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+//                     <Typography>סה״כ קבוצות:</Typography>
+//                     <Typography fontWeight="bold">{reportData.totalGroups || 0}</Typography>
+//                   </Box>
+//                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+//                     <Typography>סה״כ תלמידים:</Typography>
+//                     <Typography fontWeight="bold">{reportData.totalStudents || 0}</Typography>
+//                   </Box>
+//                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+//                     <Typography>סה״כ שיעורים:</Typography>
+//                     <Typography fontWeight="bold">{reportData.totalLessons || 0}</Typography>
+//                   </Box>
+//                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+//                     <Typography>אחוז נוכחות כללי:</Typography>
+//                     <Chip
+//                       label={`${reportData.overallAttendanceRate || 0}%`}
+//                       color={
+//                         (reportData.overallAttendanceRate || 0) >= 90 ? 'success' :
+//                           (reportData.overallAttendanceRate || 0) >= 75 ? 'primary' :
+//                             (reportData.overallAttendanceRate || 0) >= 60 ? 'warning' : 'error'
+//                       }
+//                     />
+//                   </Box>
+//                 </Box>
+//               </CardContent>
+//             </Card>
+//           </Grid>
+//         </Grid>
+//       </Box>
+//     );
+//   };
+
+//   // אם אין attendance state, הצג הודעת שגיאה
+//   if (!attendanceState) {
+//     return (
+//       <Dialog open={open} onClose={onClose}>
+//         <DialogTitle>שגיאה</DialogTitle>
+//         <DialogContent>
+//           <Typography color="error">
+//             Redux store לא מוגדר נכון. בדוק את הגדרות ה-store.
+//           </Typography>
+//         </DialogContent>
+//         <DialogActions>
+//           <Button onClick={onClose}>סגור</Button>
+//         </DialogActions>
+//       </Dialog>
+//     );
+//   }
+
+//   return (
+//     <Dialog
+//       open={open}
+//       onClose={onClose}
+//       maxWidth="xl"
+//       fullWidth
+//       sx={{
+//         '& .MuiDialog-paper': {
+//           borderRadius: 12,
+//           minHeight: '80vh'
+//         }
+//       }}
+//     >
+//       <DialogTitle
+//         sx={{
+//           bgcolor: '#059669',
+//           color: 'white',
+//           display: 'flex',
+//           alignItems: 'center',
+//           gap: 2
+//         }}
+//       >
+//         <Assessment />
+//         דוחות נוכחות
+//       </DialogTitle>
+
+//       <DialogContent sx={{ p: 3 }}>
+//         {/* הצגת שגיאות טעינה */}
+//         {(coursesState.error || branchesState.error || groupsState.error) && (
+//           <Alert severity="error" sx={{ mb: 2 }}>
+//             שגיאה בטעינת נתונים בסיסיים:
+//             {coursesState.error && <div>חוגים: {coursesState.error}</div>}
+//             {branchesState.error && <div>סניפים: {branchesState.error}</div>}
+//             {groupsState.error && <div>קבוצות: {groupsState.error}</div>}
+//           </Alert>
+//         )}
+
+//         {/* כפתור רענון נתונים */}
+//         {(courses.length === 0 || branches.length === 0 || groups.length === 0) && (
+//           <Alert severity="warning" sx={{ mb: 2 }}>
+//             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+//               <Typography>
+//                 לא נמצאו נתונים בסיסיים. לחץ לרענון.
+//               </Typography>
+//               <Button
+//                 startIcon={<Refresh />}
+//                 onClick={loadBasicData}
+//                 disabled={dataLoading}
+//                 size="small"
+//               >
+//                 {dataLoading ? 'טוען...' : 'רענן'}
+//               </Button>
+//             </Box>
+//           </Alert>
+//         )}
+// <br />
+//         {/* פילטרים */}
+//         <Grid container spacing={2} sx={{ mb: 3 }}>
+//           <Grid item xs={12} md={2}>
+//             <TextField
+//               select
+//               fullWidth
+//               label="סוג דוח"
+//               value={reportType}
+//               onChange={(e) => setReportType(e.target.value)}
+//             >
+//               <MenuItem value="monthly">דוח חודשי</MenuItem>
+//               <MenuItem value="overall">סטטיסטיקות כלליות</MenuItem>
+//             </TextField>
+//           </Grid>
+
+//           <Grid item xs={12} md={2}>
+//             <TextField
+//               select
+//               fullWidth
+//               label="שנה"
+//               value={selectedYear}
+//               onChange={(e) => setSelectedYear(e.target.value)}
+//             >
+//               {years.map(year => (
+//                 <MenuItem key={year} value={year}>
+//                   {year}
+//                 </MenuItem>
+//               ))}
+//             </TextField>
+//           </Grid>
+
+//           <Grid item xs={12} md={2}>
+//             <TextField
+//               select
+//               fullWidth
+//               label="חודש"
+//               value={selectedMonth}
+//               onChange={(e) => setSelectedMonth(e.target.value)}
+//             >
+//               {monthNames.map((month, index) => (
+//                 <MenuItem key={index + 1} value={index + 1}>
+//                   {month}
+//                 </MenuItem>
+//               ))}
+//             </TextField>
+//           </Grid>
+
+//           {/* בחירת חוג */}
+//           {reportType === 'monthly' && (
+//             <>
+//               <Grid item xs={12} md={2}>
+//                 <FormControl fullWidth>
+//                   <InputLabel>חוג</InputLabel>
+//                   <Select
+//                     value={selectedCourse}
+//                     onChange={(e) => handleCourseChange(e.target.value)}
+//                     label="חוג"
+//                   >
+//                     <MenuItem value="">כל החוגים</MenuItem>
+//                     {courses.map(course => (
+
+//                       <MenuItem key={course.courseId} value={course.courseId}>
+//                         {course.couresName}
+//                       </MenuItem>
+//                     ))}
+//                   </Select>
+//                 </FormControl>
+//               </Grid>
+
+//               {/* בחירת סניף */}
+//               <Grid item xs={12} md={2}>
+//                 <FormControl fullWidth disabled={!selectedCourse}>
+//                   <InputLabel>סניף</InputLabel>
+//                   <Select
+//                     value={selectedBranch}
+//                     onChange={(e) => handleBranchChange(e.target.value)}
+//                     label="סניף"
+//                   >
+//                     <MenuItem value="">כל הסניפים</MenuItem>
+//                     {filteredBranches.map(branch => (
+//                       <MenuItem key={branch.branchId} value={branch.branchId}>
+//                         {branch.name}
+//                       </MenuItem>
+//                     ))}
+//                   </Select>
+//                 </FormControl>
+//               </Grid>
+
+//               {/* בחירת קבוצה */}
+//               <Grid item xs={12} md={2}>
+//                 <FormControl fullWidth disabled={!selectedCourse}>
+//                   <InputLabel>קבוצה</InputLabel>
+//                   <Select
+//                     value={selectedGroup}
+//                     onChange={(e) => setSelectedGroup(e.target.value)}
+//                     label="קבוצה"
+//                   >
+//                     <MenuItem value="">כל הקבוצות</MenuItem>
+//                     {filteredGroups.map(group => (
+//                       <MenuItem key={group.groupId} value={group.groupId}>
+//                         {group.groupName}
+//                       </MenuItem>
+//                     ))}
+//                   </Select>
+//                 </FormControl>
+//               </Grid>
+//             </>
+//           )}
+//         </Grid>
+
+//         {/* כפתור עדכון דוח */}
+//         <Grid container spacing={2} sx={{ mb: 3 }}>
+//           <Grid item xs={12} md={3}>
+//             <Button
+//               fullWidth
+//               variant="contained"
+//               onClick={fetchReportData}
+//               sx={{ height: '56px' }}
+//               disabled={Boolean(loading)}
+//             >
+//               {loading ? <CircularProgress size={24} color="inherit" /> : 'עדכן דוח'}
+//             </Button>
+//           </Grid>
+//         </Grid>
+
+//         {/* הצגת שגיאות */}
+//         {error && (
+//           <Alert severity="error" sx={{ mb: 3 }}>
+//             <Typography variant="h6" gutterBottom>
+//               שגיאה בטעינת הנתונים
+//             </Typography>
+//             <Typography variant="body2">
+//               {typeof error === 'string' ? error : JSON.stringify(error)}
+//             </Typography>
+//           </Alert>
+//         )}
+
+
+
+//         {/* תוכן הדוח */}
+//         {loading ? (
+//           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
+//             <CircularProgress />
+//             <Typography sx={{ ml: 2 }}>טוען נתונים...</Typography>
+//           </Box>
+//         ) : (
+//           <Box>
+//             {reportType === 'monthly' && renderMonthlyReport()}
+//             {reportType === 'overall' && renderOverallReport()}
+//           </Box>
+//         )}
+//       </DialogContent>
+
+//       <DialogActions sx={{ p: 3 }}>
+//         <Button
+//           startIcon={<Download />}
+//           variant="outlined"
+//           color="primary"
+//           disabled={!reportData || Boolean(loading)}
+//           onClick={exportToExcel}
+//           sx={{
+//             '&:hover': {
+//               backgroundColor: '#E3F2FD',
+//               borderColor: '#1976D2'
+//             }
+//           }}
+//         >
+//           ייצא לאקסל
+//         </Button>
+//         <Button onClick={onClose} variant="outlined" color="primary">
+//           סגור
+//         </Button>
+//       </DialogActions>
+//     </Dialog>
+//   );
+// };
+
+// export default AttendanceReports;
+
+
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -20,44 +677,86 @@ import {
   TableRow,
   Paper,
   CircularProgress,
-  Chip
+  Chip,
+  FormControl,
+  InputLabel,
+  Select,
+  Alert,
+  IconButton,
+  Divider,
+  Slide
 } from '@mui/material';
 import {
   Assessment,
   Download,
   DateRange,
   Group,
-  TrendingUp
+  TrendingUp,
+  TrendingDown,
+  School,
+  Analytics,
+  BarChart,
+  Close as CloseIcon,
+  Refresh
 } from '@mui/icons-material';
-import { motion } from 'framer-motion';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchAttendanceReportsOverall } from '../../../store/attendance/fetchAttendanceReportsOverall';
 import { fetchAttendanceReportsMonthly } from '../../../store/attendance/fetchAttendenceReportsMonthly';
+import { fetchAttendanceReportsOverall } from '../../../store/attendance/fetchAttendanceReportsOverall';
+import { fetchCourses } from '../../../store/course/CoursesGetAllThunk';
+import { fetchBranches } from '../../../store/branch/branchGetAllThunk';
+import { fetchGroups } from '../../../store/group/groupGellAllThunk';
+
+const Transition = React.forwardRef(function Transition(props, ref) {
+  return <Slide direction="left" ref={ref} {...props} />;
+});
 
 const AttendanceReports = ({ open, onClose }) => {
+  const dispatch = useDispatch();
+
+  // Redux state
+  const attendanceState = useSelector((state) => state.attendances);
+  const coursesState = useSelector((state) => state.courses);
+  const branchesState = useSelector((state) => state.branches);
+  const groupsState = useSelector((state) => state.groups);
+
+  // Local state
   const [reportType, setReportType] = useState('monthly');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedCourse, setSelectedCourse] = useState('');
+  const [selectedBranch, setSelectedBranch] = useState('');
   const [selectedGroup, setSelectedGroup] = useState('');
-  const [groups, setGroups] = useState([]);
+  const [dataLoading, setDataLoading] = useState(false);
 
-  const dispatch = useDispatch();
-  
-  // תיקון: קבלת נתונים מ-Redux store בצורה נכונה
-  const attendanceState = useSelector(state => state.attendances);
-  const { 
-    attendanceReportsMonthly, 
-    attendanceReportsOverall, 
-    loading, 
-    error 
-  } = attendanceState;
+  // Derived state
+  const reportData = reportType === 'monthly'
+    ? attendanceState?.attendanceReportsMonthly
+    : attendanceState?.attendanceReportsOverall;
+  const loading = attendanceState?.loading || false;
+  const error = attendanceState?.error;
 
-  // תיקון: הסרת הפונקציות מה-console.log
-  console.log('Redux State:', attendanceState);
-  console.log('Monthly Reports:', attendanceReportsMonthly);
-  console.log('Overall Reports:', attendanceReportsOverall);
-  console.log('Loading:', loading);
-  console.log('Error:', error);
+  const courses = coursesState?.courses || [];
+  const branches = branchesState?.branches || [];
+  const groups = groupsState?.groups || [];
+
+  // Filtered data
+  const filteredBranches = selectedCourse
+    ? branches.filter(branch =>
+      groups.some(group =>
+        group.courseId === parseInt(selectedCourse) &&
+        group.branchId === branch.branchId
+      )
+    )
+    : branches;
+
+  const filteredGroups = groups.filter(group => {
+    if (selectedCourse && group.courseId !== parseInt(selectedCourse)) return false;
+    if (selectedBranch && group.branchId !== parseInt(selectedBranch)) return false;
+    return true;
+  });
 
   const monthNames = [
     'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
@@ -65,256 +764,695 @@ const AttendanceReports = ({ open, onClose }) => {
   ];
 
   const currentYear = new Date().getFullYear();
-  const years = Array.from({length: 5}, (_, i) => currentYear - 2 + i);
+  const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
 
-  // טעינת קבוצות
-  useEffect(() => {
-    const fetchGroups = async () => {
-      try {
-        const response = await fetch('http://localhost:5248/api/Group/GetAll');
-        if (response.ok) {
-          const data = await response.json();
-          console.log('Groups loaded:', data);
-          setGroups(data);
-        } else {
-          console.error('Failed to fetch groups:', response.status);
-        }
-      } catch (error) {
-        console.error('Error fetching groups:', error);
-      }
-    };
-
-    if (open) {
-      fetchGroups();
-    }
-  }, [open]);
-
-  // טעינת נתוני דוח
-  const fetchReportData = async () => {
-    console.log('Fetching report data:', {
-      reportType,
-      selectedMonth,
-      selectedYear,
-      selectedGroup
-    });
-
+  // Load basic data
+  const loadBasicData = async () => {
+    setDataLoading(true);
     try {
-      if (reportType === 'monthly') {
-        const result = await dispatch(fetchAttendanceReportsMonthly({ 
-          groupId: selectedGroup, 
-          selectedMonth, 
-          selectedYear 
-        }));
-        console.log('Monthly report result:', result);
-      } else if (reportType === 'overall') {
-        const result = await dispatch(fetchAttendanceReportsOverall({ 
-          selectedMonth, 
-          selectedYear 
-        }));
-        console.log('Overall report result:', result);
-      }
+      await Promise.all([
+        dispatch(fetchCourses()),
+        dispatch(fetchBranches()),
+        dispatch(fetchGroups())
+      ]);
     } catch (error) {
-      console.error('Error in fetchReportData:', error);
+      console.error('Error loading basic data:', error);
+    } finally {
+      setDataLoading(false);
     }
   };
 
+  // Load basic data on mount
   useEffect(() => {
-    if (open) {
-      fetchReportData();
+    if (open && (courses.length === 0 || branches.length === 0 || groups.length === 0)) {
+      loadBasicData();
     }
-  }, [open, reportType, selectedMonth, selectedYear, selectedGroup]);
+  }, [open]);
 
-  // תיקון: קבלת הנתונים הנכונים לפי סוג הדוח
-  const reportData = reportType === 'monthly' ? attendanceReportsMonthly : attendanceReportsOverall;
-  
-  console.log('Current report data:', reportData);
-  console.log('Report data type:', typeof reportData);
-  console.log('Report data keys:', reportData ? Object.keys(reportData) : 'null');
+  // Handle course change
+  const handleCourseChange = (courseId) => {
+    setSelectedCourse(courseId);
+    setSelectedBranch('');
+    setSelectedGroup('');
+  };
 
+  // Handle branch change
+  const handleBranchChange = (branchId) => {
+    setSelectedBranch(branchId);
+    setSelectedGroup('');
+  };
+
+  // Fetch report data
+  const fetchReportData = async () => {
+  try {
+    if (reportType === 'monthly') {
+      const params = {
+        selectedMonth,
+        selectedYear
+      };
+      if (selectedGroup) {
+        params.groupId = selectedGroup;
+      }
+      await dispatch(fetchAttendanceReportsMonthly(params));
+    } else if (reportType === 'overall') {
+      await dispatch(fetchAttendanceReportsOverall({
+        selectedMonth,
+        selectedYear
+      }));
+    }
+  } catch (error) {
+    console.error('Error fetching report data:', error);
+  }
+};
+//
+const exportToExcel = () => {
+  if (!reportData) {
+    console.warn('אין נתונים לייצוא');
+    return;
+  }
+
+  try {
+    const workbook = XLSX.utils.book_new();
+    
+    if (reportType === 'monthly' && reportData.groups && Array.isArray(reportData.groups)) {
+      // יצירת גיליון לנתוני קבוצות
+      const groupsData = reportData.groups.map(group => ({
+        'קבוצה': group.groupName,
+        'קורס': group.courseName,
+        'סניף': group.branchName,
+        'תלמידים': group.totalStudents,
+        'שיעורים': group.totalLessons,
+        'אחוז נוכחות': `${group.averageAttendanceRate}%`
+      }));
+      
+      const groupsWorksheet = XLSX.utils.json_to_sheet(groupsData);
+      XLSX.utils.book_append_sheet(workbook, groupsWorksheet, 'נתוני קבוצות');
+      
+      // יצירת גיליון לסטטיסטיקות כלליות
+      if (reportData.overallStatistics) {
+        const statsData = [
+          { 'פרמטר': 'סה״כ קבוצות', 'ערך': reportData.overallStatistics.totalGroups || 0 },
+          { 'פרמטר': 'סה״כ תלמידים', 'ערך': reportData.overallStatistics.totalStudents || 0 },
+          { 'פרמטר': 'סה״כ שיעורים', 'ערך': reportData.overallStatistics.totalLessons || 0 },
+          { 'פרמטר': 'אחוז נוכחות כללי', 'ערך': `${reportData.overallStatistics.overallAttendanceRate || 0}%` }
+        ];
+        
+        const statsWorksheet = XLSX.utils.json_to_sheet(statsData);
+        XLSX.utils.book_append_sheet(workbook, statsWorksheet, 'סטטיסטיקות כלליות');
+      }
+    } else if (reportType === 'overall') {
+      // יצירת גיליון לדוח כללי
+      const overallData = [
+        { 'פרמטר': 'סה״כ קבוצות', 'ערך': reportData.totalGroups || 0 },
+        { 'פרמטר': 'סה״כ תלמידים', 'ערך': reportData.totalStudents || 0 },
+        { 'פרמטר': 'סה״כ שיעורים', 'ערך': reportData.totalLessons || 0 },
+        { 'פרמטר': 'אחוז נוכחות כללי', 'ערך': `${reportData.overallAttendanceRate || 0}%` }
+      ];
+      
+      const overallWorksheet = XLSX.utils.json_to_sheet(overallData);
+      XLSX.utils.book_append_sheet(workbook, overallWorksheet, 'דוח כללי');
+    }
+    
+    // יצירת שם קובץ
+    const fileName = `דוח_נוכחות_${reportType === 'monthly' ? 'חודשי' : 'כללי'}_${monthNames[selectedMonth - 1]}_${selectedYear}.xlsx`;
+    
+    // שמירת הקובץ
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(data, fileName);
+    
+    console.log('הקובץ יוצא בהצלחה:', fileName);
+  } catch (error) {
+    console.error('שגיאה בייצוא לאקסל:', error);
+  }
+};
   const renderMonthlyReport = () => {
-    if (!reportData || typeof reportData !== 'object') {
-      return (
-        <Box sx={{ textAlign: 'center', py: 4 }}>
-          <Typography variant="h6" color="text.secondary">
-            אין נתונים להצגה
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            נתונים: {JSON.stringify(reportData)}
-          </Typography>
-        </Box>
-      );
-    }
+    if (!reportData) return null;
 
     return (
-      <Box>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
         {/* סטטיסטיקות כלליות */}
-        <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid container spacing={3} sx={{ mb: 4 }}>
           <Grid item xs={12} md={3}>
-            <Card sx={{ bgcolor: '#EBF8FF' }}>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Group sx={{ fontSize: 40, color: '#3B82F6', mb: 1 }} />
-                <Typography variant="h4" color="#1E40AF">
-                  {reportData.overallStatistics?.totalGroups || 0}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  קבוצות
-                </Typography>
-              </CardContent>
-            </Card>
+            <motion.div
+              whileHover={{ scale: 1.02, y: -2 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Card sx={{
+                background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
+                border: '1px solid #93c5fd',
+                borderRadius: 2,
+                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.15)',
+                overflow: 'hidden',
+                position: 'relative'
+              }}>
+                <Box sx={{
+                  position: 'absolute',
+                  top: -15,
+                  right: -15,
+                  width: 60,
+                  height: 60,
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)',
+                  borderRadius: '50%',
+                  opacity: 0.1
+                }} />
+                <CardContent sx={{ textAlign: 'center', position: 'relative', zIndex: 1, py: 2 }}>
+                  <Group sx={{ fontSize: 32, color: '#1e40af', mb: 1 }} />
+                  <Typography variant="h4" color="#1e40af" fontWeight="bold">
+                    {reportData.overallStatistics?.totalGroups || 0}
+                  </Typography>
+                  <Typography variant="body2" color="#1e40af" fontWeight="medium">
+                    קבוצות
+                  </Typography>
+                </CardContent>
+              </Card>
+            </motion.div>
           </Grid>
+
           <Grid item xs={12} md={3}>
-            <Card sx={{ bgcolor: '#F0FDF4' }}>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Assessment sx={{ fontSize: 40, color: '#10B981', mb: 1 }} />
-                <Typography variant="h4" color="#059669">
-                  {reportData.overallStatistics?.totalStudents || 0}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  תלמידים
-                </Typography>
-              </CardContent>
-            </Card>
+            <motion.div
+              whileHover={{ scale: 1.02, y: -2 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Card sx={{
+                background: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)',
+                border: '1px solid #86efac',
+                borderRadius: 2,
+                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.15)',
+                overflow: 'hidden',
+                position: 'relative'
+              }}>
+                <Box sx={{
+                  position: 'absolute',
+                  top: -15,
+                  right: -15,
+                  width: 60,
+                  height: 60,
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  borderRadius: '50%',
+                  opacity: 0.1
+                }} />
+                <CardContent sx={{ textAlign: 'center', position: 'relative', zIndex: 1, py: 2 }}>
+                  <Assessment sx={{ fontSize: 32, color: '#059669', mb: 1 }} />
+                  <Typography variant="h4" color="#059669" fontWeight="bold">
+                    {reportData.overallStatistics?.totalStudents || 0}
+                  </Typography>
+                  <Typography variant="body2" color="#059669" fontWeight="medium">
+                    תלמידים
+                  </Typography>
+                </CardContent>
+              </Card>
+            </motion.div>
           </Grid>
+
           <Grid item xs={12} md={3}>
-            <Card sx={{ bgcolor: '#FEF3F2' }}>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <DateRange sx={{ fontSize: 40, color: '#EF4444', mb: 1 }} />
-                <Typography variant="h4" color="#DC2626">
-                  {reportData.overallStatistics?.totalLessons || 0}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  שיעורים
-                </Typography>
-              </CardContent>
-            </Card>
+            <motion.div
+              whileHover={{ scale: 1.02, y: -2 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Card sx={{
+                background: 'linear-gradient(135deg, #fef2f2 0%, #fecaca 100%)',
+                border: '1px solid #fca5a5',
+                borderRadius: 2,
+                boxShadow: '0 4px 12px rgba(239, 68, 68, 0.15)',
+                overflow: 'hidden',
+                position: 'relative'
+              }}>
+                <Box sx={{
+                  position: 'absolute',
+                  top: -15,
+                  right: -15,
+                  width: 60,
+                  height: 60,
+                  background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                  borderRadius: '50%',
+                  opacity: 0.1
+                }} />
+                <CardContent sx={{ textAlign: 'center', position: 'relative', zIndex: 1, py: 2 }}>
+                  <DateRange sx={{ fontSize: 32, color: '#dc2626', mb: 1 }} />
+                  <Typography variant="h4" color="#dc2626" fontWeight="bold">
+                    {reportData.overallStatistics?.totalLessons || 0}
+                  </Typography>
+                  <Typography variant="body2" color="#dc2626" fontWeight="medium">
+                    שיעורים
+                  </Typography>
+                </CardContent>
+              </Card>
+            </motion.div>
           </Grid>
+
           <Grid item xs={12} md={3}>
-            <Card sx={{ bgcolor: '#FEF7CD' }}>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <TrendingUp sx={{ fontSize: 40, color: '#F59E0B', mb: 1 }} />
-                <Typography variant="h4" color="#D97706">
-                  {reportData.overallStatistics?.overallAttendanceRate || 0}%
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  אחוז נוכחות כללי
-                </Typography>
-              </CardContent>
-            </Card>
+            <motion.div
+              whileHover={{ scale: 1.02, y: -2 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Card sx={{
+                background: 'linear-gradient(135deg, #fefce8 0%, #fef08a 100%)',
+                border: '1px solid #facc15',
+                borderRadius: 2,
+                boxShadow: '0 4px 12px rgba(245, 158, 11, 0.15)',
+                overflow: 'hidden',
+                position: 'relative'
+              }}>
+                <Box sx={{
+                  position: 'absolute',
+                  top: -15,
+                  right: -15,
+                  width: 60,
+                  height: 60,
+                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                  borderRadius: '50%',
+                  opacity: 0.1
+                }} />
+                <CardContent sx={{ textAlign: 'center', position: 'relative', zIndex: 1, py: 2 }}>
+                  <TrendingUp sx={{ fontSize: 32, color: '#d97706', mb: 1 }} />
+                  <Typography variant="h4" color="#d97706" fontWeight="bold">
+                    {reportData.overallStatistics?.overallAttendanceRate || 0}%
+                  </Typography>
+                  <Typography variant="body2" color="#d97706" fontWeight="medium">
+                    אחוז נוכחות כללי
+                  </Typography>
+                </CardContent>
+              </Card>
+            </motion.div>
           </Grid>
         </Grid>
 
         {/* טבלת קבוצות */}
         {reportData.groups && Array.isArray(reportData.groups) && reportData.groups.length > 0 ? (
-          <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ bgcolor: '#F8FAFC' }}>
-                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>קבוצה</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>קורס</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>סניף</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>תלמידים</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>שיעורים</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>אחוז נוכחות</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {reportData.groups.map((group, index) => (
-                  <TableRow
-                    key={group.groupId || index}
-                    component={motion.tr}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    sx={{
-                      '&:nth-of-type(odd)': { bgcolor: 'rgba(59, 130, 246, 0.03)' },
-                      '&:hover': { bgcolor: 'rgba(59, 130, 246, 0.08)' }
-                    }}
-                  >
-                    <TableCell align="right">{group.groupName || 'לא זמין'}</TableCell>
-                    <TableCell align="right">{group.courseName || 'לא זמין'}</TableCell>
-                    <TableCell align="right">{group.branchName || 'לא זמין'}</TableCell>
-                    <TableCell align="right">{group.totalStudents || 0}</TableCell>
-                    <TableCell align="right">{group.totalLessons || 0}</TableCell>
-                    <TableCell align="right">
-                      <Chip
-                        label={`${group.averageAttendanceRate || 0}%`}
-                        color={
-                          (group.averageAttendanceRate || 0) >= 90 ? 'success' :
-                          (group.averageAttendanceRate || 0) >= 75 ? 'primary' :
-                          (group.averageAttendanceRate || 0) >= 60 ? 'warning' : 'error'
-                        }
-                        size="small"
-                      />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
+            <Card sx={{
+              borderRadius: 3,
+              overflow: 'hidden',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
+              background: 'white',
+              border: '1px solid #e2e8f0'
+            }}>
+              <Box sx={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                p: 2.5,
+                textAlign: 'center'
+              }}>
+                <Analytics sx={{ fontSize: 28, mb: 1 }} />
+                <Typography variant="h6" fontWeight="bold">
+                  פירוט נתוני הקבוצות
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
+                  {monthNames[selectedMonth - 1]} {selectedYear}
+                </Typography>
+              </Box>
+
+              <TableContainer sx={{ maxHeight: '400px' }}>
+                <Table stickyHeader>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell
+                        align="right"
+                        sx={{
+                          fontWeight: 'bold',
+                          fontSize: '0.95rem',
+                          background: '#f8fafc',
+                          borderBottom: '2px solid #667eea',
+                          color: '#1e293b'
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 1 }}>
+                          <Group sx={{ color: '#667eea', fontSize: 18 }} />
+                          קבוצה
+                      </Box>
+                      </TableCell>
+                      <TableCell
+                        align="right"
+                        sx={{
+                          fontWeight: 'bold',
+                          fontSize: '0.95rem',
+                          background: '#f8fafc',
+                          borderBottom: '2px solid #667eea',
+                          color: '#1e293b'
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 1 }}>
+                          <School sx={{ color: '#667eea', fontSize: 18 }} />
+                          קורס
+                        </Box>
+                      </TableCell>
+                      <TableCell
+                        align="right"
+                        sx={{
+                          fontWeight: 'bold',
+                          fontSize: '0.95rem',
+                          background: '#f8fafc',
+                          borderBottom: '2px solid #667eea',
+                          color: '#1e293b'
+                        }}
+                      >
+                        סניף
+                      </TableCell>
+                      <TableCell
+                        align="right"
+                        sx={{
+                          fontWeight: 'bold',
+                          fontSize: '0.95rem',
+                          background: '#f8fafc',
+                          borderBottom: '2px solid #667eea',
+                          color: '#1e293b'
+                        }}
+                      >
+                        תלמידים
+                      </TableCell>
+                      <TableCell
+                        align="right"
+                        sx={{
+                          fontWeight: 'bold',
+                          fontSize: '0.95rem',
+                          background: '#f8fafc',
+                          borderBottom: '2px solid #667eea',
+                          color: '#1e293b'
+                        }}
+                      >
+                        שיעורים
+                      </TableCell>
+                      <TableCell
+                        align="right"
+                        sx={{
+                          fontWeight: 'bold',
+                          fontSize: '0.95rem',
+                          background: '#f8fafc',
+                          borderBottom: '2px solid #667eea',
+                          color: '#1e293b'
+                        }}
+                      >
+                        אחוז נוכחות
+                      </TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {reportData.groups.map((group, index) => (
+                      <motion.tr
+                        key={group.groupId}
+                        component={TableRow}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05, duration: 0.3 }}
+                        whileHover={{ backgroundColor: 'rgba(102, 126, 234, 0.05)' }}
+                        sx={{
+                          '&:nth-of-type(even)': {
+                            backgroundColor: 'rgba(248, 250, 252, 0.8)'
+                          },
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <TableCell align="right" sx={{ py: 2 }}>
+                          <Typography fontWeight="medium" color="#1e293b">
+                            {group.groupName}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right" sx={{ py: 2 }}>
+                          <Typography color="#475569">
+                            {group.courseName}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right" sx={{ py: 2 }}>
+                          <Typography color="#475569">
+                            {group.branchName}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right" sx={{ py: 2 }}>
+                          <Chip
+                            label={group.totalStudents}
+                            size="small"
+                            sx={{
+                              background: 'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)',
+                              color: '#3730a3',
+                              fontWeight: 'bold',
+                              borderRadius: '12px'
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell align="right" sx={{ py: 2 }}>
+                          <Chip
+                            label={group.totalLessons}
+                            size="small"
+                            sx={{
+                              background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                              color: '#92400e',
+                              fontWeight: 'bold',
+                              borderRadius: '12px'
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell align="right" sx={{ py: 2 }}>
+                          <Chip
+                            label={`${group.averageAttendanceRate}%`}
+                            size="small"
+                            color={
+                              group.averageAttendanceRate >= 90 ? 'success' :
+                                group.averageAttendanceRate >= 75 ? 'primary' :
+                                  group.averageAttendanceRate >= 60 ? 'warning' : 'error'
+                            }
+                            sx={{
+                              fontWeight: 'bold',
+                              borderRadius: '12px'
+                            }}
+                          />
+                        </TableCell>
+                      </motion.tr>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Card>
+          </motion.div>
         ) : (
-          <Box sx={{ textAlign: 'center', py: 4 }}>
-            <Typography variant="h6" color="text.secondary">
-              אין נתוני קבוצות להצגה
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Groups data: {JSON.stringify(reportData.groups)}
-            </Typography>
-          </Box>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Box sx={{
+              textAlign: 'center',
+              py: 6,
+              background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+              borderRadius: 3,
+              border: '2px dashed #cbd5e1'
+            }}>
+              <Analytics sx={{ fontSize: 64, color: '#64748b', mb: 2 }} />
+              <Typography variant="h6" color="text.secondary" fontWeight="bold">
+                אין נתוני קבוצות להצגה
+              </Typography>
+              <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
+                לא נמצאו נתונים עבור התקופה הנבחרת
+              </Typography>
+            </Box>
+          </motion.div>
         )}
-      </Box>
+      </motion.div>
     );
   };
 
   const renderOverallReport = () => {
     if (!reportData || typeof reportData !== 'object') {
       return (
-        <Box sx={{ textAlign: 'center', py: 4 }}>
-          <Typography variant="h6" color="text.secondary">
-            אין נתונים להצגה
-          </Typography>
-        </Box>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Box sx={{
+            textAlign: 'center',
+            py: 8,
+            background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+            borderRadius: 3,
+            border: '2px dashed #cbd5e1'
+          }}>
+            <Analytics sx={{ fontSize: 80, color: '#64748b', mb: 2 }} />
+            <Typography variant="h5" color="text.secondary" fontWeight="bold">
+              אין נתונים להצגה
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
+              בחר פרמטרים ולחץ על "עדכן דוח" כדי לראות את הנתונים
+            </Typography>
+          </Box>
+        </motion.div>
       );
     }
 
     return (
-      <Box>
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <Grid container spacing={4} justifyContent="center">
+          <Grid item xs={12} md={8}>
+            <Card sx={{
+              borderRadius: 3,
+              overflow: 'hidden',
+              boxShadow: '0 12px 28px rgba(0,0,0,0.12)',
+              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+              border: '1px solid #e2e8f0'
+            }}>
+              <Box sx={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                p: 3,
+                textAlign: 'center',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <Box sx={{
+                  position: 'absolute',
+                  top: -30,
+                  left: -30,
+                  width: 120,
+                  height: 120,
+                  background: 'rgba(255,255,255,0.1)',
+                  borderRadius: '50%'
+                }} />
+                <Analytics sx={{ fontSize: 40, mb: 1.5, position: 'relative', zIndex: 1 }} />
+                <Typography variant="h5" fontWeight="bold" sx={{ position: 'relative', zIndex: 1 }}>
                   סטטיסטיקות כלליות
                 </Typography>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography>סה״כ קבוצות:</Typography>
-                    <Typography fontWeight="bold">{reportData.totalGroups || 0}</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography>סה״כ תלמידים:</Typography>
-                    <Typography fontWeight="bold">{reportData.totalStudents || 0}</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography>סה״כ שיעורים:</Typography>
-                    <Typography fontWeight="bold">{reportData.totalLessons || 0}</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography>אחוז נוכחות כללי:</Typography>
-                    <Chip
-                      label={`${reportData.overallAttendanceRate || 0}%`}
-                      color={
-                        (reportData.overallAttendanceRate || 0) >= 90 ? 'success' :
-                        (reportData.overallAttendanceRate || 0) >= 75 ? 'primary' :
-                        (reportData.overallAttendanceRate || 0) >= 60 ? 'warning' : 'error'
-                      }
-                    />
-                  </Box>
+                <Typography variant="subtitle1" sx={{ opacity: 0.9, mt: 0.5, position: 'relative', zIndex: 1 }}>
+                  {monthNames[selectedMonth - 1]} {selectedYear}
+                </Typography>
+              </Box>
+
+              <CardContent sx={{ p: 3 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <motion.div
+                    whileHover={{ scale: 1.01 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Box sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      p: 2.5,
+                      background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
+                      borderRadius: 2,
+                      border: '1px solid #93c5fd'
+                    }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Group sx={{ color: '#1e40af', fontSize: 24 }} />
+                        <Typography variant="h6" fontWeight="600" color="#1e40af">
+                          סה״כ קבוצות:
+                        </Typography>
+                      </Box>
+                      <Typography variant="h4" fontWeight="bold" color="#1e40af">
+                        {reportData.totalGroups || 0}
+                      </Typography>
+                    </Box>
+                  </motion.div>
+
+                  <motion.div
+                    whileHover={{ scale: 1.01 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Box sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      p: 2.5,
+                      background: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)',
+                      borderRadius: 2,
+                      border: '1px solid #86efac'
+                    }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <School sx={{ color: '#059669', fontSize: 24 }} />
+                        <Typography variant="h6" fontWeight="600" color="#059669">
+                          סה״כ תלמידים:
+                        </Typography>
+                      </Box>
+                      <Typography variant="h4" fontWeight="bold" color="#059669">
+                        {reportData.totalStudents || 0}
+                      </Typography>
+                    </Box>
+                  </motion.div>
+
+                  <motion.div
+                    whileHover={{ scale: 1.01 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Box sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      p: 2.5,
+                      background: 'linear-gradient(135deg, #fef2f2 0%, #fecaca 100%)',
+                      borderRadius: 2,
+                      border: '1px solid #fca5a5'
+                    }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <DateRange sx={{ color: '#dc2626', fontSize: 24 }} />
+                        <Typography variant="h6" fontWeight="600" color="#dc2626">
+                          סה״כ שיעורים:
+                        </Typography>
+                      </Box>
+                      <Typography variant="h4" fontWeight="bold" color="#dc2626">
+                        {reportData.totalLessons || 0}
+                      </Typography>
+                    </Box>
+                  </motion.div>
+
+                  <motion.div
+                    whileHover={{ scale: 1.01 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Box sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      p: 2.5,
+                      background: 'linear-gradient(135deg, #fefce8 0%, #fef08a 100%)',
+                      borderRadius: 2,
+                      border: '1px solid #facc15'
+                    }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <TrendingUp sx={{ color: '#d97706', fontSize: 24 }} />
+                        <Typography variant="h6" fontWeight="600" color="#d97706">
+                          אחוז נוכחות כללי:
+                        </Typography>
+                      </Box>
+                      <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <Chip
+                          label={`${reportData.overallAttendanceRate || 0}%`}
+                          color={
+                            (reportData.overallAttendanceRate || 0) >= 90 ? 'success' :
+                              (reportData.overallAttendanceRate || 0) >= 75 ? 'primary' :
+                                (reportData.overallAttendanceRate || 0) >= 60 ? 'warning' : 'error'
+                          }
+                          sx={{
+                            fontSize: '1.2rem',
+                            fontWeight: 'bold',
+                            px: 2,
+                            py: 1.5,
+                            borderRadius: '16px',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                          }}
+                        />
+                      </motion.div>
+                    </Box>
+                  </motion.div>
                 </Box>
               </CardContent>
             </Card>
           </Grid>
         </Grid>
-      </Box>
+      </motion.div>
     );
   };
 
@@ -324,143 +1462,468 @@ const AttendanceReports = ({ open, onClose }) => {
       onClose={onClose}
       maxWidth="xl"
       fullWidth
+      TransitionComponent={Transition}
       sx={{
-        direction:'rtl',
+        direction: 'rtl',
         '& .MuiDialog-paper': {
-          borderRadius: 12,
-          minHeight: '80vh'
+          borderRadius: '16px',
+          minHeight: '80vh',
+          maxHeight: '95vh',
+          background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
         }
       }}
     >
       <DialogTitle
         sx={{
-          bgcolor: '#059669',
+          background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
           color: 'white',
           display: 'flex',
           alignItems: 'center',
-          gap: 2
+          justifyContent: 'space-between',
+          py: 2.5,
+          px: 3,
+          position: 'relative',
+          overflow: 'hidden'
         }}
       >
-        <Assessment />
-        דוחות נוכחות
-      </DialogTitle>
-<br />
-      <DialogContent sx={{ p: 3 }}>
-        {/* פילטרים */}
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} md={2}>
-            <TextField
-              select
-              fullWidth
-              label="סוג דוח"
-              value={reportType}
-              onChange={(e) => setReportType(e.target.value)}
-            >
-              <MenuItem value="monthly">דוח חודשי</MenuItem>
-              <MenuItem value="overall">סטטיסטיקות כלליות</MenuItem>
-            </TextField>
-          </Grid>
+        {/* Background pattern */}
+        <Box sx={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='20' cy='20' r='2'/%3E%3C/g%3E%3C/svg%3E")`,
+          opacity: 0.3
+        }} />
 
-         
-         <Grid item xs={12} md={2}>
-            <TextField
-              select
-              fullWidth
-              label="שנה"
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-            >
-              {years.map(year => (
-                <MenuItem key={year} value={year}>
-                  {year}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Grid>
-          <Grid item xs={12} md={2}>
-            <TextField
-              select
-              fullWidth
-              label="חודש"
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-            >
-              {monthNames.map((month, index) => (
-                <MenuItem key={index + 1} value={index + 1}>
-                  {month}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Grid>
-          {reportType === 'monthly' && (
-            <Grid item xs={12} md={3}>
-              <TextField
-                select
-                fullWidth
-                label="קבוצה (אופציונלי)"
-                value={selectedGroup}
-                onChange={(e) => setSelectedGroup(e.target.value)}
-              >
-                <MenuItem value="">כל הקבוצות</MenuItem>
-                {groups.map(group => (
-                  <MenuItem key={group.groupId} value={group.groupId}>
-                    {group.groupName} - {group.courseId}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-          )}
-          <Grid item xs={12} md={2}>
-            <Button
-              fullWidth
-              variant="contained"
-              onClick={fetchReportData}
-              sx={{ height: '56px' }}
-              disabled={Boolean(loading)}
-            >
-              {loading ? <CircularProgress size={24} color="inherit" /> : 'עדכן דוח'}
-            </Button>
-          </Grid>
-        </Grid>
-
-        {/* הצגת שגיאות */}
-        {error && (
-          <Box sx={{ mb: 3, p: 2, bgcolor: '#FEF2F2', borderRadius: 2, border: '1px solid #FECACA' }}>
-            <Typography color="error" variant="h6" gutterBottom>
-              שגיאה בטעינת הנתונים
-            </Typography>
-            <Typography color="error" variant="body2">
-              {typeof error === 'string' ? error : JSON.stringify(error)}
-            </Typography>
-          </Box>
-        )}
-
-       
-
-        {/* תוכן הדוח */}
-        {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
-            <CircularProgress />
-            <Typography sx={{ ml: 2 }}>טוען נתונים...</Typography>
-          </Box>
-        ) : (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, position: 'relative', zIndex: 1 }}>
+          <Assessment sx={{ fontSize: 32 }} />
           <Box>
-            {reportType === 'monthly' && renderMonthlyReport()}
-            {reportType === 'overall' && renderOverallReport()}
+            <Typography variant="h5" fontWeight="bold">
+              דוחות נוכחות
+            </Typography>
+            <Typography variant="subtitle2" sx={{ opacity: 0.9 }}>
+              ניתוח וסטטיסטיקות מתקדמות
+            </Typography>
           </Box>
-        )}
+        </Box>
+
+        <IconButton
+          onClick={onClose}
+          sx={{
+            color: 'white',
+            background: 'rgba(255, 255, 255, 0.2)',
+            '&:hover': {
+              background: 'rgba(255, 255, 255, 0.3)',
+              transform: 'rotate(90deg)'
+            },
+            transition: 'all 0.3s ease',
+            position: 'relative',
+            zIndex: 1
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+
+      <DialogContent sx={{ p: 0, background: '#f8fafc' }}>
+        <Box sx={{ p: 3 }}>
+          {/* הודעת שגיאה אם יש */}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <Alert
+                severity="error"
+                sx={{
+                  mb: 3,
+                  borderRadius: 2,
+                  '& .MuiAlert-message': {
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    width: '100%'
+                  }
+                }}
+              >
+                <Box>
+                  <Typography variant="subtitle1" fontWeight="bold">
+                    שגיאה בטעינת הנתונים
+                  </Typography>
+                  <Typography variant="body2">
+                    {typeof error === 'string' ? error : 'אירעה שגיאה לא צפויה'}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Button
+                    onClick={loadBasicData}
+                    disabled={dataLoading}
+                    variant="contained"
+                    color="warning"
+                    size="small"
+                    startIcon={dataLoading ? <CircularProgress size={16} /> : <Refresh />}
+                    sx={{ borderRadius: 2 }}
+                  >
+                    {dataLoading ? 'טוען...' : 'נסה שוב'}
+                  </Button>
+                </Box>
+              </Alert>
+            </motion.div>
+          )}
+
+          {/* פילטרים מעוצבים */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <Card sx={{
+              mb: 3,
+              borderRadius: 3,
+              background: 'linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%)',
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+            }}>
+              <CardContent sx={{ p: 3 }}>
+                <Typography variant="h6" gutterBottom sx={{
+                  color: '#1e293b',
+                  fontWeight: 'bold',
+                  mb: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1
+                }}>
+                  <BarChart sx={{ color: '#667eea' }} />
+                  פילטרים ובחירת נתונים
+                </Typography>
+
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={2}>
+                    <TextField
+                      select
+                      fullWidth
+                      size="small"
+                      label="סוג דוח"
+                      value={reportType}
+                      onChange={(e) => setReportType(e.target.value)}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2,
+                          background: 'white',
+                          '&:hover fieldset': {
+                            borderColor: '#667eea',
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#667eea',
+                          },
+                        },
+                      }}
+                    >
+                      <MenuItem value="monthly">דוח חודשי</MenuItem>
+                      <MenuItem value="overall">סטטיסטיקות כלליות</MenuItem>
+                    </TextField>
+                  </Grid>
+
+                  <Grid item xs={12} md={2}>
+                    <TextField
+                      select
+                      fullWidth
+                      size="small"
+                      label="שנה"
+                      value={selectedYear}
+                      onChange={(e) => setSelectedYear(e.target.value)}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2,
+                          background: 'white',
+                          '&:hover fieldset': {
+                            borderColor: '#667eea',
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#667eea',
+                          },
+                        },
+                      }}
+                    >
+                      {years.map(year => (
+                        <MenuItem key={year} value={year}>
+                          {year}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  </Grid>
+
+                  <Grid item xs={12} md={2}>
+                    <TextField
+                      select
+                      fullWidth
+                      size="small"
+                      label="חודש"
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(e.target.value)}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2,
+                          background: 'white',
+                          '&:hover fieldset': {
+                            borderColor: '#667eea',
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#667eea',
+                          },
+                        },
+                      }}
+                    >
+                      {monthNames.map((month, index) => (
+                        <MenuItem key={index + 1} value={index + 1}>
+                          {month}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  </Grid>
+
+                  {/* בחירת חוג */}
+                  {reportType === 'monthly' && (
+                    <>
+                      <Grid item xs={12} md={2}>
+                        <FormControl fullWidth size="small">
+                          <InputLabel>חוג</InputLabel>
+                          <Select
+                            value={selectedCourse}
+                            onChange={(e) => handleCourseChange(e.target.value)}
+                            label="חוג"
+                            sx={{
+                              borderRadius: 2,
+                              background: 'white',
+                              '&:hover .MuiOutlinedInput-notchedOutline': {
+                                borderColor: '#667eea',
+                              },
+                              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                borderColor: '#667eea',
+                              },
+                            }}
+                          >
+                            <MenuItem value="">כל החוגים</MenuItem>
+                            {courses.map(course => (
+                              <MenuItem key={course.courseId} value={course.courseId}>
+                            {course.couresName}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      </Grid>
+
+                      {/* בחירת סניף */}
+                      <Grid item xs={12} md={2}>
+                        <FormControl fullWidth size="small" disabled={!selectedCourse}>
+                          <InputLabel>סניף</InputLabel>
+                          <Select
+                            value={selectedBranch}
+                            onChange={(e) => handleBranchChange(e.target.value)}
+                            label="סניף"
+                            sx={{
+                              borderRadius: 2,
+                              background: selectedCourse ? 'white' : '#f1f5f9',
+                              '&:hover .MuiOutlinedInput-notchedOutline': {
+                                borderColor: selectedCourse ? '#667eea' : '#cbd5e1',
+                              },
+                              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                borderColor: selectedCourse ? '#667eea' : '#cbd5e1',
+                              },
+                            }}
+                          >
+                            <MenuItem value="">כל הסניפים</MenuItem>
+                            {filteredBranches.map(branch => (
+                              <MenuItem key={branch.branchId} value={branch.branchId}>
+                                {branch.name}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      </Grid>
+
+                      {/* בחירת קבוצה */}
+                      <Grid item xs={12} md={2}>
+                        <FormControl fullWidth size="small" disabled={!selectedCourse}>
+                          <InputLabel>קבוצה</InputLabel>
+                          <Select
+                            value={selectedGroup}
+                            onChange={(e) => setSelectedGroup(e.target.value)}
+                            label="קבוצה"
+                            sx={{
+                              borderRadius: 2,
+                              background: selectedCourse ? 'white' : '#f1f5f9',
+                              '&:hover .MuiOutlinedInput-notchedOutline': {
+                                borderColor: selectedCourse ? '#667eea' : '#cbd5e1',
+                              },
+                              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                borderColor: selectedCourse ? '#667eea' : '#cbd5e1',
+                              },
+                            }}
+                          >
+                            <MenuItem value="">כל הקבוצות</MenuItem>
+                            {filteredGroups.map(group => (
+                              <MenuItem key={group.groupId} value={group.groupId}>
+                                {group.groupName}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      </Grid>
+                    </>
+                  )}
+                </Grid>
+
+                {/* כפתור עדכון דוח */}
+                <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
+                  <Button
+                    variant="contained"
+                    onClick={fetchReportData}
+                    disabled={Boolean(loading)}
+                    startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <Assessment />}
+                    sx={{
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      borderRadius: '12px',
+                      px: 3,
+                      py: 1,
+                      fontSize: '0.95rem',
+                      fontWeight: '600',
+                      boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)',
+                        boxShadow: '0 6px 16px rgba(102, 126, 234, 0.4)',
+                        transform: 'translateY(-1px)'
+                      },
+                      '&:disabled': {
+                        background: '#e2e8f0',
+                        color: '#94a3b8',
+                        boxShadow: 'none'
+                      },
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    {loading ? 'טוען נתונים...' : 'עדכן דוח'}
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* תוכן הדוח */}
+          <AnimatePresence mode="wait">
+            {loading ? (
+              <motion.div
+                key="loading"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Box sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  py: 6,
+                  background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                  borderRadius: 3,
+                  border: '2px dashed #cbd5e1'
+                }}>
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                  >
+                    <CircularProgress size={48} sx={{ color: '#667eea', mb: 2 }} />
+                  </motion.div>
+                  <Typography variant="h6" sx={{ color: '#475569', fontWeight: '600' }}>
+                    טוען נתונים...
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#64748b', mt: 0.5 }}>
+                    אנא המתן בזמן שאנחנו מכינים את הדוח עבורך
+                  </Typography>
+                </Box>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="content"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.5 }}
+              >
+                {reportType === 'monthly' && renderMonthlyReport()}
+                {reportType === 'overall' && renderOverallReport()}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </Box>
       </DialogContent>
 
-      <DialogActions sx={{ p: 3 }}>
+      <Divider sx={{ background: 'linear-gradient(90deg, transparent, #e2e8f0, transparent)' }} />
+
+      <DialogActions sx={{
+        p: 3,
+        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+        justifyContent: 'center',
+        gap: 2
+      }}>
         <Button
           startIcon={<Download />}
-          variant="outlined"
-          color="primary"
+          variant="contained"
+          color="success"
           disabled={!reportData || Boolean(loading)}
+          onClick={exportToExcel}
+          sx={{
+            borderRadius: '12px',
+            px: 3,
+            py: 1,
+            fontSize: '0.9rem',
+            fontWeight: '600',
+            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+            '&:hover': {
+              background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+              boxShadow: '0 6px 16px rgba(16, 185, 129, 0.4)',
+              transform: 'translateY(-1px)'
+            },
+            '&:disabled': {
+              background: '#e2e8f0',
+              color: '#94a3b8',
+              boxShadow: 'none'
+            },
+            transition: 'all 0.2s ease'
+          }}
         >
           ייצא לאקסל
         </Button>
-        <Button onClick={onClose} variant="outlined" color="primary">
+
+        <Button
+          onClick={onClose}
+          variant="outlined"
+          color="primary"
+          sx={{
+            borderRadius: '12px',
+            px: 3,
+            py: 1,
+            fontSize: '0.9rem',
+            fontWeight: '600',
+            borderWidth: '2px',
+            borderColor: '#667eea',
+            color: '#667eea',
+            '&:hover': {
+              borderWidth: '2px',
+              borderColor: '#5a67d8',
+              background: 'rgba(102, 126, 234, 0.05)',
+              boxShadow: '0 4px 12px rgba(102, 126, 234, 0.2)',
+              transform: 'translateY(-1px)'
+            },
+            transition: 'all 0.2s ease'
+          }}
+        >
           סגור
         </Button>
       </DialogActions>

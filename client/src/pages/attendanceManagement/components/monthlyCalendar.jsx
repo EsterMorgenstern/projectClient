@@ -130,65 +130,62 @@ const MonthlyCalendar = ({
   }, [currentDate, groups, savedAttendanceRecords]);
   
   // Generate calendar days
-  const generateCalendarDays = () => {
-    // Get start and end of month
-    const monthStart = startOfMonth(currentDate);
-    const monthEnd = endOfMonth(currentDate);
-    
-    // Get all days in month
-    const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
-    
-    // Get day of week for first day (0 = Sunday, 6 = Saturday)
-    let firstDayOfWeek = monthStart.getDay();
-    
-    // Add days from previous month to fill first week
-    const prevMonthDays = [];
-    for (let i = firstDayOfWeek - 1; i >= 0; i--) {
-      const date = addDays(monthStart, -i - 1);
-      prevMonthDays.push(date);
-    }
-    
-    // Add days from next month to complete grid (6 rows of 7 days)
-    const nextMonthDays = [];
-    const totalDaysNeeded = 42 - (prevMonthDays.length + daysInMonth.length);
-    for (let i = 1; i <= totalDaysNeeded; i++) {
-      const date = addDays(monthEnd, i);
-      nextMonthDays.push(date);
-    }
-    
-    // Combine all days
-    const allDays = [...prevMonthDays.reverse(), ...daysInMonth, ...nextMonthDays];
-    
-    // Create calendar days with events
-    const days = allDays.map(date => {
-      // Get events for this day
-      const dayEvents = getEventsForDay(date);
-      
-      // Check if any events have attendance recorded
-      const hasAttendance = dayEvents.some(event => {
-        const dateStr = format(date, 'yyyy-MM-dd');
-        const attendanceKey = `${dateStr}-${event.groupId}`;
-        return savedAttendanceRecords[attendanceKey];
-      });
-      
-      // Calculate attendance statistics
-      const attendanceStats = calculateAttendanceStats(date, dayEvents);
-      
-      return {
-        date,
-        day: date.getDate(),
-        currentMonth: isSameMonth(date, currentDate),
-        isToday: isSameDay(date, new Date()),
-        isWeekend: isWeekend(date),
-        events: dayEvents,
-        hasAttendance,
-        attendanceStats,
-        hebrewDate: getHebrewDate(date)
-      };
+const generateCalendarDays = () => {
+  const monthStart = startOfMonth(currentDate);
+  const monthEnd = endOfMonth(currentDate);
+  
+  const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  
+  // Get day of week for first day (0 = Sunday, 6 = Saturday)
+  let firstDayOfWeek = monthStart.getDay();
+  
+  // ✅ לשבוע שמתחיל ביום ראשון - לא צריך לשנות כלום!
+  // firstDayOfWeek כבר נכון (0 = ראשון, 1 = שני, וכו')
+  
+  // Add days from previous month to fill first week
+  const prevMonthDays = [];
+  for (let i = firstDayOfWeek; i > 0; i--) {
+    const date = addDays(monthStart, -i);
+    prevMonthDays.push(date);
+  }
+  
+  // Add days from next month to complete grid
+  const nextMonthDays = [];
+  const totalDaysNeeded = 42 - (prevMonthDays.length + daysInMonth.length);
+  for (let i = 1; i <= totalDaysNeeded; i++) {
+    const date = addDays(monthEnd, i);
+    nextMonthDays.push(date);
+  }
+  
+  const allDays = [...prevMonthDays, ...daysInMonth, ...nextMonthDays];
+  
+  // Create calendar days with events
+  const days = allDays.map(date => {
+    const dayEvents = getEventsForDay(date);
+    const hasAttendance = dayEvents.some(event => {
+      const dateStr = format(date, 'yyyy-MM-dd');
+      const attendanceKey = `${dateStr}-${event.groupId}`;
+      return savedAttendanceRecords[attendanceKey];
     });
     
-    setCalendarDays(days);
-  };
+    // Calculate attendance statistics
+    const attendanceStats = calculateAttendanceStats(date, dayEvents);
+    
+    return {
+      date,
+      day: date.getDate(),
+      currentMonth: isSameMonth(date, currentDate),
+      isToday: isSameDay(date, new Date()),
+      isWeekend: isWeekend(date),
+      events: dayEvents,
+      hasAttendance,
+      attendanceStats,
+      hebrewDate: getHebrewDate(date)
+    };
+  });
+  
+  setCalendarDays(days);
+};
   
   // Calculate attendance statistics for a day
   const calculateAttendanceStats = (date, events) => {
@@ -315,11 +312,11 @@ const MonthlyCalendar = ({
           <Grid item xs={12/7} key={index} sx={styles.weekDayCell}>
             <Typography 
               variant="subtitle2" 
-              sx={{
-                ...styles.weekDayText,
-                color: index === 6 ? '#E11D48' : monthColors.accent,
-                fontWeight: 'bold'
-              }}
+               sx={{
+              ...styles.weekDayText,
+              color: index === 6 ? '#E11D48' : monthColors.accent, // שבת (אינדקס 6) יהיה אדום
+              fontWeight: 'bold'
+            }}
             >
               {day}
             </Typography>
