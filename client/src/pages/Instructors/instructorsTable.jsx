@@ -11,7 +11,6 @@
 // import { editInstructor } from '../store/instructor/instructorEditThunk';
 // import AddCircleIcon from '@mui/icons-material/AddCircle';
 // import CloseIcon from '@mui/icons-material/Close';
-// import './customDialog.css';
 // import BadgeIcon from '@mui/icons-material/Badge';
 // import PersonIcon from '@mui/icons-material/Person';
 // import ContactPhoneIcon from '@mui/icons-material/ContactPhone';
@@ -467,11 +466,11 @@ import {
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchInstructors } from '../store/instructor/instructorGetAllThunk';
-import { deleteInstructor } from '../store/instructor/instuctorDeleteThunk';
-import { addInstructor } from '../store/instructor/instructorAddThunk';
-import { editInstructor } from '../store/instructor/instructorEditThunk';
-import './styles/tableStyles.css';
+import { fetchInstructors } from '../../store/instructor/instructorGetAllThunk';
+import { deleteInstructor } from '../../store/instructor/instuctorDeleteThunk';
+import { addInstructor } from '../../store/instructor/instructorAddThunk';
+import { editInstructor } from '../../store/instructor/instructorEditThunk';
+import '../styles/tableStyles.css';
 
 // קומפוננטת Loading Skeleton למדריכים
 const InstructorLoadingSkeleton = () => (

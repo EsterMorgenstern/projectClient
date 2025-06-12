@@ -13,16 +13,17 @@ import {
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
-import StudentAttendanceHistory from './studentAttendanceHistory'
-import { fetchStudents } from '../store/student/studentGetAllThunk';
-import { addStudent } from '../store/student/studentAddThunk';
-import { getgroupStudentByStudentId } from '../store/groupStudent/groupStudentGetByStudentIdThunk';
-import { deleteStudent } from '../store/student/studentDeleteThunk';
-import { editStudent } from '../store/student/studentEditThunk';
-import TermsDialog from './termDialog';
+import StudentAttendanceHistory from './components/studentAttendanceHistory'
+import { fetchStudents } from '../../store/student/studentGetAllThunk';
+import { addStudent } from '../../store/student/studentAddThunk';
+import { getgroupStudentByStudentId } from '../../store/groupStudent/groupStudentGetByStudentIdThunk';
+import { deleteStudent } from '../../store/student/studentDeleteThunk';
+import { editStudent } from '../../store/student/studentEditThunk';
+import TermsDialog from '../Enrollment/components/termDialog';
 import { useNavigate } from 'react-router-dom';
-import './styles/tableStyles.css';
-import StudentCoursesDialog from './studentCoursesDialog';
+import '../styles/tableStyles.css';
+import { PersonStandingIcon } from 'lucide-react';
+import StudentCoursesDialog from './components/studentCoursesDialog';
 
 // קומפוננטת Loading Skeleton מתקדמת
 const LoadingSkeleton = () => (
@@ -94,8 +95,6 @@ export default function StudentsTable() {
   const [termsOpen, setTermsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredStudents, setFilteredStudents] = useState([]);
-  const [attendanceHistoryOpen, setAttendanceHistoryOpen] = useState(false);
-  const [selectedStudentForHistory, setSelectedStudentForHistory] = useState(null);
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -186,7 +185,7 @@ export default function StudentsTable() {
     }
   };
 
- const handleViewCourses = async (student) => {
+  const handleViewCourses = async (student) => {
     setSelectedStudentForCourses(student);
     setCoursesDialogOpen(true);
     await dispatch(getgroupStudentByStudentId(student.id));
@@ -293,10 +292,10 @@ export default function StudentsTable() {
                 <Table>
                   <TableHead className="table-head">
                     <TableRow>
-                      <TableCell className="table-head-cell" style={{ width: 280 }}>🎯 פעולות</TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 140 }}>🆔 קוד תלמיד</TableCell>
-                      <TableCell className="table-head-cell clickable" style={{ width: 140 }}>👤 שם פרטי</TableCell>
-                      <TableCell className="table-head-cell clickable" style={{ width: 120 }}>👥 שם משפחה</TableCell>
+                      <TableCell className="table-head-cell" style={{ width: 200 }}>🎯 פעולות</TableCell>
+                      <TableCell className="table-head-cell" style={{ width: 130 }}>🆔 קוד תלמיד</TableCell>
+                      <TableCell className="table-head-cell" style={{ width: 130 }}>👤 שם פרטי</TableCell>
+                      <TableCell className="table-head-cell" style={{ width: 110 }}>👥 שם משפחה</TableCell>
                       <TableCell className="table-head-cell" style={{ width: 90 }}>📞 טלפון</TableCell>
                       <TableCell className="table-head-cell" style={{ width: 100 }}>🏙️ עיר</TableCell>
                       <TableCell className="table-head-cell" style={{ width: 150 }}>🏫 בית ספר</TableCell>
@@ -326,87 +325,101 @@ export default function StudentsTable() {
                             whileHover={{ scale: 1.001 }}
                           >
                             {/* עמודת פעולות */}
-                            <TableCell className="table-cell">
-                              <Box className="action-buttons">
-                                <Button
-                                  variant="contained"
-                                  startIcon={<Edit />}
-                                  size="small"
-                                  className="action-button edit"
-                                  onClick={() => {
-                                    setCurrentStudent({
-                                      id: student.id,
-                                      firstName: student.firstName,
-                                      lastName: student.lastName,
-                                      phone: student.phone,
-                                      city: student.city,
-                                      school: student.school,
-                                      healthFund: student.healthFund,
-                                      gender: student.gender,
-                                      sector: student.sector
-                                    });
-                                    setOpenEdit(true);
-                                  }}
-                                >
-                                  ערוך
-                                </Button>
-                                <Button
-                                  variant="contained"
-                                  startIcon={<Delete />}
-                                  size="small"
-                                  className="action-button delete"
-                                  onClick={() => {
-                                    setCurrentStudent({
-                                      id: student.id,
-                                      firstName: student.firstName,
-                                      lastName: student.lastName,
-                                      phone: student.phone,
-                                      city: student.city,
-                                      school: student.school,
-                                      healthFund: student.healthFund,
-                                      gender: student.gender,
-                                      sector: student.sector
-                                    });
-                                    setDeleteOpen(true);
-                                  }}
-                                >
-                                  מחק
-                                </Button>
-                                <Button
-                                  variant="contained"
-                                  startIcon={<HistoryIcon />}
-                                  size="small"
-                                  className="action-button info"
-                                  onClick={() => {
-                                    setSelectedStudentForHistory(student);
-                                    setAttendanceHistoryOpen(true);
-                                  }}
-                                >
-                                  נוכחות
-                                </Button>
-                              </Box>
-                            </TableCell>
+             <TableCell className="table-cell" sx={{ py: 1 }}> {/* ✅ הקטנתי מ-py: 2 */}
+  <Box className="action-buttons" sx={{ 
+    display: 'flex', 
+    gap: 0.5, // ✅ הקטנתי מ-1
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'center'
+  }}>
+    <Button
+      variant="contained"
+      startIcon={<Edit />}
+      size="small" // ✅ וודא שזה small
+      className="action-button edit"
+      onClick={() => {
+        setCurrentStudent({
+          id: student.id,
+          firstName: student.firstName,
+          lastName: student.lastName,
+          phone: student.phone,
+          city: student.city,
+          school: student.school,
+          healthFund: student.healthFund,
+          gender: student.gender,
+          sector: student.sector
+        });
+        setOpenEdit(true);
+      }}
+      sx={{
+        minWidth: '60px', // ✅ הקטנתי מהרוחב המינימלי
+        height: '28px', // ✅ גובה קבוע
+        fontSize: '0.75rem', // ✅ הקטנתי את הטקסט
+        px: 1, // ✅ הקטנתי padding
+        py: 0.5
+      }}
+    >
+      ערוך
+    </Button>
+    <Button
+      variant="contained"
+      startIcon={<Delete />}
+      size="small"
+      className="action-button delete"
+      onClick={() => {
+        setCurrentStudent({
+          id: student.id,
+          firstName: student.firstName,
+          lastName: student.lastName,
+          phone: student.phone,
+          city: student.city,
+          school: student.school,
+          healthFund: student.healthFund,
+          gender: student.gender,
+          sector: student.sector
+        });
+        setDeleteOpen(true);
+      }}
+      sx={{
+        minWidth: '60px',
+        height: '28px',
+        fontSize: '0.75rem',
+        px: 1,
+        py: 0.5
+      }}
+    >
+      מחק
+    </Button>
+    <Button
+      variant="contained"
+      startIcon={<InfoIcon />}
+      size="small"
+      className="action-button info"
+      onClick={() => handleViewCourses(student)}
+      sx={{
+        minWidth: '70px', // ✅ קצת יותר רחב לטקסט "פרטים"
+        height: '28px',
+        fontSize: '0.75rem',
+        px: 1,
+        py: 0.5
+      }}
+    >
+      פרטים
+    </Button>
+  </Box>
+</TableCell>
 
-                            {/* שאר העמודות */}
-                            <TableCell className="table-cell">{student.id}</TableCell>
-                            <TableCell
-                              className="table-cell clickable"
-                              onClick={() => handleViewCourses(student)}
-                            >
-                              {student.firstName}
-                            </TableCell>
-                            <TableCell
-                              className="table-cell clickable"
-                              onClick={() => handleViewCourses(student)}
-                            >
-                              {student.lastName}
-                            </TableCell>
-                            <TableCell className="table-cell">{student.phone}</TableCell>
-                            <TableCell className="table-cell">{student.city}</TableCell>
-                            <TableCell className="table-cell">{student.school}</TableCell>
-                            <TableCell className="table-cell">{student.healthFund}</TableCell>
-                            <TableCell className="table-cell">{student.gender}</TableCell>
-                            <TableCell className="table-cell">{student.sector}</TableCell>
+{/* שאר העמודות - גם הן צריכות py קטן יותר */}
+<TableCell className="table-cell" sx={{ py: 1 }}>{student.id}</TableCell>
+<TableCell className="table-cell" sx={{ py: 1 }}>{student.firstName}</TableCell>
+<TableCell className="table-cell" sx={{ py: 1 }}>{student.lastName}</TableCell>
+<TableCell className="table-cell" sx={{ py: 1 }}>{student.phone}</TableCell>
+<TableCell className="table-cell" sx={{ py: 1 }}>{student.city}</TableCell>
+<TableCell className="table-cell" sx={{ py: 1 }}>{student.school}</TableCell>
+<TableCell className="table-cell" sx={{ py: 1 }}>{student.healthFund}</TableCell>
+<TableCell className="table-cell" sx={{ py: 1 }}>{student.gender}</TableCell>
+<TableCell className="table-cell" sx={{ py: 1 }}>{student.sector}</TableCell>
                           </motion.tr>
                         ))}
                     </AnimatePresence>
@@ -474,7 +487,7 @@ export default function StudentsTable() {
         </motion.div>
 
         {/* דיאלוג חוגים */}
-         <StudentCoursesDialog
+        <StudentCoursesDialog
           open={coursesDialogOpen}
           onClose={() => setCoursesDialogOpen(false)}
           student={selectedStudentForCourses}
@@ -730,12 +743,7 @@ export default function StudentsTable() {
           </DialogActions>
         </Dialog>
 
-        {/* דיאלוג היסטוריית נוכחות */}
-        <StudentAttendanceHistory
-          open={attendanceHistoryOpen}
-          onClose={() => setAttendanceHistoryOpen(false)}
-          student={selectedStudentForHistory}
-        />
+
       </div>
     </motion.div>
   );

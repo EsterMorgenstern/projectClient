@@ -1,13 +1,13 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import StudentsTable from './studentTable';
-import Home from './home';
-import Layout from './layout';
-import InstructorsTable from './instructorsTable';
-import EntrollStudent from './enrollStudent';
+import StudentsTable from '../Students/studentTable';
+import Home from '../Home/home';
+import Layout from '../shared/Layout/layout';
+import InstructorsTable from '../Instructors/instructorsTable';
+import EntrollStudent from '../Enrollment/components/enrollStudent';
 import AboutSystem from './aboutSystem';
 import Menu from './menu';
-import LessonManagement from './lessonManagement';
-import AttendanceCalendar from './attendanceManagement/attendanceCalendar'
+import LessonManagement from '../Lessons/components/lessonManagement';
+import AttendanceCalendar from '../Attendance/attendanceCalendar'
 
 const Routing = () => {
   return (

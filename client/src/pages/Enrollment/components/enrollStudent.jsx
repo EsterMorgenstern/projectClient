@@ -53,16 +53,16 @@ import {
   CalendarMonth as DayIcon,
   LocationOn
 } from '@mui/icons-material';
-import { fetchCourses } from '../store/course/CoursesGetAllThunk';
-import { fetchBranches } from '../store/branch/branchGetAllThunk';
-import { getGroupsByCourseId } from '../store/group/groupGetGroupsByCourseIdThunk';
-import { groupStudentAddThunk } from '../store/groupStudent/groupStudentAddThunk';
-import { getgroupStudentByStudentId } from '../store/groupStudent/groupStudentGetByStudentIdThunk';
-import { addCourse } from '../store/course/courseAddThunk';
-import { addBranch } from '../store/branch/branchAddThunk';
-import { addGroup } from '../store/group/groupAddThunk';
-import StudentCoursesDialog from './studentCoursesDialog';
-import { getStudentById } from '../store/student/studentGetByIdThunk';
+import { fetchCourses } from '../../../store/course/CoursesGetAllThunk';
+import { fetchBranches } from '../../../store/branch/branchGetAllThunk';
+import { getGroupsByCourseId } from '../../../store/group/groupGetGroupsByCourseIdThunk';
+import { groupStudentAddThunk } from '../../../store/groupStudent/groupStudentAddThunk';
+import { getgroupStudentByStudentId } from '../../../store/groupStudent/groupStudentGetByStudentIdThunk';
+import { addCourse } from '../../../store/course/courseAddThunk';
+import { addBranch } from '../../../store/branch/branchAddThunk';
+import { addGroup } from '../../../store/group/groupAddThunk';
+import StudentCoursesDialog from '../../Students/components/studentCoursesDialog';
+import { getStudentById } from '../../../store/student/studentGetByIdThunk';
 const EnrollStudent = () => {
   const dispatch = useDispatch();
   const theme = useTheme();
@@ -316,6 +316,7 @@ const [selectedStudentCoursesForDialog, setSelectedStudentCoursesForDialog] = us
   };
 
   // פונקציה לקבלת חוגי התלמיד והצגתם
+// תקן את הפונקציה fetchAndShowStudentCourses
 const fetchAndShowStudentCourses = async (studentId) => {
   try {
     console.log("Fetching courses for student ID:", studentId);
@@ -324,6 +325,8 @@ const fetchAndShowStudentCourses = async (studentId) => {
     let studentData = null;
     try {
       const studentResponse = await dispatch(getStudentById(studentId));
+      console.log("Student response:", studentResponse); // ✅ דיבוג
+      
       if (studentResponse && studentResponse.payload) {
         studentData = {
           id: studentResponse.payload.id,
@@ -332,7 +335,7 @@ const fetchAndShowStudentCourses = async (studentId) => {
         };
       }
     } catch (studentError) {
-      console.log("Could not fetch student details, using default");
+      console.log("Could not fetch student details:", studentError);
       studentData = {
         id: studentId,
         firstName: 'תלמיד',
@@ -344,28 +347,70 @@ const fetchAndShowStudentCourses = async (studentId) => {
     let coursesData = [];
     try {
       const response = await dispatch(getgroupStudentByStudentId(studentId));
-      console.log("Server response:", response);
-
-      if (response && response.payload && response.payload.length > 0) {
-        coursesData = response.payload.map(item => ({
-          groupStudentId: item.groupStudentId || item.id,
-          courseName: item.course?.couresName || "חוג לא ידוע",
-          groupName: item.group?.groupName || "קבוצה לא ידועה",
-          branchName: item.branch?.name || "סניף לא ידוע",
-          branchCity: item.branch?.city || "עיר לא ידועה",
-          dayOfWeek: item.group?.dayOfWeek || "יום לא ידוע",
-          hour: item.group?.hour || "שעה לא ידועה",
-          ageRange: item.group?.ageRange || "לא צוין",
-          sector: item.group?.sector || "כללי",
-          instructorName: item.instructor?.name || "לא צוין",
-           isActive: item.isActive !== undefined ? item.isActive : true,
-          enrollmentDate: item.enrollmentDate ? 
-            new Date(item.enrollmentDate).toLocaleDateString('he-IL') : 
-            new Date().toLocaleDateString('he-IL')
-        }));
+      console.log("Raw server response:", response); // ✅ דיבוג מפורט
+      
+      if (response && response.payload) {
+        console.log("Response payload:", response.payload);
+        
+        // ✅ טיפול בפורמטים שונים של תגובה מהשרת
+        const dataArray = Array.isArray(response.payload) ? response.payload : [response.payload];
+        
+        coursesData = dataArray.map((item, index) => {
+          console.log(`Processing item ${index}:`, item); // ✅ דיבוג כל פריט
+          
+          return {
+            groupStudentId: item.groupStudentId || item.id || `temp-${index}`,
+            courseName: item.course?.couresName || 
+                       item.course?.courseName || 
+                       item.courseName || 
+                       item.Course?.couresName ||
+                       item.Course?.courseName ||
+                       "חוג לא ידוע",
+            groupName: item.group?.groupName || 
+                      item.groupName || 
+                      item.Group?.groupName ||
+                      "קבוצה לא ידועה",
+            branchName: item.branch?.name || 
+                       item.branchName || 
+                       item.Branch?.name ||
+                       "סניף לא ידוע",
+            branchCity: item.branch?.city || 
+                       item.branchCity || 
+                       item.Branch?.city ||
+                       "עיר לא ידועה",
+            dayOfWeek: item.group?.dayOfWeek || 
+                      item.dayOfWeek || 
+                      item.Group?.dayOfWeek ||
+                      "יום לא ידוע",
+            hour: item.group?.hour || 
+                 item.hour || 
+                 item.Group?.hour ||
+                 "שעה לא ידועה",
+            ageRange: item.group?.ageRange || 
+                     item.ageRange || 
+                     item.Group?.ageRange ||
+                     "לא צוין",
+            sector: item.group?.sector || 
+                   item.sector || 
+                   item.Group?.sector ||
+                   "כללי",
+            instructorName: item.instructor?.name || 
+                           item.instructorName || 
+                           item.Instructor?.name ||
+                           "לא צוין",
+            isActive: item.isActive !== undefined ? item.isActive : true,
+            enrollmentDate: item.enrollmentDate ? 
+              new Date(item.enrollmentDate).toLocaleDateString('he-IL') : 
+              item.entrollmentDate ? // ✅ טיפול בשגיאת כתיב אפשרית
+              new Date(item.entrollmentDate).toLocaleDateString('he-IL') :
+              new Date().toLocaleDateString('he-IL')
+          };
+        });
+        
+        console.log("Processed courses data:", coursesData); // ✅ דיבוג הנתונים המעובדים
       }
     } catch (coursesError) {
-      console.log("Could not fetch student courses:", coursesError);
+      console.error("Error fetching student courses:", coursesError);
       coursesData = [];
     }
 

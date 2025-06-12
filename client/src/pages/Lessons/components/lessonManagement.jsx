@@ -17,7 +17,7 @@ import {
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import LessonCancellationManager from './lessonCancell';
-import AttendanceReports from './attendanceManagement/components/attendanceReports'; // יצירת הקומפוננטה
+import AttendanceReports from '../../Attendance/components/attendanceReports'; // יצירת הקומפוננטה
 
 const LessonManagement = () => {
   const [cancellationManagerOpen, setCancellationManagerOpen] = useState(false);

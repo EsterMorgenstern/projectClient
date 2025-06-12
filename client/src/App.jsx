@@ -1,5 +1,5 @@
 import { Provider } from 'react-redux';
-import Routing from './pages/routing';
+import Routing from './pages/System/routing';
 import store from './store/store';
 
 function App() {
