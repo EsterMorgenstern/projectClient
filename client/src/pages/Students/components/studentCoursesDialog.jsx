@@ -780,14 +780,18 @@
 // };
 
 // export default StudentCoursesDialog;
+
+
 import React, { useState, useEffect } from 'react';
 import {
   Dialog, DialogActions, DialogContent, DialogTitle, Button,
   Box, Typography, TableContainer, Paper, Table, TableHead,
   TableRow, TableCell, TableBody, Chip, Avatar, Divider,
   Card, CardContent, Grid, IconButton, Tabs, Tab,
-  Accordion, AccordionSummary, AccordionDetails
+  Accordion, AccordionSummary, AccordionDetails,
+  Menu, MenuItem, DialogContentText
 } from '@mui/material';
+
 import {
   Add, Check as CheckIcon, Close as CloseIcon,
   School as CourseIcon, Info as InfoIcon, Person as PersonIcon,
@@ -796,8 +800,10 @@ import {
   Assignment as AssignmentIcon, Notes as NotesIcon,
   ExpandMore as ExpandMoreIcon, Warning as WarningIcon,
   Error as ErrorIcon, CheckCircle as CheckCircleIcon,
-  History as HistoryIcon
+  History as HistoryIcon,
+  MoreVert as MoreVertIcon, Edit as EditIcon, Delete as DeleteIcon  // ← הוסף את אלה כאן
 } from '@mui/icons-material';
+
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -806,6 +812,8 @@ import AddStudentNoteDialog from './addStudentNoteDialog';
 import { addStudentNote } from '../../../store/studentNotes/studentNoteAddThunk';
 import StudentAttendanceHistory from './studentAttendanceHistory';
 import { RefreshCwIcon } from 'lucide-react';
+import { deleteStudentNote } from '../../../store/studentNotes/studentNoteDeleteThunk';
+import { updateStudentNote } from '../../../store/studentNotes/studentNoteUpdateThunk';
 
 const StudentCoursesDialog = ({
   open,
@@ -826,6 +834,14 @@ const StudentCoursesDialog = ({
 
   const studentNotes = useSelector((state) => state.studentNotes.studentNotes);
   const notesLoading = useSelector((state) => state.studentNotes.loading);
+
+  const [editNoteDialogOpen, setEditNoteDialogOpen] = useState(false);
+  const [selectedNote, setSelectedNote] = useState(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [noteToDelete, setNoteToDelete] = useState(null);
+  const [menuAnchor, setMenuAnchor] = useState(null);
+  const [menuNoteId, setMenuNoteId] = useState(null);
+
 
   useEffect(() => {
     if (open && student?.id) {
@@ -856,113 +872,195 @@ const StudentCoursesDialog = ({
       console.error('Error saving note:', error);
     }
   };
-
-  const renderStudentNotes = () => {
-    if (notesLoading) {
-      return (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-          <Typography variant="body1">טוען הערות...</Typography>
-        </Box>
-      );
+  const handleUpdateNote = async (noteData) => {
+    try {
+      await dispatch(updateStudentNote({
+        noteId: selectedNote.noteId,
+        ...noteData
+      }));
+      dispatch(getNotesByStudentId(student.id));
+      setEditNoteDialogOpen(false);
+      setSelectedNote(null);
+    } catch (error) {
+      console.error('Error updating note:', error);
     }
+  };
 
+  const handleDeleteNote = async () => {
+    try {
+      await dispatch(deleteStudentNote(noteToDelete.noteId));
+      dispatch(getNotesByStudentId(student.id));
+      setDeleteConfirmOpen(false);
+      setNoteToDelete(null);
+    } catch (error) {
+      console.error('Error deleting note:', error);
+    }
+  };
+
+  const handleMenuOpen = (event, noteId) => {
+    event.stopPropagation();
+    setMenuAnchor(event.currentTarget);
+    setMenuNoteId(noteId);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchor(null);
+    setMenuNoteId(null);
+  };
+
+  const handleEditNote = (note) => {
+    setSelectedNote(note);
+    setEditNoteDialogOpen(true);
+    handleMenuClose();
+  };
+
+  const handleDeleteConfirm = (note) => {
+    setNoteToDelete(note);
+    setDeleteConfirmOpen(true);
+    handleMenuClose();
+  };
+const renderStudentNotes = () => {
+   console.log('student object:', student);
+    console.log('studentNotes:', studentNotes);
+    console.log('studentNotes length:', studentNotes?.length);
+    console.log('studentNotes type:', typeof studentNotes,  typeof studentNotes);
     if (!studentNotes || studentNotes.length === 0) {
-      return (
-        <Box sx={{ textAlign: 'center', py: 6 }}>
-          <NotesIcon sx={{ fontSize: 60, color: '#94a3b8', mb: 2 }} />
-          <Typography variant="h6" color="text.secondary">
-            אין הערות לתלמיד זה
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
-            ניתן להוסיף הערות חדשות דרך כפתור "הוסף הערה"
-          </Typography>
-        </Box>
-      );
+        return (
+            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+                אין הערות עבור תלמיד זה
+            </Typography>
+        );
     }
+
+    // הגדר את הסוגים והעדיפויות כאן
+    const noteTypes = [
+        { value: 'כללי', label: 'כללי', color: '#3b82f6', icon: InfoIcon },
+        { value: 'חיובי', label: 'חיובי', color: '#059669', icon: CheckCircleIcon },
+        { value: 'שלילי', label: 'שלילי', color: '#dc2626', icon: ErrorIcon },
+        { value: 'אזהרה', label: 'אזהרה', color: '#d97706', icon: WarningIcon }
+    ];
+
+    const priorities = [
+        { value: 'נמוך', label: 'נמוך', color: '#6b7280' },
+        { value: 'בינוני', label: 'בינוני', color: '#d97706' },
+        { value: 'גבוה', label: 'גבוה', color: '#dc2626' }
+    ];
 
     return (
-      <Box sx={{ maxHeight: '400px', overflow: 'auto' }}>
-        {studentNotes.map((note, index) => {
-          const noteTypeConfig = getNoteTypeColor(note.noteType);
-          const IconComponent = noteTypeConfig.icon;
+        <Box sx={{ mt: 2 }}>
+            <AnimatePresence>
+                {studentNotes.map((note, index) => {
+                    // הגדר את הסוג והעדיפות לכל הערה
+                    const selectedNoteType = noteTypes.find(type => type.value === note.noteType) || noteTypes[0];
+                    const selectedPriority = priorities.find(priority => priority.value === note.priority) || priorities[0];
 
-          return (
-            <motion.div
-              key={note.noteId}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <Accordion sx={{ 
-                mb: 1, 
-                borderRadius: '12px !important',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                border: '1px solid rgba(0,0,0,0.08)'
-              }}>
-                <AccordionSummary
-                  expandIcon={<ExpandMoreIcon />}
-                  sx={{
-                    background: noteTypeConfig.bg,
-                    borderRadius: '12px',
-                    minHeight: '64px',
-                    '&:hover': { background: noteTypeConfig.bg }
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
-                    <Avatar sx={{
-                      bgcolor: noteTypeConfig.color,
-                      width: 40,
-                      height: 40
-                    }}>
-                      <IconComponent sx={{ fontSize: 20 }} />
-                    </Avatar>
+                    return (
+                        <motion.div
+                            key={note.noteId}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            transition={{ delay: index * 0.1 }}
+                        >
+                            <Accordion sx={{ mb: 1, borderRadius: '8px !important' }}>
+                                <AccordionSummary
+                                    expandIcon={<ExpandMoreIcon />}
+                                    sx={{
+                                        backgroundColor: `${selectedNoteType?.color}10`,
+                                        borderLeft: `4px solid ${selectedNoteType?.color}`,
+                                        borderRadius: '8px',
+                                        mb: 1,
+                                        '&:hover': {
+                                            backgroundColor: `${selectedNoteType?.color}20`,
+                                        },
+                                        '& .MuiAccordionSummary-content': {
+                                            alignItems: 'center',
+                                            gap: 2
+                                        }
+                                    }}
+                                >
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+                                        <Avatar sx={{
+                                            bgcolor: selectedNoteType?.color,
+                                            width: 32,
+                                            height: 32
+                                        }}>
+                                            {selectedNoteType?.icon && (
+                                                <selectedNoteType.icon sx={{ fontSize: 16 }} />
+                                            )}
+                                        </Avatar>
 
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="body1" fontWeight="bold">
-                        {note.noteType || 'הערה כללית'}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {new Date(note.createdDate).toLocaleDateString('he-IL')} • {note.authorName}
-                      </Typography>
-                    </Box>
+                                        <Box sx={{ flex: 1 }}>
+                                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                                {note.noteType}
+                                            </Typography>
+                                            <Typography variant="caption" color="text.secondary">
+                                                {new Date(note.createdDate).toLocaleDateString('he-IL')} • {note.authorName}
+                                            </Typography>
+                                        </Box>
 
-                    {note.priority && (
-                      <Chip
-                        label={note.priority}
-                        size="medium"
-                        color={note.priority === 'גבוה' ? 'error' : note.priority === 'בינוני' ? 'warning' : 'default'}
-                      />
-                    )}
-                  </Box>
-                </AccordionSummary>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            {note.priority && (
+                                                <Chip
+                                                    label={note.priority}
+                                                    size="small"
+                                                    sx={{
+                                                        bgcolor: `${selectedPriority?.color}20`,
+                                                        color: selectedPriority?.color,
+                                                        fontWeight: 'bold'
+                                                    }}
+                                                />
+                                            )}
 
-                <AccordionDetails sx={{ pt: 2 }}>
-                  <Typography variant="body1" sx={{ mb: 2, lineHeight: 1.6 }}>
-                    {note.noteContent}
-                  </Typography>
+                                            {note.isPrivate && (
+                                                <Chip
+                                                    label="פרטי"
+                                                    size="small"
+                                                    color="warning"
+                                                    variant="outlined"
+                                                />
+                                            )}
 
-                  <Divider sx={{ my: 1.5 }} />
+                                            <Box
+                                                component="div"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleMenuOpen(e, note.noteId);
+                                                }}
+                                                sx={{
+                                                    p: 0.5,
+                                                    borderRadius: '50%',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    minWidth: 32,
+                                                    minHeight: 32,
+                                                    '&:hover': {
+                                                        backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                                                    }
+                                                }}
+                                            >
+                                                <MoreVertIcon sx={{ fontSize: 20 }} />
+                                            </Box>
+                                        </Box>
+                                    </Box>
+                                </AccordionSummary>
 
-                  <Grid container spacing={1}>
-                    <Grid item xs={6}>
-                      <Typography variant="body2" color="text.secondary">
-                        נוצר על ידי: {note.authorName}
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Typography variant="body2" color="text.secondary">
-                        עודכן: {new Date(note.updatedDate).toLocaleDateString('he-IL')}
-                      </Typography>
-                    </Grid>
-                  </Grid>
-                </AccordionDetails>
-              </Accordion>
-            </motion.div>
-          );
-        })}
-      </Box>
+                                <AccordionDetails>
+                                    <Typography variant="body2">
+                                        {note.noteContent}
+                                    </Typography>
+                                </AccordionDetails>
+                            </Accordion>
+                        </motion.div>
+                    );
+                })}
+            </AnimatePresence>
+        </Box>
     );
-  };
+};
+
 
   return (
     <AnimatePresence>
@@ -1017,9 +1115,9 @@ const StudentCoursesDialog = ({
                   </Box>
                 </Box>
 
-                <IconButton onClick={onClose} sx={{ 
+                <IconButton onClick={onClose} sx={{
                   color: 'white',
-                  '&:hover': { 
+                  '&:hover': {
                     background: 'rgba(255, 255, 255, 0.1)',
                     borderRadius: '50%'
                   }
@@ -1080,7 +1178,7 @@ const StudentCoursesDialog = ({
                   {studentCourses && studentCourses.length > 0 ? (
                     <Box>
                       {/* סטטיסטיקות - צבעים אחידים */}
-                      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 2, mb: 2.5,height:'150px' }}>
+                      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 2, mb: 2.5, height: '150px' }}>
                         <Card sx={{
                           background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', // ✅ ירוק
                           color: 'white',
@@ -1324,7 +1422,7 @@ const StudentCoursesDialog = ({
                                     key={course.groupStudentId || index}
                                     sx={{
                                       '&:nth-of-type(even)': { backgroundColor: 'rgba(16, 185, 129, 0.03)' }, // ✅ ירוק עדין
-                                      '&:hover': { 
+                                      '&:hover': {
                                         backgroundColor: 'rgba(16, 185, 129, 0.08)',
                                         transform: 'translateY(-1px)',
                                         boxShadow: '0 4px 12px rgba(16, 185, 129, 0.15)'
@@ -1477,7 +1575,7 @@ const StudentCoursesDialog = ({
                 </motion.div>
               )}
 
-                        {/* טאב הנוכחות - עיצוב משודרג */}
+              {/* טאב הנוכחות - עיצוב משודרג */}
               {currentTab === 2 && (
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}
@@ -1521,7 +1619,7 @@ const StudentCoursesDialog = ({
                         student={student}
                         embedded={true}
                         open={true}
-                        onClose={() => {}}
+                        onClose={() => { }}
                       />
                     </Box>
                   </Card>
@@ -1533,9 +1631,9 @@ const StudentCoursesDialog = ({
 
           <Divider sx={{ background: 'linear-gradient(90deg, transparent, #10b981, transparent)' }} />
 
-          <DialogActions sx={{ 
-            p: 2.5, 
-            background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)', 
+          <DialogActions sx={{
+            p: 2.5,
+            background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
             justifyContent: 'space-between',
             borderTop: '1px solid rgba(16, 185, 129, 0.1)'
           }}>
@@ -1628,6 +1726,89 @@ const StudentCoursesDialog = ({
             student={student}
             onSave={handleSaveNote}
           />
+
+          {/* Edit Note Dialog */}
+          <AddStudentNoteDialog
+            open={editNoteDialogOpen}
+            onClose={() => {
+              setEditNoteDialogOpen(false);
+              setSelectedNote(null);
+            }}
+            student={student}
+            onSave={handleUpdateNote}
+            editMode={true}
+            noteData={selectedNote}
+          />
+
+          {/* Delete Dialog */}
+          <Dialog
+            open={deleteConfirmOpen}
+            onClose={() => {
+              setDeleteConfirmOpen(false);
+              setNoteToDelete(null);
+            }}
+            sx={{
+              direction:'rtl'
+            }}
+          >
+
+            <DialogTitle sx={{ textAlign: 'center', color: '#dc2626', fontWeight: 'bold' }}>
+              מחיקת הערה
+            </DialogTitle>
+            <DialogContent>
+              <DialogContentText sx={{ textAlign: 'center', fontSize: '1rem' }}>
+                האם אתה בטוח שברצונך למחוק את ההערה הזו?
+                <br />
+                פעולה זו לא ניתנת לביטול.
+              </DialogContentText>
+            </DialogContent>
+            <DialogActions sx={{ justifyContent: 'center', gap: 2 }}>
+              <Button
+                onClick={() => {
+                  setDeleteConfirmOpen(false);
+                  setNoteToDelete(null);
+                }}
+                variant="outlined"
+              >
+                ביטול
+              </Button>
+              <Button
+                onClick={handleDeleteNote}
+                variant="contained"
+                color="error"
+              >
+                מחק
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* Menu for note actions */}
+          <Menu
+            anchorEl={menuAnchor}
+            open={Boolean(menuAnchor)}
+            onClose={handleMenuClose}
+          >
+            <MenuItem
+              onClick={() => {
+                const note = studentNotes.find(n => n.noteId === menuNoteId);
+                handleEditNote(note);
+              }}
+            >
+              <EditIcon fontSize="small" sx={{ mr: 1 }} />
+              עריכה
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                const note = studentNotes.find(n => n.noteId === menuNoteId);
+                handleDeleteConfirm(note);
+              }}
+              sx={{ color: '#dc2626' }}
+            >
+              <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
+              מחיקה
+            </MenuItem>
+          </Menu>
+
         </Dialog>
       )}
     </AnimatePresence>

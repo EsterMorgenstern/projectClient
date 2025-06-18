@@ -78,7 +78,7 @@
 //   const dispatch = useDispatch();
 //   const theme = useTheme();
 //   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  
+
 //   // Redux state
 //   const students = useSelector(state => state.students.students || []);
 //   const courses = useSelector(state => state.courses.courses || []);
@@ -281,13 +281,13 @@
 
 //   const getBotResponse = (message) => {
 //     const lowerMessage = message.toLowerCase();
-    
+
 //     for (const [key, response] of Object.entries(chatResponses)) {
 //       if (lowerMessage.includes(key)) {
 //         return response;
 //       }
 //     }
-    
+
 //     return chatResponses.default;
 //   };
 
@@ -487,11 +487,11 @@
 //                         >
 //                           <stat.icon sx={{ fontSize: 35, color: stat.color }} />
 //                         </Avatar>
-                        
+
 //                         <Typography variant="h3" fontWeight="700" sx={{ color: stat.color, mb: 1 }}>
 //                           {stat.value}{stat.unit}
 //                         </Typography>
-                        
+
 //                         <Typography variant="h6" fontWeight="600" sx={{ color: '#1e293b' }}>
 //                           {stat.title}
 //                         </Typography>
@@ -517,7 +517,7 @@
 //               >
 //                 ⚡ פעולות מהירות
 //               </Typography>
-              
+
 //               <Grid container spacing={3}>
 //                 {quickActions.map((action, index) => (
 //                   <Grid item xs={12} sm={6} md={3} key={index}>
@@ -565,15 +565,15 @@
 //                           >
 //                             <action.icon sx={{ fontSize: 30 }} />
 //                           </Avatar>
-                          
+
 //                           <Typography variant="h6" fontWeight="600" sx={{ color: '#1e293b', mb: 1 }}>
 //                             {action.title}
 //                           </Typography>
-                          
+
 //                           <Typography variant="body2" sx={{ color: action.color, fontWeight: 600, mb: 1 }}>
 //                             {action.subtitle}
 //                           </Typography>
-                          
+
 //                           <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.85rem' }}>
 //                             {action.description}
 //                           </Typography>
@@ -615,12 +615,12 @@
 //                   כל הכלים שאתה צריך במקום אחד
 //                 </Typography>
 //               </Box>
-              
+
 //               <Grid container spacing={4}>
 //                 {mainMenuItems.map((item, index) => (
 //                   <Grid item xs={12} sm={6} lg={4} key={index}>
 //                     <motion.div
-                    
+
 //                       initial={{ opacity: 0, y: 100, scale: 0.8 }}
 //                       animate={{ opacity: 1, y: 0, scale: 1 }}
 //                       transition={{ 
@@ -730,7 +730,7 @@
 //                             />
 //                           </motion.div>
 //                         </Box>
-                        
+
 //                         <CardContent sx={{ p: 4, height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 2 }}>
 //                           <Box sx={{ flex: 1 }}>
 //                             <Avatar
@@ -747,11 +747,11 @@
 //                             >
 //                               <item.icon sx={{ fontSize: 40, color: item.color }} />
 //                             </Avatar>
-                            
+
 //                             <Typography variant="h5" fontWeight="700" sx={{ color: '#1e293b', mb: 2, lineHeight: 1.3 }}>
 //                               {item.title}
 //                             </Typography>
-                            
+
 //                             <Typography 
 //                               variant="body2" 
 //                               sx={{ 
@@ -764,7 +764,7 @@
 //                               {item.description}
 //                             </Typography>
 //                           </Box>
-                          
+
 //                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 'auto' }}>
 //                             <Typography 
 //                               className="card-stats"
@@ -777,7 +777,7 @@
 //                             >
 //                               {item.stats}
 //                             </Typography>
-                            
+
 //                             <IconButton
 //                               size="small"
 //                               sx={{
@@ -877,7 +877,7 @@
 //                   ? מוכן להתחיל 🚀
 //                 </Typography>
 
-               
+
 
 //                 <Typography 
 //                   variant="h6" 
@@ -974,7 +974,7 @@
 //                   <Typography variant="h6" fontWeight="600" sx={{ color: '#10B981', mb: 3 }}>
 //                     למה בוחרים בנו? ✨
 //                   </Typography>
-                  
+
 //                   <Grid container spacing={3} justifyContent="center">
 //                     {[
 //                       { icon: VerifiedIcon, text: 'מוסדות מובילים', value: '500+' },
@@ -1050,7 +1050,7 @@
 //                   }}>
 //                     <BusinessIcon sx={{ fontSize: 30 }} />
 //                   </Avatar>
-                  
+
 //                   <Box sx={{ textAlign: 'left' }}>
 //                     <Typography variant="h5" fontWeight="700" color="#1e293b">
 //                       מערכת ניהול חוגים פרימיום
@@ -1076,7 +1076,7 @@
 //                       ))}
 //                     </Stack>
 //                   </Grid>
-                  
+
 //                   <Grid item xs={12} md={4}>
 //                     <Typography variant="h6" fontWeight="600" color="#1e293b" sx={{ mb: 2 }}>
 //                       📞 יצירת קשר
@@ -1093,7 +1093,7 @@
 //                       </Typography>
 //                     </Stack>
 //                   </Grid>
-                  
+
 //                   <Grid item xs={12} md={4}>
 //                     <Typography variant="h6" fontWeight="600" color="#1e293b" sx={{ mb: 2 }}>
 //                       🔒 אמינות
@@ -1118,7 +1118,7 @@
 //                   <Typography variant="body2" color="#94a3b8" sx={{ fontSize: '0.9rem' }}>
 //                     © 2025 מערכת ניהול חוגים פרימיום • גרסה 2.0 • כל הזכויות שמורות
 //                   </Typography>
-                  
+
 //                   <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 3 }}>
 //                     {[
 //                       { icon: SecurityIcon, tooltip: 'אבטחה מתקדמת' },
@@ -1350,7 +1350,7 @@
 //                           )}
 //                         </Avatar>
 //                       </ListItemAvatar>
-                      
+
 //                       <Paper
 //                         sx={{
 //                           p: 2,
@@ -1383,7 +1383,7 @@
 //                   </motion.div>
 //                 ))}
 //               </AnimatePresence>
-              
+
 //               {isTyping && (
 //                 <motion.div
 //                   initial={{ opacity: 0, y: 20 }}
@@ -1560,7 +1560,7 @@ const Home = () => {
   const dispatch = useDispatch();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  
+
   // Redux state
   const students = useSelector(state => state.students.students || []);
   const courses = useSelector(state => state.courses.courses || []);
@@ -1763,13 +1763,13 @@ const Home = () => {
 
   const getBotResponse = (message) => {
     const lowerMessage = message.toLowerCase();
-    
+
     for (const [key, response] of Object.entries(chatResponses)) {
       if (lowerMessage.includes(key)) {
         return response;
       }
     }
-    
+
     return chatResponses.default;
   };
 
@@ -1814,7 +1814,7 @@ const Home = () => {
       overflow: 'hidden'
     }}>
       {/* Animated Background Elements */}
-      <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0 }}>
+      {/* <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0 }}>
         {[...Array(6)].map((_, i) => (
           <motion.div
             key={i}
@@ -1823,9 +1823,8 @@ const Home = () => {
               width: Math.random() * 300 + 100,
               height: Math.random() * 300 + 100,
               borderRadius: '50%',
-              background: `radial-gradient(circle, ${
-                           ['rgba(102, 126, 234, 0.1)', 'rgba(118, 75, 162, 0.1)', 'rgba(16, 185, 129, 0.1)', 'rgba(245, 158, 11, 0.1)'][i % 4]
-              } 0%, transparent 70%)`,
+              background: `radial-gradient(circle, ${['rgba(102, 126, 234, 0.1)', 'rgba(118, 75, 162, 0.1)', 'rgba(16, 185, 129, 0.1)', 'rgba(245, 158, 11, 0.1)'][i % 4]
+                } 0%, transparent 70%)`,
               top: `${Math.random() * 100}%`,
               left: `${Math.random() * 100}%`,
             }}
@@ -1842,25 +1841,23 @@ const Home = () => {
             }}
           />
         ))}
-      </Box>
+      </Box> */}
 
-      <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 1, py: 4 }}>
+      <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 1, py: 1 }}>
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
         >
-          {/* Enhanced Hero Section */}
           <motion.div variants={itemVariants}>
-            <Box sx={{ 
-              textAlign: 'center', 
+            <Box sx={{
+              textAlign: 'center',
               mb: 8,
               position: 'relative',
               py: { xs: 6, md: 10 }
             }}>
-              {/* Floating Icons Animation */}
               <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0 }}>
-                {[
+                {/* {[
                   { icon: '🎓', delay: 0, x: '10%', y: '20%' },
                   { icon: '📚', delay: 0.5, x: '85%', y: '15%' },
                   { icon: '✨', delay: 1, x: '15%', y: '70%' },
@@ -1878,7 +1875,7 @@ const Home = () => {
                       zIndex: 0
                     }}
                     initial={{ opacity: 0, scale: 0, rotate: -180 }}
-                    animate={{ 
+                    animate={{
                       opacity: [0, 1, 0.7, 1],
                       scale: [0, 1.2, 0.8, 1],
                       rotate: [0, 360],
@@ -1894,15 +1891,15 @@ const Home = () => {
                   >
                     {item.icon}
                   </motion.div>
-                ))}
+                ))} */}
               </Box>
 
               {/* Main Title with Enhanced Animation */}
               <motion.div
                 initial={{ scale: 0.3, opacity: 0, y: 100 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
-                transition={{ 
-                  duration: 1.5, 
+                transition={{
+                  duration: 1.5,
                   delay: 0.2,
                   type: "spring",
                   bounce: 0.4
@@ -1925,22 +1922,22 @@ const Home = () => {
                       zIndex: -1
                     }}
                   />
-  <Typography 
-  variant="h2" 
-  fontWeight="800" 
-  sx={{
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    backgroundClip: 'text',
-    WebkitBackgroundClip: 'text',
-    color: 'transparent',
-    mb: 2,
-    fontSize: { xs: '3.5rem', md: '3.5rem' }
-  }}
->
- !{greeting}<br></br>
-    פלטפורמת ניהול חוגים
+                  <Typography
+                    variant="h2"
+                    fontWeight="800"
+                    sx={{
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      backgroundClip: 'text',
+                      WebkitBackgroundClip: 'text',
+                      color: 'transparent',
+                      mb: 2,
+                      fontSize: { xs: '3.5rem', md: '3.5rem' }
+                    }}
+                  >
+                    !{greeting}<br></br>
+                    פלטפורמת ניהול חוגים
 
-</Typography>
+                  </Typography>
                 </Box>
               </motion.div>
 
@@ -1951,7 +1948,7 @@ const Home = () => {
                 transition={{ duration: 1, delay: 0.8 }}
                 style={{ position: 'relative', zIndex: 2 }}
               >
-                <Box sx={{ 
+                <Box sx={{
                   background: 'rgba(255, 255, 255, 0.95)',
                   backdropFilter: 'blur(20px)',
                   borderRadius: '25px',
@@ -1999,38 +1996,38 @@ const Home = () => {
                       animate={{ rotate: 360 }}
                       transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
                     >
-                      <MagicIcon sx={{ fontSize: 40, color: '#667eea' }} />
+                      {/* <MagicIcon sx={{ fontSize: 40, color: '#667eea' }} /> */}
                     </motion.div>
-                    
-                   <Typography 
-  variant="h4" 
-  sx={{
-    color: '#1e293b',
-    mb: 3,
-    fontWeight: 600,
-    fontSize: { xs: '1.5rem', md: '2rem' }
-  }}
->
-  מערכת ניהול חכמה עם טכנולוגיה מתקדמת</Typography>
 
-                    
+                    <Typography
+                      variant="h4"
+                      sx={{
+                        color: '#1e293b',
+                        mb: 3,
+                        fontWeight: 600,
+                        fontSize: { xs: '1.5rem', md: '2rem' }
+                      }}
+                    >
+                      מערכת ניהול חכמה עם טכנולוגיה מתקדמת</Typography>
+
+
                     <motion.div
-                      animate={{ 
+                      animate={{
                         scale: [1, 1.3, 1],
                         rotate: [0, 15, -15, 0]
                       }}
-                      transition={{ 
+                      transition={{
                         duration: 2,
                         repeat: Infinity,
                         repeatDelay: 4
                       }}
                     >
-                      <CelebrationIcon sx={{ fontSize: 40, color: '#f59e0b' }} />
+                      {/* <CelebrationIcon sx={{ fontSize: 40, color: '#f59e0b' }} /> */}
                     </motion.div>
                   </Stack>
 
-                  <Typography 
-                    variant="h5" 
+                  <Typography
+                    variant="h5"
                     sx={{
                       color: '#64748b',
                       mb: 3,
@@ -2039,15 +2036,15 @@ const Home = () => {
                       fontSize: { xs: '1.1rem', md: '1.3rem' }
                     }}
                   >
-                    🌟 המערכת החכמה והמתקדמת ביותר לניהול חוגים, תלמידים ומדריכים
+                     המערכת החכמה והמתקדמת ביותר לניהול חוגים, תלמידים ומדריכים
                     <br />
-                    💡 עם בינה מלאכותית, אנליטיקה מתקדמת וחוויית משתמש מעולה
+                     עם בינה מלאכותית, אנליטיקה מתקדמת וחוויית משתמש מעולה
                   </Typography>
 
                   {/* Live Stats */}
-                  <Stack 
-                    direction={{ xs: 'column', sm: 'row' }} 
-                    spacing={3} 
+                  <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    spacing={3}
                     justifyContent="center"
                     alignItems="center"
                     sx={{ mb: 3 }}
@@ -2121,8 +2118,8 @@ const Home = () => {
                       p: 2,
                       border: '1px solid rgba(102, 126, 234, 0.2)'
                     }}>
-                      <Typography 
-                        variant="h6" 
+                      <Typography
+                        variant="h6"
                         sx={{
                           color: '#475569',
                           fontWeight: 600,
@@ -2138,11 +2135,11 @@ const Home = () => {
                         >
                           📅
                         </motion.div>
-                        {currentTime.toLocaleDateString('he-IL', { 
-                          weekday: 'long', 
-                          year: 'numeric', 
-                          month: 'long', 
-                          day: 'numeric' 
+                        {currentTime.toLocaleDateString('he-IL', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
                         })}
                         <motion.div
                           animate={{ scale: [1, 1.2, 1] }}
@@ -2156,9 +2153,9 @@ const Home = () => {
                         >
                           🕐
                         </motion.div>
-                        {currentTime.toLocaleTimeString('he-IL', { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
+                        {currentTime.toLocaleTimeString('he-IL', {
+                          hour: '2-digit',
+                          minute: '2-digit'
                         })}
                       </Typography>
                     </Box>
@@ -2173,15 +2170,15 @@ const Home = () => {
                 transition={{ duration: 1, delay: 1.2 }}
                 style={{ position: 'relative', zIndex: 2 }}
               >
-                <Stack 
-                  direction={{ xs: 'column', sm: 'row' }} 
-                  spacing={3} 
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={3}
                   justifyContent="center"
                   alignItems="center"
                   sx={{ mb: 4 }}
                 >
                   <motion.div
-                    whileHover={{ 
+                    whileHover={{
                       scale: 1.1,
                       rotate: [0, -2, 2, 0],
                       transition: { duration: 0.3 }
@@ -2254,12 +2251,12 @@ const Home = () => {
                         transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
                       }}
                     >
-                      🚀 בואו נתחיל!
+                       !בואו נתחיל
                     </Button>
                   </motion.div>
 
                   <motion.div
-                    whileHover={{ 
+                    whileHover={{
                       scale: 1.05,
                       transition: { duration: 0.3 }
                     }}
@@ -2293,7 +2290,7 @@ const Home = () => {
                         transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
                       }}
                     >
-                      💡 גלה עוד
+                      גלה עוד
                     </Button>
                   </motion.div>
                 </Stack>
@@ -2304,9 +2301,9 @@ const Home = () => {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 1, delay: 1.5 }}
                 >
-                  <Stack 
-                    direction={{ xs: 'column', md: 'row' }} 
-                    spacing={4} 
+                  <Stack
+                    direction={{ xs: 'column', md: 'row' }}
+                    spacing={4}
                     justifyContent="center"
                     alignItems="center"
                     sx={{
@@ -2333,11 +2330,11 @@ const Home = () => {
                       >
                         <Box sx={{ textAlign: 'center', minWidth: '120px' }}>
                           <motion.div
-                            animate={{ 
+                            animate={{
                               rotate: [0, 10, -10, 0],
                               scale: [1, 1.1, 1]
                             }}
-                            transition={{ 
+                            transition={{
                               duration: 2,
                               repeat: Infinity,
                               repeatDelay: 3,
@@ -2347,15 +2344,15 @@ const Home = () => {
                           >
                             {item.icon}
                           </motion.div>
-                          <Typography 
-                            variant="h5" 
-                            fontWeight="800" 
+                          <Typography
+                            variant="h5"
+                            fontWeight="800"
                             sx={{ color: item.color, mb: 0.5 }}
                           >
                             {item.value}
                           </Typography>
-                          <Typography 
-                            variant="body2" 
+                          <Typography
+                            variant="body2"
                             sx={{ color: '#64748b', fontWeight: 600 }}
                           >
                             {item.label}
@@ -2385,7 +2382,7 @@ const Home = () => {
                         background: 'rgba(255, 255, 255, 0.95)',
                         backdropFilter: 'blur(20px)',
                         borderRadius: '20px',
-                        width:'250px',
+                        width: '250px',
                         border: '2px solid rgba(255, 255, 255, 0.8)',
                         boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
                         overflow: 'hidden',
@@ -2417,11 +2414,11 @@ const Home = () => {
                         >
                           <stat.icon sx={{ fontSize: 35, color: stat.color }} />
                         </Avatar>
-                        
+
                         <Typography variant="h3" fontWeight="700" sx={{ color: stat.color, mb: 1 }}>
                           {stat.value}{stat.unit}
                         </Typography>
-                        
+
                         <Typography variant="h6" fontWeight="600" sx={{ color: '#1e293b' }}>
                           {stat.title}
                         </Typography>
@@ -2436,18 +2433,18 @@ const Home = () => {
           {/* Quick Actions */}
           <motion.div variants={itemVariants}>
             <Box sx={{ mb: 8 }}>
-              <Typography 
-                variant="h4" 
-                fontWeight="700" 
-                sx={{ 
+              <Typography
+                variant="h4"
+                fontWeight="700"
+                sx={{
                   mb: 4,
                   textAlign: 'center',
                   color: '#1e293b'
                 }}
               >
-                ⚡ פעולות מהירות
+                 פעולות מהירות
               </Typography>
-              
+
               <Grid container spacing={3}>
                 {quickActions.map((action, index) => (
                   <Grid item xs={12} sm={6} md={3} key={index}>
@@ -2462,7 +2459,7 @@ const Home = () => {
                         sx={{
                           borderRadius: '16px',
                           cursor: 'pointer',
-                          width:'260px',
+                          width: '260px',
                           background: 'rgba(255, 255, 255, 0.95)',
                           backdropFilter: 'blur(20px)',
                           border: '2px solid rgba(255, 255, 255, 0.8)',
@@ -2495,15 +2492,15 @@ const Home = () => {
                           >
                             <action.icon sx={{ fontSize: 30 }} />
                           </Avatar>
-                          
+
                           <Typography variant="h6" fontWeight="600" sx={{ color: '#1e293b', mb: 1 }}>
                             {action.title}
                           </Typography>
-                          
+
                           <Typography variant="body2" sx={{ color: action.color, fontWeight: 600, mb: 1 }}>
                             {action.subtitle}
                           </Typography>
-                          
+
                           <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.85rem' }}>
                             {action.description}
                           </Typography>
@@ -2528,9 +2525,9 @@ const Home = () => {
               mb: 8
             }}>
               <Box sx={{ textAlign: 'center', mb: 6 }}>
-                <Typography 
-                  variant="h4" 
-                  fontWeight="700" 
+                <Typography
+                  variant="h4"
+                  fontWeight="700"
                   sx={{
                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                     backgroundClip: 'text',
@@ -2539,27 +2536,27 @@ const Home = () => {
                     mb: 2
                   }}
                 >
-                  🚀 תפריט ראשי מתקדם
+                   תפריט ראשי מתקדם
                 </Typography>
                 <Typography variant="h6" color="#64748b" fontWeight="500">
                   כל הכלים שאתה צריך במקום אחד
                 </Typography>
               </Box>
-              
+
               <Grid container spacing={4}>
                 {mainMenuItems.map((item, index) => (
                   <Grid item xs={12} sm={6} lg={4} key={index}>
                     <motion.div
                       initial={{ opacity: 0, y: 100, scale: 0.8 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
-                      transition={{ 
-                        delay: index * 0.1 + 0.5, 
+                      transition={{
+                        delay: index * 0.1 + 0.5,
                         duration: 1,
                         type: "spring",
                         bounce: 0.3
                       }}
-                      whileHover={{ 
-                        scale: 1.05, 
+                      whileHover={{
+                        scale: 1.05,
                         y: -20,
                         rotateY: 8,
                         transition: { duration: 0.4 }
@@ -2571,7 +2568,7 @@ const Home = () => {
                         sx={{
                           borderRadius: '28px',
                           cursor: 'pointer',
-                          width:'310px',
+                          width: '310px',
                           height: '350px',
                           position: 'relative',
                           overflow: 'hidden',
@@ -2658,7 +2655,7 @@ const Home = () => {
                             />
                           </motion.div>
                         </Box>
-                        
+
                         <CardContent sx={{ p: 4, height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 2 }}>
                           <Box sx={{ flex: 1 }}>
                             <Avatar
@@ -2675,16 +2672,16 @@ const Home = () => {
                             >
                               <item.icon sx={{ fontSize: 40, color: item.color }} />
                             </Avatar>
-                            
+
                             <Typography variant="h5" fontWeight="700" sx={{ color: '#1e293b', mb: 2, lineHeight: 1.3 }}>
                               {item.title}
                             </Typography>
-                            
-                            <Typography 
-                              variant="body2" 
-                              sx={{ 
-                                color: '#64748b', 
-                                mb: 3, 
+
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                color: '#64748b',
+                                mb: 3,
                                 lineHeight: 1.6,
                                 fontSize: '0.9rem'
                               }}
@@ -2692,20 +2689,20 @@ const Home = () => {
                               {item.description}
                             </Typography>
                           </Box>
-                          
+
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 'auto' }}>
-                            <Typography 
+                            <Typography
                               className="card-stats"
-                              variant="body2" 
+                              variant="body2"
                               fontWeight="600"
-                              sx={{ 
+                              sx={{
                                 color: '#94a3b8',
                                 transition: 'all 0.3s ease'
                               }}
                             >
                               {item.stats}
                             </Typography>
-                            
+
                             <IconButton
                               size="small"
                               sx={{
@@ -2790,9 +2787,9 @@ const Home = () => {
                   </Stack>
                 </motion.div>
 
-                <Typography 
-                  variant="h3" 
-                  fontWeight="800" 
+                <Typography
+                  variant="h3"
+                  fontWeight="800"
                   sx={{
                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                     backgroundClip: 'text',
@@ -2805,8 +2802,8 @@ const Home = () => {
                   ? מוכן להתחיל 🚀
                 </Typography>
 
-                <Typography 
-                  variant="h6" 
+                <Typography
+                  variant="h6"
                   sx={{
                     color: '#64748b',
                     mb: 6,
@@ -2819,9 +2816,9 @@ const Home = () => {
                   התחל את המסע שלך עם המערכת המתקדמת ביותר לניהול חוגים
                 </Typography>
 
-                <Stack 
-                  direction={{ xs: 'column', sm: 'row' }} 
-                  spacing={3} 
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={3}
                   justifyContent="center"
                   alignItems="center"
                   sx={{ mb: 6 }}
@@ -2834,7 +2831,7 @@ const Home = () => {
                       variant="contained"
                       size="large"
                       startIcon={<DashboardIcon />}
-                      onClick={() => navigate('/menu')}
+                      onClick={() => navigate('/')}
                       sx={{
                         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                         borderRadius: '20px',
@@ -2927,7 +2924,7 @@ const Home = () => {
                   }}>
                     <BusinessIcon sx={{ fontSize: 30 }} />
                   </Avatar>
-                  
+
                   <Box sx={{ textAlign: 'left' }}>
                     <Typography variant="h5" fontWeight="700" color="#1e293b">
                       מערכת ניהול חוגים פרימיום
@@ -2940,7 +2937,7 @@ const Home = () => {
 
                 <Divider sx={{ mb: 4, opacity: 0.3 }} />
 
-                <Grid container spacing={4} sx={{ mb: 4, alignItems:'center', marginLeft:'290px' }}>
+                <Grid container spacing={4} sx={{ mb: 4, alignItems: 'center', marginLeft: '290px' }}>
                   <Grid item xs={12} md={4}>
                     <Typography variant="h6" fontWeight="600" color="#1e293b" sx={{ mb: 2 }}>
                       🌟 תכונות
@@ -2953,24 +2950,24 @@ const Home = () => {
                       ))}
                     </Stack>
                   </Grid>
-                  
+
                   <Grid item xs={12} md={4}>
                     <Typography variant="h6" fontWeight="600" color="#1e293b" sx={{ mb: 2 }}>
                       📞 יצירת קשר
                     </Typography>
                     <Stack spacing={1}>
                       <Typography variant="body2" color="#64748b">
-                        📧 easyoffice100@gmail.com
+                        📧em0527104104@gmail.com
                       </Typography>
                       <Typography variant="body2" color="#64748b">
-                        📱 03-....
+                        📱 0527104104
                       </Typography>
                       <Typography variant="body2" color="#64748b">
-                        🌐 www.system.co.il
+                        🌐  coursenet.nethost.co.il
                       </Typography>
                     </Stack>
                   </Grid>
-                  
+
                   <Grid item xs={12} md={4}>
                     <Typography variant="h6" fontWeight="600" color="#1e293b" sx={{ mb: 2 }}>
                       🔒 אמינות
@@ -2995,7 +2992,7 @@ const Home = () => {
                   <Typography variant="body2" color="#94a3b8" sx={{ fontSize: '0.9rem' }}>
                     © 2025 מערכת ניהול חוגים פרימיום • גרסה 2.0 • כל הזכויות שמורות
                   </Typography>
-                  
+
                   <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 3 }}>
                     {[
                       { icon: SecurityIcon, tooltip: 'אבטחה מתקדמת' },
@@ -3043,14 +3040,14 @@ const Home = () => {
               <motion.div
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
-                animate={{ 
+                animate={{
                   boxShadow: [
                     '0 0 20px rgba(102, 126, 234, 0.3)',
                     '0 0 30px rgba(102, 126, 234, 0.6)',
                     '0 0 20px rgba(102, 126, 234, 0.3)'
                   ]
                 }}
-                transition={{ 
+                transition={{
                   boxShadow: { duration: 2, repeat: Infinity },
                   scale: { duration: 0.2 }
                 }}
@@ -3227,7 +3224,7 @@ const Home = () => {
                           )}
                         </Avatar>
                       </ListItemAvatar>
-                      
+
                       <Paper
                         sx={{
                           p: 2,
@@ -3260,7 +3257,7 @@ const Home = () => {
                   </motion.div>
                 ))}
               </AnimatePresence>
-              
+
               {isTyping && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}

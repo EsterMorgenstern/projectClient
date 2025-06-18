@@ -1,6 +1,8 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { getNotesByStudentId } from './studentNotesGetById';
 import { addStudentNote } from './studentNoteAddThunk';
+import { deleteStudentNote } from './studentNoteDeleteThunk';
+import { updateStudentNote } from './studentNoteUpdateThunk';
 
 const studentNotesSlice = createSlice({
   name: 'studentNotes',
@@ -51,38 +53,38 @@ const studentNotesSlice = createSlice({
       .addCase(addStudentNote.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to add student note';
+      })
+      
+      // Update student note
+      .addCase(updateStudentNote.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateStudentNote.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.studentNotes.findIndex(note => note.noteId === action.payload.noteId);
+        if (index !== -1) {
+          state.studentNotes[index] = action.payload;
+        }
+      })
+      .addCase(updateStudentNote.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to update student note';
+      })
+      
+      // Delete student note
+      .addCase(deleteStudentNote.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteStudentNote.fulfilled, (state, action) => {
+        state.loading = false;
+        state.studentNotes = state.studentNotes.filter(note => note.noteId !== action.payload);
+      })
+      .addCase(deleteStudentNote.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to delete student note';
       });
-      
-      // // Update student note
-      // .addCase(updateStudentNote.pending, (state) => {
-      //   state.loading = true;
-      //   state.error = null;
-      // })
-      // .addCase(updateStudentNote.fulfilled, (state, action) => {
-      //   state.loading = false;
-      //   const index = state.studentNotes.findIndex(note => note.noteId === action.payload.noteId);
-      //   if (index !== -1) {
-      //     state.studentNotes[index] = action.payload;
-      //   }
-      // })
-      // .addCase(updateStudentNote.rejected, (state, action) => {
-      //   state.loading = false;
-      //   state.error = action.payload || 'Failed to update student note';
-      // })
-      
-      // // Delete student note
-      // .addCase(deleteStudentNote.pending, (state) => {
-      //   state.loading = true;
-      //   state.error = null;
-      // })
-      // .addCase(deleteStudentNote.fulfilled, (state, action) => {
-      //   state.loading = false;
-      //   state.studentNotes = state.studentNotes.filter(note => note.noteId !== action.payload);
-      // })
-      // .addCase(deleteStudentNote.rejected, (state, action) => {
-      //   state.loading = false;
-      //   state.error = action.payload || 'Failed to delete student note';
-      // });
   },
 });
 

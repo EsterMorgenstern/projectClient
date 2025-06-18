@@ -8,9 +8,11 @@ import branchReducer from './branch/branchSlice';
 import groupReduser from './group/groupSlice';
 import attendanceReduser from './attendance/attendanceSlice';
 import studentNotesReduser from './studentNotes/studentNoteSlice';
+import usersReducer from './user/userSlice';
 
 const store = configureStore({
   reducer: {
+    users: usersReducer,
     students: studentsReducer,
     instructors: instructorsReducer,
     courses: coursesReducer,
