@@ -867,7 +867,7 @@ const StudentCoursesDialog = ({
   const handleSaveNote = async (noteData) => {
     try {
       await dispatch(addStudentNote(noteData));
-      dispatch(getNotesByStudentId(student.id));
+      await dispatch(getNotesByStudentId(student.id));
     } catch (error) {
       console.error('Error saving note:', error);
     }
@@ -990,12 +990,12 @@ const renderStudentNotes = () => {
                                             )}
                                         </Avatar>
 
-                                        <Box sx={{ flex: 1 }}>
-                                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                        <Box sx={{ flex: 1}}>
+                                            <Typography variant="body2" sx={{ fontWeight: 'bold',fontSize:'15px' }}>
                                                 {note.noteType}
                                             </Typography>
-                                            <Typography variant="caption" color="text.secondary">
-                                                {new Date(note.createdDate).toLocaleDateString('he-IL')} • {note.authorName}
+                                            <Typography variant="caption" color="text.secondary" fontSize='13px'>
+                                                {new Date(note.createdDate).toLocaleDateString('he-IL')} • {note.authorName} • {note.authorRole}
                                             </Typography>
                                         </Box>
 

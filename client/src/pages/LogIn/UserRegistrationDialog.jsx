@@ -364,10 +364,11 @@ const handleSubmit = async () => {
               },
             }}
           >
-            <MenuItem value="Student">תלמיד</MenuItem>
-            <MenuItem value="Teacher">מורה</MenuItem>
-            <MenuItem value="Manager">מנהל</MenuItem>
-            <MenuItem value="Admin">מנהל מערכת</MenuItem>
+            <MenuItem value="תלמיד">תלמיד</MenuItem>
+            <MenuItem value="מורה">מורה</MenuItem>
+            <MenuItem value="מנהל">מנהל</MenuItem>
+            <MenuItem value="מזכירה">מזכירה</MenuItem>
+            <MenuItem value="מנהל מערכת">מנהל מערכת</MenuItem>
           </TextField>
         </Grid>
       </Grid>
@@ -488,9 +489,9 @@ const handleSubmit = async () => {
         />
         <Chip
           icon={<WorkIcon />}
-          label={formData.role === 'Student' ? 'תלמיד' : 
-                formData.role === 'Teacher' ? 'מורה' : 
-                formData.role === 'Manager' ? 'מנהל' : 'מנהל מערכת'}
+          label={formData.role === 'תלמיד' ? 'תלמיד' : 
+                formData.role === 'מורה' ? 'מורה' : 
+                formData.role === 'מנהל' ? 'מנהל' : 'מנהל מערכת'}
           variant="outlined"
           size="small"
           color="secondary"

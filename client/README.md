@@ -9,9 +9,9 @@
 
 ## 🌐 הפרויקט החי
 
-🚀 **האפליקציה בתהליך העלאה לענן!**
+🚀 **האפליקציה זמינה כעת בענן!**
 
-- **🌍 Live Demo:** [https://course-management-app.netlify.app](https://course-management-app.netlify.app)
+- **🌍 Live Demo:** [https://coursenet.nethost.co.il](https://coursenet.nethost.co.il)
 - **📱 Mobile Responsive:** מותאם לכל המכשירים
 - **⚡ PWA Ready:** תמיכה באפליקציה מתקדמת
 
@@ -44,7 +44,6 @@
 ### 📊 רכיבים מתקדמים
 - ✅ **Data Tables** - טבלאות נתונים מתקדמות
 - ✅ **Calendar Integration** - לוח שנה מובנה
-- ✅ **Form Validation** - אימות טפסים חכם
 
 ## 🛠️ טכנולוגיות ושימושים
 
@@ -106,14 +105,14 @@ npm start
 yarn start
 
 # 5. פתיחה בדפדפן
-# http://localhost:3000
+# http://localhost:5173
 ```
 
 ### משתני סביבה נדרשים
 
 ```env
 # .env.local
-REACT_APP_API_URL=https://coursemanagement-api.azurewebsites.net/api
+REACT_APP_API_URL=https://coursenet.nethost.co.il/api
 REACT_APP_APP_NAME=מערכת ניהול חוגים
 REACT_APP_VERSION=1.0.0
 REACT_APP_ENVIRONMENT=development
@@ -307,14 +306,14 @@ npm run analyze
 npm run preview
 ```
 
-### Hosting Platforms
-- **Primary:** Netlify (Auto-deploy from main branch)
-- **Alternative:** Vercel, GitHub Pages
-- **CDN:** Cloudflare
+### Hosting & Production
+- **Live Demo:** [https://coursenet.nethost.co.il](https://coursenet.nethost.co.il)
+- **Hosting Platform:** NetHost
+- **CDN:** Integrated hosting solution
 
 ### Environment Variables (Production)
 ```env
-REACT_APP_API_URL=https://coursemanagement-api.azurewebsites.net/api
+REACT_APP_API_URL=https://coursenet.nethost.co.il/api
 REACT_APP_ENVIRONMENT=production
 REACT_APP_ANALYTICS_ID=your-analytics-id
 ```
@@ -325,7 +324,6 @@ REACT_APP_ANALYTICS_ID=your-analytics-id
 - 🎓 **התמחות:** Full-Stack Development
 - 💼 **LinkedIn:** [linkedin.com/in/ester-morgenstern](https://linkedin.com/in/ester-morgenstern)
 - 📧 **Email:** em0527104104@gmail.com
-- 🌐 **Portfolio:** [ester-portfolio.com](https://ester-portfolio.com)
 - 💻 **GitHub:** [github.com/EsterMorgenstern](https://github.com/EsterMorgenstern)
 
 ### כישורים טכניים מודגמים
@@ -336,12 +334,10 @@ REACT_APP_ANALYTICS_ID=your-analytics-id
 - **Testing:** Jest, React Testing Library
 - **DevOps:** CI/CD, Deployment, Monitoring
 
-
+---
 
 ⭐ **אם הפרויקט עזר לך או נראה לך מעניין, אל תשכח לתת כוכב ב-GitHub!**
 
 📞 **מעוניינים בשיתוף פעולה? צרו קשר!**
-```
 
----
-
+🌐 **בקרו באתר החי:** [https://coursenet.nethost.co.il](https://coursenet.nethost.co.il)
