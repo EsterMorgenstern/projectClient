@@ -1,5 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import API_BASE_URL from '../../config/api';
 
 export const fetchAttendanceByDate = createAsyncThunk(
     'attendance/fetchAttendanceByDate',
@@ -18,7 +19,7 @@ export const fetchAttendanceByDate = createAsyncThunk(
             console.log('Sending request with:', { groupId, formattedDate });
             
             const response = await axios.get(
-                `http://localhost:5248/api/Attendance/GetAttendanceByGroupAndDate/${groupId}/${formattedDate}`
+                `${API_BASE_URL}/Attendance/GetAttendanceByGroupAndDate/${groupId}/${formattedDate}`
             );
             
             return { date: formattedDate, attendance: response.data };

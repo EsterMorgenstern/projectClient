@@ -1,5 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';                      
+import API_BASE_URL from '../../config/api';
 
 export const addUser = createAsyncThunk(
     'user/addUser',
@@ -7,7 +8,7 @@ export const addUser = createAsyncThunk(
         try {
 
             console.log("user:   ",user)
-            const response = await axios.post(`http://localhost:5248/api/User/Add`, user);
+            const response = await axios.post(`${API_BASE_URL}/User/Add`, user);
             console.log("response    ",response)
 
 

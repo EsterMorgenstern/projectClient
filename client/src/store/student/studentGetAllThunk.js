@@ -1,5 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import API_BASE_URL from '../../config/api';
 
 export const fetchStudents = createAsyncThunk(
     'students/fetchStudents',
@@ -11,7 +12,7 @@ export const fetchStudents = createAsyncThunk(
                 ...(searchTerm && { search: searchTerm })
             });
 
-            const response = await axios.get(`http://localhost:5248/api/Student/GetAll?${params}`);
+            const response = await axios.get(`${API_BASE_URL}/Student/GetAll?${params}`);
 
             return {
                 students: response.data.students || response.data,
@@ -37,7 +38,7 @@ export const searchStudents = createAsyncThunk(
                 search: searchTerm
             });
 
-            const response = await axios.get(`http://localhost:5248/api/Student/Search?${params}`);
+            const response = await axios.get(`${API_BASE_URL}/Student/Search?${params}`);
 
             return {
                 students: response.data.students || response.data,

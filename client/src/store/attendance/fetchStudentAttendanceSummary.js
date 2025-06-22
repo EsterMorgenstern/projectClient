@@ -1,5 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import API_BASE_URL from '../../config/api';
 
 export const fetchStudentAttendanceSummary = createAsyncThunk(
     'attendance/fetchStudentSummary',
@@ -9,7 +10,7 @@ export const fetchStudentAttendanceSummary = createAsyncThunk(
             if (month) params.append('month', month);
             if (year) params.append('year', year);
             
-            const url = `http://localhost:5248/api/Attendance/student/${studentId}/summary${params.toString() ? `?${params.toString()}` : ''}`;
+            const url = `${API_BASE_URL}/Attendance/student/${studentId}/summary${params.toString() ? `?${params.toString()}` : ''}`;
             
             console.log('Fetching attendance summary from URL:', url);
             const response = await axios.get(url);

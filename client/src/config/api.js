@@ -1,8 +1,6 @@
-export const API_BASE_URL = 'http://localhost:5248/api';
+// קביעת ה-API URL בהתאם לסביבה
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? process.env.REACT_APP_API_URL || 'https://api.coursenet.nethost.co.il/api'
+  : 'http://localhost:5248/api';
 
-export const API_CONFIG = {
- timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  }
-};
+export default API_BASE_URL;

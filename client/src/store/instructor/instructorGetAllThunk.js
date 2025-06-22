@@ -1,12 +1,13 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import API_BASE_URL from '../../config/api';
 
 // Define the thunk
 export const fetchInstructors = createAsyncThunk(
     'students/fetchInstructors',
     async (_, { rejectWithValue }) => {
         try {
-            const response = await axios.get('http://localhost:5248/api/Instructor/GetAll');
+            const response = await axios.get(`${API_BASE_URL}/Instructor/GetAll`);
 
             return response.data;
         } catch (error) {

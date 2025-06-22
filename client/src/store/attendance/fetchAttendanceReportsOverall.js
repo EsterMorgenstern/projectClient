@@ -1,11 +1,12 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import API_BASE_URL from '../../config/api';
 
 export const fetchAttendanceReportsOverall = createAsyncThunk(
     'attendance/fetchAttendanceReportsOverall',
     async ({ selectedMonth, selectedYear }, { rejectWithValue }) => {
         try {
-            const url = `http://localhost:5248/api/Attendance/reports/overall?month=${selectedMonth}&year=${selectedYear}`;
+            const url = `${API_BASE_URL}/Attendance/reports/overall?month=${selectedMonth}&year=${selectedYear}`;
             
             const response = await axios.get(url);
             return response.data;

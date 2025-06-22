@@ -1,5 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import API_BASE_URL from '../../config/api';
 
 export const fetchAttendanceHistory = createAsyncThunk(
     'attendance/fetchAttendanceHistory',
@@ -10,7 +11,7 @@ export const fetchAttendanceHistory = createAsyncThunk(
             if (selectedYear) params.append('year', selectedYear);
             
             // ה-URL הנכון בהתאם ל-Controller שלך
-            const url = `http://localhost:5248/api/Attendance/student/${studentId}/history${params.toString() ? `?${params.toString()}` : ''}`;
+            const url = `${API_BASE_URL}/Attendance/student/${studentId}/history${params.toString() ? `?${params.toString()}` : ''}`;
             
             console.log('Fetching attendance history from URL:', url);
             const response = await axios.get(url);

@@ -1,15 +1,16 @@
 import {createAsyncThunk} from '@reduxjs/toolkit';
 import axios from 'axios';
+import API_BASE_URL from '../../config/api';
 
 export const addStudentNote = createAsyncThunk(
     'studentNotes/add',
     async (noteData, { rejectWithValue }) => {
         try {
             console.log('🚀 Sending to server:', noteData);
-            console.log('🚀 API URL:', 'http://localhost:5248/api/StudentNotes/Add');
+            console.log('🚀 API URL:', `${API_BASE_URL}/StudentNotes/Add`);
             
             const response = await axios.post(
-                'http://localhost:5248/api/StudentNotes/Add',
+                `${API_BASE_URL}/StudentNotes/Add`,
                 noteData,
                 {
                     headers: {
