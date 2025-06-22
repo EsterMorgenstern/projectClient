@@ -368,6 +368,7 @@ const handleSubmit = async () => {
             <MenuItem value="מורה">מורה</MenuItem>
             <MenuItem value="מנהל">מנהל</MenuItem>
             <MenuItem value="מזכירה">מזכירה</MenuItem>
+            <MenuItem value="משתמש">משתמש</MenuItem>
             <MenuItem value="מנהל מערכת">מנהל מערכת</MenuItem>
           </TextField>
         </Grid>
