@@ -9,7 +9,7 @@
 
 ## 🌐 הפרויקט החי
 
-🚀 **האפליקציה כמעט זמינה כעת בענן**
+🚀 **האפליקציה זמינה כעת בענן**
 
 - **🌍 Live Demo:** [https://coursenet.nethost.co.il](https://coursenet.nethost.co.il)
 - **📱 Mobile Responsive:** מותאם לכל המכשירים
