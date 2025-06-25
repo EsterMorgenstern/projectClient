@@ -59,10 +59,10 @@ const AddStudentNoteDialog = ({
         if (!user) return defaultUser;
         
         // נסה מספר אפשרויות לשמות השדות
-        const firstName = user.firstName || user.FirstName || user.first_name || 'משתמש';
-        const lastName = user.lastName || user.LastName || user.last_name || 'אורח';
-        const role = user.role || user.Role || user.userRole || 'מורה';
-        const id = user.id || user.Id || user.userId || 'guest';
+        const firstName = user.firstName || user.FirstName  || 'משתמש';
+        const lastName = user.lastName || user.LastName  || 'אורח';
+        const role = user.role || user.Role  || 'מורה';
+        const id = user.id || user.Id ;
 
         return {
             id,
