@@ -1,1384 +1,1660 @@
+
 import React, { useState, useRef, useEffect } from "react";
-import styled from "styled-components";
-import { motion } from "framer-motion";
-import CountUp from "react-countup";
 import {
-  FaRegLightbulb,
-  FaArrowLeft,
-  FaRocket,
-  FaCheck,
-  FaUserFriends,
-  FaBuilding,
-  FaCalendarAlt,
-  FaChartLine,
-  FaUsers,
-  FaCreditCard,
-  FaCalendarCheck,
-  FaMapMarkerAlt,
-  FaChild,
-  FaStar,
-  FaQuestionCircle,
-  FaChevronDown,
-  FaHandshake,
-  FaPhoneAlt,
-  FaEnvelope,
-  FaClock,
-  FaLinkedinIn,
-  FaTwitter,
-  FaShieldAlt,
-  FaMobileAlt,
-  FaCloudDownloadAlt,
-  FaLaptopCode
-} from "react-icons/fa";
+  Box,
+  Typography,
+  Grid,
+  Paper,
+  Button,
+  Container,
+  Card,
+  CardContent,
+  useTheme,
+  useMediaQuery,
+  Chip,
+  alpha,
+  Avatar,
+  Stack,
+  Divider,
+  LinearProgress,
+  IconButton,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+} from "@mui/material";
+import { styled } from "@mui/material/styles";
+import { useNavigate } from "react-router-dom";
+import { motion, useAnimation, useInView } from "framer-motion";
 
-// Styled Components with updated colors
-const PageContainer = styled.div`
-  font-family: 'Rubik', sans-serif;
-  direction: rtl;
-`;
+// Icons
+import EmailIcon from "@mui/icons-material/Email";
+import PhoneIcon from "@mui/icons-material/Phone";
+import WhatsAppIcon from "@mui/icons-material/WhatsApp";
+import GitHubIcon from "@mui/icons-material/GitHub";
+import LinkedInIcon from "@mui/icons-material/LinkedIn";
+import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
+import VerifiedIcon from "@mui/icons-material/Verified";
+import SpeedIcon from "@mui/icons-material/Speed";
+import SecurityIcon from "@mui/icons-material/Security";
+import SupportAgentIcon from "@mui/icons-material/SupportAgent";
+import CloudIcon from "@mui/icons-material/Cloud";
+import DataUsageIcon from "@mui/icons-material/DataUsage";
+import GroupIcon from "@mui/icons-material/Group";
+import PersonIcon from "@mui/icons-material/Person";
+import SchoolIcon from "@mui/icons-material/School";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import NoteIcon from "@mui/icons-material/Note";
+import AnalyticsIcon from "@mui/icons-material/Analytics";
+import DevicesIcon from "@mui/icons-material/Devices";
+import MobileScreenShareIcon from "@mui/icons-material/MobileScreenShare";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import StarIcon from "@mui/icons-material/Star";
+import PsychologyIcon from "@mui/icons-material/Psychology";
+import IntegrationInstructionsIcon from "@mui/icons-material/IntegrationInstructions";
 
-const Section = styled.section`
-  padding: 100px 0;
-  background-color: ${props => props.light ? "#f8faff" : "#ffffff"};
-`;
-
-const HeroSection = styled.section`
-  background: linear-gradient(135deg, #1e88e5 0%, #4fc3f7 100%);
-  padding: 120px 0 100px;
-  position: relative;
-  overflow: hidden;
-`;
-
-const CTASection = styled.section`
-  background: linear-gradient(135deg, #1e88e5 0%, #4fc3f7 100%);
-  padding: 100px 0;
-  position: relative;
-  overflow: hidden;
-`;
-
-const Container = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
-`;
-
-const Grid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(${props => props.columns}, 1fr);
-  gap: ${props => props.gap || "30px"};
-  
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(6, 1fr);
-  }
-`;
-
-const GridItem = styled.div`
-  grid-column: span ${props => props.span};
-  
-  @media (max-width: 768px) {
-    grid-column: span ${props => props.mobileSpan};
-  }
-`;
-
-const HighlightChip = styled.div`
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 16px;
-  background-color: ${props => props.dark ? "#e1f5fe" : "rgba(255, 255, 255, 0.2)"};
-  color: ${props => props.dark ? "#0288d1" : "white"};
-  border-radius: 50px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  margin-bottom: 20px;
-  
-  svg {
-    margin-left: 8px;
-  }
-`;
-
-const SectionTitle = styled.h2`
-  font-size: ${props => props.large ? "3.5rem" : "2.5rem"};
-  font-weight: 700;
-  margin-bottom: 20px;
-  color: ${props => props.light ? "white" : "#0d47a1"};
-  line-height: 1.2;
-  
-  @media (max-width: 768px) {
-    font-size: ${props => props.large ? "2.5rem" : "2rem"};
-  }
-`;
-
-const SectionSubtitle = styled.p`
-  font-size: 1.1rem;
-  line-height: 1.7;
-  color: ${props => props.light ? "rgba(255, 255, 255, 0.9)" : "#546e7a"};
-  margin-bottom: 40px;
-  max-width: 700px;
-`;
-
-const Button = styled.button`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: ${props => props.large ? "15px 30px" : "12px 24px"};
-  background-color: ${props => props.secondary ? "#4fc3f7" : "#0288d1"};
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: ${props => props.large ? "1.1rem" : "1rem"};
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin-left: 15px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  
-  &:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
-    background-color: ${props => props.secondary ? "#29b6f6" : "#0277bd"};
-  }
-  
-  svg {
-    margin-right: 10px;
-  }
-`;
-
-const OutlineButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: ${props => props.large ? "14px 28px" : "11px 22px"};
-  background-color: transparent;
-  color: ${props => props.light ? "white" : "#0288d1"};
-  border: 2px solid ${props => props.light ? "white" : "#0288d1"};
-  border-radius: 8px;
-  font-size: ${props => props.large ? "1.1rem" : "1rem"};
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  
-  &:hover {
-    background-color: ${props => props.light ? "rgba(255, 255, 255, 0.1)" : "rgba(2, 136, 209, 0.1)"};
-    transform: translateY(-3px);
-  }
-`;
-
-const FeatureCard = styled.div`
-  background-color: white;
-  border-radius: 15px;
-  padding: 30px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-  height: 100%;
-  transition: all 0.3s ease;
-  
-  &:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-  }
-`;
-
-const FeatureIconContainer = styled.div`
-  width: 70px;
-  height: 70px;
-  border-radius: 15px;
-  background: linear-gradient(135deg, #1e88e5 0%, #4fc3f7 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 20px;
-  color: white;
-  font-size: 28px;
-`;
-
-const FeatureTitle = styled.h3`
-  font-size: 1.3rem;
-  font-weight: 700;
-  margin-bottom: 15px;
-  color: #0d47a1;
-`;
-
-const FeatureDescription = styled.p`
-  font-size: 1rem;
-  line-height: 1.7;
-  color: #546e7a;
-`;
-
-const CheckListItem = styled(motion.div)`
-  display: flex;
-  align-items: flex-start;
-  margin-bottom: 15px;
-`;
-
-const CheckIcon = styled.div`
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background-color: #e1f5fe;
-  color: #0288d1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-left: 15px;
-  flex-shrink: 0;
-`;
-
-const CheckText = styled.p`
-  font-size: 1rem;
-  line-height: 1.5;
-  color: #546e7a;
-  margin: 0;
-`;
-
-const StatItem = styled.div`
-  background-color: white;
-  border-radius: 15px;
-  padding: 30px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-  text-align: center;
-  height: 100%;
-  transition: all 0.3s ease;
-  
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-  }
-`;
-
-const StatNumber = styled.div`
-  font-size: 3rem;
-  font-weight: 700;
-  color: #0288d1;
-  margin-bottom: 10px;
-`;
-
-const StatLabel = styled.div`
-  font-size: 1.1rem;
-  color: #546e7a;
-  font-weight: 500;
-`;
-
-const Accordion = styled.div`
-  max-width: 800px;
-  margin: 0 auto;
-`;
-
-const AccordionItem = styled.div`
-  margin-bottom: 15px;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-`;
-
-const AccordionHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 25px;
-  background-color: white;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 1.1rem;
-  color: #0d47a1;
-  
-  svg {
-    transition: transform 0.3s ease;
-    transform: ${props => props.isOpen ? "rotate(180deg)" : "rotate(0)"};
-    color: #0288d1;
-  }
-`;
-
-const AccordionContent = styled.div`
-  padding: ${props => props.isOpen ? "0 25px 20px" : "0 25px"};
-  max-height: ${props => props.isOpen ? "500px" : "0"};
-  overflow: hidden;
-  transition: all 0.3s ease;
-  
-  p {
-    margin: 0;
-    color: #546e7a;
-    line-height: 1.7;
-  }
-`;
-
-const ContactCard = styled.div`
-  background-color: white;
-  border-radius: 15px;
-  padding: 30px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-  text-align: center;
-  height: 100%;
-  transition: all 0.3s ease;
-  
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-  }
-`;
-
-const ContactIconContainer = styled.div`
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #1e88e5 0%, #4fc3f7 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 20px;
-  color: white;
-  font-size: 28px;
-`;
-
-const ContactTitle = styled.h3`
-  font-size: 1.3rem;
-  font-weight: 700;
-  margin-bottom: 15px;
-  color: #0d47a1;
-`;
-
-const ContactInfo = styled.p`
-  font-size: 1rem;
-  line-height: 1.7;
-  color: #546e7a;
-  margin: 5px 0;
-`;
-
-const Particle = styled(motion.div)`
-  position: absolute;
-  width: ${props => props.size};
-  height: ${props => props.size};
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.3);
-  top: ${props => props.top};
-  left: ${props => props.left};
-`;
-
-const AboutSystem = () => {
-  const [animateStats, setAnimateStats] = useState(false);
-  const [openAccordion, setOpenAccordion] = useState(null);
-  const statsRef = useRef(null);
-  
-  // Features data
-  const features = [
-    {
-      icon: <FaUserFriends />,
-      title: "ניהול תלמידים",
-      description: "מערכת מתקדמת לניהול פרטי תלמידים, רישום לחוגים, מעקב אחר תשלומים והתקדמות אישית"
-    },
-    {
-      icon: <FaCalendarAlt />,
-      title: "ניהול חוגים",
-      description: "ניהול קל ויעיל של מערכת החוגים, כולל לוח זמנים, רשימות תלמידים, ומעקב אחר נוכחות"
-    },
-    {
-      icon: <FaCreditCard />,
-      title: "ניהול תשלומים",
-      description: "מערכת תשלומים מאובטחת המאפשרת גביית תשלומים, הנפקת חשבוניות ומעקב אחר חייבים"
-    },
-    {
-      icon: <FaUsers />,
-      title: "ניהול מדריכים",
-      description: "מעקב אחר מדריכי החוגים, לוח זמנים, התמחויות, ומערכת הערכה מובנית"
-    },
-    {
-      icon: <FaCalendarCheck />,
-      title: "ניהול נוכחות",
-      description: "מערכת מתקדמת לניהול נוכחות בחוגים, התראות אוטומטיות להורים ודוחות מפורטים"
-    },
-    {
-      icon: <FaMapMarkerAlt />,
-      title: "ניהול סניפים",
-      description: "ניהול מרכזי פעילות בפריסה ארצית, כולל חדרים, ציוד, ומשאבים"
-    },
-    {
-      icon: <FaChild />,
-      title: "התאמה אישית",
-      description: "מנגנון חכם להתאמת חוגים לילדים על פי גיל, מגזר, העדפות אישיות וכישורים"
-    },
-    {
-      icon: <FaChartLine />,
-      title: "דוחות וסטטיסטיקות",
-      description: "מגוון דוחות מתקדמים וניתוחים סטטיסטיים לקבלת החלטות מבוססות נתונים"
-    },
-    {
-      icon: <FaBuilding />,
-      title: "ממשק מוסדי",
-      description: "ממשק ייעודי לעבודה מול מוסדות חינוך, מתנ\"סים ורשויות מקומיות"
-    }
-  ];
-  
-  // Benefits data
-  const benefits = [
-    "חיסכון של עד 70% בזמן ניהול החוגים",
-    "ממשק ידידותי וקל לשימוש",
-    "גישה מכל מקום ובכל זמן",
-    "התאמה מלאה לצרכי מרכזי חוגים בישראל",
-    "אבטחת מידע ברמה הגבוהה ביותר",
-    "תמיכה טכנית זמינה 6 ימים בשבוע"
-  ];
-  
-  // Stats data
-  const stats = [
-    { number: 1500, label: "מרכזי חוגים" },
-    { number: 12000, label: "מדריכים פעילים" },
-    { number: 252480, label: "תלמידים רשומים" },
-    { number: 98, label: "אחוזי שביעות רצון" }
-  ];
-  
-  const toggleAccordion = (index) => {
-    if (openAccordion === index) {
-      setOpenAccordion(null);
-    } else {
-      setOpenAccordion(index);
-    }
-  };
+// Animated components
+const MotionBox = ({ children, ...props }) => {
+  const controls = useAnimation();
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, threshold: 0.2 });
   
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setAnimateStats(true);
-        }
-      },
-      { threshold: 0.5 }
-    );
-    
-    if (statsRef.current) {
-      observer.observe(statsRef.current);
+    if (inView) {
+      controls.start("visible");
     }
-    
-    return () => {
-      if (statsRef.current) {
-        observer.unobserve(statsRef.current);
-      }
-    };
-  }, []);
+  }, [controls, inView]);
   
   return (
-    <PageContainer>
+    <Box
+      ref={ref}
+      component={motion.div}
+      initial="hidden"
+      animate={controls}
+      {...props}
+    >
+      {children}
+    </Box>
+  );
+};
+
+// Styled components
+const HeroSection = styled(Box)(({ theme }) => ({
+  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.light} 50%, ${theme.palette.secondary.light} 100%)`,
+  color: "white",
+  padding: theme.spacing(12, 0, 14),
+  textAlign: "center",
+  position: "relative",
+  overflow: "hidden",
+  borderRadius: "0 0 50% 50% / 40px",
+  boxShadow: "0 10px 30px rgba(0, 0, 0, 0.15)",
+  [theme.breakpoints.down("md")]: {
+    padding: theme.spacing(8, 0, 10),
+    borderRadius: "0 0 50% 50% / 20px",
+  },
+}));
+
+const FeatureCard = styled(Card)(({ theme }) => ({
+  height: "100%",
+  borderRadius: 20,
+  overflow: "hidden",
+  transition: "all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+  background: "rgba(255, 255, 255, 0.95)",
+  backdropFilter: "blur(20px)",
+  border: "1px solid rgba(255, 255, 255, 0.8)",
+  boxShadow: "0 12px 30px rgba(0, 0, 0, 0.1)",
+  "&:hover": {
+    transform: "translateY(-15px) scale(1.03)",
+    boxShadow: "0 25px 50px rgba(0, 0, 0, 0.15)",
+  },
+}));
+
+const TechCard = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(4),
+  borderRadius: 20,
+  textAlign: "center",
+  height: "100%",
+  background: "rgba(255, 255, 255, 0.95)",
+  backdropFilter: "blur(20px)",
+  border: "1px solid rgba(255, 255, 255, 0.8)",
+  boxShadow: "0 12px 30px rgba(0, 0, 0, 0.08)",
+  transition: "all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+  "&:hover": {
+    transform: "translateY(-10px) scale(1.02)",
+    boxShadow: "0 20px 40px rgba(0, 0, 0, 0.12)",
+  },
+}));
+
+const DeveloperCard = styled(Card)(({ theme }) => ({
+  borderRadius: 24,
+  overflow: "hidden",
+  background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)}, ${alpha(theme.palette.secondary.main, 0.1)})`,
+  backdropFilter: "blur(20px)",
+  border: `2px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+  boxShadow: "0 20px 40px rgba(0, 0, 0, 0.1)",
+  transition: "all 0.4s ease",
+  "&:hover": {
+    transform: "translateY(-8px)",
+    boxShadow: "0 30px 60px rgba(0, 0, 0, 0.15)",
+  },
+}));
+
+const ProgressCard = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(3),
+  borderRadius: 16,
+  background: "rgba(255, 255, 255, 0.95)",
+  backdropFilter: "blur(20px)",
+  border: "1px solid rgba(255, 255, 255, 0.8)",
+  boxShadow: "0 8px 25px rgba(0, 0, 0, 0.08)",
+}));
+
+export const AboutSystem = () => {
+    const navigate = useNavigate();
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const [activeFeature, setActiveFeature] = useState(0);
+
+  // System features
+   const systemFeatures = [
+    {
+      title: "ניהול תלמידים מתקדם",
+      description: "מערכת מקיפה לניהול פרטי תלמידים, מעקב אחר פעילות והתקדמות אישית",
+      icon: GroupIcon,
+      color: '#4A90E2',
+      details: [
+        "הוספה ועריכה של פרטי תלמידים",
+        "מעקב אחר סטטוס פעילות (פעיל/לא פעיל)",
+        "חיפוש מתקדם לפי שם, מזהה או נתונים אחרים",
+        "הערות אישיות לכל תלמיד",
+        "ניהול קבוצות ושיבוץ תלמידים"
+      ]
+    },
+    {
+      title: "ניהול מדריכים וצוות",
+      description: "כלים מתקדמים לניהול צוות המדריכים והקצאת חוגים",
+      icon: PersonIcon,
+      color: '#7B68EE',
+      details: [
+        "רישום מדריכים חדשים במערכת",
+        "הקצאת חוגים למדריכים",
+        "מעקב אחר עומס עבודה של כל מדריך",
+        "ניהול הרשאות וגישה למערכת",
+        "דוחות פעילות מדריכים"
+      ]
+    },
+    {
+      title: "מערכת חוגים דינמית",
+      description: "יצירה וניהול של חוגים עם לוחות זמנים גמישים ומעקב התקדמות",
+      icon: SchoolIcon,
+      color: '#32CD32',
+      details: [
+        "יצירת חוגים חדשים עם פרטים מלאים",
+        "קביעת לוחות זמנים גמישים",
+        "רישום תלמידים לחוגים (entrollStudent)",
+        "מעקב אחר מספר משתתפים ומקומות פנויים",
+        "ניהול סטטוס חוגים (פעיל/מושעה)"
+      ]
+    },
+    {
+      title: "מעקב נוכחות חכם",
+      description: "מערכת נוכחות מתקדמת עם לוח שנה ייחודי ודוחות מפורטים",
+      icon: CheckCircleIcon,
+      color: '#FF6347',
+      details: [
+        "רישום נוכחות יומי דיגיטלי",
+        "לוח שנה ייחודי לניהול נוכחות (attendanceCalendar)",
+        "חישוב אחוזי נוכחות אוטומטי",
+        "התראות על היעדרויות חוזרות",
+        "דוחות נוכחות מפורטים לכל תקופה"
+      ]
+    },
+    {
+      title: "לוח שנה אינטראקטיבי",
+      description: "לוח שנה מתקדם לתזכורות, אירועים ומעקב פעילויות יומיות",
+      icon: CalendarTodayIcon,
+      color: '#FF8C00',
+      details: [
+        "תצוגת לוח שנה אינטראקטיבית",
+        "רישום אירועים וחוגים",
+        "תזכורות אוטומטיות",
+        "סינכרון עם מערכת הנוכחות",
+        "תצוגות שונות: יומי, שבועי, חודשי"
+      ]
+    },
+    {
+      title: "מערכת הערות מתקדמת",
+      description: "כלי מתקדם לתיעוד הערות אישיות ומעקב התקדמות תלמידים",
+      icon: NoteIcon,
+      color: '#9370DB',
+      details: [
+        "הערות אישיות לכל תלמיד",
+        "קטגוריות הערות (התנהגות, הישגים, הערות כלליות)",
+        "מעקב היסטורי של הערות",
+        "חיפוש והצגת הערות לפי תקופות",
+        "שיתוף הערות בין מדריכים"
+      ]
+    },
+    {
+      title: "דוחות וניתוחים מתקדמים",
+      description: "מערכת דוחות מקיפה עם ויזואליזציה של נתונים וסטטיסטיקות",
+      icon: AnalyticsIcon,
+      color: '#DC143C',
+      details: [
+        "דוחות נוכחות מפורטים",
+        "ניתוח נתוני השתתפות",
+        "דוחות פעילות מדריכים",
+        "סטטיסטיקות כלליות של המערכת"
+      ]
+    },
+    {
+      title: "ממשק רספונסיבי מתקדם",
+      description: "עיצוב מותאם לכל המכשירים עם חוויית משתמש מעולה",
+      icon:AnalyticsIcon,
+      color: '#20B2AA',
+      details: [
+        "עיצוב רספונסיבי לכל המכשירים",
+        "אנימציות חלקות עם Framer Motion",
+        "Material Design 3 מתקדם",
+        "נגישות מלאה (WCAG 2.1)"
+      ]
+    }
+  ];
+
+
+   // Technical specifications - עדכון מדויק
+  const techSpecs = [
+    {
+      category: "Frontend",
+      technologies: [
+        { name: "React 19", level: 95, color: "#61DAFB" }, // הגרסה החדשה ביותר!
+        { name: "Material-UI v7", level: 92, color: "#0081CB" },
+        { name: "Framer Motion", level: 88, color: "#FF0055" },
+        { name: "Redux Toolkit", level: 90, color: "#764ABC" }
+      ]
+    },
+    {
+      category: "Backend & Database",
+      technologies: [
+        { name: ".NET Core", level: 88, color: "#512BD4" },
+        { name: "C# Programming", level: 85, color: "#239120" },
+        { name: "SQL Server", level: 82, color: "#CC2927" },
+        { name: "Entity Framework", level: 80, color: "#512BD4" }
+      ]
+    },
+    {
+      category: "DevOps & Tools",
+      technologies: [
+        { name: "React Router v7", level: 90, color: "#CA4245" },
+        { name: "Git & GitHub", level: 93, color: "#F05032" },
+        { name: "Responsive Design", level: 95, color: "#38B2AC" },
+        { name: "RESTful APIs", level: 88, color: "#4CAF50" }
+      ]
+    }
+  ];
+
+  // System advantages
+  const advantages = [
+    {
+      icon: SpeedIcon,
+      title: "ביצועים מעולים",
+      description: "מהירות טעינה מעולה וחוויית משתמש חלקה",
+      color: "#4A90E2"
+    },
+    {
+      icon: SecurityIcon,
+      title: "אבטחה מתקדמת",
+      description: "הגנה מקסימלית על נתונים רגישים",
+      color: "#FF6B6B"
+    },
+    {
+      icon: MobileScreenShareIcon,
+      title: "עיצוב רספונסיבי",
+      description: "מותאם לכל המכשירים והמסכים",
+      color: "#38B2AC"
+    },
+    {
+      icon: CloudIcon,
+      title: "טכנולוגיית ענן",
+      description: "גישה מכל מקום ובכל זמן",
+      color: "#9370DB"
+    },
+    {
+      icon: AutoAwesomeIcon,
+      title: "ממשק אינטואיטיבי",
+      description: "קל לשימוש ללא צורך בהכשרה",
+      color: "#FF8C00"
+    },
+    {
+      icon: SupportAgentIcon,
+      title: "תמיכה מלאה",
+      description: "ליווי וסיוע טכני מתמיד",
+      color: "#32CD32"
+    }
+  ];
+
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 30, opacity: 0, scale: 0.9 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      scale: 1,
+      transition: { 
+        duration: 0.6, 
+        ease: [0.175, 0.885, 0.32, 1.275]
+      }
+    }
+  };
+
+  const fadeInUpVariants = {
+    hidden: { y: 40, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: { 
+        duration: 0.8, 
+        ease: [0.175, 0.885, 0.32, 1.275]
+      }
+    }
+  };
+
+  return (
+    <Box sx={{ direction: "rtl", overflow: "hidden" }}>
       {/* Hero Section */}
       <HeroSection>
-        <Container>
-          <Grid columns={12} gap="50px">
-            <GridItem span={6} mobileSpan={12}>
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8 }}
-              >
-                <HighlightChip>
-                  <FaRegLightbulb />
-                  מערכת ניהול חוגים
-                </HighlightChip>
-                
-                <SectionTitle light large>
-                  הדרך החכמה לנהל
-                  <br />
-                  את החוגים שלך
-                </SectionTitle>
-                
-                <SectionSubtitle light>
-                  מערכת מתקדמת לניהול חוגים, תלמידים, מדריכים וסניפים במקום אחד.
-                  פתרון מושלם למרכזי חוגים, מתנ"סים ובתי ספר.
-                </SectionSubtitle>
-                
-                <div>
-                  <Button large>
-                    התחל תקופת ניסיון
-                    <FaArrowLeft />
-                  </Button>
-                  
-                  <OutlineButton large light>
-                    צפה בהדגמה
-                  </OutlineButton>
-                </div>
-              </motion.div>
-            </GridItem>
+        <Container maxWidth="lg">
+          <MotionBox
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            sx={{ position: "relative", zIndex: 2 }}
+          >
+            <MotionBox variants={itemVariants}>
+              <Chip 
+                icon={<RocketLaunchIcon />} 
+                label="טכנולוגיה מתקדמת לחינוך"
+                size="large"
+                sx={{
+                  background: "rgba(255, 255, 255, 0.2)",
+                  color: "white",
+                  fontWeight: "bold",
+                  mb: 3,
+                  fontSize: "1rem",
+                  height: 40,
+                  boxShadow: "0 4px 15px rgba(255, 255, 255, 0.2)"
+                }}
+              />
+            </MotionBox>
             
-            <GridItem span={6} mobileSpan={12}>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-                style={{ position: "relative" }}
+            <MotionBox variants={itemVariants}>
+              <Typography 
+                variant={isMobile ? "h3" : "h2"} 
+                component="h1" 
+                gutterBottom 
+                fontWeight="bold"
+                sx={{
+                  textShadow: "0 2px 10px rgba(0,0,0,0.2)",
+                  mb: 3
+                }}
               >
-                <div style={{ 
-                  position: "relative", 
-                  borderRadius: "20px", 
-                  overflow: "hidden", 
-                  boxShadow: "0 20px 40px rgba(0, 0, 0, 0.2)"
-                }}>
-                  <img 
-                    src="https://images.unsplash.com/photo-1531482615713-2afd69097998?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" 
-                    alt="מערכת ניהול חוגים" 
-                    style={{ width: "100%", height: "auto", display: "block" }}
-                  />
-                </div>
-                
-                {/* Decorative elements */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5, duration: 0.5 }}
-                  style={{ 
-                    position: "absolute", 
-                    top: "-20px", 
-                    right: "-20px", 
-                    width: "100px", 
-                    height: "100px", 
-                    borderRadius: "20px", 
-                    background: "linear-gradient(135deg, #1e88e5 0%, #4fc3f7 100%)",
-                    zIndex: -1
-                  }}
-                />
-                
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.6, duration: 0.5 }}
-                  style={{ 
-                    position: "absolute", 
-                    bottom: "-20px", 
-                    left: "-20px", 
-                    width: "70px", 
-                    height: "70px", 
-                    borderRadius: "15px", 
-                    background: "linear-gradient(135deg, #4fc3f7 0%, #1e88e5 100%)",
-                    zIndex: -1
-                  }}
-                />
-              </motion.div>
-            </GridItem>
-          </Grid>
+                אודות מערכת ניהול החוגים
+              </Typography>
+            </MotionBox>
+            
+            <MotionBox variants={itemVariants}>
+              <Typography 
+                variant={isMobile ? "body1" : "h5"} 
+                paragraph 
+                sx={{ 
+                  maxWidth: "900px", 
+                  mx: "auto", 
+                  mb: 4,
+                  opacity: 0.95,
+                  lineHeight: 1.7
+                }}
+              >
+                מערכת ניהול חוגים מתקדמת ומקיפה, שפותחה במיוחד עבור מוסדות חינוך
+                המחפשים פתרון טכנולוגי חדשני לניהול יעיל ומקצועי
+              </Typography>
+            </MotionBox>
+          </MotionBox>
         </Container>
-        
-        {/* Animated particles */}
-        {[...Array(20)].map((_, i) => (
-          <Particle
-            key={i}
-            size={`${Math.random() * 10 + 5}px`}
-            top={`${Math.random() * 100}%`}
-            left={`${Math.random() * 100}%`}
-            animate={{
-              y: [0, Math.random() * 100 - 50],
-              x: [0, Math.random() * 100 - 50],
-              opacity: [0.7, 0.1, 0.7],
-            }}
-            transition={{
-              duration: Math.random() * 10 + 10,
-              repeat: Infinity,
-              repeatType: "reverse",
-            }}
-          />
-        ))}
+
+        {/* Floating elements animation */}
+        <Box sx={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }}>
+          {[...Array(6)].map((_, i) => (
+            <Box
+              key={i}
+              component={motion.div}
+              sx={{
+                position: "absolute",
+                backgroundColor: "rgba(255, 255, 255, 0.1)",
+                borderRadius: "50%",
+                pointerEvents: "none",
+              }}
+              initial={{
+                x: `${Math.random() * 100}%`,
+                y: `${Math.random() * 100}%`,
+                scale: Math.random() * 0.5 + 0.3,
+              }}
+              animate={{
+                y: [
+                  `${Math.random() * 100}%`,
+                  `${Math.random() * 100}%`,
+                  `${Math.random() * 100}%`
+                ],
+                x: [
+                  `${Math.random() * 100}%`,
+                  `${Math.random() * 100}%`,
+                  `${Math.random() * 100}%`
+                ],
+                rotate: [0, 360],
+              }}
+              transition={{
+                duration: Math.random() * 25 + 20,
+                repeat: Infinity,
+                ease: "linear",
+              }}
+              style={{
+                width: `${Math.random() * 150 + 50}px`,
+                height: `${Math.random() * 150 + 50}px`,
+              }}
+            />
+          ))}
+        </Box>
       </HeroSection>
-      
-      {/* About System Section */}
-      <Section>
-        <Container>
-          <Grid columns={12} gap="50px">
-            <GridItem span={6} mobileSpan={12}>
-              <motion.div
-                initial={{ opacity: 0, x: -30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.8 }}
-                viewport={{ once: true, amount: 0.3 }}
-              >
-                <HighlightChip dark>
-                  <FaRocket />
-                  החזון שלנו
-                </HighlightChip>
-                
-                <SectionTitle>
-                  מערכת חכמה לניהול חוגים ופעילויות
-                </SectionTitle>
-                
-                <SectionSubtitle>
-                  פיתחנו מערכת ייחודית המשלבת טכנולוגיה מתקדמת עם הבנה עמוקה של צרכי מרכזי החוגים והפעילויות בישראל. המערכת מאפשרת ניהול יעיל של תלמידים, מדריכים וסניפים במקום אחד.
-                </SectionSubtitle>
-                
-                {benefits.map((benefit, index) => (
-                  <CheckListItem
-                    key={index}
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1, duration: 0.5 }}
-                    viewport={{ once: true, amount: 0.3 }}
-                    whileHover={{ x: -5 }}
-                  >
-                    <CheckIcon>
-                      <FaCheck />
-                    </CheckIcon>
-                    <CheckText>{benefit}</CheckText>
-                  </CheckListItem>
-                ))}
-                
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5, duration: 0.5 }}
-                  viewport={{ once: true, amount: 0.3 }}
-                  style={{ marginTop: "30px" }}
-                >
-                  <Button>
-                    גלה עוד על המערכת
-                  </Button>
-                </motion.div>
-              </motion.div>
-            </GridItem>
-            
-            <GridItem span={6} mobileSpan={12}>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.8 }}
-                viewport={{ once: true, amount: 0.3 }}
-                style={{ position: "relative" }}
-              >
-                <div style={{ 
-                  position: "relative", 
-                  borderRadius: "20px", 
-                  overflow: "hidden", 
-                  boxShadow: "0 20px 40px rgba(0,0,0,0.1)"
-                }}>
-                  <img 
-                    src="https://images.unsplash.com/photo-1529390079861-591de354faf5?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" 
-                    alt="ילדים בחוג" 
-                    style={{ width: "100%", height: "auto", display: "block" }}
-                  />
-                </div>
-                
-                {/* Decorative elements */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  whileInView={{ opacity: 1 }}
-                  transition={{ delay: 0.3, duration: 0.5 }}
-                  viewport={{ once: true }}
-                  style={{ 
-                    position: "absolute", 
-                    top: "-20px", 
-                    right: "-20px", 
-                    width: "100px", 
-                    height: "100px", 
-                    borderRadius: "20px", 
-                    background: "linear-gradient(135deg, #1e88e5 0%, #4fc3f7 100%)",
-                    zIndex: -1
-                  }}
-                />
-                
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  whileInView={{ opacity: 1 }}
-                  transition={{ delay: 0.4, duration: 0.5 }}
-                  viewport={{ once: true }}
-                  style={{ 
-                    position: "absolute", 
-                    bottom: "-20px", 
-                    left: "-20px", 
-                    width: "70px", 
-                    height: "70px", 
-                    borderRadius: "15px", 
-                    background: "linear-gradient(135deg, #4fc3f7 0%, #1e88e5 100%)",
-                    zIndex: -1
-                  }}
-                />
-              </motion.div>
-            </GridItem>
-          </Grid>
-        </Container>
-      </Section>
-      
-      {/* Features Section */}
-      <Section light>
-        <Container>
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true, amount: 0.3 }}
-            style={{ textAlign: "center", marginBottom: "60px" }}
-          >
-            <HighlightChip dark>
-              <FaStar />
-              תכונות מרכזיות
-            </HighlightChip>
-            
-            <SectionTitle>
-              כל מה שצריך לניהול חוגים מוצלח
-            </SectionTitle>
-            
-            <SectionSubtitle style={{ margin: "0 auto" }}>
-              המערכת שלנו מציעה מגוון רחב של כלים וטכנולוגיות מתקדמות לניהול יעיל של מרכזי חוגים ופעילויות
-            </SectionSubtitle>
-          </motion.div>
-          
-          <Grid columns={3} gap="30px">
-            {features.map((feature, index) => (
-              <GridItem key={index} span={1} mobileSpan={1}>
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1, duration: 0.5 }}
-                  viewport={{ once: true, amount: 0.3 }}
-                >
-                  <FeatureCard>
-                    <FeatureIconContainer>
-                      {feature.icon}
-                    </FeatureIconContainer>
-                    
-                    <FeatureTitle>{feature.title}</FeatureTitle>
-                    
-                    <FeatureDescription>
-                      {feature.description}
-                    </FeatureDescription>
-                  </FeatureCard>
-                </motion.div>
-              </GridItem>
-            ))}
-          </Grid>
-        </Container>
-      </Section>
-      
-      {/* Stats Section */}
-      <Section ref={statsRef}>
-        <Container>
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true, amount: 0.3 }}
-            style={{ textAlign: "center", marginBottom: "60px" }}
-          >
-            <HighlightChip dark>
-              <FaChartLine />
-              נתונים מרשימים
-            </HighlightChip>
-            
-            <SectionTitle>
-              המספרים מדברים בעד עצמם
-            </SectionTitle>
-            
-            <SectionSubtitle style={{ margin: "0 auto" }}>
-              הצלחנו לבנות מערכת שמשרתת אלפי תלמידים ומאות חוגים ברחבי הארץ
-            </SectionSubtitle>
-          </motion.div>
-          
-          <Grid columns={4} gap="30px">
-            {stats.map((stat, index) => (
-              <GridItem key={index} span={1} mobileSpan={2}>
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.1, duration: 0.5 }}
-                  viewport={{ once: true, amount: 0.3 }}
-                >
-                  <StatItem>
-                    <StatNumber>
-                      {animateStats ? (
-                        <CountUp
-                          end={stat.number}
-                          duration={2.5}
-                          separator=","
-                        />
-                      ) : (
-                        0
-                      )}
-                      {stat.label.includes("אחוזי") && "%"}
-                    </StatNumber>
-                    
-                    <StatLabel>{stat.label}</StatLabel>
-                  </StatItem>
-                </motion.div>
-              </GridItem>
-            ))}
-          </Grid>
-        </Container>
-      </Section>
-      
-      {/* FAQ Section */}
-      <Section light>
-        <Container>
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true, amount: 0.3 }}
-            style={{ textAlign: "center", marginBottom: "60px" }}
-          >
-            <HighlightChip dark>
-              <FaQuestionCircle />
-              שאלות נפוצות
-            </HighlightChip>
-            
-            <SectionTitle>
-              כל מה שרצית לדעת
-            </SectionTitle>
-            
-            <SectionSubtitle style={{ margin: "0 auto" }}>
-              מענה לשאלות הנפוצות ביותר על מערכת ניהול החוגים שלנו
-            </SectionSubtitle>
-          </motion.div>
-          
-          <Accordion>
-            {[
-              {
-                question: "איך המערכת מתאימה חוגים לתלמידים?",
-                answer: "המערכת משתמשת באלגוריתם חכם המתחשב בגיל התלמיד, העדפותיו האישיות, המגזר אליו הוא משתייך, וכישוריו. בנוסף, המערכת לומדת מהרגלי הרישום הקודמים ומציעה התאמות מדויקות יותר עם הזמן."
-              },
-              {
-                question: "האם המערכת מתאימה לכל סוגי החוגים?",
-                answer: "כן, המערכת מתאימה למגוון רחב של חוגים - מאמנות וספורט ועד מדעים, מוזיקה וטכנולוגיה. ניתן להתאים את המערכת לצרכים הספציפיים של כל סוג חוג."
-              },
-              {
-                question: "איך מנהלים נוכחות במערכת?",
-                answer: "המערכת מציעה מספר אפשרויות לניהול נוכחות: סריקת ברקוד/QR, רישום ידני על ידי המדריך, או אפילו זיהוי פנים אוטומטי (בגרסה המתקדמת). ההורים מקבלים עדכונים אוטומטיים על נוכחות ילדיהם."
-              },
-              {
-                question: "האם המערכת תומכת בניהול מספר סניפים?",
-                answer: "בהחלט! המערכת תוכננה במיוחד לניהול רשת של סניפים. ניתן לנהל את כל הסניפים ממשק אחד, עם אפשרות לניתוח נתונים ברמת הסניף הבודד או ברמת הרשת כולה."
-              },
-              {
-                question: "האם המערכת מאפשרת תקשורת עם ההורים?",
-                answer: "כן, המערכת כוללת מודול תקשורת מתקדם המאפשר שליחת הודעות אישיות או קבוצתיות להורים דרך SMS, אימייל או הודעות פוש באפליקציה. ניתן לשלוח עדכונים שוטפים, תזכורות לאירועים, או דוחות התקדמות."
-              },
-              {
-                question: "האם יש אפליקציה למובייל?",
-                answer: "כן, המערכת כוללת אפליקציית מובייל ייעודית למנהלים, למדריכים ולהורים. האפליקציה מאפשרת גישה לכל הפונקציות החשובות של המערכת מכל מקום ובכל זמן."
-              }
-            ].map((item, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1, duration: 0.5 }}
-                viewport={{ once: true, amount: 0.3 }}
-              >
-                <AccordionItem>
-                  <AccordionHeader 
-                    isOpen={openAccordion === index}
-                    onClick={() => toggleAccordion(index)}
-                  >
-                    {item.question}
-                    <FaChevronDown />
-                  </AccordionHeader>
-                  
-                  <AccordionContent isOpen={openAccordion === index}>
-                    <p>{item.answer}</p>
-                  </AccordionContent>
-                </AccordionItem>
-              </motion.div>
-            ))}
-          </Accordion>
-        </Container>
-      </Section>
-      
-      {/* CTA Section */}
-      <CTASection>
-        <Container>
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true, amount: 0.3 }}
-            style={{ textAlign: "center", maxWidth: "800px", margin: "0 auto" }}
-          >
-            <HighlightChip>
-              <FaRocket />
-              מוכנים להתחיל?
-            </HighlightChip>
-            
-            <SectionTitle light>
-              הצטרפו לאלפי מרכזי חוגים שכבר נהנים מהמערכת שלנו
-            </SectionTitle>
-            
-            <SectionSubtitle light style={{ margin: "0 auto 40px" }}>
-              התחילו תקופת ניסיון חינם של 14 יום וגלו איך המערכת שלנו יכולה לשפר את ניהול החוגים שלכם
-            </SectionSubtitle>
-            
-            <div>
-              <Button large secondary>
-                התחל תקופת ניסיון
-                <FaArrowLeft />
-              </Button>
-              
-              <OutlineButton large light>
-                תיאום הדגמה אישית
-              </OutlineButton>
-            </div>
-          </motion.div>
-        </Container>
-        
-        {/* Animated particles */}
-        {[...Array(15)].map((_, i) => (
-          <Particle
-            key={i}
-            size={`${Math.random() * 10 + 5}px`}
-            top={`${Math.random() * 100}%`}
-            left={`${Math.random() * 100}%`}
-            animate={{
-              y: [0, Math.random() * 100 - 50],
-              x: [0, Math.random() * 100 - 50],
-              opacity: [0.7, 0.1, 0.7],
-            }}
-            transition={{
-              duration: Math.random() * 10 + 10,
-              repeat: Infinity,
-              repeatType: "reverse",
-            }}
-          />
-        ))}
-      </CTASection>
-      
-      {/* Contact Section */}
-      <Section>
-        <Container>
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true, amount: 0.3 }}
-            style={{ textAlign: "center", marginBottom: "60px" }}
-          >
-            <HighlightChip dark>
-              <FaHandshake />
-              צור קשר
-            </HighlightChip>
-            
-            <SectionTitle>
-              אנחנו כאן לעזור
-            </SectionTitle>
-            
-            <SectionSubtitle style={{ margin: "0 auto" }}>
-              צוות התמיכה שלנו זמין לענות על כל שאלה ולסייע בכל בעיה
-            </SectionSubtitle>
-          </motion.div>
-          
-          <Grid columns={3} gap="30px">
-            <GridItem span={1} mobileSpan={1}>
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1, duration: 0.5 }}
-                viewport={{ once: true, amount: 0.3 }}
-              >
-                <ContactCard>
-                  <ContactIconContainer>
-                    <FaPhoneAlt />
-                  </ContactIconContainer>
-                  
-                  <ContactTitle>טלפון</ContactTitle>
-                  
-                  <ContactInfo>03-1234567</ContactInfo>
-                  <ContactInfo>ימים א'-ה', 9:00-17:00</ContactInfo>
-                </ContactCard>
-              </motion.div>
-            </GridItem>
-            
-            <GridItem span={1} mobileSpan={1}>
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2, duration: 0.5 }}
-                viewport={{ once: true, amount: 0.3 }}
-              >
-                <ContactCard>
-                  <ContactIconContainer>
-                    <FaEnvelope />
-                  </ContactIconContainer>
-                  
-                  <ContactTitle>אימייל</ContactTitle>
-                  
-                  <ContactInfo>info@classmanager.co.il</ContactInfo>
-                  <ContactInfo>support@classmanager.co.il</ContactInfo>
-                </ContactCard>
-              </motion.div>
-            </GridItem>
-            
-            <GridItem span={1} mobileSpan={1}>
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3, duration: 0.5 }}
-                viewport={{ once: true, amount: 0.3 }}
-              >
-                <ContactCard>
-                  <ContactIconContainer>
-                    <FaClock />
-                  </ContactIconContainer>
-                  
-                  <ContactTitle>שעות פעילות</ContactTitle>
-                  
-                  <ContactInfo>ימים א'-ה': 9:00-17:00</ContactInfo>
-                  <ContactInfo>יום ו': 9:00-13:00</ContactInfo>
-                </ContactCard>
-              </motion.div>
-            </GridItem>
-          </Grid>
-        </Container>
-      </Section>
-      
-      {/* Footer */}
-      <Section style={{ padding: "50px 0", backgroundColor: "#1e88e5", color: "white" }}>
-        <Container>
-          <Grid columns={12} gap="30px">
-            <GridItem span={4} mobileSpan={12}>
-              <div style={{ marginBottom: "20px" }}>
-                <h2 style={{ fontSize: "1.8rem", fontWeight: "700", marginBottom: "15px" }}>
-                  מערכת ניהול חוגים
-                </h2>
-                
-                <p style={{ fontSize: "1rem", lineHeight: "1.7", color: "rgba(255, 255, 255, 0.7)" }}>
-                  הפתרון המושלם לניהול חוגים, תלמידים, מדריכים וסניפים במקום אחד.
-                </p>
-              </div>
-              
-              <div style={{ display: "flex", marginTop: "20px" }}>
-                <a href="#" style={{ 
-                  width: "40px", 
-                  height: "40px", 
-                  borderRadius: "50%", 
-                  background: "rgba(255, 255, 255, 0.1)", 
-                  color: "white", 
-                  display: "flex", 
-                  alignItems: "center", 
-                  justifyContent: "center", 
-                  marginLeft: "10px",
-                  transition: "all 0.3s ease"
-                }}>
-                  <FaLinkedinIn />
-                </a>
-                
-                <a href="#" style={{ 
-                  width: "40px", 
-                  height: "40px", 
-                  borderRadius: "50%", 
-                  background: "rgba(255, 255, 255, 0.1)", 
-                  color: "white", 
-                  display: "flex", 
-                  alignItems: "center", 
-                  justifyContent: "center", 
-                  marginLeft: "10px",
-                  transition: "all 0.3s ease"
-                }}>
-                  <FaTwitter />
-                </a>
-                
-                <a href="#" style={{ 
-                  width: "40px", 
-                  height: "40px", 
-                  borderRadius: "50%", 
-                  background: "rgba(255, 255, 255, 0.1)", 
-                  color: "white", 
-                  display: "flex", 
-                  alignItems: "center", 
-                  justifyContent: "center",
-                  transition: "all 0.3s ease"
-                }}>
-                  <FaEnvelope />
-                </a>
-              </div>
-            </GridItem>
-            
-            <GridItem span={2} mobileSpan={6}>
-              <h3 style={{ fontSize: "1.2rem", fontWeight: "600", marginBottom: "20px" }}>
-                מוצרים
-              </h3>
-              
-              <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                <li style={{ marginBottom: "10px" }}>
-                  <a href="#" style={{ color: "rgba(255, 255, 255, 0.7)", textDecoration: "none", transition: "all 0.3s ease" }}>
-                    ניהול תלמידים
-                  </a>
-                </li>
-                <li style={{ marginBottom: "10px" }}>
-                  <a href="#" style={{ color: "rgba(255, 255, 255, 0.7)", textDecoration: "none", transition: "all 0.3s ease" }}>
-                    ניהול מדריכים
-                  </a>
-                </li>
-                <li style={{ marginBottom: "10px" }}>
-                  <a href="#" style={{ color: "rgba(255, 255, 255, 0.7)", textDecoration: "none", transition: "all 0.3s ease" }}>
-                    ניהול חוגים
-                  </a>
-                </li>
-                <li style={{ marginBottom: "10px" }}>
-                  <a href="#" style={{ color: "rgba(255, 255, 255, 0.7)", textDecoration: "none", transition: "all 0.3s ease" }}>
-                    ניהול סניפים
-                  </a>
-                </li>
-                <li>
-                  <a href="#" style={{ color: "rgba(255, 255, 255, 0.7)", textDecoration: "none", transition: "all 0.3s ease" }}>
-                    אפליקציית מובייל
-                  </a>
-                </li>
-              </ul>
-            </GridItem>
-            
-            <GridItem span={2} mobileSpan={6}>
-              <h3 style={{ fontSize: "1.2rem", fontWeight: "600", marginBottom: "20px" }}>
-                חברה
-              </h3>
-              
-              <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                <li style={{ marginBottom: "10px" }}>
-                  <a href="#" style={{ color: "rgba(255, 255, 255, 0.7)", textDecoration: "none", transition: "all 0.3s ease" }}>
-                    אודות
-                  </a>
-                </li>
-                <li style={{ marginBottom: "10px" }}>
-                  <a href="#" style={{ color: "rgba(255, 255, 255, 0.7)", textDecoration: "none", transition: "all 0.3s ease" }}>
-                    צוות
-                  </a>
-                </li>
-                <li style={{ marginBottom: "10px" }}>
-                  <a href="#" style={{ color: "rgba(255, 255, 255, 0.7)", textDecoration: "none", transition: "all 0.3s ease" }}>
-                    קריירה
-                  </a>
-                </li>
-                <li style={{ marginBottom: "10px" }}>
-                  <a href="#" style={{ color: "rgba(255, 255, 255, 0.7)", textDecoration: "none", transition: "all 0.3s ease" }}>
-                    בלוג
-                  </a>
-                </li>
-                <li>
-                  <a href="#" style={{ color: "rgba(255, 255, 255, 0.7)", textDecoration: "none", transition: "all 0.3s ease" }}>
-                    צור קשר
-                  </a>
-                </li>
-              </ul>
-            </GridItem>
-            
-            <GridItem span={2} mobileSpan={6}>
-              <h3 style={{ fontSize: "1.2rem", fontWeight: "600", marginBottom: "20px" }}>
-                תמיכה
-              </h3>
-              
-              <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                <li style={{ marginBottom: "10px" }}>
-                  <a href="#" style={{ color: "rgba(255, 255, 255, 0.7)", textDecoration: "none", transition: "all 0.3s ease" }}>
-                    מרכז עזרה
-                  </a>
-                </li>
-                <li style={{ marginBottom: "10px" }}>
-                  <a href="#" style={{ color: "rgba(255, 255, 255, 0.7)", textDecoration: "none", transition: "all 0.3s ease" }}>
-                    מדריכי שימוש
-                  </a>
-                </li>
-                <li style={{ marginBottom: "10px" }}>
-                  <a href="#" style={{ color: "rgba(255, 255, 255, 0.7)", textDecoration: "none", transition: "all 0.3s ease" }}>
-                    שאלות נפוצות
-                  </a>
-                </li>
-                <li style={{ marginBottom: "10px" }}>
-                  <a href="#" style={{ color: "rgba(255, 255, 255, 0.7)", textDecoration: "none", transition: "all 0.3s ease" }}>
-                    סטטוס מערכת
-                  </a>
-                </li>
-                <li>
-                  <a href="#" style={{ color: "rgba(255, 255, 255, 0.7)", textDecoration: "none", transition: "all 0.3s ease" }}>
-                    דווח על תקלה
-                  </a>
-                </li>
-              </ul>
-            </GridItem>
-            
-            <GridItem span={2} mobileSpan={6}>
-              <h3 style={{ fontSize: "1.2rem", fontWeight: "600", marginBottom: "20px" }}>
-                משפטי
-              </h3>
-              
-              <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                <li style={{ marginBottom: "10px" }}>
-                  <a href="#" style={{ color: "rgba(255, 255, 255, 0.7)", textDecoration: "none", transition: "all 0.3s ease" }}>
-                    תנאי שימוש
-                  </a>
-                </li>
-                <li style={{ marginBottom: "10px" }}>
-                  <a href="#" style={{ color: "rgba(255, 255, 255, 0.7)", textDecoration: "none", transition: "all 0.3s ease" }}>
-                    מדיניות פרטיות
-                  </a>
-                </li>
-                <li style={{ marginBottom: "10px" }}>
-                  <a href="#" style={{ color: "rgba(255, 255, 255, 0.7)", textDecoration: "none", transition: "all 0.3s ease" }}>
-                    אבטחת מידע
-                  </a>
-                </li>
-                <li>
-                  <a href="#" style={{ color: "rgba(255, 255, 255, 0.7)", textDecoration: "none", transition: "all 0.3s ease" }}>
-                    GDPR
-                  </a>
-                </li>
-              </ul>
-            </GridItem>
-          </Grid>
-          
-          <div style={{ 
-            borderTop: "1px solid rgba(255, 255, 255, 0.1)", 
-            marginTop: "50px", 
-            paddingTop: "30px", 
-            display: "flex", 
-            justifyContent: "space-between", 
-            alignItems: "center",
-            flexWrap: "wrap"
-          }}>
-            <div style={{ color: "rgba(255, 255, 255, 0.6)", fontSize: "0.9rem" }}>
-              © 2023 מערכת ניהול חוגים. כל הזכויות שמורות.
-            </div>
-            
-            <div style={{ display: "flex", alignItems: "center" }}>
-              <div style={{ 
-                display: "flex", 
-                alignItems: "center", 
-                color: "rgba(255, 255, 255, 0.6)", 
-                marginLeft: "20px",
-                fontSize: "0.9rem"
-              }}>
-                <FaShieldAlt style={{ marginLeft: "5px" }} />
-                מאובטח ב-SSL
-              </div>
-              
-              <div style={{ 
-                display: "flex", 
-                alignItems: "center", 
-                color: "rgba(255, 255, 255, 0.6)",
-                fontSize: "0.9rem"
-              }}>
-                <FaMobileAlt style={{ marginLeft: "5px" }} />
-                זמין בכל המכשירים
-              </div>
-            </div>
-          </div>
-        </Container>
-      </Section>
-      
-      {/* Floating Elements */}
-      <div style={{ 
-        position: "fixed", 
-        bottom: "30px", 
-        left: "30px", 
-        zIndex: 999, 
-        display: "flex", 
-        flexDirection: "column" 
-      }}>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 1, duration: 0.5 }}
+
+      {/* System Features Section */}
+      <Container sx={{ mt: 12, mb: 12 }}>
+        <MotionBox
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.2 }}
+          sx={{ textAlign: "center", mb: 8 }}
         >
-          <a href="#" style={{ 
-            width: "60px", 
-            height: "60px", 
-            borderRadius: "50%", 
-            background: "#1e88e5", 
-            color: "white", 
-            display: "flex", 
-            alignItems: "center", 
-            justifyContent: "center", 
-            boxShadow: "0 5px 15px rgba(0, 0, 0, 0.2)",
-            fontSize: "24px",
-            marginBottom: "15px",
-            transition: "all 0.3s ease"
-          }}>
-            <FaQuestionCircle />
-          </a>
-        </motion.div>
-        
-        <motion.div
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 1.2, duration: 0.5 }}
+          <MotionBox variants={fadeInUpVariants}>
+            <Typography 
+              variant="h3" 
+              component="h2" 
+              fontWeight="bold"
+              sx={{
+                position: "relative",
+                display: "inline-block",
+                mb: 2,
+                "&::after": {
+                  content: '""',
+                  position: "absolute",
+                  bottom: -8,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  width: 100,
+                  height: 4,
+                  borderRadius: 2,
+                  background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                },
+              }}
+            >
+              תכונות המערכת
+            </Typography>
+          </MotionBox>
+          
+          <MotionBox variants={fadeInUpVariants}>
+            <Typography 
+              variant="h6" 
+              color="textSecondary" 
+              paragraph 
+              sx={{ 
+                maxWidth: 800, 
+                mx: "auto", 
+                mt: 3,
+                opacity: 0.8,
+                lineHeight: 1.6
+              }}
+            >
+              המערכת מציעה מגוון רחב של כלים מתקדמים לניהול יעיל של חוגים ותלמידים
+            </Typography>
+          </MotionBox>
+        </MotionBox>
+
+        <Grid container spacing={4}>
+          {systemFeatures.map((feature, index) => (
+            <Grid item xs={12} md={6} key={index}>
+              <MotionBox
+                variants={itemVariants}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <FeatureCard
+                  sx={{
+                    cursor: "pointer",
+                    "&:hover .feature-icon": {
+                      transform: "scale(1.1) rotate(5deg)",
+                      backgroundColor: feature.color,
+                      color: "white",
+                    }
+                  }}
+                  onClick={() => setActiveFeature(index)}
+                >
+                  <CardContent sx={{ p: 4 }}>
+                    <Box sx={{ display: "flex", alignItems: "flex-start", mb: 3 }}>
+                      <Avatar
+                        className="feature-icon"
+                        sx={{
+                          width: 70,
+                          height: 70,
+                          backgroundColor: alpha(feature.color, 0.1),
+                          color: feature.color,
+                          mr: 3,
+                          transition: "all 0.4s ease",
+                          border: `3px solid ${alpha(feature.color, 0.2)}`,
+                        }}
+                      >
+                        <feature.icon sx={{ fontSize: 35 }} />
+                      </Avatar>
+                      
+                      <Box sx={{ flex: 1 }}>
+                        <Typography 
+                          variant="h5" 
+                          fontWeight="bold" 
+                          gutterBottom
+                          sx={{ color: "text.primary" }}
+                        >
+                          {feature.title}
+                        </Typography>
+                        
+                        <Typography 
+                          variant="body1" 
+                          color="text.secondary"
+                          sx={{ mb: 3, lineHeight: 1.6 }}
+                        >
+                          {feature.description}
+                        </Typography>
+                      </Box>
+                    </Box>
+
+                    <Divider sx={{ mb: 3 }} />
+
+                    <List dense>
+                      {feature.details.map((detail, idx) => (
+                        <ListItem key={idx} sx={{ px: 0 }}>
+                          <ListItemIcon sx={{ minWidth: 35 }}>
+                            <CheckCircleIcon 
+                              sx={{ 
+                                color: feature.color, 
+                                fontSize: 20 
+                              }} 
+                            />
+                          </ListItemIcon>
+                          <ListItemText 
+                            primary={detail}
+                            sx={{
+                              "& .MuiListItemText-primary": {
+                                fontSize: "0.95rem",
+                                fontWeight: 500
+                              }
+                            }}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </CardContent>
+                </FeatureCard>
+              </MotionBox>
+            </Grid>
+          ))}
+        </Grid>
+      </Container>
+
+      {/* Technical Specifications */}
+      <Box sx={{ bgcolor: alpha(theme.palette.primary.light, 0.03), py: 10 }}>
+        <Container>
+          <MotionBox
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            sx={{ textAlign: "center", mb: 8 }}
+          >
+            <MotionBox variants={fadeInUpVariants}>
+              <Typography 
+                variant="h3" 
+                component="h2" 
+                fontWeight="bold"
+                sx={{
+                  position: "relative",
+                  display: "inline-block",
+                  mb: 2,
+                  "&::after": {
+                    content: '""',
+                    position: "absolute",
+                    bottom: -8,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    width: 100,
+                    height: 4,
+                    borderRadius: 2,
+                    background: `linear-gradient(90deg, ${theme.palette.secondary.main}, ${theme.palette.primary.main})`,
+                  },
+                }}
+              >
+                מפרט טכני
+              </Typography>
+            </MotionBox>
+            
+            <MotionBox variants={fadeInUpVariants}>
+              <Typography 
+                variant="h6" 
+                color="textSecondary" 
+                paragraph 
+                sx={{ 
+                  maxWidth: 800, 
+                  mx: "auto", 
+                  mt: 3,
+                  opacity: 0.8
+                }}
+              >
+                המערכת בנויה על טכנולוגיות מתקדמות ומודרניות ביותר
+              </Typography>
+            </MotionBox>
+          </MotionBox>
+
+          <Grid container spacing={4}>
+            {techSpecs.map((spec, index) => (
+              <Grid item xs={12} md={4} key={index}>
+                <MotionBox
+                  variants={itemVariants}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true, amount: 0.2 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <TechCard>
+                    <Typography 
+                      variant="h5" 
+                      fontWeight="bold" 
+                      gutterBottom
+                      sx={{ 
+                        mb: 4,
+                        color: theme.palette.primary.main
+                      }}
+                    >
+                      {spec.category}
+                    </Typography>
+                    
+                    <Stack spacing={3}>
+                      {spec.technologies.map((tech, idx) => (
+                        <ProgressCard key={idx}>
+                          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                            <Typography variant="body1" fontWeight="600">
+                              {tech.name}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {tech.level}%
+                            </Typography>
+                          </Box>
+                          <LinearProgress
+                            variant="determinate"
+                            value={tech.level}
+                            sx={{
+                              height: 8,
+                              borderRadius: 4,
+                              backgroundColor: alpha(tech.color, 0.1),
+                              "& .MuiLinearProgress-bar": {
+                                backgroundColor: tech.color,
+                                borderRadius: 4,
+                              },
+                            }}
+                          />
+                        </ProgressCard>
+                      ))}
+                    </Stack>
+                  </TechCard>
+                </MotionBox>
+              </Grid>
+            ))}
+          </Grid>
+        </Container>
+      </Box>
+
+      {/* System Advantages */}
+      <Container sx={{ mt: 12, mb: 12 }}>
+        <MotionBox
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.2 }}
+          sx={{ textAlign: "center", mb: 8 }}
         >
-          <a href="#" style={{ 
-            width: "60px", 
-            height: "60px", 
-            borderRadius: "50%", 
-            background: "#1e88e5", 
-            color: "white", 
-            display: "flex", 
-            alignItems: "center", 
-            justifyContent: "center", 
-            boxShadow: "0 5px 15px rgba(0, 0, 0, 0.2)",
-            fontSize: "24px",
-            transition: "all 0.3s ease"
-          }}>
-            <FaCloudDownloadAlt />
-          </a>
-        </motion.div>
-      </div>
-      
-      {/* Mobile App Promo */}
-      <motion.div
-        initial={{ opacity: 0, y: 100 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 2, duration: 0.8 }}
-        style={{ 
-          position: "fixed", 
-          bottom: "30px", 
-          right: "30px", 
-          zIndex: 999, 
-          background: "white", 
-          borderRadius: "15px", 
-          padding: "20px", 
-          boxShadow: "0 10px 30px rgba(0, 0, 0, 0.15)",
-          display: "flex",
-          alignItems: "center",
-          maxWidth: "320px"
+          <MotionBox variants={fadeInUpVariants}>
+            <Typography 
+              variant="h3" 
+              component="h2" 
+              fontWeight="bold"
+              sx={{
+                position: "relative",
+                display: "inline-block",
+                mb: 2,
+                "&::after": {
+                  content: '""',
+                  position: "absolute",
+                  bottom: -8,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  width: 100,
+                  height: 4,
+                  borderRadius: 2,
+                  background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                },
+              }}
+            >
+              יתרונות המערכת
+            </Typography>
+          </MotionBox>
+          
+          <MotionBox variants={fadeInUpVariants}>
+            <Typography 
+              variant="h6" 
+              color="textSecondary" 
+              paragraph 
+              sx={{ 
+                maxWidth: 800, 
+                mx: "auto", 
+                mt: 3,
+                opacity: 0.8
+              }}
+            >
+              למה לבחור במערכת שלנו? הנה הסיבות העיקריות
+            </Typography>
+          </MotionBox>
+        </MotionBox>
+
+        <Grid container spacing={4}>
+          {advantages.map((advantage, index) => (
+            <Grid item xs={12} sm={6} md={4} key={index}>
+              <MotionBox
+                variants={itemVariants}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <Card
+                  sx={{
+                    height: "100%",
+                    borderRadius: 3,
+                    transition: "all 0.4s ease",
+                    background: "rgba(255, 255, 255, 0.95)",
+                    backdropFilter: "blur(20px)",
+                    border: "1px solid rgba(255, 255, 255, 0.8)",
+                    boxShadow: "0 8px 25px rgba(0, 0, 0, 0.08)",
+                    "&:hover": {
+                      transform: "translateY(-10px)",
+                      boxShadow: "0 20px 40px rgba(0, 0, 0, 0.12)",
+                      "& .advantage-icon": {
+                        transform: "scale(1.1) rotate(5deg)",
+                        backgroundColor: advantage.color,
+                        color: "white",
+                      }
+                    }
+                  }}
+                >
+                  <CardContent sx={{ p: 4, textAlign: "center" }}>
+                    <Avatar
+                      className="advantage-icon"
+                      sx={{
+                        width: 80,
+                        height: 80,
+                        backgroundColor: alpha(advantage.color, 0.1),
+                        color: advantage.color,
+                        mx: "auto",
+                        mb: 3,
+                        transition: "all 0.4s ease",
+                        border: `3px solid ${alpha(advantage.color, 0.2)}`,
+                      }}
+                    >
+                      <advantage.icon sx={{ fontSize: 40 }} />
+                    </Avatar>
+                    
+                    <Typography 
+                      variant="h6" 
+                      fontWeight="bold" 
+                      gutterBottom
+                      sx={{ mb: 2 }}
+                    >
+                      {advantage.title}
+                    </Typography>
+                    
+                    <Typography 
+                      variant="body2" 
+                      color="text.secondary"
+                      sx={{ lineHeight: 1.6 }}
+                    >
+                      {advantage.description}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </MotionBox>
+            </Grid>
+          ))}
+        </Grid>
+      </Container>
+
+      {/* Developer Section */}
+      <Box sx={{ bgcolor: alpha(theme.palette.primary.main, 0.02), py: 10 }}>
+        <Container>
+        
+          <MotionBox
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            sx={{ textAlign: "center", mb: 8 }}
+          >
+            <MotionBox variants={fadeInUpVariants}>
+              <Typography 
+                variant="h3" 
+                component="h2" 
+                fontWeight="bold"
+                sx={{
+                  position: "relative",
+                  display: "inline-block",
+                  mb: 2,
+                  "&::after": {
+                    content: '""',
+                    position: "absolute",
+                    bottom: -8,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    width: 100,
+                    height: 4,
+                    borderRadius: 2,
+                    background: `linear-gradient(90deg, ${theme.palette.secondary.main}, ${theme.palette.primary.main})`,
+                  },
+                }}
+              >
+                המפתחת
+              </Typography>
+            </MotionBox>
+            
+            <MotionBox variants={fadeInUpVariants}>
+              <Typography 
+                variant="h6" 
+                color="textSecondary" 
+                paragraph 
+                sx={{ 
+                  maxWidth: 600, 
+                  mx: "auto", 
+                  mt: 3,
+                  opacity: 0.8
+                }}
+              >
+                פיתוח מקצועי ומסור עם תשומת לב לפרטים הקטנים
+              </Typography>
+            </MotionBox>
+          </MotionBox>
+
+          <Grid container justifyContent="center">
+            <Grid item xs={12} md={8} lg={6}>
+              <MotionBox
+                variants={itemVariants}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.2 }}
+              >
+                <DeveloperCard>
+                  <CardContent sx={{ p: 6 }}>
+                    <Box sx={{ textAlign: "center", mb: 4 }}>
+                      <Avatar
+                        sx={{
+                          width: 120,
+                          height: 120,
+                          mx: "auto",
+                          mb: 3,
+                          background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                          fontSize: "3rem",
+                          fontWeight: "bold",
+                          boxShadow: "0 10px 30px rgba(0, 0, 0, 0.2)",
+                        }}
+                      >
+                        א.מ
+                      </Avatar>
+                      
+                      <Typography 
+                        variant="h4" 
+                        fontWeight="bold" 
+                        gutterBottom
+                        sx={{ 
+                          background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                          WebkitBackgroundClip: "text",
+                          WebkitTextFillColor: "transparent",
+                          mb: 1
+                        }}
+                      >
+                        אסתר מורגנשטרן
+                      </Typography>
+                      
+                      <Typography 
+                        variant="h6" 
+                        color="primary" 
+                        fontWeight="600"
+                        sx={{ mb: 3 }}
+                      >
+                        מפתחת Full Stack
+                      </Typography>
+                      
+                                   <Typography 
+                variant="body1" 
+                color="text.secondary"
+                sx={{ 
+                  lineHeight: 1.7,
+                  mb: 4,
+                  maxWidth: 500,
+                  mx: "auto"
+                }}
+              >
+                מפתחת מנוסה עם התמחות בפיתוח אפליקציות ווב מתקדמות.
+                מתמחה בטכנולוגיות React, .NET Core, C# ועיצוב חוויית משתמש מעולה.
+                מחויבת לפיתוח פתרונות איכותיים ויעילים עבור מוסדות חינוך.
+              </Typography>
+
+                    </Box>
+
+                    <Divider sx={{ mb: 4 }} />
+
+                    {/* Skills */}
+                    <Box sx={{ mb: 4 }}>
+                      <Typography 
+                        variant="h6" 
+                        fontWeight="bold" 
+                        gutterBottom
+                        sx={{ 
+                          textAlign: "center",
+                          mb: 3,
+                          color: theme.palette.primary.main
+                        }}
+                      >
+                        כישורים מקצועיים
+                      </Typography>
+                      
+                                          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, justifyContent: "center" }}>
+                                               {[
+                          "React 19 (החדש ביותר!)",
+                          ".NET Core",
+                          "C# Programming", 
+                          "SQL Server",
+                          "Entity Framework",
+                          "Material-UI v7",
+                          "Framer Motion 12",
+                          "Redux Toolkit",
+                          "React Router v7",
+                          "JavaScript ES6+",
+                          "HTML5 & CSS3",
+                          "Responsive Design",
+                          "Git & GitHub",
+                          "RESTful APIs",
+                          "JWT Authentication",
+                          "Cloud Deployment"
+                        ].map((skill, index) => (
+
+
+                          <Chip
+                            key={index}
+                            label={skill}
+                            variant="outlined"
+                            sx={{
+                              borderColor: alpha(theme.palette.primary.main, 0.3),
+                              color: theme.palette.primary.main,
+                              fontWeight: 500,
+                              "&:hover": {
+                                backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                                borderColor: theme.palette.primary.main,
+                              }
+                            }}
+                          />
+                        ))}
+                      </Box>
+                    </Box>
+
+                    <Divider sx={{ mb: 4 }} />
+
+                    {/* Contact Information */}
+                    <Box sx={{ textAlign: "center" }}>
+                      <Typography 
+                        variant="h6" 
+                        fontWeight="bold" 
+                        gutterBottom
+                        sx={{ 
+                          mb: 3,
+                          color: theme.palette.primary.main
+                        }}
+                      >
+                        יצירת קשר
+                      </Typography>
+                      
+                      <Stack 
+                        direction={isMobile ? "column" : "row"} 
+                        spacing={3} 
+                        justifyContent="center"
+                        alignItems="center"
+                      >
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          <Avatar
+                            sx={{
+                              width: 35,
+                              height: 35,
+                              backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                              color: theme.palette.primary.main,
+                            }}
+                          >
+                            <EmailIcon sx={{ fontSize: 18 }} />
+                          </Avatar>
+                          <Typography variant="body2" fontWeight="500">
+                            em0527104104@gmail.com
+                          </Typography>
+                        </Box>
+                        
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          <Avatar
+                            sx={{
+                              width: 35,
+                              height: 35,
+                              backgroundColor: alpha(theme.palette.secondary.main, 0.1),
+                              color: theme.palette.secondary.main,
+                            }}
+                          >
+                            <PhoneIcon sx={{ fontSize: 18 }} />
+                          </Avatar>
+                          <Typography variant="body2" fontWeight="500">
+                            052-710-4104
+                          </Typography>
+                        </Box>
+                        
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          <Avatar
+                            sx={{
+                              width: 35,
+                              height: 35,
+                              backgroundColor: alpha("#333", 0.1),
+                              color: "#333",
+                            }}
+                          >
+                            <GitHubIcon sx={{ fontSize: 18 }} />
+                          </Avatar>
+                          <Typography variant="body2" fontWeight="500">
+                            EsterMorgenstern
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </Box>
+                  </CardContent>
+                </DeveloperCard>
+              </MotionBox>
+            </Grid>
+          </Grid>
+        </Container>
+      </Box>
+
+      {/* Statistics Section */}
+      <Container sx={{ mt: 12, mb: 12 }}>
+        <MotionBox
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.2 }}
+          sx={{ textAlign: "center", mb: 8 }}
+        >
+          <MotionBox variants={fadeInUpVariants}>
+            <Typography 
+              variant="h3" 
+              component="h2" 
+              fontWeight="bold"
+              sx={{
+                position: "relative",
+                display: "inline-block",
+                mb: 2,
+                "&::after": {
+                  content: '""',
+                  position: "absolute",
+                  bottom: -8,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  width: 100,
+                  height: 4,
+                  borderRadius: 2,
+                  background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                },
+              }}
+            >
+              המערכת במספרים
+            </Typography>
+          </MotionBox>
+          
+          <MotionBox variants={fadeInUpVariants}>
+            <Typography 
+              variant="h6" 
+              color="textSecondary" 
+              paragraph 
+              sx={{ 
+                maxWidth: 600, 
+                mx: "auto", 
+                mt: 3,
+                opacity: 0.8
+              }}
+            >
+              נתונים מרשימים המעידים על איכות ויעילות המערכת
+            </Typography>
+          </MotionBox>
+        </MotionBox>
+
+        <Grid container spacing={4}>
+          {[
+            {
+              icon: <DataUsageIcon fontSize="large" />,
+              value: "99.9%",
+              label: "זמינות המערכת",
+              description: "זמינות גבוהה ויציבות מעולה",
+              color: "#4A90E2"
+            },
+            {
+              icon: <SpeedIcon fontSize="large" />,
+              value: "< 2s",
+              label: "זמן טעינה",
+              description: "ביצועים מהירים במיוחד",
+              color: "#32CD32"
+            },
+            {
+              icon: <SecurityIcon fontSize="large" />,
+              value: "100%",
+              label: "אבטחת נתונים",
+              description: "הגנה מלאה על מידע רגיש",
+              color: "#FF6B6B"
+            },
+            {
+              icon: <VerifiedIcon fontSize="large" />,
+              value: "24/7",
+              label: "תמיכה טכנית",
+              description: "זמינות מלאה לסיוע",
+              color: "#9370DB"
+            }
+          ].map((stat, index) => (
+            <Grid item xs={12} sm={6} md={3} key={index}>
+              <MotionBox
+                variants={itemVariants}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <Card
+                  sx={{
+                    height: "100%",
+                    textAlign: "center",
+                    borderRadius: 3,
+                    background: "rgba(255, 255, 255, 0.95)",
+                    backdropFilter: "blur(20px)",
+                    border: "1px solid rgba(255, 255, 255, 0.8)",
+                    boxShadow: "0 8px 25px rgba(0, 0, 0, 0.08)",
+                    transition: "all 0.4s ease",
+                    position: "relative",
+                    overflow: "hidden",
+                    "&:hover": {
+                      transform: "translateY(-10px)",
+                      boxShadow: "0 20px 40px rgba(0, 0, 0, 0.12)",
+                      "& .stat-icon": {
+                        transform: "scale(1.1)",
+                        color: "white",
+                        backgroundColor: stat.color,
+                      }
+                    },
+                    "&::before": {
+                      content: '""',
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: 4,
+                      background: stat.color,
+                    }
+                  }}
+                >
+                  <CardContent sx={{ p: 4 }}>
+                    <Avatar
+                      className="stat-icon"
+                      sx={{
+                        width: 70,
+                        height: 70,
+                        backgroundColor: alpha(stat.color, 0.1),
+                        color: stat.color,
+                        mx: "auto",
+                        mb: 2,
+                        transition: "all 0.4s ease",
+                      }}
+                    >
+                      {stat.icon}
+                    </Avatar>
+                    
+                    <Typography 
+                      variant="h3" 
+                      fontWeight="bold" 
+                      sx={{ 
+                        color: stat.color,
+                        mb: 1
+                      }}
+                    >
+                      {stat.value}
+                    </Typography>
+                    
+                    <Typography 
+                      variant="h6" 
+                      fontWeight="600"
+                      gutterBottom
+                      sx={{ mb: 1 }}
+                    >
+                      {stat.label}
+                    </Typography>
+                    
+                    <Typography 
+                      variant="body2" 
+                      color="text.secondary"
+                      sx={{ fontSize: "0.875rem" }}
+                    >
+                      {stat.description}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </MotionBox>
+            </Grid>
+          ))}
+        </Grid>
+      </Container>
+
+      <Box 
+        sx={{ 
+          background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`, 
+          color: "white", 
+          py: 8,
+          position: "relative",
+          overflow: "hidden",
         }}
       >
-        <div style={{ 
-          width: "50px", 
-          height: "50px", 
-          borderRadius: "10px", 
-          background: "#1e88e5", 
-          display: "flex", 
-          alignItems: "center", 
-          justifyContent: "center", 
-          color: "white",
-          fontSize: "24px",
-          marginLeft: "15px",
-          flexShrink: 0
-        }}>
-          <FaLaptopCode />
-        </div>
-        
-        <div>
-          <h4 style={{ margin: "0 0 5px", fontSize: "1rem", fontWeight: "600", color: "#2D3748" }}>
-            גלה את האפליקציה שלנו
-          </h4>
-          
-          <p style={{ margin: "0 0 10px", fontSize: "0.9rem", color: "#718096" }}>
-            נהל את החוגים שלך מכל מקום
-          </p>
-          
-          <button style={{ 
-            background: "#1e88e5", 
-            color: "white", 
-            border: "none", 
-            borderRadius: "5px", 
-            padding: "5px 10px", 
-            fontSize: "0.8rem", 
-            fontWeight: "600", 
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center"
-          }}>
-            <FaMobileAlt style={{ marginLeft: "5px" }} />
-            הורד עכשיו
-          </button>
-        </div>
-        
-        <button style={{ 
-          position: "absolute", 
-          top: "10px", 
-          left: "10px", 
-          background: "none", 
-          border: "none", 
-          color: "#CBD5E0", 
-          fontSize: "16px", 
-          cursor: "pointer" 
-        }}>
-          ×
-        </button>
-      </motion.div>
-    </PageContainer>
+        <Container>
+          <MotionBox
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            sx={{ position: "relative", zIndex: 1, textAlign: "center" }}
+          >
+            <MotionBox variants={fadeInUpVariants}>
+              <Typography 
+                variant="h4" 
+                component="h2" 
+                gutterBottom 
+                fontWeight="bold"
+                sx={{
+                  textShadow: "0 2px 10px rgba(0,0,0,0.2)",
+                  mb: 2
+                }}
+              >
+                מוכנים לחוות את המערכת?
+              </Typography>
+            </MotionBox>
+            
+            <MotionBox variants={fadeInUpVariants}>
+              <Typography 
+                variant="h6" 
+                paragraph
+                sx={{ 
+                  maxWidth: 700, 
+                  mx: "auto", 
+                  opacity: 0.9,
+                  mb: 4,
+                  lineHeight: 1.6
+                }}
+              >
+                הצטרפו לקהילת המנהלים והמוסדות החינוכיים שכבר נהנים מהיתרונות של המערכת המתקדמת שלנו
+              </Typography>
+            </MotionBox>
+            
+            <MotionBox variants={fadeInUpVariants} sx={{ mt: 4 }}>
+              {/* כפתור התחילו עכשיו */}
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                style={{ marginBottom: isMobile ? 24 : 32,marginRight:'460px' }}
+              >
+                <Button
+                  variant="contained"
+                  size="large"
+                  onClick={() => navigate("/students")}
+                  sx={{
+                    background: "rgba(255, 255, 255, 0.2)",
+                    border: "2px solid rgba(255, 255, 255, 0.3)",
+                    borderRadius: "30px",
+                    padding: "12px 32px",
+                    color: "white",
+                    fontWeight: "bold",
+                    fontSize: "1.1rem",
+                    backdropFilter: "blur(10px)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    "&:hover": {
+                      background: "rgba(255, 255, 255, 0.3)",
+                      borderColor: "rgba(255, 255, 255, 0.5)",
+                      transform: "translateY(-2px)",
+                      boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
+                    }
+                  }}
+                  startIcon={<RocketLaunchIcon />}
+                >
+                  התחילו עכשיו
+                </Button>
+              </motion.div>
+
+              {/* כפתורי יצירת קשר */}
+              <Box sx={{ mb: 3 }}>
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    mb: 3, 
+                    opacity: 0.9,
+                    fontWeight: 600
+                  }}
+                >
+                  או צרו איתנו קשר:
+                </Typography>
+                
+                <Stack 
+                  direction={isMobile ? "column" : "row"} 
+                  spacing={isMobile ? 2 : 3} 
+                  justifyContent="center"
+                  alignItems="center"
+                >
+                  {/* כפתור אימייל */}
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Button
+                      variant="outlined"
+                      size="large"
+                      startIcon={<EmailIcon />}
+                      onClick={() => window.open('mailto:em0527104104@gmail.com?subject=פנייה מאתר מערכת ניהול החוגים&body=שלום אסתר,%0D%0A%0D%0Aאני מעוניין/ת לקבל מידע נוסף על המערכת.%0D%0A%0D%0Aתודה!')}
+                      sx={{
+                        borderColor: "rgba(255, 255, 255, 0.5)",
+                        color: "white",
+                        borderRadius: "25px",
+                        padding: "10px 24px",
+                        fontWeight: "600",
+                        minWidth: isMobile ? "200px" : "140px",
+                        backdropFilter: "blur(10px)",
+                        "&:hover": {
+                          borderColor: "white",
+                          backgroundColor: "rgba(255, 255, 255, 0.1)",
+                          transform: "translateY(-2px)",
+                          boxShadow: "0 8px 20px rgba(0, 0, 0, 0.2)",
+                        }
+                      }}
+                    >
+                      אימייל
+                    </Button>
+                  </motion.div>
+                  
+                  {/* כפתור טלפון */}
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Button
+                      variant="outlined"
+                      size="large"
+                      startIcon={<PhoneIcon />}
+                      onClick={() => window.open('tel:+972527104104')}
+                      sx={{
+                        borderColor: "rgba(255, 255, 255, 0.5)",
+                        color: "white",
+                        borderRadius: "25px",
+                        padding: "10px 24px",
+                        fontWeight: "600",
+                        minWidth: isMobile ? "200px" : "140px",
+                        backdropFilter: "blur(10px)",
+                        "&:hover": {
+                          borderColor: "white",
+                          backgroundColor: "rgba(255, 255, 255, 0.1)",
+                          transform: "translateY(-2px)",
+                          boxShadow: "0 8px 20px rgba(0, 0, 0, 0.2)",
+                        }
+                      }}
+                    >
+                      התקשרו
+                    </Button>
+                  </motion.div>
+                  
+                  {/* כפתור WhatsApp */}
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Button
+                      variant="outlined"
+                      size="large"
+                      startIcon={<WhatsAppIcon />}
+                      onClick={() => window.open('https://wa.me/972527104104?text=שלום אסתר, אני מעוניין/ת במידע על מערכת ניהול החוגים')}
+                      sx={{
+                        borderColor: "rgba(255, 255, 255, 0.5)",
+                        color: "white",
+                        borderRadius: "25px",
+                        padding: "10px 24px",
+                        fontWeight: "600",
+                        minWidth: isMobile ? "200px" : "140px",
+                        backdropFilter: "blur(10px)",
+                        "&:hover": {
+                          borderColor: "white",
+                          backgroundColor: "rgba(255, 255, 255, 0.1)",
+                          transform: "translateY(-2px)",
+                          boxShadow: "0 8px 20px rgba(0, 0, 0, 0.2)",
+                        }
+                      }}
+                    >
+                      WhatsApp
+                    </Button>
+                  </motion.div>
+                </Stack>
+              </Box>
+
+              {/* מידע יצירת קשר נוסף */}
+              <MotionBox variants={fadeInUpVariants} sx={{ mt: 4 }}>
+                <Divider sx={{ bgcolor: "rgba(255, 255, 255, 0.3)", mb: 3 }} />
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    opacity: 0.8,
+                    mb: 2
+                  }}
+                >
+                  זמינה לשאלות ויעוץ מקצועי
+                </Typography>
+                <Stack 
+                  direction={isMobile ? "column" : "row"} 
+                  spacing={isMobile ? 1 : 3} 
+                  justifyContent="center"
+                  alignItems="center"
+                  sx={{ fontSize: "0.9rem" }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <EmailIcon sx={{ fontSize: 18 }} />
+                    <Typography variant="body2">
+                      em0527104104@gmail.com
+                    </Typography>
+                  </Box>
+                  
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <PhoneIcon sx={{ fontSize: 18 }} />
+                    <Typography variant="body2">
+                      052-710-4104
+                    </Typography>
+                  </Box>
+                  
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <GitHubIcon sx={{ fontSize: 18 }} />
+                    <Typography variant="body2">
+                      EsterMorgenstern
+                    </Typography>
+                  </Box>
+                </Stack>
+              </MotionBox>
+            </MotionBox>
+          </MotionBox>
+        </Container>
+
+        {/* Background Animation */}
+        <Box sx={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 0 }}>
+          {[...Array(5)].map((_, i) => (
+            <Box
+              key={i}
+              component={motion.div}
+              sx={{
+                position: "absolute",
+                backgroundColor: "rgba(255, 255, 255, 0.05)",
+                borderRadius: "50%",
+                pointerEvents: "none",
+              }}
+              initial={{
+                x: `${Math.random() * 100}%`,
+                y: `${Math.random() * 100}%`,
+                scale: Math.random() * 0.5 + 0.3,
+              }}
+              animate={{
+                y: [
+                  `${Math.random() * 100}%`,
+                  `${Math.random() * 100}%`,
+                  `${Math.random() * 100}%`
+                ],
+                x: [
+                  `${Math.random() * 100}%`,
+                  `${Math.random() * 100}%`,
+                  `${Math.random() * 100}%`
+                ],
+                rotate: [0, 360],
+              }}
+              transition={{
+                duration: Math.random() * 30 + 20,
+                repeat: Infinity,
+                ease: "linear",
+              }}
+              style={{
+                width: `${Math.random() * 200 + 100}px`,
+                height: `${Math.random() * 200 + 100}px`,
+              }}
+            />
+          ))}
+        </Box>
+      </Box>
+
+      {/* Footer Information */}
+      <Box sx={{ bgcolor: alpha(theme.palette.grey[900], 0.05), py: 6 }}>
+        <Container>
+          <Grid container spacing={4} justifyContent="center">
+            <Grid item xs={12} md={8}>
+              <MotionBox
+                variants={containerVariants}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.2 }}
+                sx={{ textAlign: "center" }}
+              >
+                <MotionBox variants={fadeInUpVariants}>
+                  <Typography 
+                    variant="h5" 
+                    fontWeight="bold" 
+                    gutterBottom
+                    sx={{ 
+                      color: theme.palette.primary.main,
+                      mb: 3
+                    }}
+                  >
+                    מערכת ניהול חוגים מתקדמת
+                  </Typography>
+                </MotionBox>
+                
+                <MotionBox variants={fadeInUpVariants}>
+                  <Typography 
+                    variant="body1" 
+                    color="text.secondary"
+                    sx={{ 
+                      lineHeight: 1.7,
+                      mb: 4,
+                      maxWidth: 600,
+                      mx: "auto"
+                    }}
+                  >
+                    פותח במיוחד עבור מוסדות חינוך המחפשים פתרון מקצועי, יעיל ואמין לניהול תלמידים, 
+                    ציונים ותעודות. המערכת משלבת טכנולוגיה מתקדמת עם ממשק ידידותי למשתמש.
+                  </Typography>
+                </MotionBox>
+                
+                <MotionBox variants={fadeInUpVariants}>
+                  <Box sx={{ display: "flex", justifyContent: "center", gap: 3, flexWrap: "wrap" }}>
+                    {[
+                      { icon: <VerifiedIcon />, text: "מערכת מאובטחת" },
+                      { icon: <SpeedIcon />, text: "ביצועים מעולים" },
+                      { icon: <SupportAgentIcon />, text: "תמיכה מלאה" },
+                      { icon: <CloudIcon />, text: "טכנולוגיית ענן" }
+                    ].map((item, index) => (
+                      <Box 
+                        key={index}
+                        sx={{ 
+                          display: "flex", 
+                          alignItems: "center", 
+                          gap: 1,
+                          color: theme.palette.text.secondary
+                        }}
+                      >
+                        <Box sx={{ color: theme.palette.primary.main }}>
+                          {item.icon}
+                        </Box>
+                        <Typography variant="body2" fontWeight="500">
+                          {item.text}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                </MotionBox>
+                
+                <MotionBox variants={fadeInUpVariants} sx={{ mt: 4 }}>
+                  <Divider sx={{ mb: 3 }} />
+                  <Typography 
+                    variant="body2" 
+                    color="text.secondary"
+                    sx={{ opacity: 0.7 }}
+                  >
+                    ©2025 מערכת ניהול חוגים | פותח על ידי אסתר מורגנשטרן | כל הזכויות שמורות
+                  </Typography>
+                </MotionBox>
+              </MotionBox>
+            </Grid>
+          </Grid>
+        </Container>
+      </Box>
+    </Box>
   );
 };
 
