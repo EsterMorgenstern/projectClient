@@ -1,28 +1,41 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
 import API_BASE_URL from '../../config/api';
 
 export const fetchStudentAttendanceSummary = createAsyncThunk(
-    'attendance/fetchStudentSummary',
+    'attendance/fetchStudentAttendanceSummary',
     async ({ studentId, month, year }, { rejectWithValue }) => {
         try {
+            console.log('📊 Fetching student attendance summary:', { studentId, month, year });
+            
+            let url = `${API_BASE_URL}/Attendance/student/${studentId}/summary`;
             const params = new URLSearchParams();
+            
             if (month) params.append('month', month);
             if (year) params.append('year', year);
             
-            const url = `${API_BASE_URL}/Attendance/student/${studentId}/summary${params.toString() ? `?${params.toString()}` : ''}`;
-            
-            console.log('Fetching attendance summary from URL:', url);
-            const response = await axios.get(url);
-            console.log('Attendance summary response:', response.data);
-            return response.data;
-        } catch (error) {
-            console.error('fetchStudentAttendanceSummary error:', {
-                status: error.response?.status,
-                data: error.response?.data,
-                message: error.message
+            if (params.toString()) {
+                url += `?${params.toString()}`;
+            }
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
             });
-            return rejectWithValue(error.response?.data || 'Failed to fetch attendance summary');
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || `HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('✅ Student attendance summary fetched:', data);
+            
+            return data;
+        } catch (error) {
+            console.error('❌ Error fetching student attendance summary:', error);
+            return rejectWithValue(error.message || 'שגיאה בטעינת סיכום נוכחות התלמיד');
         }
     }
 );

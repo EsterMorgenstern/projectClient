@@ -538,7 +538,6 @@ const getUserDisplayName = () => {
             >
               <ListItemIcon sx={{ 
                 color: 'white',
-                minWidth: 50,
                 '& svg': { 
                   fontSize: 26,
                   filter: isActive(item.path) ? 'drop-shadow(0 0 8px rgba(255,255,255,0.5))' : 'none'
@@ -550,9 +549,10 @@ const getUserDisplayName = () => {
                 primary={item.title}
                 secondary={item.description}
                 sx={{
+                  marginRight:'50px',
                   '& .MuiListItemText-primary': {
-                    fontWeight: isActive(item.path) ? 700 : 600,
-                    color: 'white',
+                   fontWeight: isActive(item.path) ? 700 : 600,
+                  color: 'white',
                     fontSize: '1.1rem',
                     textShadow: isActive(item.path) ? '0 0 10px rgba(255,255,255,0.5)' : 'none'
                   },

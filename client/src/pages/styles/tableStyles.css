@@ -7,6 +7,8 @@
   padding: 24px;
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   min-height: 100vh;
+  box-shadow:'0 4px 20px rgba(0,0,0,0.08)' ;
+  border-radius: 30px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 

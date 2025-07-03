@@ -1,38 +1,31 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
 import API_BASE_URL from '../../config/api';
 
 export const fetchAttendanceByDate = createAsyncThunk(
     'attendance/fetchAttendanceByDate',
     async ({ groupId, date }, { rejectWithValue }) => {
         try {
-            let formattedDate = date;
-            if (date instanceof Date) {
-                formattedDate = date.toISOString().split('T')[0];
-            } else if (typeof date === 'string') {
-                const dateObj = new Date(date);
-                if (!isNaN(dateObj.getTime())) {
-                    formattedDate = dateObj.toISOString().split('T')[0];
-                }
+            console.log('📅 Fetching attendance for group:', groupId, 'date:', date);
+            
+            const response = await fetch(`${API_BASE_URL}/Attendance/GetAttendanceByGroupAndDate/${groupId}/${date}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || `HTTP error! status: ${response.status}`);
             }
 
-            console.log('Sending request with:', { groupId, formattedDate });
+            const data = await response.json();
+            console.log('✅ Attendance fetched successfully:', data);
             
-            const response = await axios.get(
-                `${API_BASE_URL}/Attendance/GetAttendanceByGroupAndDate/${groupId}/${formattedDate}`
-            );
-            
-            return { date: formattedDate, attendance: response.data };
+            return { date, attendance: data || [] };
         } catch (error) {
-            console.error('Error fetching attendance:', error.response?.data || error.message);
-            
-            // זמנית - החזר מערך רק במקום שגיאה
-            if (error.response?.status === 400 && error.response?.data?.includes('not implemented')) {
-                console.warn('Server method not implemented, returning empty array');
-                return { date: formattedDate, attendance: [] };
-            }
-            
-            return rejectWithValue(error.response?.data || 'Failed to fetch attendance');
+            console.error('❌ Error fetching attendance:', error);
+            return rejectWithValue(error.message || 'שגיאה בטעינת הנוכחות');
         }
     }
 );

@@ -969,8 +969,10 @@ export const AboutSystem = () => {
                   mx: "auto"
                 }}
               >
-                מפתחת מנוסה עם התמחות בפיתוח אפליקציות ווב מתקדמות.
-                מתמחה בטכנולוגיות React, .NET Core, C# ועיצוב חוויית משתמש מעולה.
+                מפתחת מנוסה עם התמחות בפיתוח אפליקציות web מתקדמות.
+                <br />
+                מתמחה בטכנולוגיות C#, .NET Core, React ועיצוב חוויית משתמש מעולה.
+                <br />
                 מחויבת לפיתוח פתרונות איכותיים ויעילים עבור מוסדות חינוך.
               </Typography>
 
@@ -993,8 +995,8 @@ export const AboutSystem = () => {
                         כישורים מקצועיים
                       </Typography>
                       
-                                          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, justifyContent: "center" }}>
-                                               {[
+      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, justifyContent: "center" }}>
+                         {[
                           "React 19 (החדש ביותר!)",
                           ".NET Core",
                           "C# Programming", 
@@ -1011,6 +1013,7 @@ export const AboutSystem = () => {
                           "RESTful APIs",
                           "JWT Authentication",
                           "Cloud Deployment"
+                          
                         ].map((skill, index) => (
 
 
@@ -1188,7 +1191,7 @@ export const AboutSystem = () => {
             },
             {
               icon: <VerifiedIcon fontSize="large" />,
-              value: "24/7",
+              value: "24/6",
               label: "תמיכה טכנית",
               description: "זמינות מלאה לסיוע",
               color: "#9370DB"

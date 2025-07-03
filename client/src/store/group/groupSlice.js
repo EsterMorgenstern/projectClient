@@ -2,6 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import { fetchGroups } from './groupGellAllThunk';
 import { addGroup } from './groupAddThunk';
 import { getGroupsByCourseId } from './groupGetGroupsByCourseIdThunk';
+import { getGroupsByDay } from './groupGetByDayThunk';
 
 const groupSlice = createSlice({
   name: 'groups',
@@ -9,12 +10,19 @@ const groupSlice = createSlice({
     groups: [],
     loading: false,
     error: null,
-    groupsByCourseId:[]
+    groupsByCourseId: [],
+    groupsByDay: [],
+    groupsByDayLoading: false
   },
-  reducers: {},
+  reducers: {
+    clearGroupsByDay: (state) => {
+      state.groupsByDay = [];
+      state.groupsByDayLoading = false;
+    }
+  },
   extraReducers: (builder) => {
     builder
-// getAllGroups
+      // getAllGroups
       .addCase(fetchGroups.pending, (state) => {
         console.log('Fetching groups...');
         state.loading = true;
@@ -29,22 +37,40 @@ const groupSlice = createSlice({
         state.loading = false;
         state.error = action.error.message;
       })
-//getGroupsByCourseId   
-     .addCase(getGroupsByCourseId.pending,(state)=>{
-     console.log('getGroupsByCourseId...')
-     state.loading=true;
-     })   
-    .addCase(getGroupsByCourseId.fulfilled,(state,action)=>{
-      console.log("groupsByCourseId",action.payload);
-      state.loading = false;
-      state.groupsByCourseId=action.payload;
-    })
-     .addCase(getGroupsByCourseId.rejected, (state, action) => {
-        console.error('Error adding group:', action.error.message);
+      
+      // getGroupsByCourseId   
+      .addCase(getGroupsByCourseId.pending, (state) => {
+        console.log('getGroupsByCourseId...')
+        state.loading = true;
+      })   
+      .addCase(getGroupsByCourseId.fulfilled, (state, action) => {
+        console.log("groupsByCourseId", action.payload);
+        state.loading = false;
+        state.groupsByCourseId = action.payload;
+      })
+      .addCase(getGroupsByCourseId.rejected, (state, action) => {
+        console.error('Error getting groups by course:', action.error.message);
         state.loading = false;
         state.error = action.error.message;
       })
-// addGroup
+      
+      // getGroupsByDay   
+      .addCase(getGroupsByDay.pending, (state) => {
+        console.log('getGroupsByDay...')
+        state.groupsByDayLoading = true;
+      })   
+      .addCase(getGroupsByDay.fulfilled, (state, action) => {
+        console.log("getGroupsByDay", action.payload);
+        state.groupsByDayLoading = false;
+        state.groupsByDay = action.payload;
+      })
+      .addCase(getGroupsByDay.rejected, (state, action) => {
+        console.error('Error getting groups by day:', action.error.message);
+        state.groupsByDayLoading = false;
+        state.error = action.error.message;
+      })
+      
+      // addGroup
       .addCase(addGroup.pending, (state) => {
         console.log('Adding group...');
         state.loading = true;
@@ -52,7 +78,7 @@ const groupSlice = createSlice({
       .addCase(addGroup.fulfilled, (state, action) => {
         console.log(action.payload);
         state.loading = false;
-        state.groups.push(action.payload); // Add the new branch to the state
+        state.groups.push(action.payload);
       })
       .addCase(addGroup.rejected, (state, action) => {
         console.error('Error adding group:', action.error.message);
@@ -62,4 +88,5 @@ const groupSlice = createSlice({
   },
 });
 
+export const { clearGroupsByDay } = groupSlice.actions;
 export default groupSlice.reducer;

@@ -721,7 +721,8 @@ const fetchAndShowStudentCourses = async (studentId) => {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-      // dir="rtl"
+        
+      
       >
         <Box sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
           <Button
@@ -1141,7 +1142,7 @@ const fetchAndShowStudentCourses = async (studentId) => {
           padding: { xs: 2, md: 4 },
           background: 'linear-gradient(to right, #e0f2fe, #f8fafc)',
           minHeight: '100vh',
-          borderRadius: 2,
+          borderRadius: 8
         }}
       >
         <motion.div
@@ -1302,6 +1303,13 @@ const fetchAndShowStudentCourses = async (studentId) => {
                   <Grid item xs={6}>
                     <Typography variant="body2">
                       <strong>מספר שיעורים:</strong> {selectedGroup.numOfLessons}
+                    </Typography>
+                  </Grid>
+                )}
+                 {selectedGroup?.numOfLessons && (
+                  <Grid item xs={6}>
+                    <Typography variant="body2">
+                      <strong>מספר שיעורים שהיו:</strong> {selectedGroup.lessonsCompleted}
                     </Typography>
                   </Grid>
                 )}

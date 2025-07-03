@@ -7,8 +7,6 @@ export const getStudentsByGroupId= createAsyncThunk(
   async (id, { rejectWithValue }) => {
     try {
       const response = await axios.get(`${API_BASE_URL}/Group/GetStudentsByGroupId/${id}`);
-
-
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || 'An error occurred');

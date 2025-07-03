@@ -1011,7 +1011,7 @@ export const Home = () => {
                 fontWeight="bold"
                 sx={{ color: theme.palette.primary.main, mb: 1 }}
               >
-                פיתוח: אסתר מורגנשטרן
+               אסתר מורגנשטרן
               </Typography>
               
               <Stack 

@@ -6,6 +6,7 @@ import { fetchAttendanceHistory } from './fetchAttendanceHistory';
 import { fetchStudentAttendanceSummary } from './fetchStudentAttendanceSummary';
 import { fetchAttendanceReportsMonthly } from './fetchAttendenceReportsMonthly';
 import { fetchAttendanceReportsOverall } from './fetchAttendanceReportsOverall';
+import { clearGroupsByDay } from '../group/groupSlice';
 
 const attendanceSlice = createSlice({
     name: 'attendance',
@@ -23,6 +24,7 @@ const attendanceSlice = createSlice({
         clearAttendanceError: (state) => {
             state.error = null;
         },
+        
         updateLocalAttendance: (state, action) => {
             const { date, studentId, wasPresent } = action.payload;
             if (!state.records[date]) {

@@ -32,8 +32,9 @@ const LessonManagement = () => {
       transition={{ duration: 0.5 }}
     >
       <Box sx={{ 
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+        background: 'linear-gradient(to right, #e0f2fe, #f8fafc)',
+          minHeight: '100vh',
+          borderRadius: 8,
         py: 4
       }}>
         <Container maxWidth="lg" >
