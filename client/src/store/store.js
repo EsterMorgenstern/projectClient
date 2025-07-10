@@ -9,6 +9,7 @@ import groupReduser from './group/groupSlice';
 import attendanceReduser from './attendance/attendanceSlice';
 import studentNotesReduser from './studentNotes/studentNoteSlice';
 import usersReducer from './user/userSlice';
+import lessonCancellationsReducer from './lessonsCancelation/lessonsCancelationSlice';
 
 const store = configureStore({
   reducer: {
@@ -21,6 +22,8 @@ const store = configureStore({
     groups:groupReduser,
     attendances:attendanceReduser,
     studentNotes:studentNotesReduser,
+    lessonCancellations: lessonCancellationsReducer,
+
   },
 });
 

@@ -3,11 +3,13 @@ import { getNotesByStudentId } from './studentNotesGetById';
 import { addStudentNote } from './studentNoteAddThunk';
 import { deleteStudentNote } from './studentNoteDeleteThunk';
 import { updateStudentNote } from './studentNoteUpdateThunk';
+import { getNotesByUserId } from './studentNotesGetByUserId';
 
 const studentNotesSlice = createSlice({
   name: 'studentNotes',
   initialState: {
     studentNotes: [],
+    notesByUser:[],
     allNotes: [],
     loading: false,
     error: null,
@@ -37,6 +39,20 @@ const studentNotesSlice = createSlice({
         state.studentNotes = action.payload;
       })
       .addCase(getNotesByStudentId.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to fetch student notes';
+      })
+
+       // Get notes by user ID
+      .addCase(getNotesByUserId.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getNotesByUserId.fulfilled, (state, action) => {
+        state.loading = false;
+        state.notesByUser = action.payload;
+      })
+      .addCase(getNotesByUserId.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to fetch student notes';
       })

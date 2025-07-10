@@ -104,6 +104,8 @@ const AddStudentNoteDialog = ({
         };
     }, [editMode, noteData, student?.id, currentUser]);
 
+
+    
     useEffect(() => {
         if (open) {
             console.log('Setting initial form data:', initialFormData); // 🔍 Debug

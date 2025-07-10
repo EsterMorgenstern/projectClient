@@ -724,6 +724,7 @@ import { fetchAttendanceByDate } from '../../store/attendance/fetchAttendanceByD
 import { saveAttendance } from '../../store/attendance/saveAttendance';
 import { updateLocalAttendance } from '../../store/attendance/attendanceSlice';
 import { fetchAttendanceRange } from '../../store/attendance/fetchAttendanceRange';
+import { isMarkedForDay } from '../../store/attendance/attendanceGetIsMarkedForDay';
 
 const AttendanceCalendar = () => {
   const dispatch = useDispatch();
@@ -748,7 +749,7 @@ const AttendanceCalendar = () => {
     state.students.loading ||
     state.attendances.loading
   );
-
+ const isMarkedForDayStatus = useSelector(state => state.attendances.isMarkedForDay || {});
   // Local state
   const [viewMode, setViewMode] = useState('month');
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -907,6 +908,34 @@ const AttendanceCalendar = () => {
     const days = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
     return days[dateObj.getDay()];
   };
+useEffect(() => {
+  const loadMonthlyAttendanceStatus = async () => {
+    if (viewMode === 'month') {
+      const startDate = startOfMonth(currentDate);
+      const endDate = endOfMonth(currentDate);
+      const daysInMonth = eachDayOfInterval({ start: startDate, end: endDate });
+
+      // טען סטטוס נוכחות לכל יום בחודש
+      const loadPromises = daysInMonth.map(async (date) => {
+        const dateString = format(date, 'yyyy-MM-dd');
+        
+        // בדוק אם כבר יש נתונים עבור התאריך הזה
+        if (isMarkedForDayStatus[dateString] === undefined) {
+          try {
+            await dispatch(isMarkedForDay({ date: dateString }));
+          } catch (error) {
+            console.warn(`Failed to check attendance status for ${dateString}:`, error);
+          }
+        }
+      });
+
+      // הרץ את כל הבדיקות במקביל
+      await Promise.allSettled(loadPromises);
+    }
+  };
+
+  loadMonthlyAttendanceStatus();
+}, [currentDate, viewMode, dispatch, isMarkedForDayStatus]);
 
   useEffect(() => {
     const initializeData = async () => {
@@ -1426,20 +1455,20 @@ const handleSaveAttendance = async (note = '') => {
                 hebrewHolidays={hebrewHolidays}
                 isActiveDay={isActiveDay}
                 getHebrewHolidayInfo={getHebrewHolidayInfo}
+                isMarkedForDayStatus={isMarkedForDayStatus}
               />
             )}
 
             {viewMode === 'week' && (
-              <WeeklyCalendar
-                currentDate={currentDate}
-                onDateSelect={handleDateSelect}
-                events={groups}
-                attendanceRecords={attendanceRecords}
-                hebrewHolidays={hebrewHolidays}
-                isActiveDay={isActiveDay}
-                getHebrewHolidayInfo={getHebrewHolidayInfo}
-              />
-            )}
+  <WeeklyCalendar
+    currentDate={currentDate}
+    onDateSelect={handleDateSelect}
+    savedAttendanceRecords={attendanceRecords}
+    hebrewHolidays={hebrewHolidays}
+    isActiveDay={isActiveDay}
+    getHebrewHolidayInfo={getHebrewHolidayInfo}
+  />
+)}
 
             {viewMode === 'day' && (
               <DailyCalendar

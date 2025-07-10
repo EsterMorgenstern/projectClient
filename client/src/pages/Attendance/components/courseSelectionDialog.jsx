@@ -1,553 +1,25 @@
-
-// import React, { useState, useEffect, useMemo } from 'react';
-// import { motion, AnimatePresence } from 'framer-motion';
-// import {
-//   Dialog, DialogTitle, DialogContent, DialogActions,
-//   Typography, Box, Button, IconButton, Grid, Card,
-//   CardContent, CardHeader, Avatar, List, ListItem,
-//   ListItemText, ListItemIcon, Collapse, Divider,
-//   Paper, useMediaQuery, useTheme, Chip, Accordion,
-//   AccordionSummary, AccordionDetails, CircularProgress,
-//   Alert, AlertTitle
-// } from '@mui/material';
-// import {
-//   Close, School, LocationOn, Group, ExpandMore,
-//   ExpandLess, NavigateNext, AccessTime, Person,
-//   EventBusy, Numbers, Security, Schedule, Today
-// } from '@mui/icons-material';
-// import { format } from 'date-fns';
-// import { he } from 'date-fns/locale';
-// import { styles } from '../styles/dialogStyles';
-
-// const CourseSelectionDialog = ({
-//   open,
-//   onClose,
-//   selectedDate,
-//   groupsByDay = [],
-//   groupsByDayLoading = false,
-//   onGroupSelect
-// }) => {
-//   console.log('🏗️ CourseSelectionDialog rendered with props:', {
-//     open,
-//     selectedDate,
-//     groupsByDayCount: groupsByDay?.length || 0,
-//     onGroupSelectType: typeof onGroupSelect
-//   });
-
-//   const theme = useTheme();
-//   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
-//   const [expandedCourse, setExpandedCourse] = useState(null);
-
-//   // Reset state when dialog opens
-//   useEffect(() => {
-//     if (open) {
-//       setExpandedCourse(null);
-//     }
-//   }, [open]);
-
-//   // בדיקת תקינות של onGroupSelect
-//   if (!onGroupSelect || typeof onGroupSelect !== 'function') {
-//     console.error('❌ onGroupSelect is not a function:', onGroupSelect);
-//   }
-
-//   // פונקציה לטיפול בלחיצה על קבוצה
-//  const handleGroupClick = async (group) => {
-//   console.log('🖱️ Group card clicked:', group);
-  
-//   if (onGroupSelect && typeof onGroupSelect === 'function') {
-//     try {
-//       // סגור את הדיאלוג מיד
-//       onClose();
-      
-//       // חכה רגע קצר ואז קרא לפונקציה
-//       setTimeout(() => {
-//         onGroupSelect(group);
-//       }, 100);
-      
-//     } catch (error) {
-//       console.error('❌ Error calling onGroupSelect:', error);
-//       alert('שגיאה: לא ניתן לבחור קבוצה זו');
-//     }
-//   } else {
-//     console.error('❌ onGroupSelect is not available or not a function');
-//     alert('שגיאה: לא ניתן לבחור קבוצה זו');
-//   }
-// };
-//   // ארגון הקבוצות לפי חוג וסניף
-//   const organizedGroups = useMemo(() => {
-//     if (!groupsByDay || groupsByDay.length === 0) return {};
-
-//     const organized = {};
-
-//     groupsByDay.forEach(group => {
-//       const courseName = group.courseName || group.couresName || 'חוג לא ידוע';
-//       const branchName = group.branchName || 'סניף לא ידוע';
-
-//       if (!organized[courseName]) {
-//         organized[courseName] = {};
-//       }
-
-//       if (!organized[courseName][branchName]) {
-//         organized[courseName][branchName] = [];
-//       }
-
-//       organized[courseName][branchName].push(group);
-//     });
-
-//     return organized;
-//   }, [groupsByDay]);
-
-//   // בדיקת תקינות תאריך
-//   if (!selectedDate) {
-//     return (
-//       <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth sx={{direction:'rtl'}}>
-//         <DialogTitle>שגיאה</DialogTitle>
-//         <DialogContent>
-//           <Typography>לא נבחר תאריך תקין</Typography>
-//         </DialogContent>
-//         <DialogActions>
-//           <Button onClick={onClose}>סגור</Button>
-//         </DialogActions>
-//       </Dialog>
-//     );
-//   }
-
-//   // Handle accordion expansion
-//   const handleAccordionChange = (courseName) => (event, isExpanded) => {
-//     setExpandedCourse(isExpanded ? courseName : null);
-//   };
-
-//   // קבלת צבע לפי חוג
-//   const getCourseColor = (courseName) => {
-//     const colors = [
-//       '#1976d2', '#388e3c', '#f57c00', '#7b1fa2',
-//       '#c2185b', '#00796b', '#5d4037', '#455a64',
-//       '#e64a19', '#303f9f', '#689f38', '#fbc02d'
-//     ];
-    
-//     let hash = 0;
-//     for (let i = 0; i < courseName.length; i++) {
-//       hash = courseName.charCodeAt(i) + ((hash << 5) - hash);
-//     }
-    
-//     return colors[Math.abs(hash) % colors.length];
-//   };
-
-//   // Render dialog title
-//   const renderDialogTitle = () => {
-//     const formattedDate = format(selectedDate, 'EEEE, d MMMM yyyy', { locale: he });
-//     const dayName = format(selectedDate, 'EEEE', { locale: he });
-
-//     return (
-//       <DialogTitle sx={styles.dialogTitle}>
-//         <Box sx={styles.dialogTitleContent}>
-//           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-//             <Avatar sx={{ 
-//               backgroundColor: theme.palette.primary.main,
-//               width: 48,
-//               height: 48
-//             }}>
-//               <Today />
-//             </Avatar>
-//             <Box>
-//               <Typography variant="h6" sx={styles.dialogTitleText}>
-//                 חוגים ביום {dayName}
-//               </Typography>
-//               <Typography variant="subtitle2" color="textSecondary">
-//                 {formattedDate}
-//               </Typography>
-//             </Box>
-//           </Box>
-//           <IconButton
-//             edge="end"
-//             color="inherit"
-//             onClick={onClose}
-//             aria-label="close"
-//             sx={styles.closeButton}
-//           >
-//             <Close />
-//           </IconButton>
-//         </Box>
-//       </DialogTitle>
-//     );
-//   };
-
-//   // Render loading state
-//   const renderLoadingState = () => (
-//     <Box sx={{
-//       display: 'flex',
-//       flexDirection: 'column',
-//       alignItems: 'center',
-//       justifyContent: 'center',
-//       minHeight: 200,
-//       gap: 2
-//     }}>
-//       <CircularProgress size={48} thickness={4} />
-//       <Typography variant="h6" color="textSecondary">
-//         טוען חוגים...
-//       </Typography>
-//     </Box>
-//   );
-
-//   // Render empty state
-//   const renderEmptyState = () => (
-//     <Box sx={{
-//       display: 'flex',
-//       flexDirection: 'column',
-//       alignItems: 'center',
-//       justifyContent: 'center',
-//       minHeight: 200,
-//       gap: 2,
-//       textAlign: 'center'
-//     }}>
-//       <Avatar sx={{
-//         width: 80,
-//         height: 80,
-//         backgroundColor: theme.palette.grey[100],
-//         color: theme.palette.grey[400]
-//       }}>
-//         <EventBusy sx={{ fontSize: 40 }} />
-//       </Avatar>
-//       <Typography variant="h6" color="textSecondary">
-//         אין חוגים מתוכננים ליום זה
-//       </Typography>
-//       <Typography variant="body2" color="textSecondary">
-//         נסה לבחור יום אחר או פנה למנהל המערכת
-//       </Typography>
-//     </Box>
-//   );
-
-//   // Render group card 
-//   const renderGroupCard = (group, branchColor, uniqueKey) => {
-//     return (
-//       <Card
-//         key={uniqueKey}
-//         component={motion.div}
-//         whileHover={{ scale: 1.02, y: -2 }}
-//         whileTap={{ scale: 0.98 }}
-//         sx={{
-//           mb: 2,
-//           cursor: 'pointer',
-//           border: `2px solid transparent`,
-//           transition: 'all 0.2s ease-in-out',
-//           '&:hover': {
-//             border: `2px solid ${branchColor}`,
-//             boxShadow: `0 4px 20px ${branchColor}30`
-//           }
-//         }}
-//         onClick={() => handleGroupClick(group)}
-//       >
-//         <CardContent sx={{ p: 3 }}>
-//           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-//             <Box>
-//               <Typography variant="h6" sx={{ fontWeight: 'bold', color: branchColor, mb: 1 }}>
-//                 {group.courseName || group.couresName || 'שם חוג לא זמין'}
-//               </Typography>
-//               <Typography variant="body2" color="textSecondary">
-//                 קבוצה: {group.groupName || 'לא צוין'}
-//               </Typography>
-//             </Box>
-//             <Chip
-//               label={group.branchName || 'סניף לא זמין'}
-//               sx={{
-//                 backgroundColor: `${branchColor}20`,
-//                 color: branchColor,
-//                 fontWeight: 'bold'
-//               }}
-//             />
-//           </Box>
-
-//           <Divider sx={{ my: 2 }} />
-
-//           <Grid container spacing={2}>
-//             <Grid item xs={6}>
-//               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-//                 <AccessTime sx={{ fontSize: 16, color: 'text.secondary' }} />
-//                 <Typography variant="body2">
-//                   {group.hour || 'שעה לא צוינה'}
-//                 </Typography>
-//               </Box>
-//             </Grid>
-//             <Grid item xs={6}>
-//               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-//                 <Group sx={{ fontSize: 16, color: 'text.secondary' }} />
-//                 <Typography variant="body2">
-//                   {group.studentsCount || 0} תלמידים
-//                 </Typography>
-//               </Box>
-//             </Grid>
-//           </Grid>
-
-//           <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-//             <Button
-//               variant="contained"
-//               size="small"
-//               sx={{ 
-//                 backgroundColor: branchColor,
-//                 '&:hover': { backgroundColor: branchColor }
-//               }}
-//               onClick={(e) => {
-//                 e.stopPropagation();
-//                 handleGroupClick(group);
-//               }}
-//             >
-//               בחר קבוצה
-//               <NavigateNext sx={{ mr: 1 }} />
-//             </Button>
-//           </Box>
-//         </CardContent>
-//       </Card>
-//     );
-//   };
-
-//   // Render groups by course and branch
-//   const renderGroupsContent = () => {
-//     const courseNames = Object.keys(organizedGroups);
-
-//     if (courseNames.length === 0) {
-//       return renderEmptyState();
-//     }
-
-//     return (
-//       <Box sx={{ maxHeight: '60vh', overflow: 'auto' }}>
-//         {courseNames.map((courseName, courseIndex) => {
-//           const courseColor = getCourseColor(courseName);
-//           const branches = organizedGroups[courseName];
-//           const branchNames = Object.keys(branches);
-//           const totalGroups = branchNames.reduce((sum, branchName) => 
-//             sum + branches[branchName].length, 0
-//           );
-
-//           const courseKey = `course-${courseIndex}-${courseName}`;
-
-//           return (
-//             <Accordion
-//               key={courseKey}
-//               expanded={expandedCourse === courseName}
-//               onChange={handleAccordionChange(courseName)}
-//               sx={{
-//                 mb: 2,
-//                 border: `1px solid ${courseColor}30`,
-//                 borderRadius: '12px !important',
-//                 '&:before': { display: 'none' },
-//                 boxShadow: `0 2px 8px ${courseColor}20`
-//               }}
-//             >
-//               <AccordionSummary
-//                 expandIcon={<ExpandMore sx={{ color: courseColor }} />}
-//                 sx={{
-//                   backgroundColor: `${courseColor}10`,
-//                   borderRadius: '12px',
-//                   '&.Mui-expanded': {
-//                     borderBottomLeftRadius: 0,
-//                     borderBottomRightRadius: 0
-//                   }
-//                 }}
-//               >
-//                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
-//                   <Avatar sx={{
-//                     backgroundColor: courseColor,
-//                     width: 40,
-//                     height: 40
-//                   }}>
-//                     <School />
-//                   </Avatar>
-                  
-//                   <Box sx={{ flex: 1 }}>
-//                     <Typography variant="h6" sx={{ 
-//                       fontWeight: 'bold',
-//                       color: courseColor
-//                     }}>
-//                       {courseName}
-//                     </Typography>
-//                     <Typography variant="body2" color="textSecondary">
-//                       {branchNames.length} סניפים • {totalGroups} קבוצות
-//                     </Typography>
-//                   </Box>
-
-//                   <Chip
-//                     label={`${totalGroups} קבוצות`}
-//                     size="small"
-//                     sx={{
-//                       backgroundColor: courseColor,
-//                       color: 'white',
-//                       fontWeight: 'bold'
-//                     }}
-//                   />
-//                 </Box>
-//               </AccordionSummary>
-
-//               <AccordionDetails sx={{ p: 3 }}>
-//                 {branchNames.map((branchName, branchIndex) => {
-//                   const branchGroups = branches[branchName];
-//                   const branchColor = getCourseColor(branchName);
-                  
-//                   const branchKey = `branch-${courseIndex}-${branchIndex}-${branchName}`;
-
-//                   return (
-//                     <Box key={branchKey} sx={{ mb: 3 }}>
-//                       <Box sx={{ 
-//                         display: 'flex', 
-//                         alignItems: 'center', 
-//                         gap: 2, 
-//                         mb: 2,
-//                         p: 2,
-//                         backgroundColor: `${branchColor}10`,
-//                         borderRadius: '8px',
-//                         border: `1px solid ${branchColor}30`
-//                       }}>
-//                         <Avatar sx={{
-//                           backgroundColor: branchColor,
-//                           width: 32,
-//                           height: 32
-//                         }}>
-//                           <LocationOn />
-//                         </Avatar>
-                        
-//                         <Typography variant="subtitle1" sx={{ 
-//                           fontWeight: 'bold',
-//                           color: branchColor,
-//                           flex: 1
-//                         }}>
-//                           {branchName}
-//                         </Typography>
-                        
-//                         <Chip
-//                           label={`${branchGroups.length} קבוצות`}
-//                           size="small"
-//                           sx={{
-//                             backgroundColor: branchColor,
-//                             color: 'white'
-//                           }}
-//                         />
-//                       </Box>
-
-//                       <Box sx={{ pl: 2 }}>
-//                         {branchGroups.map((group, groupIndex) => {
-//                           const groupKey = group.groupId || `group-${courseIndex}-${branchIndex}-${groupIndex}`;
-//                           return renderGroupCard(group, branchColor, groupKey);
-//                         })}
-//                       </Box>
-//                     </Box>
-//                   );
-//                 })}
-//               </AccordionDetails>
-//             </Accordion>
-//           );
-//         })}
-//       </Box>
-//     );
-//   };
-
-//   return (
-//     <Dialog
-//       open={open}
-//       onClose={onClose}
-//       maxWidth="md"
-//       fullWidth
-//       sx={{
-//         '& .MuiDialog-paper': {
-//           borderRadius: '20px',
-//           maxHeight: '90vh',
-//           direction: 'rtl'
-//         }
-//       }}
-//     >
-//       {renderDialogTitle()}
-
-//       <DialogContent sx={{ ...styles.dialogContent, p: 3 }}>
-//         <AnimatePresence mode="wait">
-//           {groupsByDayLoading ? (
-//             <motion.div
-//               key="loading"
-//               initial={{ opacity: 0, y: 20 }}
-//               animate={{ opacity: 1, y: 0 }}
-//               exit={{ opacity: 0, y: -20 }}
-//               transition={{ duration: 0.3 }}
-//             >
-//               {renderLoadingState()}
-//             </motion.div>
-//           ) : (
-//             <motion.div
-//               key="content"
-//               initial={{ opacity: 0, y: 20 }}
-//               animate={{ opacity: 1, y: 0 }}
-//               exit={{ opacity: 0, y: -20 }}
-//               transition={{ duration: 0.3 }}
-//             >
-//               {renderGroupsContent()}
-//             </motion.div>
-//           )}
-//         </AnimatePresence>
-
-//         {/* Summary information */}
-//         {!groupsByDayLoading && groupsByDay.length > 0 && (
-//           <Paper sx={{
-//             mt: 3,
-//             p: 2,
-//             backgroundColor: theme.palette.grey[50],
-//             borderRadius: 2,
-//             border: `1px solid ${theme.palette.grey[200]}`
-//           }}>
-//             <Typography variant="body2" color="textSecondary" sx={{ textAlign: 'center' }}>
-//               סה"כ {groupsByDay.length} קבוצות זמינות ליום זה
-//             </Typography>
-//           </Paper>
-//         )}
-//       </DialogContent>
-
-//       <DialogActions sx={{ 
-//         p: 3, 
-//         backgroundColor: theme.palette.grey[50],
-//         borderTop: `1px solid ${theme.palette.grey[200]}`,
-//         justifyContent: 'space-between'
-//       }}>
-//         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-//           <Schedule sx={{ fontSize: 16, color: 'text.secondary' }} />
-//           <Typography variant="caption" color="textSecondary">
-//             בחר קבוצה כדי לרשום נוכחות
-//           </Typography>
-//         </Box>
-        
-//         <Button
-//           onClick={onClose}
-//           variant="outlined"
-//           color="primary"
-//           size="large"
-//           sx={{ 
-//             borderRadius: 2,
-//             px: 4,
-//             py: 1
-//           }}
-//         >
-//           סגור
-//         </Button>
-//       </DialogActions>
-//     </Dialog>
-//   );
-// };
-
-// export default CourseSelectionDialog;
 import React, { useState, useEffect, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Typography, Box, Button, IconButton, Grid, Card,
-  CardContent, CardHeader, Avatar, List, ListItem,
-  ListItemText, ListItemIcon, Collapse, Divider,
-  Paper, useMediaQuery, useTheme, Chip, Accordion,
-  AccordionSummary, AccordionDetails, CircularProgress,
-  Alert, AlertTitle
+  CardContent, Avatar, Divider, Paper, useMediaQuery, 
+  useTheme, Chip, Accordion, AccordionSummary, AccordionDetails, 
+  CircularProgress, Badge, LinearProgress
 } from '@mui/material';
 import {
   Close, School, LocationOn, Group, ExpandMore,
-  ExpandLess, NavigateNext, AccessTime, Person,
-  EventBusy, Numbers, Security, Schedule, Today
+  NavigateNext, AccessTime, EventBusy, Schedule, Today,
+  CheckCircle, Cancel, HourglassEmpty, TrendingUp,
+  Assessment, Event
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { styles } from '../styles/dialogStyles';
+import { isMarkedForDate } from '../../../store/attendance/attendanceGetIsMarkedForGroup';
+import { useCalendarCancellations } from './useCalendarCancellations';
+import { fetchLessonCancellations } from '../../../store/lessonsCancelation/lessonsCancelationGetAll';
 
 const CourseSelectionDialog = ({
   open,
@@ -557,53 +29,52 @@ const CourseSelectionDialog = ({
   groupsByDayLoading = false,
   onGroupSelect
 }) => {
-  console.log('🏗️ CourseSelectionDialog rendered with props:', {
-    open,
-    selectedDate,
-    groupsByDayCount: groupsByDay?.length || 0,
-    onGroupSelectType: typeof onGroupSelect
-  });
+  // console.log('🏗️ CourseSelectionDialog rendered with props:', {
+  //   open,
+  //   selectedDate,
+  //   groupsByDayCount: groupsByDay?.length || 0,
+  //   onGroupSelectType: typeof onGroupSelect
+  // });
 
+  // כל ה-hooks צריכים להיות בתחילת הקומפוננטה
+  const dispatch = useDispatch();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+  // State hooks
   const [expandedCourse, setExpandedCourse] = useState(null);
+  const [checkingAttendance, setCheckingAttendance] = useState(new Set());
+  const [attendanceChecked, setAttendanceChecked] = useState(false);
 
-  // Reset state when dialog opens
-  useEffect(() => {
-    if (open) {
-      setExpandedCourse(null);
-    }
-  }, [open]);
+  // Redux selectors
+  const attendanceMarkedStatus = useSelector(state => state.attendances?.attendanceMarkedStatus || {});
+  const attendanceCheckLoading = useSelector(state => state.attendances?.attendanceCheckLoading || false);
 
-  // בדיקת תקינות של onGroupSelect
-  if (!onGroupSelect || typeof onGroupSelect !== 'function') {
-    console.error('❌ onGroupSelect is not a function:', onGroupSelect);
-  }
+  // Cancellation hooks
+  const {
+    getCancellationForGroupAndDate,
+    getCancellationsForDate,
+    hasAnyCancellationsOnDate,
+    getCancellationCountForDate
+  } = useCalendarCancellations();
 
-  // פונקציה לטיפול בלחיצה על קבוצה
-  const handleGroupClick = async (group) => {
-    console.log('🖱️ Group card clicked:', group);
+  // פונקציות עזר
+  const getAttendanceStatus = (groupId) => {
+    if (!selectedDate) return null;
     
-    if (onGroupSelect && typeof onGroupSelect === 'function') {
-      try {
-        // קרא לפונקציה מיד
-        console.log('✅ Calling onGroupSelect with group:', group);
-        await onGroupSelect(group);
-        
-        // סגור את הדיאלוג אחרי בחירת קבוצה
-        if (onClose && typeof onClose === 'function') {
-          onClose();
-        }
-        
-      } catch (error) {
-        console.error('❌ Error calling onGroupSelect:', error);
-        alert('שגיאה: לא ניתן לבחור קבוצה זו');
-      }
-    } else {
-      console.error('❌ onGroupSelect is not available or not a function');
-      alert('שגיאה: לא ניתן לבחור קבוצה זו');
-    }
+    const dateString = format(selectedDate, 'yyyy-MM-dd');
+    const key = `${groupId}-${dateString}`;
+    
+    return attendanceMarkedStatus[key];
+  };
+
+  const isCheckingAttendanceForGroup = (groupId) => {
+    return checkingAttendance.has(groupId);
+  };
+
+  const getGroupCancellation = (groupId) => {
+    if (!selectedDate) return null;
+    return getCancellationForGroupAndDate(groupId, selectedDate);
   };
 
   // ארגון הקבוצות לפי חוג וסניף
@@ -630,32 +101,139 @@ const CourseSelectionDialog = ({
     return organized;
   }, [groupsByDay]);
 
-  // בדיקת תקינות תאריך
-  if (!selectedDate) {
-    return (
-      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth sx={{direction:'rtl'}}>
-        <DialogTitle>שגיאה</DialogTitle>
-        <DialogContent>
-          <Typography>לא נבחר תאריך תקין</Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={onClose}>סגור</Button>
-        </DialogActions>
-      </Dialog>
-    );
-  }
+  // חישוב סטטיסטיקות כלליות
+  const overallStats = useMemo(() => {
+    if (!selectedDate || !groupsByDay.length) {
+      return { marked: 0, unmarked: 0, checking: 0, unknown: 0, cancelled: 0, total: 0 };
+    }
 
-  // Handle accordion expansion
+    return groupsByDay.reduce((stats, group) => {
+      const cancellation = getGroupCancellation(group.groupId);
+      const attendanceStatus = getAttendanceStatus(group.groupId);
+      const isChecking = isCheckingAttendanceForGroup(group.groupId);
+      
+      if (cancellation) {
+        stats.cancelled++;
+      } else if (isChecking) {
+        stats.checking++;
+      } else if (attendanceStatus === true) {
+        stats.marked++;
+      } else if (attendanceStatus === false) {
+        stats.unmarked++;
+      } else {
+        stats.unknown++;
+      }
+      stats.total++;
+      return stats;
+    }, { marked: 0, unmarked: 0, checking: 0, unknown: 0, cancelled: 0, total: 0 });
+  }, [groupsByDay, attendanceMarkedStatus, checkingAttendance, selectedDate]);
+
+  // Effects
+  useEffect(() => {
+    if (open) {
+      setExpandedCourse(null);
+      setCheckingAttendance(new Set());
+      setAttendanceChecked(false);
+      dispatch(fetchLessonCancellations());
+    }
+  }, [open, dispatch]);
+
+  useEffect(() => {
+    if (open && selectedDate && groupsByDay.length > 0 && !groupsByDayLoading && !attendanceChecked) {
+      console.log('🔍 Auto-checking attendance for all groups on dialog open');
+      checkAttendanceForAllGroups();
+    }
+  }, [open, selectedDate, groupsByDay, groupsByDayLoading, attendanceChecked]);
+
+  const checkAttendanceForAllGroups = async () => {
+    if (!selectedDate || !groupsByDay.length) return;
+
+    console.log('🔄 Starting attendance check for all groups');
+    setAttendanceChecked(true);
+
+    const dateString = format(selectedDate, 'yyyy-MM-dd');
+    const newCheckingSet = new Set();
+    
+    groupsByDay.forEach(group => {
+      const groupId = group.groupId;
+      const key = `${groupId}-${dateString}`;
+      
+      if (attendanceMarkedStatus[key] === undefined) {
+        newCheckingSet.add(groupId);
+      }
+    });
+    
+    setCheckingAttendance(newCheckingSet);
+
+    const checkPromises = Array.from(newCheckingSet).map(async (groupId) => {
+      try {
+        console.log(`🔍 Checking attendance for group ${groupId} on ${dateString}`);
+        await dispatch(isMarkedForDate({ 
+          groupId, 
+          date: dateString 
+        })).unwrap();
+        
+        console.log(`✅ Attendance check completed for group ${groupId}`);
+        
+        setCheckingAttendance(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(groupId);
+          return newSet;
+        });
+        
+      } catch (error) {
+        console.error(`❌ Failed to check attendance for group ${groupId}:`, error);
+        
+        setCheckingAttendance(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(groupId);
+          return newSet;
+        });
+      }
+    });
+
+    await Promise.allSettled(checkPromises);
+    
+    console.log('✅ All attendance checks completed');
+  };
+
+  const handleGroupClick = async (group) => {
+    console.log('🖱️ Group card clicked:', group);
+    
+    const cancellation = getGroupCancellation(group.groupId);
+    if (cancellation) {
+      console.log('⚠️ Cannot select cancelled lesson:', cancellation);
+      return;
+    }
+    
+    if (onGroupSelect && typeof onGroupSelect === 'function') {
+      try {
+        console.log('✅ Calling onGroupSelect with group:', group);
+        await onGroupSelect(group);
+        
+        if (onClose && typeof onClose === 'function') {
+          onClose();
+        }
+        
+      } catch (error) {
+        console.error('❌ Error calling onGroupSelect:', error);
+        alert('שגיאה: לא ניתן לבחור קבוצה זו');
+      }
+    } else {
+      console.error('❌ onGroupSelect is not available or not a function');
+      alert('שגיאה: לא ניתן לבחור קבוצה זו');
+    }
+  };
+
   const handleAccordionChange = (courseName) => (event, isExpanded) => {
     setExpandedCourse(isExpanded ? courseName : null);
   };
 
-  // קבלת צבע לפי חוג
   const getCourseColor = (courseName) => {
     const colors = [
-      '#1976d2', '#388e3c', '#f57c00', '#7b1fa2',
-      '#c2185b', '#00796b', '#5d4037', '#455a64',
-      '#e64a19', '#303f9f', '#689f38', '#fbc02d'
+      '#667eea', '#764ba2', '#f093fb', '#f5576c',
+      '#4facfe', '#00f2fe', '#43e97b', '#38f9d7',
+      '#ffecd2', '#fcb69f', '#a8edea', '#fed6e3'
     ];
     
     let hash = 0;
@@ -666,37 +244,147 @@ const CourseSelectionDialog = ({
     return colors[Math.abs(hash) % colors.length];
   };
 
-  // Render dialog title
+  // בדיקת תקינות תאריך מוקדמת
+  if (!selectedDate) {
+    return (
+      <Dialog 
+        open={open} 
+        onClose={onClose} 
+        maxWidth="sm" 
+        fullWidth 
+        sx={{
+          direction:'rtl',
+          '& .MuiDialog-paper': {
+            borderRadius: 4,
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white'
+          }
+        }}
+      >
+        <DialogTitle sx={{ textAlign: 'center', py: 3 }}>
+          <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+            שגיאה
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ textAlign: 'center', pb: 3 }}>
+          <Typography variant="h6">לא נבחר תאריך תקין</Typography>
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: 'center', pb: 3 }}>
+          <Button 
+            onClick={onClose}
+            variant="contained"
+            sx={{
+              backgroundColor: 'rgba(255,255,255,0.2)',
+              '&:hover': { backgroundColor: 'rgba(255,255,255,0.3)' },
+              borderRadius: 3,
+              px: 4
+            }}
+          >
+            סגור
+          </Button>
+        </DialogActions>
+      </Dialog>
+    );
+  }
+
+  // Render functions
   const renderDialogTitle = () => {
     const formattedDate = format(selectedDate, 'EEEE, d MMMM yyyy', { locale: he });
     const dayName = format(selectedDate, 'EEEE', { locale: he });
+    const dateHasCancellations = hasAnyCancellationsOnDate(selectedDate);
+    const cancellationCount = getCancellationCountForDate(selectedDate);
 
     return (
-      <DialogTitle sx={styles.dialogTitle}>
-        <Box sx={styles.dialogTitleContent}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <DialogTitle sx={{
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        color: 'white',
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 100%)',
+          pointerEvents: 'none'
+        }
+      }}>
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          position: 'relative',
+          zIndex: 1
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
             <Avatar sx={{ 
-              backgroundColor: theme.palette.primary.main,
-              width: 48,
-              height: 48
+              backgroundColor: 'rgba(255,255,255,0.2)',
+              width: 56,
+              height: 56,
+              backdropFilter: 'blur(10px)',
+              border: '2px solid rgba(255,255,255,0.3)'
             }}>
-              <Today />
+              <Today sx={{ fontSize: 28 }} />
             </Avatar>
             <Box>
-              <Typography variant="h6" sx={styles.dialogTitleText}>
+              <Typography variant="h5" sx={{ 
+                fontWeight: 'bold',
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                mb: 0.5
+              }}>
                 חוגים ביום {dayName}
               </Typography>
-              <Typography variant="subtitle2" color="textSecondary">
+              <Typography variant="subtitle1" sx={{ 
+                opacity: 0.9,
+                textShadow: '0 1px 2px rgba(0,0,0,0.2)'
+              }}>
                 {formattedDate}
               </Typography>
+              
+              {dateHasCancellations && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                  <Cancel sx={{ fontSize: 18, color: '#ffcdd2' }} />
+                  <Typography variant="caption" sx={{ 
+                    color: '#ffcdd2', 
+                    fontWeight: 'bold',
+                    textShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                  }}>
+                    {cancellationCount} ביטולי שיעורים
+                  </Typography>
+                </Box>
+              )}
+              
+              {checkingAttendance.size > 0 && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                  <CircularProgress size={16} thickness={4} sx={{ color: 'rgba(255,255,255,0.8)' }} />
+                  <Typography variant="caption" sx={{ 
+                    color: 'rgba(255,255,255,0.8)',
+                    textShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                  }}>
+                    בודק נוכחות עבור {checkingAttendance.size} קבוצות...
+                  </Typography>
+                </Box>
+              )}
             </Box>
           </Box>
+          
           <IconButton
             edge="end"
             color="inherit"
             onClick={onClose}
             aria-label="close"
-            sx={styles.closeButton}
+            sx={{
+              backgroundColor: 'rgba(255,255,255,0.1)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              '&:hover': {
+                backgroundColor: 'rgba(255,255,255,0.2)',
+                transform: 'scale(1.1)',
+              },
+              transition: 'all 0.2s ease'
+            }}
           >
             <Close />
           </IconButton>
@@ -705,274 +393,671 @@ const CourseSelectionDialog = ({
     );
   };
 
-  // Render loading state
   const renderLoadingState = () => (
     <Box sx={{
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      minHeight: 200,
-      gap: 2
+      minHeight: '300px',
+      gap: 3,
+      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+      borderRadius: 3,
+      margin: 2
     }}>
-      <CircularProgress size={48} thickness={4} />
-      <Typography variant="h6" color="textSecondary">
+      <CircularProgress 
+        size={60} 
+        thickness={4} 
+        sx={{ 
+          color: '#667eea',
+          filter: 'drop-shadow(0 4px 8px rgba(102, 126, 234, 0.3))'
+        }} 
+      />
+      <Typography variant="h6" sx={{ 
+        color: '#475569',
+        fontWeight: 'bold',
+        textAlign: 'center'
+      }}>
         טוען חוגים...
+      </Typography>
+      <Typography variant="body2" sx={{ 
+        color: '#64748b',
+        textAlign: 'center',
+        maxWidth: 300
+      }}>
+        אנא המתן בזמן שאנו טוענים את רשימת החוגים עבור התאריך שנבחר
       </Typography>
     </Box>
   );
 
-  // Render empty state
   const renderEmptyState = () => (
     <Box sx={{
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      minHeight: 200,
-      gap: 2,
-      textAlign: 'center'
+      minHeight: '300px',
+      gap: 3,
+      background: 'linear-gradient(135deg, #fef7ff 0%, #f3e8ff 100%)',
+      borderRadius: 3,
+      margin: 2,
+      border: '2px dashed #c084fc',
+      position: 'relative',
+      overflow: 'hidden',
+      '&::before': {
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'radial-gradient(circle at 50% 50%, rgba(192, 132, 252, 0.1) 0%, transparent 70%)',
+        pointerEvents: 'none'
+      }
     }}>
       <Avatar sx={{
         width: 80,
         height: 80,
-        backgroundColor: theme.palette.grey[100],
-        color: theme.palette.grey[400]
+        backgroundColor: '#c084fc',
+        background: 'linear-gradient(135deg, #c084fc 0%, #a855f7 100%)',
+        boxShadow: '0 8px 32px rgba(192, 132, 252, 0.3)',
+        position: 'relative',
+        zIndex: 1
       }}>
         <EventBusy sx={{ fontSize: 40 }} />
       </Avatar>
-      <Typography variant="h6" color="textSecondary">
+      <Typography variant="h5" sx={{ 
+        color: '#7c3aed',
+        fontWeight: 'bold',
+        textAlign: 'center',
+        position: 'relative',
+        zIndex: 1
+      }}>
         אין חוגים מתוכננים ליום זה
       </Typography>
-      <Typography variant="body2" color="textSecondary">
-        נסה לבחור יום אחר או פנה למנהל המערכת
+      <Typography variant="body1" sx={{ 
+        color: '#8b5cf6',
+        textAlign: 'center',
+        maxWidth: 400,
+        position: 'relative',
+        zIndex: 1
+      }}>
+        {format(selectedDate, 'EEEE, d MMMM yyyy', { locale: he })}
       </Typography>
     </Box>
   );
 
-  // Render group card 
-  const renderGroupCard = (group, branchColor, uniqueKey) => {
-    return (
-      <Card
-        key={uniqueKey}
-        component={motion.div}
-        whileHover={{ scale: 1.02, y: -2 }}
-        whileTap={{ scale: 0.98 }}
-        sx={{
-          mb: 2,
-          cursor: 'pointer',
-          border: `2px solid transparent`,
-          transition: 'all 0.2s ease-in-out',
-          '&:hover': {
-            border: `2px solid ${branchColor}`,
-            boxShadow: `0 4px 20px ${branchColor}30`
-          }
-        }}
-        onClick={() => handleGroupClick(group)}
-      >
-        <CardContent sx={{ p: 3 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 'bold', color: branchColor, mb: 1 }}>
-                {group.courseName || group.couresName || 'שם חוג לא זמין'}
+  const renderStatsBar = () => (
+    <Paper sx={{
+      p: 3,
+      mb: 3,
+      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+      borderRadius: 3,
+      border: '1px solid rgba(102, 126, 234, 0.1)',
+      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+      position: 'relative',
+      overflow: 'hidden',
+      '&::before': {
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '4px',
+        background: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)'
+      }
+    }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+        <Assessment sx={{ color: '#667eea', fontSize: 24 }} />
+        <Typography variant="h6" sx={{ 
+          fontWeight: 'bold',
+          color: '#1e293b',
+          flex: 1
+        }}>
+          סטטוס נוכחות
+        </Typography>
+        <Chip
+          label={`${overallStats.total} קבוצות`}
+          sx={{
+            backgroundColor: '#667eea',
+            color: 'white',
+            fontWeight: 'bold',
+            borderRadius: 2
+          }}
+        />
+      </Box>
+      
+      <Grid container spacing={2}>
+        <Grid item xs={6} sm={2.4}>
+          <Box sx={{
+            textAlign: 'center',
+            p: 2,
+            borderRadius: 2,
+            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+            border: '1px solid rgba(76, 175, 80, 0.2)',
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              backgroundColor: 'rgba(76, 175, 80, 0.15)',
+              transform: 'translateY(-2px)',
+              boxShadow: '0 4px 12px rgba(76, 175, 80, 0.2)'
+            }
+          }}>
+            <CheckCircle sx={{ color: '#4caf50', fontSize: 28, mb: 1 }} />
+            <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#2e7d32' }}>
+              {overallStats.marked}
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#388e3c', fontWeight: 'medium' }}>
+              נקבעה
+            </Typography>
+          </Box>
+        </Grid>
+        
+        <Grid item xs={6} sm={2.4}>
+          <Box sx={{
+            textAlign: 'center',
+            p: 2,
+            borderRadius: 2,
+            backgroundColor: 'rgba(255, 152, 0, 0.1)',
+            border: '1px solid rgba(255, 152, 0, 0.2)',
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              backgroundColor: 'rgba(255, 152, 0, 0.15)',
+              transform: 'translateY(-2px)',
+              boxShadow: '0 4px 12px rgba(255, 152, 0, 0.2)'
+            }
+          }}>
+            <HourglassEmpty sx={{ color: '#ff9800', fontSize: 28, mb: 1 }} />
+            <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#f57c00' }}>
+              {overallStats.unmarked}
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#ef6c00', fontWeight: 'medium' }}>
+              לא נקבעה
+            </Typography>
+          </Box>
+        </Grid>
+        
+        {overallStats.cancelled > 0 && (
+          <Grid item xs={6} sm={2.4}>
+            <Box sx={{
+              textAlign: 'center',
+              p: 2,
+              borderRadius: 2,
+              backgroundColor: 'rgba(244, 67, 54, 0.1)',
+              border: '1px solid rgba(244, 67, 54, 0.2)',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                backgroundColor: 'rgba(244, 67, 54, 0.15)',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 4px 12px rgba(244, 67, 54, 0.2)'
+              }
+            }}>
+              <Cancel sx={{ color: '#f44336', fontSize: 28, mb: 1 }} />
+              <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#d32f2f' }}>
+                {overallStats.cancelled}
               </Typography>
-              <Typography variant="body2" color="textSecondary">
-                קבוצה: {group.groupName || 'לא צוין'}
+              <Typography variant="caption" sx={{ color: '#c62828', fontWeight: 'medium' }}>
+                בוטלו
               </Typography>
             </Box>
-            <Chip
-              label={group.branchName || 'סניף לא זמין'}
-              sx={{
-                backgroundColor: `${branchColor}20`,
-                color: branchColor,
-                fontWeight: 'bold'
-              }}
-            />
-          </Box>
-
-          <Divider sx={{ my: 2 }} />
-
-          <Grid container spacing={2}>
-            <Grid item xs={6}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <AccessTime sx={{ fontSize: 16, color: 'text.secondary' }} />
-                <Typography variant="body2">
-                  {group.hour || 'שעה לא צוינה'}
-                </Typography>
-              </Box>
-            </Grid>
-            {/* <Grid item xs={6}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Group sx={{ fontSize: 16, color: 'text.secondary' }} />
-                <Typography variant="body2">
-                  {group.studentsCount || 0} תלמידים
-                </Typography>
-              </Box>
-            </Grid> */}
           </Grid>
-
-          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-            <Button
-              variant="contained"
-              size="small"
-              sx={{ 
-                backgroundColor: branchColor,
-                '&:hover': { backgroundColor: branchColor }
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleGroupClick(group);
-              }}
-            >
-              בחר קבוצה
-              <NavigateNext sx={{ mr: 1 }} />
-            </Button>
+        )}
+        
+        {overallStats.checking > 0 && (
+          <Grid item xs={6} sm={2.4}>
+            <Box sx={{
+              textAlign: 'center',
+              p: 2,
+              borderRadius: 2,
+              backgroundColor: 'rgba(33, 150, 243, 0.1)',
+              border: '1px solid rgba(33, 150, 243, 0.2)',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                backgroundColor: 'rgba(33, 150, 243, 0.15)',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 4px 12px rgba(33, 150, 243, 0.2)'
+              }
+            }}>
+              <CircularProgress size={28} thickness={4} sx={{ color: '#2196f3', mb: 1 }} />
+              <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                {overallStats.checking}
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#1565c0', fontWeight: 'medium' }}>
+                בודק
+              </Typography>
+            </Box>
+          </Grid>
+        )}
+        
+        <Grid item xs={6} sm={2.4}>
+          <Box sx={{
+            textAlign: 'center',
+            p: 2,
+            borderRadius: 2,
+            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+            border: '1px solid rgba(102, 126, 234, 0.2)',
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              backgroundColor: 'rgba(102, 126, 234, 0.15)',
+              transform: 'translateY(-2px)',
+              boxShadow: '0 4px 12px rgba(102, 126, 234, 0.2)'
+            }
+          }}>
+            <Group sx={{ color: '#667eea', fontSize: 28, mb: 1 }} />
+            <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#5a67d8' }}>
+              {overallStats.total}
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#4c51bf', fontWeight: 'medium' }}>
+              סה"כ
+            </Typography>
           </Box>
-        </CardContent>
-      </Card>
-    );
-  };
+        </Grid>
+      </Grid>
+    </Paper>
+  );
 
-  // Render groups by course and branch
-  const renderGroupsContent = () => {
-    const courseNames = Object.keys(organizedGroups);
-
-    if (courseNames.length === 0) {
-      return renderEmptyState();
+  const renderGroupCard = (group) => {
+    const attendanceStatus = getAttendanceStatus(group.groupId);
+    const isChecking = isCheckingAttendanceForGroup(group.groupId);
+    const cancellation = getGroupCancellation(group.groupId);
+    const isCancelled = !!cancellation;
+    
+    let statusColor = '#64748b';
+    let statusBgColor = 'rgba(100, 116, 139, 0.1)';
+    let statusIcon = <Schedule />;
+    let statusText = 'לא נבדק';
+    
+    if (isCancelled) {
+      statusColor = '#dc2626';
+      statusBgColor = 'rgba(220, 38, 38, 0.1)';
+      statusIcon = <Cancel />;
+      statusText = 'בוטל';
+    } else if (isChecking) {
+      statusColor = '#2563eb';
+      statusBgColor = 'rgba(37, 99, 235, 0.1)';
+      statusIcon = <CircularProgress size={16} thickness={4} sx={{ color: '#2563eb' }} />;
+      statusText = 'בודק...';
+    } else if (attendanceStatus === true) {
+      statusColor = '#16a34a';
+      statusBgColor = 'rgba(22, 163, 74, 0.1)';
+      statusIcon = <CheckCircle />;
+      statusText = 'נקבעה';
+    } else if (attendanceStatus === false) {
+      statusColor = '#ea580c';
+      statusBgColor = 'rgba(234, 88, 12, 0.1)';
+      statusIcon = <HourglassEmpty />;
+      statusText = 'לא נקבעה';
     }
 
     return (
-      <Box sx={{ maxHeight: '60vh', overflow: 'auto' }}>
-        {courseNames.map((courseName, courseIndex) => {
-          const courseColor = getCourseColor(courseName);
-          const branches = organizedGroups[courseName];
-          const branchNames = Object.keys(branches);
-          const totalGroups = branchNames.reduce((sum, branchName) => 
-            sum + branches[branchName].length, 0
-          );
+      <motion.div
+        key={group.groupId}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        whileHover={{ scale: isCancelled ? 1 : 1.02 }}
+        whileTap={{ scale: isCancelled ? 1 : 0.98 }}
+      >
+        <Card sx={{
+          mb: 2,
+          cursor: isCancelled ? 'not-allowed' : 'pointer',
+          opacity: isCancelled ? 0.7 : 1,
+          borderRadius: 3,
+          border: '2px solid',
+          borderColor: isCancelled ? '#fca5a5' : '#e2e8f0',
+          background: isCancelled 
+            ? 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)'
+            : 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+          boxShadow: isCancelled 
+            ? '0 4px 12px rgba(220, 38, 38, 0.15)'
+            : '0 4px 12px rgba(0, 0, 0, 0.1)',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          position: 'relative',
+          overflow: 'hidden',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '4px',
+            background: isCancelled 
+              ? 'linear-gradient(90deg, #dc2626 0%, #ef4444 100%)'
+              : `linear-gradient(90deg, ${statusColor} 0%, ${statusColor}aa 100%)`,
+            opacity: isCancelled ? 1 : 0,
+            transition: 'opacity 0.3s ease'
+          },
+          '&:hover::before': {
+            opacity: 1
+          },
+          '&:hover': {
+            borderColor: isCancelled ? '#fca5a5' : statusColor,
+            boxShadow: isCancelled 
+              ? '0 4px 12px rgba(220, 38, 38, 0.15)'
+              : `0 8px 25px ${statusColor}33`,
+            transform: isCancelled ? 'none' : 'translateY(-2px)'
+          }
+        }}
+        onClick={() => !isCancelled && handleGroupClick(group)}
+      >
+        <CardContent sx={{ p: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+            <Avatar sx={{
+              width: 56,
+              height: 56,
+              background: isCancelled 
+                ? 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)'
+                : `linear-gradient(135deg, ${getCourseColor(group.courseName || group.couresName)} 0%, ${getCourseColor(group.courseName || group.couresName)}dd 100%)`,
+              boxShadow: isCancelled 
+                ? '0 4px 12px rgba(220, 38, 38, 0.3)'
+                : `0 4px 12px ${getCourseColor(group.courseName || group.couresName)}44`,
+              fontSize: '1.5rem',
+              fontWeight: 'bold'
+            }}>
+              {isCancelled ? (
+                <Cancel sx={{ fontSize: 28 }} />
+              ) : (
+                (group.courseName || group.couresName || 'ח').charAt(0)
+              )}
+            </Avatar>
 
-          const courseKey = `course-${courseIndex}-${courseName}`;
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                <Typography variant="h6" sx={{
+                  fontWeight: 'bold',
+                  color: isCancelled ? '#dc2626' : '#1e293b',
+                  textDecoration: isCancelled ? 'line-through' : 'none'
+                }}>
+                  קבוצה {group.groupName}
+                </Typography>
+                
+                <Chip
+                  icon={statusIcon}
+                  label={statusText}
+                  size="small"
+                  sx={{
+                    backgroundColor: statusBgColor,
+                    color: statusColor,
+                    fontWeight: 'bold',
+                    border: `1px solid ${statusColor}33`,
+                    '& .MuiChip-icon': {
+                      color: statusColor
+                    }
+                  }}
+                />
+              </Box>
 
-          return (
-            <Accordion
-              key={courseKey}
-              expanded={expandedCourse === courseName}
-              onChange={handleAccordionChange(courseName)}
-              sx={{
-                mb: 2,
-                border: `1px solid ${courseColor}30`,
-                borderRadius: '12px !important',
-                '&:before': { display: 'none' },
-                boxShadow: `0 2px 8px ${courseColor}20`
-              }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMore sx={{ color: courseColor }} />}
-                sx={{
-                  backgroundColor: `${courseColor}10`,
-                  borderRadius: '12px',
-                  '&.Mui-expanded': {
-                    borderBottomLeftRadius: 0,
-                    borderBottomRightRadius: 0
-                  }
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
-                  <Avatar sx={{
-                    backgroundColor: courseColor,
-                    width: 40,
-                    height: 40
-                  }}>
-                    <School />
-                  </Avatar>
-                  
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" sx={{ 
-                      fontWeight: 'bold',
-                      color: courseColor
-                    }}>
-                      {courseName}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      {branchNames.length} סניפים • {totalGroups} קבוצות
-                    </Typography>
-                  </Box>
-
-                  <Chip
-                    label={`${totalGroups} קבוצות`}
-                    size="small"
-                    sx={{
-                      backgroundColor: courseColor,
-                      color: 'white',
-                      fontWeight: 'bold'
-                    }}
-                  />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <AccessTime sx={{ fontSize: 16, color: '#64748b' }} />
+                  <Typography variant="body2" color="text.secondary">
+                    {group.hour || 'שעה לא צוינה'}
+                  </Typography>
                 </Box>
-              </AccordionSummary>
+                
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <LocationOn sx={{ fontSize: 16, color: '#64748b' }} />
+                  <Typography variant="body2" color="text.secondary">
+                    {group.branchName || 'סניף לא ידוע'}
+                  </Typography>
+                </Box>
+              </Box>
 
-              <AccordionDetails sx={{ p: 3 }}>
-                {branchNames.map((branchName, branchIndex) => {
-                  const branchGroups = branches[branchName];
-                  const branchColor = getCourseColor(branchName);
-                  
-                  const branchKey = `branch-${courseIndex}-${branchIndex}-${branchName}`;
+              {isCancelled && cancellation && (
+                <Box sx={{
+                  p: 2,
+                  backgroundColor: 'rgba(220, 38, 38, 0.1)',
+                  borderRadius: 2,
+                  border: '1px solid rgba(220, 38, 38, 0.2)',
+                  mb: 2
+                }}>
+                  <Typography variant="body2" sx={{ 
+                    color: '#dc2626',
+                    fontWeight: 'bold',
+                    mb: 0.5
+                  }}>
+                    סיבת הביטול:
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#7f1d1d' }}>
+                    {cancellation.reason || 'לא צוינה סיבה'}
+                  </Typography>
+                </Box>
+              )}
 
-                  return (
-                    <Box key={branchKey} sx={{ mb: 3 }}>
-                      <Box sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: 2, 
-                        mb: 2,
-                        p: 2,
-                        backgroundColor: `${branchColor}10`,
-                        borderRadius: '8px',
-                        border: `1px solid ${branchColor}30`
-                      }}>
-                        <Avatar sx={{
-                          backgroundColor: branchColor,
-                          width: 32,
-                          height: 32
-                        }}>
-                          <LocationOn />
-                        </Avatar>
-                        
-                        <Typography variant="subtitle1" sx={{ 
-                          fontWeight: 'bold',
-                          color: branchColor,
-                          flex: 1
-                        }}>
-                          {branchName}
-                        </Typography>
-                        
-                        <Chip
-                          label={`${branchGroups.length} קבוצות`}
-                          size="small"
-                          sx={{
-                            backgroundColor: branchColor,
-                            color: 'white',
-                            fontWeight: 'bold'
-                          }}
-                        />
-                      </Box>
-
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        {branchGroups.map((group, groupIndex) => {
-                          const groupKey = `group-${courseIndex}-${branchIndex}-${groupIndex}-${group.groupId || groupIndex}`;
-                          return renderGroupCard(group, branchColor, groupKey);
-                        })}
-                      </Box>
-                    </Box>
-                  );
-                })}
-              </AccordionDetails>
-            </Accordion>
-          );
-        })}
-      </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="body2" color="text.secondary">
+                  חוג: {group.courseName || group.couresName || 'לא ידוע'}
+                </Typography>
+                
+                {!isCancelled && (
+                  <NavigateNext sx={{ 
+                    fontSize: 16, 
+                    color: '#64748b',
+                    transition: 'transform 0.2s ease',
+                    transform: 'translateX(0)',
+                    '.MuiCard-root:hover &': {
+                      transform: 'translateX(-4px)'
+                    }
+                  }} />
+                )}
+              </Box>
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+    </motion.div>
     );
   };
 
+  const renderCourseAccordion = (courseName, branches) => {
+    const courseColor = getCourseColor(courseName);
+    const isExpanded = expandedCourse === courseName;
+    
+    // חישוב סטטיסטיקות לחוג
+    const courseGroups = Object.values(branches).flat();
+    const courseStats = courseGroups.reduce((stats, group) => {
+      const cancellation = getGroupCancellation(group.groupId);
+      const attendanceStatus = getAttendanceStatus(group.groupId);
+      const isChecking = isCheckingAttendanceForGroup(group.groupId);
+      
+      if (cancellation) {
+        stats.cancelled++;
+      } else if (isChecking) {
+        stats.checking++;
+      } else if (attendanceStatus === true) {
+        stats.marked++;
+      } else if (attendanceStatus === false) {
+        stats.unmarked++;
+      } else {
+        stats.unknown++;
+      }
+      stats.total++;
+      return stats;
+    }, { marked: 0, unmarked: 0, checking: 0, unknown: 0, cancelled: 0, total: 0 });
+
+    return (
+      <Accordion
+        key={courseName}
+        expanded={isExpanded}
+        onChange={handleAccordionChange(courseName)}
+        sx={{
+          mb: 2,
+          borderRadius: '16px !important',
+          border: '2px solid',
+          borderColor: isExpanded ? courseColor : '#e2e8f0',
+          boxShadow: isExpanded 
+            ? `0 8px 25px ${courseColor}33`
+            : '0 4px 12px rgba(0, 0, 0, 0.1)',
+          background: isExpanded
+            ? `linear-gradient(135deg, ${courseColor}11 0%, ${courseColor}05 100%)`
+            : 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          overflow: 'hidden',
+          '&:before': {
+            display: 'none'
+          },
+          '&.Mui-expanded': {
+            margin: '0 0 16px 0'
+          }
+        }}
+      >
+        <AccordionSummary
+          expandIcon={
+            <ExpandMore sx={{ 
+              color: isExpanded ? courseColor : '#64748b',
+              transition: 'all 0.3s ease'
+            }} />
+          }
+          sx={{
+            p: 3,
+            minHeight: 'auto !important',
+            '&.Mui-expanded': {
+              minHeight: 'auto !important'
+            },
+            '& .MuiAccordionSummary-content': {
+              margin: '0 !important',
+              '&.Mui-expanded': {
+                margin: '0 !important'
+              }
+            }
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, width: '100%' }}>
+            <Avatar sx={{
+              width: 64,
+              height: 64,
+              background: `linear-gradient(135deg, ${courseColor} 0%, ${courseColor}dd 100%)`,
+              boxShadow: `0 4px 12px ${courseColor}44`,
+              fontSize: '1.8rem',
+              fontWeight: 'bold'
+            }}>
+              <School sx={{ fontSize: 32 }} />
+            </Avatar>
+
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="h5" sx={{
+                fontWeight: 'bold',
+                color: '#1e293b',
+                mb: 1
+              }}>
+                {courseName}
+              </Typography>
+              
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                <Chip
+                  label={`${courseStats.total} קבוצות`}
+                  size="small"
+                  sx={{
+                    backgroundColor: `${courseColor}22`,
+                    color: courseColor,
+                    fontWeight: 'bold',
+                    border: `1px solid ${courseColor}44`
+                  }}
+                />
+                
+                {courseStats.marked > 0 && (
+                  <Chip
+                    icon={<CheckCircle sx={{ fontSize: 14 }} />}
+                    label={`${courseStats.marked} נקבעה`}
+                    size="small"
+                    sx={{
+                      backgroundColor: 'rgba(22, 163, 74, 0.1)',
+                      color: '#16a34a',
+                      fontWeight: 'bold',
+                      border: '1px solid rgba(22, 163, 74, 0.2)'
+                    }}
+                  />
+                )}
+                
+                {courseStats.unmarked > 0 && (
+                  <Chip
+                    icon={<HourglassEmpty sx={{ fontSize: 14 }} />}
+                    label={`${courseStats.unmarked} לא נקבעה`}
+                    size="small"
+                    sx={{
+                      backgroundColor: 'rgba(234, 88, 12, 0.1)',
+                      color: '#ea580c',
+                      fontWeight: 'bold',
+                      border: '1px solid rgba(234, 88, 12, 0.2)'
+                    }}
+                  />
+                )}
+                
+                {courseStats.cancelled > 0 && (
+                  <Chip
+                    icon={<Cancel sx={{ fontSize: 14 }} />}
+                    label={`${courseStats.cancelled} בוטל`}
+                    size="small"
+                    sx={{
+                      backgroundColor: 'rgba(220, 38, 38, 0.1)',
+                      color: '#dc2626',
+                      fontWeight: 'bold',
+                      border: '1px solid rgba(220, 38, 38, 0.2)'
+                    }}
+                  />
+                )}
+                
+                {courseStats.checking > 0 && (
+                  <Chip
+                    icon={<CircularProgress size={12} thickness={4} sx={{ color: '#2563eb' }} />}
+                    label={`${courseStats.checking} בודק`}
+                    size="small"
+                    sx={{
+                      backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                      color: '#2563eb',
+                      fontWeight: 'bold',
+                      border: '1px solid rgba(37, 99, 235, 0.2)'
+                    }}
+                  />
+                )}
+              </Box>
+            </Box>
+          </Box>
+        </AccordionSummary>
+
+        <AccordionDetails sx={{ p: 0, pb: 2 }}>
+          <Box sx={{ px: 3 }}>
+            <Divider sx={{ 
+              mb: 3, 
+              borderColor: `${courseColor}33`,
+              borderWidth: 1
+            }} />
+            
+            {Object.entries(branches).map(([branchName, branchGroups]) => (
+              <Box key={branchName} sx={{ mb: 3 }}>
+                <Typography variant="h6" sx={{
+                  fontWeight: 'bold',
+                  color: '#475569',
+                  mb: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1
+                }}>
+                  <LocationOn sx={{ fontSize: 20, color: courseColor }} />
+                  סניף {branchName}
+                  <Chip
+                    label={`${branchGroups.length} קבוצות`}
+                    size="small"
+                    sx={{
+                      backgroundColor: `${courseColor}11`,
+                      color: courseColor,
+                      fontWeight: 'bold',
+                      mr: 1
+                    }}
+                  />
+                </Typography>
+                
+                <Box sx={{ pl: 2 }}>
+                  {branchGroups.map(group => renderGroupCard(group))}
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        </AccordionDetails>
+      </Accordion>
+    );
+  };
+
+  // Main render
   return (
     <Dialog
       open={open}
@@ -980,85 +1065,86 @@ const CourseSelectionDialog = ({
       maxWidth="md"
       fullWidth
       sx={{
+        direction: 'rtl',
         '& .MuiDialog-paper': {
-          borderRadius: '20px',
+          borderRadius: 4,
           maxHeight: '90vh',
-          direction: 'rtl'
+          background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.2)',
+          border: '1px solid rgba(102, 126, 234, 0.1)'
         }
       }}
     >
       {renderDialogTitle()}
 
-      <DialogContent sx={{ ...styles.dialogContent, p: 3 }}>
-        <AnimatePresence mode="wait">
+      <DialogContent sx={{ p: 0 }}>
+        <Box sx={{ p: 3 }}>
           {groupsByDayLoading ? (
-            <motion.div
-              key="loading"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              {renderLoadingState()}
-            </motion.div>
+            renderLoadingState()
+          ) : !groupsByDay || groupsByDay.length === 0 ? (
+            renderEmptyState()
           ) : (
-            <motion.div
-              key="content"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              {renderGroupsContent()}
-            </motion.div>
+            <>
+              {renderStatsBar()}
+              
+              <Box sx={{ maxHeight: '60vh', overflowY: 'auto', pr: 1 }}>
+                {Object.entries(organizedGroups).map(([courseName, branches]) =>
+                  renderCourseAccordion(courseName, branches)
+                )}
+              </Box>
+            </>
           )}
-        </AnimatePresence>
-
-        {/* Summary information */}
-        {!groupsByDayLoading && groupsByDay.length > 0 && (
-          <Paper sx={{
-            mt: 3,
-            p: 2,
-            backgroundColor: theme.palette.grey[50],
-            borderRadius: 2,
-            border: `1px solid ${theme.palette.grey[200]}`
-          }}>
-            <Typography variant="body2" color="textSecondary" sx={{ textAlign: 'center' }}>
-              סה"כ {groupsByDay.length} קבוצות זמינות ליום זה
-            </Typography>
-          </Paper>
-        )}
+        </Box>
       </DialogContent>
 
-      <DialogActions sx={{ 
-        p: 3, 
-        backgroundColor: theme.palette.grey[50],
-        borderTop: `1px solid ${theme.palette.grey[200]}`,
-        justifyContent: 'space-between'
+      <DialogActions sx={{
+        p: 3,
+        background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+        borderTop: '1px solid #e2e8f0',
+        gap: 2
       }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Schedule sx={{ fontSize: 16, color: 'text.secondary' }} />
-          <Typography variant="caption" color="textSecondary">
-            בחר קבוצה כדי לרשום נוכחות
-          </Typography>
-        </Box>
-        
         <Button
           onClick={onClose}
           variant="outlined"
-          color="primary"
-          size="large"
-          sx={{ 
-            borderRadius: 2,
+          sx={{
+            borderRadius: 3,
             px: 4,
-            py: 1
+            py: 1.5,
+            borderColor: '#cbd5e1',
+            color: '#475569',
+            fontWeight: 'bold',
+                      '&:hover': {
+              borderColor: '#94a3b8',
+              backgroundColor: 'rgba(71, 85, 105, 0.05)',
+              transform: 'translateY(-1px)',
+              boxShadow: '0 4px 12px rgba(71, 85, 105, 0.15)'
+            },
+            transition: 'all 0.2s ease'
           }}
         >
           סגור
         </Button>
+        
+        {!groupsByDayLoading && groupsByDay && groupsByDay.length > 0 && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 'medium' }}>
+              בחר קבוצה לרישום נוכחות
+            </Typography>
+            
+            {checkingAttendance.size > 0 && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CircularProgress size={16} thickness={4} sx={{ color: '#667eea' }} />
+                <Typography variant="caption" color="text.secondary">
+                  בודק נוכחות...
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        )}
       </DialogActions>
     </Dialog>
   );
 };
 
 export default CourseSelectionDialog;
+ 

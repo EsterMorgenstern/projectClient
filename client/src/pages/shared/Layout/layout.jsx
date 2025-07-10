@@ -11,7 +11,7 @@ const Layout = ({ children }) => {
 
       
       {/* תוכן ראשי */}
-      <Box sx={{ display: 'flex', flex: 1, mt: '45px' }}> {/* שינוי מ-70px ל-64px */}
+      <Box sx={{ display: 'flex', flex: 1, mt: '62px' }}> {/* שינוי מ-70px ל-64px */}
         <motion.main
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}

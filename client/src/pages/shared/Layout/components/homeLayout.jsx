@@ -9,7 +9,7 @@ export  const HomeLayout = ({ children }) => {
       <Navbar />
       
       {/* תוכן ראשי ללא רקע ו-padding */}
-      <Box sx={{ flex: 1, mt: '45px' }}>
+      <Box sx={{ flex: 1, mt: '62px' }}>
         <motion.main
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

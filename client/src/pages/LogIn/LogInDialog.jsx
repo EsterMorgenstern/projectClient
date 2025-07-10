@@ -343,7 +343,7 @@ const LoginDialog = ({ open, onClose, onLoginSuccess }) => {
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.8 }}
-      style={{ textAlign: 'center', padding: '20px' }}
+      style={{ textAlign: 'center', padding: '20px'}}
     >
       <motion.div
         initial={{ scale: 0 }}
@@ -360,15 +360,15 @@ const LoginDialog = ({ open, onClose, onLoginSuccess }) => {
       </motion.div>
       
       <Typography variant="h6" sx={{ mb: 1, color: 'success.main' }}>
-        התחברות הושלמה בהצלחה! 🎉
+       🎉 ! התחברות הושלמה בהצלחה
       </Typography>
       
       <Typography variant="body1" sx={{ mb: 2 }}>
-        שלום {getUserDisplayName()}!
+        ! שלום {getUserDisplayName()}
       </Typography>
       
       <Typography variant="body2" color="text.secondary">
-        מעביר אותך למערכת...
+       ... מעביר אותך למערכת
       </Typography>
     </motion.div>
   );

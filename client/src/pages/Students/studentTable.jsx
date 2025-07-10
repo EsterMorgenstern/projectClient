@@ -292,11 +292,11 @@ export default function StudentsTable() {
                 <Table>
                   <TableHead className="table-head">
                     <TableRow>
-                      <TableCell className="table-head-cell" style={{ width: 200 }}>🎯 פעולות</TableCell>
+                      <TableCell className="table-head-cell" style={{ width: 190 }}>🎯 פעולות</TableCell>
                       <TableCell className="table-head-cell" style={{ width: 130 }}>🆔 קוד תלמיד</TableCell>
                       <TableCell className="table-head-cell" style={{ width: 130 }}>👤 שם פרטי</TableCell>
                       <TableCell className="table-head-cell" style={{ width: 110 }}>👥 שם משפחה</TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 90 }}>📞 טלפון</TableCell>
+                      <TableCell className="table-head-cell" style={{ width: 70 }}>📞 טלפון</TableCell>
                       <TableCell className="table-head-cell" style={{ width: 100 }}>🏙️ עיר</TableCell>
                       <TableCell className="table-head-cell" style={{ width: 150 }}>🏫 בית ספר</TableCell>
                       <TableCell className="table-head-cell" style={{ width: 160 }}>🏥 קופת חולים</TableCell>
@@ -332,6 +332,7 @@ export default function StudentsTable() {
     flexWrap: 'wrap',
     alignItems: 'center',
     justifyContent: 'center'
+    
   }}>
     <Button
       variant="contained"
@@ -357,7 +358,9 @@ export default function StudentsTable() {
         height: '28px', // ✅ גובה קבוע
         fontSize: '0.75rem', // ✅ הקטנתי את הטקסט
         px: 1, // ✅ הקטנתי padding
-        py: 0.5
+        py: 0.5,
+         marginLeft: 0.5, // רווח בין האייקון לטקסט (ב-RTL)
+      marginRight: 0
       }}
     >
       ערוך
@@ -386,7 +389,11 @@ export default function StudentsTable() {
         height: '28px',
         fontSize: '0.75rem',
         px: 1,
-        py: 0.5
+        py: 0.5,
+         '& .MuiButton-startIcon': {
+      marginLeft: 0.5,
+      marginRight: 0,
+    }
       }}
     >
       מחק
@@ -402,7 +409,11 @@ export default function StudentsTable() {
         height: '28px',
         fontSize: '0.75rem',
         px: 1,
-        py: 0.5
+        py: 0.5,
+         '& .MuiButton-startIcon': {
+      marginLeft: 0.5,
+      marginRight: 0,
+    }
       }}
     >
       פרטים
@@ -410,7 +421,6 @@ export default function StudentsTable() {
   </Box>
 </TableCell>
 
-{/* שאר העמודות - גם הן צריכות py קטן יותר */}
 <TableCell className="table-cell" sx={{ py: 1 }}>{student.id}</TableCell>
 <TableCell className="table-cell" sx={{ py: 1 }}>{student.firstName}</TableCell>
 <TableCell className="table-cell" sx={{ py: 1 }}>{student.lastName}</TableCell>

@@ -604,7 +604,7 @@ const fetchAndShowStudentCourses = async (studentId) => {
     >
       <Grid container spacing={3} justifyContent="center">
         {courses.map((course) => (
-          <Grid item xs={12} sm={6} md={4} lg={3} key={course.id}>
+                  <Grid item xs={12} sm={6} md={4} lg={3} key={course.courseId || course.id}>
             <motion.div variants={itemVariants}>
               <Paper
                 elevation={3}
@@ -647,7 +647,7 @@ const fetchAndShowStudentCourses = async (studentId) => {
         ))}
 
         {/* Add Course Card */}
-        <Grid item xs={12} sm={6} md={4} lg={3}>
+      <Grid item xs={12} sm={6} md={4} lg={3} key="add-course-card">
           <motion.div variants={itemVariants}>
             <Paper
               elevation={3}
@@ -753,7 +753,7 @@ const fetchAndShowStudentCourses = async (studentId) => {
 
         {/* הצגת הסניפים מקובצים לפי עיר */}
         {Object.entries(branchesByCity).map(([city, cityBranches]) => (
-          <Box key={city} sx={{ mb: 4 }}>
+        <Box key={`city-${city}`} sx={{ mb: 4 }}>
             <Box sx={{
               display: 'flex',
               alignItems: 'center',
@@ -890,7 +890,7 @@ const fetchAndShowStudentCourses = async (studentId) => {
 
         {/* Add Branch Card */}
         <Grid container justifyContent="center" sx={{ mt: 2 }}>
-          <Grid item xs={12} sm={6} md={4}>
+        <Grid item xs={12} sm={6} md={4} key="add-branch-card">
             <motion.div variants={itemVariants}>
               <Paper
                 elevation={3}
@@ -976,8 +976,8 @@ const fetchAndShowStudentCourses = async (studentId) => {
       </Box>
       <Grid container spacing={3} justifyContent="center">
         {groups.filter(group => group.branchId === selectedBranch?.branchId).map((group) => (
-          <Grid item xs={12} sm={6} md={4} key={group.groupId}>
-            <motion.div variants={itemVariants}>
+          <Grid item xs={12} sm={6} md={4} key={`group-${group.groupId}`}>   
+           <motion.div variants={itemVariants}>
               <Paper
                 elevation={3}
                 component={motion.div}
@@ -1085,7 +1085,7 @@ const fetchAndShowStudentCourses = async (studentId) => {
         ))}
 
         {/* Add Group Card */}
-        <Grid item xs={12} sm={6} md={4}>
+      <Grid item xs={12} sm={6} md={4} key="add-group-card">
           <motion.div variants={itemVariants}>
             <Paper
               elevation={3}

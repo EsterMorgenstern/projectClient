@@ -74,7 +74,9 @@ import {
   Assessment as AssessmentIcon,
   CalendarToday as CalendarIcon,
   Login,
-  AppRegistration
+  AppRegistration,
+   MoreHoriz, 
+  StickyNote2, 
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -95,6 +97,7 @@ const Navbar = () => {
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const [registrationOpen, setRegistrationOpen] = useState(false);
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
+const [moreMenuAnchor, setMoreMenuAnchor] = useState(null);
 
   // ✅ תיקון Redux state - בדיקה מדויקת יותר
   const userState = useSelector(state => state.users);
@@ -105,9 +108,9 @@ const Navbar = () => {
 
   // ✅ פונקציה לבדיקה אם המשתמש באמת מחובר
   const isUserLoggedIn = () => {
-  console.log('🔍 Checking if user is logged in...');
-  console.log('currentUser:', currentUser);
-  console.log('userById:', userById);
+  // console.log('🔍 Checking if user is logged in...');
+  // console.log('currentUser:', currentUser);
+  // console.log('userById:', userById);
   
   // בדוק את currentUser קודם
   if (currentUser && typeof currentUser === 'object' && !Array.isArray(currentUser)) {
@@ -185,7 +188,7 @@ const Navbar = () => {
       shadowColor: 'rgba(240, 147, 251, 0.4)'
     },
     { 
-      title: 'רישום תלמיד', 
+      title: 'רישום', 
       path: '/entrollStudent', 
       icon: <PersonAdd />, 
       color: '#43E97B',
@@ -193,6 +196,7 @@ const Navbar = () => {
       gradient: 'linear-gradient(135deg, #43E97B 0%, #38F9D7 50%, #4FACFE 100%)',
       shadowColor: 'rgba(67, 233, 123, 0.4)'
     },
+   
     { 
       title: 'שיעורים', 
       path: '/lesson-management', 
@@ -238,10 +242,36 @@ const Navbar = () => {
     //   gradient: 'linear-gradient(135deg, #84FAB0 0%, #8FD3F4 50%, #84FAB0 100%)',
     //   shadowColor: 'rgba(132, 250, 176, 0.4)'
     // }
-  ];
+  { 
+    title: 'עוד', 
+    path: null, 
+   // icon: <MoreHoriz />, 
+    color: '#84FAB0',
+    description: 'תפריט נוסף - הערות אישיות ומידע על המערכת',
+    gradient: 'linear-gradient(135deg, #84FAB0 0%, #8FD3F4 50%, #84FAB0 100%)',
+    shadowColor: 'rgba(132, 250, 176, 0.4)',
+    isMore: true 
+  }
+];
 
   // ✅ כל הפונקציות מוגדרות כאן
 
+const handleMoreMenuOpen = (event) => {
+  setMoreMenuAnchor(event.currentTarget);
+};
+
+const handleMoreMenuClose = () => {
+  setMoreMenuAnchor(null);
+};
+
+const handleNavigateToAbout = () => {
+  navigate('/aboutSystem');
+  handleMoreMenuClose();
+};
+  const handleNavigateToNotes = () => {
+  navigate('/my-notes');
+  handleUserMenuClose();
+};
   const handleRegistrationSuccess = (userData) => {
     console.log('Registration success:', userData);
     setRegistrationOpen(false);
@@ -384,25 +414,32 @@ const getUserDisplayName = () => {
   
   console.log('🏷️ Getting display name for user:', user);
   
-  // נסה שמות שונים
-  if (user.FirstName || user.LastName) {
-    const name = `${user.FirstName || ''} ${user.LastName || ''}`.trim();
-    console.log('✅ Display name from FirstName/LastName:', name);
-    return name;
+  // קבל שם פרטי ומשפחה
+  const firstName = user.FirstName || user.firstName || '';
+  const lastName = user.LastName || user.lastName || '';
+  
+  // אם יש שם פרטי, החזר אותו
+  if (firstName) {
+    console.log('✅ Display name from firstName:', firstName);
+    return firstName;
   }
   
-  if (user.firstName || user.lastName) {
-    const name = `${user.firstName || ''} ${user.lastName || ''}`.trim();
-    console.log('✅ Display name from firstName/lastName:', name);
-    return name;
+  // אם יש שם מלא, נסה לחלץ את השם הפרטי
+  if (lastName && !firstName) {
+    // אם יש רק שם משפחה, השתמש בו
+    console.log('✅ Display name from lastName:', lastName);
+    return lastName;
   }
   
+  // נסה לחלץ מאימייל
   if (user.Email || user.email) {
     const email = user.Email || user.email;
-    console.log('✅ Display name from email:', email);
-    return email;
+    const emailName = email.split('@')[0];
+    console.log('✅ Display name from email:', emailName);
+    return emailName;
   }
   
+  // נסה לחלץ מטלפון
   if (user.Phone || user.phone) {
     const phone = user.Phone || user.phone;
     console.log('✅ Display name from phone:', phone);
@@ -504,7 +541,7 @@ const getUserDisplayName = () => {
       </Paper>
 
       {/* רשימת ניווט */}
-      <List sx={{ px: 2, pt: 2, position: 'relative', zIndex: 1 }}>
+      <List sx={{ px: 2, pt: 2, position: 'relative', zIndex: 1}}>
         {navigationItems.map((item) => (
           <motion.div
             key={item.title}
@@ -538,6 +575,8 @@ const getUserDisplayName = () => {
             >
               <ListItemIcon sx={{ 
                 color: 'white',
+                minWidth: 40, // רווח קבוע בין האייקון לטקסט
+  mr: 2,        // רווח נוסף אם צריך
                 '& svg': { 
                   fontSize: 26,
                   filter: isActive(item.path) ? 'drop-shadow(0 0 8px rgba(255,255,255,0.5))' : 'none'
@@ -600,172 +639,231 @@ const getUserDisplayName = () => {
   );
 
   // כפתור משתמש מעוצב
-  const renderUserButton = () => {
-    return (
-      <motion.div
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-      >
-        <Button
-          onClick={handleUserMenuOpen}
-          sx={{
-            borderRadius: '25px',
-            px: 1,
-            py: 1,
-            background: 'linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.1) 100%)',
-            backdropFilter: 'blur(20px)',
-            border: '2px solid rgba(255,255,255,0.3)',
-            color: 'white',
-            textTransform: 'none',
-            fontSize: '1rem',
-            fontWeight: 'bold',
-            boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            '&:hover': {
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.2) 100%)',
-              transform: 'translateY(-3px)',
-              boxShadow: '0 15px 40px rgba(0,0,0,0.3)',
-              border: '2px solid rgba(255,255,255,0.5)'
-            }
-          }}
-          startIcon={
-            <Avatar sx={{
-              width: 40,
-              height: 40,
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 100%)',
-              border: '2px solid rgba(255,255,255,0.4)',
-              backdropFilter: 'blur(10px)',
-              boxShadow: '0 5px 20px rgba(0,0,0,0.15)'
-            }}>
-              {getUserIcon()}
-            </Avatar>
-          }
-          endIcon={<ExpandMore />}
-        >
-          <Box sx={{ textAlign: 'right' }}>
-            <Typography variant="body1" sx={{ 
-              fontWeight: 'bold',
-              fontSize: '1rem',
-              textShadow: '0 1px 3px rgba(0,0,0,0.3)'
-            }}>
-              {isUserLoggedIn() ? getUserDisplayName() : 'ברוכים הבאים!'}
-            </Typography>
-            <Typography variant="caption" sx={{ 
-              opacity: 0.9, 
-              fontSize: '0.75rem',
-              fontWeight: 500,
-              textShadow: '0 1px 2px rgba(0,0,0,0.2)'
-            }}>
-              {isUserLoggedIn() ? `${currentUser.Role || 'משתמש'} • מחובר` : 'לחץ להתחברות'}
-            </Typography>
-          </Box>
-        </Button>
-      </motion.div>
-    );
-  };
-
-  // כפתור ניווט מעוצב
-  const NavButton = ({ item }) => (
+ const renderUserButton = () => {
+  const displayName = isUserLoggedIn() ? getUserDisplayName() : 'ברוכים הבאים!';
+  const userRole = isUserLoggedIn() ? (currentUser?.Role || 'משתמש') : 'לחץ להתחברות';
+  
+  return (
     <motion.div
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
     >
-      <Tooltip
-        title={
-          <Box sx={{ p: 1.5, maxWidth: 300 }}>
-            <Typography variant="subtitle1" sx={{ 
-              fontWeight: 700, 
-              mb: 1,
-              background: item.gradient,
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent'
-            }}>
-              {item.title}
-            </Typography>
-            <Typography variant="body2" sx={{ 
-              fontSize: '0.85rem', 
-              lineHeight: 1.5,
-              color: 'rgba(255,255,255,0.9)'
-            }}>
-              {item.description}
-            </Typography>
-          </Box>
-        }
-        arrow
-        placement="bottom"
+      <Button
+        onClick={handleUserMenuOpen}
         sx={{
-          '& .MuiTooltip-tooltip': {
-            background: 'linear-gradient(135deg, rgba(30, 58, 138, 0.95) 0%, rgba(79, 70, 229, 0.95) 100%)',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: 3,
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          borderRadius: '25px',
+          px: 1,
+          py: 1,
+          minWidth: '200px',
+          maxWidth: '250px',
+          width: 'auto',
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.1) 100%)',
+          backdropFilter: 'blur(20px)',
+          border: '2px solid rgba(255,255,255,0.3)',
+          color: 'white',
+          textTransform: 'none',
+          fontSize: '1rem',
+          fontWeight: 'bold',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          // ✅ הוסף display flex ו-alignItems
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 1, // רווח בין האלמנטים
+          position: 'relative', // ✅ חשוב לבקרת z-index
+          '&:hover': {
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.2) 100%)',
+            transform: 'translateY(-3px)',
+            boxShadow: '0 15px 40px rgba(0,0,0,0.3)',
+            border: '2px solid rgba(255,255,255,0.5)'
           },
-          '& .MuiTooltip-arrow': {
-            color: 'rgba(30, 58, 138, 0.95)',
+          // ✅ תקן את ה-MuiButton-startIcon ו-endIcon
+          '& .MuiButton-startIcon': {
+            margin: 0,
+            marginLeft: 0,
+            marginRight: 0,
+            position: 'relative',
+            zIndex: 1
+          },
+          '& .MuiButton-endIcon': {
+            margin: 0,
+            marginLeft: 0,
+            marginRight: 0,
+            position: 'relative',
+            zIndex: 1
+          }
+        }}
+        // ✅ הסר את startIcon ו-endIcon מהכפתור עצמו
+      >
+        {/* ✅ בנה את התוכן ידנית */}
+        <Avatar sx={{
+          width: 40,
+          height: 40,
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 100%)',
+          border: '2px solid rgba(255,255,255,0.4)',
+          backdropFilter: 'blur(10px)',
+          boxShadow: '0 5px 20px rgba(0,0,0,0.15)',
+          flexShrink: 0,
+          position: 'relative',
+          zIndex: 1 // ✅ z-index נמוך יותר מהטקסט
+        }}>
+          {getUserIcon()}
+        </Avatar>
+
+        <Box sx={{ 
+          textAlign: 'right',
+          overflow: 'hidden',
+          minWidth: 0,
+          flex: 1,
+          position: 'relative',
+          zIndex: 2, // ✅ z-index גבוה יותר מהאווטאר
+          mx: 1 // מרווח מהצדדים
+        }}>
+          <Typography variant="body1" sx={{ 
+            fontWeight: 'bold',
+            fontSize: '1rem',
+            textShadow: '0 1px 3px rgba(0,0,0,0.3)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            maxWidth: '140px',
+            position: 'relative',
+            zIndex: 2 // ✅ וודא שהטקסט מעל הכל
+          }}>
+            {displayName}
+          </Typography>
+          <Typography variant="caption" sx={{ 
+            opacity: 0.9, 
+            fontSize: '0.75rem',
+            fontWeight: 500,
+            textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            maxWidth: '140px',
+            display: 'block',
+            position: 'relative',
+            zIndex: 2 // ✅ וודא שהטקסט מעל הכל
+          }}>
+            {userRole} {isUserLoggedIn() ? '• מחובר' : ''}
+          </Typography>
+        </Box>
+
+        <ExpandMore sx={{ 
+          flexShrink: 0,
+          position: 'relative',
+          zIndex: 1 // ✅ z-index נמוך יותר מהטקסט
+        }} />
+      </Button>
+    </motion.div>
+  );
+};
+  // כפתור ניווט מעוצב
+ const NavButton = ({ item }) => (
+  <motion.div
+    whileHover={{ scale: 1.02 }}
+    whileTap={{ scale: 0.98 }}
+  >
+    <Tooltip
+      title={
+        <Box sx={{ p: 1.5, maxWidth: 300 }}>
+          <Typography variant="subtitle1" sx={{ 
+            fontWeight: 700, 
+            mb: 1,
+            background: item.gradient,
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent'
+          }}>
+         {item.title}
+          </Typography>
+          <Typography variant="body2" sx={{ 
+            fontSize: '0.85rem', 
+            lineHeight: 1.5,
+            color: 'rgba(255,255,255,0.9)'
+          }}>
+            {item.description}
+          </Typography>
+        </Box>
+      }
+      arrow
+      placement="bottom"
+      sx={{
+        '& .MuiTooltip-tooltip': {
+          background: 'linear-gradient(135deg, rgba(30, 58, 138, 0.95) 0%, rgba(79, 70, 229, 0.95) 100%)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: 3,
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+        },
+        '& .MuiTooltip-arrow': {
+          color: 'rgba(30, 58, 138, 0.95)',
+        }
+      }}
+    >
+      <Button
+        onClick={item.isMore ? handleMoreMenuOpen : () => handleNavigate(item.path)} // ✅ טיפול מיוחד לכפתור "עוד"
+        startIcon={item.icon}
+        endIcon={item.isMore ? <ExpandMore /> : null} // ✅ הוסף חץ לכפתור "עוד"
+        sx={{
+          color: (item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path) ? '#1E3A8A' : '#FFFFFF',
+          background: (item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path) 
+            ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%)'
+            : 'rgba(255, 255, 255, 0.1)',
+          borderRadius: 3,
+          px: 2.5,
+          py: 1.2,
+          mx: 0.5,
+          minWidth: 'auto',
+          fontSize: '0.9rem',
+          fontWeight: ((item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path)) ? 700 : 600,
+          textTransform: 'none',
+          backdropFilter: 'blur(20px)',
+          border: ((item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path))
+            ? '2px solid rgba(255, 255, 255, 0.8)'
+            : '2px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: ((item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path))
+            ? `0 10px 30px ${item.shadowColor}`
+            : '0 5px 15px rgba(0, 0, 0, 0.1)',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          position: 'relative',
+          overflow: 'hidden',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: '-100%',
+            width: '100%',
+            height: '100%',
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+            transition: 'left 0.5s'
+          },
+          '&:hover': {
+            background: ((item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path))
+              ? 'linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.95) 100%)'
+              : item.gradient,
+            color: ((item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path)) ? '#1E3A8A' : '#FFFFFF',
+            transform: 'translateY(-3px)',
+            boxShadow: `0 15px 40px ${item.shadowColor}`,
+            border: '2px solid rgba(255, 255, 255, 0.6)',
+            '&::before': {
+              left: '100%'
+            }
+          },
+          '& .MuiButton-startIcon': {
+             marginLeft: 0.2, // רווח בין האייקון לטקסט (לשפות RTL)
+             marginRight: 0,
+            fontSize: '1.2rem',
+            filter: ((item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path)) ? 'none' : 'drop-shadow(0 0 5px rgba(255,255,255,0.3))'
           }
         }}
       >
-        <Button
-          onClick={() => handleNavigate(item.path)}
-          startIcon={item.icon}
-          sx={{
-            color: isActive(item.path) ? '#1E3A8A' : '#FFFFFF',
-            background: isActive(item.path) 
-              ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%)'
-              : 'rgba(255, 255, 255, 0.1)',
-            borderRadius: 3,
-            px: 2.5,
-            py: 1.2,
-            mx: 0.5,
-            minWidth: 'auto',
-            fontSize: '0.9rem',
-            fontWeight: isActive(item.path) ? 700 : 600,
-            textTransform: 'none',
-            backdropFilter: 'blur(20px)',
-            border: isActive(item.path) 
-              ? '2px solid rgba(255, 255, 255, 0.8)'
-              : '2px solid rgba(255, 255, 255, 0.2)',
-            boxShadow: isActive(item.path) 
-              ? `0 10px 30px ${item.shadowColor}`
-              : '0 5px 15px rgba(0, 0, 0, 0.1)',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            position: 'relative',
-            overflow: 'hidden',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: '-100%',
-              width: '100%',
-              height: '100%',
-              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
-              transition: 'left 0.5s'
-            },
-            '&:hover': {
-              background: isActive(item.path) 
-                ? 'linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.95) 100%)'
-                : item.gradient,
-              color: isActive(item.path) ? '#1E3A8A' : '#FFFFFF',
-              transform: 'translateY(-3px)',
-              boxShadow: `0 15px 40px ${item.shadowColor}`,
-              border: '2px solid rgba(255, 255, 255, 0.6)',
-              '&::before': {
-                left: '100%'
-              }
-            },
-            '& .MuiButton-startIcon': {
-              fontSize: '1.2rem',
-              filter: isActive(item.path) ? 'none' : 'drop-shadow(0 0 5px rgba(255,255,255,0.3))'
-            }
-          }}
-        >
-          {item.title}
-        </Button>
-      </Tooltip>
-    </motion.div>
-  );
+        {item.title}
+      </Button>
+    </Tooltip>
+  </motion.div>
+);
 
   // ✅ תפריט משתמש מחובר
   const loggedInMenuItems = [
@@ -805,8 +903,8 @@ const getUserDisplayName = () => {
           background: 'linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.1) 100%)',
           backdropFilter: 'blur(20px)',
           border: '3px solid rgba(255,255,255,0.4)',
-          width: 80,
-          height: 80,
+          width: 50,
+          height: 50,
           boxShadow: '0 15px 40px rgba(0,0,0,0.3)'
         }}>
           {getUserIcon()}
@@ -822,7 +920,7 @@ const getUserDisplayName = () => {
             WebkitTextFillColor: 'transparent',
             textShadow: '0 2px 10px rgba(0,0,0,0.3)'
           }}>
-            שלום {getUserDisplayName()}! 👋
+          ! 👋  שלום {getUserDisplayName()}
           </Typography>
           <Chip
             label={currentUser?.Role || 'משתמש'}
@@ -842,38 +940,27 @@ const getUserDisplayName = () => {
 
     <Divider key="divider1" sx={{ my: 0 }} />,
 
-    <MenuItem key="profile" sx={{ py: 2, px: 3 }}>
-      <AccountCircle sx={{ mr: 2, color: '#667eea' }} />
-      <Box>
-        <Typography variant="body1" sx={{ fontWeight: 600 }}>פרופיל אישי</Typography>
-        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-          עריכת פרטים אישיים והגדרות
-        </Typography>
-      </Box>
-    </MenuItem>,
+    <MenuItem key="my-notes" onClick={handleNavigateToNotes} sx={{ py: 2, px: 3 }}>
+    <StickyNote2 sx={{ mr: 2, color: '#667eea' }} />
+    <Box>
+      <Typography variant="body1" sx={{ fontWeight: 600 }}>ההערות שלי</Typography>
+      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+        צפייה וניהול ההערות האישיות שלי
+      </Typography>
+    </Box>
+  </MenuItem>,
+  <Divider key="divider2" sx={{ my: 1 }} />,
 
-    <MenuItem key="settings" sx={{ py: 2, px: 3 }}>
-      <Settings sx={{ mr: 2, color: '#667eea' }} />
-      <Box>
-        <Typography variant="body1" sx={{ fontWeight: 600 }}>הגדרות</Typography>
-        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-          העדפות אישיות ותצורת מערכת
-        </Typography>
-      </Box>
-    </MenuItem>,
-
-    <Divider key="divider2" sx={{ my: 1 }} />,
-
-    <MenuItem key="logout" onClick={handleLogout} sx={{ color: 'error.main', py: 2, px: 3 }}>
-      <ExitToApp sx={{ mr: 2, color: 'error.main' }} />
-      <Box>
-        <Typography variant="body1" sx={{ fontWeight: 600, color: 'error.main' }}>התנתק</Typography>
-        <Typography variant="caption" sx={{ color: 'error.light' }}>
-          יציאה בטוחה מהמערכת
-        </Typography>
-      </Box>
-    </MenuItem>
-  ];
+  <MenuItem key="logout" onClick={handleLogout} sx={{ color: 'error.main', py: 2, px: 3 }}>
+    <ExitToApp sx={{ mr: 2, color: 'error.main' }} />
+    <Box>
+      <Typography variant="body1" sx={{ fontWeight: 600, color: 'error.main' }}>התנתק</Typography>
+      <Typography variant="caption" sx={{ color: 'error.light' }}>
+        יציאה בטוחה מהמערכת
+      </Typography>
+    </Box>
+  </MenuItem>
+];
 
   // ✅ תפריט אורח - זה מה שצריך להיפתח כשהמשתמש לא מחובר
   const guestMenuItems = [
@@ -1043,10 +1130,9 @@ const getUserDisplayName = () => {
     </Box>
   ];
 
-  // ✅ Debug - הוסף console.log כדי לראות מה קורה
-  console.log('Current user state:', currentUser);
-  console.log('Is user logged in:', isUserLoggedIn());
-  console.log('User state object:', userState);
+  // console.log('Current user state:', currentUser);
+  // console.log('Is user logged in:', isUserLoggedIn());
+  // console.log('User state object:', userState);
 
   return (
     <>
@@ -1083,7 +1169,7 @@ const getUserDisplayName = () => {
 
           {/* תפריט ניווט - במרכז */}
           {!isMobile && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0}}>
               {navigationItems.map((item) => (
                 <NavButton key={item.title} item={item} />
               ))}
@@ -1091,7 +1177,7 @@ const getUserDisplayName = () => {
           )}
 
           {/* לוגו ושם המערכת - משמאל */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <motion.div
               whileHover={{ rotate: 360 }}
               transition={{ duration: 0.6 }}
@@ -1112,7 +1198,7 @@ const getUserDisplayName = () => {
             <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
               <Typography variant="h6" sx={{ 
                 fontWeight: 'bold',
-                fontSize: '1.3rem',
+                fontSize: '1.1rem',
                 color: 'white',
                 textShadow: '0 2px 10px rgba(0,0,0,0.3)',
                 background: 'linear-gradient(45deg, #ffffff 0%, rgba(255,255,255,0.8) 100%)',
@@ -1133,6 +1219,7 @@ const getUserDisplayName = () => {
               </Typography>
             </Box>
           </Box>
+
 
           {/* כפתור תפריט נייד */}
           {isMobile && (
@@ -1240,8 +1327,76 @@ const getUserDisplayName = () => {
           {notification.message}
         </Alert>
       </Snackbar>
-    </>
-  );
+
+       <Menu
+      anchorEl={moreMenuAnchor}
+      open={Boolean(moreMenuAnchor)}
+      onClose={handleMoreMenuClose}
+      PaperProps={{
+        sx: {
+          minWidth: 300,
+          mt: 2,
+          borderRadius: 3,
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          background: 'rgba(255,255,255,0.95)',
+          backdropFilter: 'blur(20px)',
+          overflow: 'hidden'
+        }
+      }}
+      transformOrigin={{ horizontal: 'center', vertical: 'top' }}
+      anchorOrigin={{ horizontal: 'center', vertical: 'bottom' }}
+    >
+      {/* כותרת התפריט */}
+      <Paper sx={{ 
+        p: 2, 
+        background: 'linear-gradient(135deg, #84FAB0 0%, #8FD3F4 100%)',
+        color: 'white',
+        m: 0,
+        borderRadius: 0,
+        textAlign: 'center'
+      }}>
+        <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
+          תפריט נוסף
+        </Typography>
+        <Typography variant="body2" sx={{ opacity: 0.9 }}>
+          כלים ומידע נוסף
+        </Typography>
+      </Paper>
+
+      <Divider />
+
+      {/* הערות אישיות */}
+      <MenuItem onClick={handleNavigateToNotes} sx={{ py: 2, px: 3 }}>
+        <ListItemIcon>
+          <StickyNote2 sx={{ color: '#667eea' }} />
+        </ListItemIcon>
+        <ListItemText>
+          <Typography variant="body1" sx={{ fontWeight: 600 }}>ההערות שלי</Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            צפייה וניהול ההערות האישיות שלי
+          </Typography>
+        </ListItemText>
+      </MenuItem>
+
+      <Divider />
+
+      {/* אודות המערכת */}
+      <MenuItem onClick={handleNavigateToAbout} sx={{ py: 2, px: 3 }}>
+        <ListItemIcon>
+          <Info sx={{ color: '#667eea' }} />
+        </ListItemIcon>
+        <ListItemText>
+          <Typography variant="body1" sx={{ fontWeight: 600 }}>אודות המערכת</Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            מידע על המערכת, גרסאות ותמיכה
+          </Typography>
+        </ListItemText>
+      </MenuItem>
+    </Menu>
+  </>
+);
+ 
 };
 
 export default Navbar;

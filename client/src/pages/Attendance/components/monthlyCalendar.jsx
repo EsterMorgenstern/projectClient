@@ -67,7 +67,8 @@ const MonthlyCalendar = ({
   savedAttendanceRecords,
   hebrewHolidays,
   isActiveDay,
-  getHebrewHolidayInfo
+  getHebrewHolidayInfo,
+   isMarkedForDayStatus = {} 
 }) => {
   const theme = useTheme();
   const [calendarDays, setCalendarDays] = useState([]);
@@ -129,6 +130,9 @@ const MonthlyCalendar = ({
       const isActiveDayForEvents = isActiveDay ? isActiveDay(date) : true;
       const holidayInfo = getHebrewHolidayInfo ? getHebrewHolidayInfo(date) : null;
 
+   const dateStr = format(date, 'yyyy-MM-dd');
+   const isDayFullyMarked = isMarkedForDayStatus[dateStr] === true;
+
       return {
         id: `${format(date, 'yyyy-MM-dd')}-${index}`,
         date,
@@ -144,7 +148,8 @@ const MonthlyCalendar = ({
         holidayInfo: holidayInfo,
         groupsCount: dayEvents.length,
         hasGroups: dayEvents.length > 0,
-        pieChartData: createPieChartData(dayEvents)
+        pieChartData: createPieChartData(dayEvents),
+        isDayFullyMarked
       };
     });
 
@@ -261,126 +266,130 @@ const MonthlyCalendar = ({
   };
 
   // כותרת החודש 
-  const renderMonthHeader = () => {
-    const monthName = HEBREW_MONTHS[getMonth(currentDate)];
-    const hebrewMonthName = HEBREW_CALENDAR_MONTHS[getMonth(currentDate)];
-    const year = format(currentDate, 'yyyy');
+const renderMonthHeader = () => {
+  const monthName = HEBREW_MONTHS[getMonth(currentDate)];
+  const hebrewMonthName = HEBREW_CALENDAR_MONTHS[getMonth(currentDate)];
+  const year = format(currentDate, 'yyyy');
 
-    const monthStats = {
-      totalDaysWithGroups: calendarDays.filter(day => day.currentMonth && day.hasGroups).length,
-      totalGroups: calendarDays.reduce((sum, day) => day.currentMonth ? sum + day.groupsCount : sum, 0),
-      daysWithAttendance: calendarDays.filter(day => day.currentMonth && day.hasAttendance).length
-    };
+  const monthStats = {
+    totalDaysWithGroups: calendarDays.filter(day => day.currentMonth && day.hasGroups).length,
+    totalGroups: calendarDays.reduce((sum, day) => day.currentMonth ? sum + day.groupsCount : sum, 0),
+    daysWithAttendance: calendarDays.filter(day => day.currentMonth && day.hasAttendance).length,
+    // תיקון - ספירה נכונה של ימים עם נוכחות מלאה
+    daysWithFullAttendance: calendarDays.filter(day => 
+      day.currentMonth && 
+      day.hasGroups && 
+      day.isDayFullyMarked === true
+    ).length
+  };
 
-    return (
-      <Box sx={{
-        background: `linear-gradient(135deg, ${monthColors.primary} 0%, ${monthColors.accent} 100%)`,
-        color: 'white',
-        padding: '24px',
-        borderRadius: '20px',
-        marginBottom: '20px',
-        boxShadow: `0 8px 32px ${monthColors.primary}40`,
-        position: 'relative',
-        overflow: 'hidden',
-        direction: 'rtl',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.1"%3E%3Ccircle cx="7" cy="7" r="1"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+  return (
+    <Box sx={{
+      background: `linear-gradient(135deg, ${monthColors.primary} 0%, ${monthColors.accent} 100%)`,
+      color: 'white',
+      padding: '24px',
+      borderRadius: '20px',
+      marginBottom: '20px',
+      boxShadow: `0 8px 32px ${monthColors.primary}40`,
+      position: 'relative',
+      overflow: 'hidden',
+      direction: 'rtl',
+      '&::before': {
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.1"%3E%3Ccircle cx="7" cy="7" r="1"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
         }
+    }}>
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        position: 'relative',
+        zIndex: 1,
+        flexDirection: { xs: 'column', md: 'row' },
+        gap: { xs: 2, md: 0 }
       }}>
-        <Box sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          position: 'relative',
-          zIndex: 1,
-          flexDirection: { xs: 'column', md: 'row' },
-          gap: { xs: 2, md: 0 }
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-            <Avatar sx={{
-              backgroundColor: 'rgba(255,255,255,0.2)',
-              backdropFilter: 'blur(10px)',
-              border: '3px solid rgba(255,255,255,0.3)',
-              width: { xs: 60, md: 80 },
-              height: { xs: 60, md: 80 },
-              boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
-              fontSize: { xs: '1.5rem', md: '2rem' },
-              fontWeight: 'bold'
-            }}>
-{format(currentDate, 'MM')}
-
-
-            </Avatar>
-            
-            <Box sx={{ textAlign: { xs: 'center', md: 'right' } }}>
-              <Typography variant="h3" sx={{
-                fontWeight: 'bold',
-                fontSize: { xs: '1.8rem', sm: '2.2rem', md: '2.8rem' },
-                textShadow: '0 2px 4px rgba(0,0,0,0.3)',
-                mb: 0.5
-              }}>
-                {monthName} {year}
-              </Typography>
-              <Typography variant="h5" sx={{
-                fontSize: { xs: '1rem', sm: '1.2rem', md: '1.5rem' },
-                opacity: 0.9,
-                fontWeight: '500'
-              }}>
-                {hebrewMonthName}
-              </Typography>
-            </Box>
-          </Box>
-
-          <Box sx={{
-            display: 'flex',
-            gap: 2,
-            flexWrap: 'wrap',
-            justifyContent: { xs: 'center', md: 'flex-end' }
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+          <Avatar sx={{
+            backgroundColor: 'rgba(255,255,255,0.2)',
+            backdropFilter: 'blur(10px)',
+            border: '3px solid rgba(255,255,255,0.3)',
+            width: { xs: 60, md: 80 },
+            height: { xs: 60, md: 80 },
+            boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+            fontSize: { xs: '1.5rem', md: '2rem' },
+            fontWeight: 'bold'
           }}>
-            <Chip
-              icon={<CalendarTodayIcon />}
-              label={`${monthStats.totalDaysWithGroups} ימים פעילים`}
-              sx={{
-                backgroundColor: 'rgba(255,255,255,0.2)',
-                color: 'white',
-                fontWeight: 'bold',
-                backdropFilter: 'blur(10px)',
-                border: '1px solid rgba(255,255,255,0.3)'
-              }}
-            />
-            <Chip
-              icon={<GroupIcon />}
-              label={`${monthStats.totalGroups} חוגים`}
-              sx={{
-                backgroundColor: 'rgba(255,255,255,0.2)',
-                color: 'white',
-                fontWeight: 'bold',
-                backdropFilter: 'blur(10px)',
-                border: '1px solid rgba(255,255,255,0.3)'
-              }}
-            />
-            <Chip
-              icon={<CheckCircleIcon />}
-              label={`${monthStats.daysWithAttendance} ימים עם נוכחות`}
-              sx={{
-                backgroundColor: 'rgba(255,255,255,0.2)',
-                color: 'white',
-                fontWeight: 'bold',
-                backdropFilter: 'blur(10px)',
-                border: '1px solid rgba(255,255,255,0.3)'
-              }}
-            />
+            {format(currentDate, 'MM')}
+          </Avatar>
+          
+          <Box sx={{ textAlign: { xs: 'center', md: 'right' } }}>
+            <Typography variant="h3" sx={{
+              fontWeight: 'bold',
+              fontSize: { xs: '1.8rem', sm: '2.2rem', md: '2.8rem' },
+              textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+              mb: 0.5
+            }}>
+              {monthName} {year}
+            </Typography>
+            <Typography variant="h5" sx={{
+              fontSize: { xs: '1rem', sm: '1.2rem', md: '1.5rem' },
+              opacity: 0.9,
+              fontWeight: '500'
+            }}>
+              {hebrewMonthName}
+            </Typography>
           </Box>
         </Box>
+
+        <Box sx={{
+          display: 'flex',
+          gap: 2,
+          flexWrap: 'wrap',
+          justifyContent: { xs: 'center', md: 'flex-end' }
+        }}>
+          <Chip
+            icon={<CalendarTodayIcon />}
+            label={`${monthStats.totalDaysWithGroups} ימים פעילים`}
+            sx={{
+              backgroundColor: 'rgba(255,255,255,0.2)',
+              color: 'white',
+              fontWeight: 'bold',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255,255,255,0.3)'
+            }}
+          />
+          <Chip
+            icon={<GroupIcon />}
+            label={`${monthStats.totalGroups} חוגים`}
+            sx={{
+              backgroundColor: 'rgba(255,255,255,0.2)',
+              color: 'white',
+              fontWeight: 'bold',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255,255,255,0.3)'
+            }}
+          />
+          <Chip
+            icon={<CheckCircleIcon />}
+            label={`${monthStats.daysWithFullAttendance}/${monthStats.totalDaysWithGroups} ימים הושלמו`}
+            sx={{
+              backgroundColor: 'rgba(255,255,255,0.2)',
+              color: 'white',
+              fontWeight: 'bold',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255,255,255,0.3)'
+            }}
+          />
+        </Box>
       </Box>
-    );
-  };
+    </Box>
+  );
+};
 
   // כותרת ימי השבוע
  const renderWeekDays = () => {
@@ -489,171 +498,199 @@ const MonthlyCalendar = ({
 };
   // רינדור תוכן היום
   const renderDayContent = (day) => {
-    const groupsCount = day.events.length;
-    const hasAttendance = day.hasAttendance;
+  const groupsCount = day.events.length;
+  const hasAttendance = day.hasAttendance;
 
-    if (!day.isActiveDay) {
-      return (
-        <Box sx={styles.emptyDayState}>
-          {day.holidayInfo ? (
-            <>
-              <EventBusy sx={{
-                ...styles.emptyDayIcon,
-                color: '#F6AD55'
-              }} />
-              <Typography variant="caption" sx={{
-                ...styles.holidayText,
-                backgroundColor: 'rgba(246, 173, 85, 0.1)',
-                color: '#C05621',
-                padding: '4px 8px',
-                borderRadius: '6px',
-                fontSize: { xs: '0.65rem', sm: '0.7rem' }
-              }}>
-                {day.holidayInfo.name}
-              </Typography>
-            </>
-          ) : day.isWeekend ? (
-            <>
-              <StarIcon sx={{
-                ...styles.emptyDayIcon,
-                color: '#9F7AEA'
-              }} />
-              <Typography variant="caption" sx={{
-                ...styles.emptyDayText,
-                color: '#6B46C1',
-                fontSize: { xs: '0.65rem', sm: '0.7rem' }
-              }}>
-                שבת קודש
-              </Typography>
-            </>
-          ) : (
-            <>
-              <CalendarTodayIcon sx={styles.emptyDayIcon} />
-              <Typography variant="caption" sx={styles.emptyDayText}>
-                יום מנוחה
-              </Typography>
-            </>
-          )}
-        </Box>
-      );
-    }
-
-    if (groupsCount === 0) {
-      return (
-        <Box sx={styles.emptyDayState}>
-          <CalendarTodayIcon sx={{
-            ...styles.emptyDayIcon,
-            color: '#CBD5E0'
-          }} />
-          <Typography variant="caption" sx={{
-            ...styles.emptyDayText,
-            fontSize: { xs: '0.65rem', sm: '0.7rem' }
-          }}>
-            אין חוגים
-          </Typography>
-        </Box>
-      );
-    }
-
-    // יום עם חוגים - הצגת גרף עוגה
+  if (!day.isActiveDay) {
     return (
-      <Box sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: 1,
-        py: 1
-      }}>
-        <motion.div
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <Tooltip
-            title={
-              <Box>
-                <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold' }}>
-                  חוגים ביום זה:
-                </Typography>
-                {day.pieChartData.map((course, index) => (
-                  <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                    <Box sx={{
-                      width: 12,
-                      height: 12,
-                      backgroundColor: course.color,
-                      borderRadius: '50%'
-                    }} />
-                    <Typography variant="body2">
-                      {course.name}: {course.value} {course.value === 1 ? 'קבוצה' : 'קבוצות'}
-                    </Typography>
-                  </Box>
-                ))}
-                {hasAttendance && day.attendanceStats && (
-                  <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid rgba(255,255,255,0.3)' }}>
-                    <Typography variant="body2">
-                      נוכחות: {day.attendanceStats.presentStudents}/{day.attendanceStats.totalStudents} 
-                      ({day.attendanceStats.percentage}%)
-                    </Typography>
-                  </Box>
-                )}
-              </Box>
-            }
-            arrow
-            placement="top"
-          >
-            <Box sx={{ position: 'relative' }}>
-              {renderPieChart(day)}
-              
-              {/* אינדיקטור נוכחות */}
-              {hasAttendance && (
-                <Box sx={{
-                  position: 'absolute',
-                  top: -4,
-                  right: -4,
-                  zIndex: 10
-                }}>
-                  <CheckCircleIcon
-                    sx={{
-                      fontSize: 16,
-                      color: getAttendanceColor(day.attendanceStats?.percentage || 0),
-                      backgroundColor: 'white',
-                      borderRadius: '50%',
-                      filter: `drop-shadow(0 2px 4px ${getAttendanceColor(day.attendanceStats?.percentage || 0)}40)`
-                    }}
-                  />
-                </Box>
-              )}
-            </Box>
-          </Tooltip>
-        </motion.div>
-
-        <Typography variant="caption" sx={{
-          fontSize: { xs: '0.7rem', sm: '0.75rem' },
-          fontWeight: '600',
-          color: '#4A5568',
-          textAlign: 'center'
-        }}>
-          {formatGroupsCountText(groupsCount)}
-        </Typography>
-
-        {hasAttendance && day.attendanceStats && (
-          <Typography
-            variant="caption"
-            sx={{
-              color: getAttendanceColor(day.attendanceStats.percentage),
-              fontWeight: 'bold',
-              fontSize: { xs: '0.65rem', sm: '0.7rem' },
-              backgroundColor: `${getAttendanceColor(day.attendanceStats.percentage)}20`,
-              padding: '2px 6px',
-              borderRadius: '4px',
-              border: `1px solid ${getAttendanceColor(day.attendanceStats.percentage)}40`
-            }}
-          >
-            {day.attendanceStats.percentage}%
-          </Typography>
+      <Box sx={styles.emptyDayState}>
+        {day.holidayInfo ? (
+          <>
+            <EventBusy sx={{
+              ...styles.emptyDayIcon,
+              color: '#F6AD55'
+            }} />
+            <Typography variant="caption" sx={{
+              ...styles.holidayText,
+              backgroundColor: 'rgba(246, 173, 85, 0.1)',
+              color: '#C05621',
+              padding: '4px 8px',
+              borderRadius: '6px',
+              fontSize: { xs: '0.65rem', sm: '0.7rem' }
+            }}>
+              {day.holidayInfo.name}
+            </Typography>
+          </>
+        ) : day.isWeekend ? (
+          <>
+            <StarIcon sx={{
+              ...styles.emptyDayIcon,
+              color: '#9F7AEA'
+            }} />
+            <Typography variant="caption" sx={{
+              ...styles.emptyDayText,
+              color: '#6B46C1',
+              fontSize: { xs: '0.65rem', sm: '0.7rem' }
+            }}>
+              שבת קודש
+            </Typography>
+          </>
+        ) : (
+          <>
+            <CalendarTodayIcon sx={styles.emptyDayIcon} />
+            <Typography variant="caption" sx={styles.emptyDayText}>
+              יום מנוחה
+            </Typography>
+          </>
         )}
       </Box>
     );
-  };
+  }
+
+  if (groupsCount === 0) {
+    return (
+      <Box sx={styles.emptyDayState}>
+        <CalendarTodayIcon sx={{
+          ...styles.emptyDayIcon,
+          color: '#CBD5E0'
+        }} />
+        <Typography variant="caption" sx={{
+          ...styles.emptyDayText,
+          fontSize: { xs: '0.65rem', sm: '0.7rem' }
+        }}>
+          אין חוגים
+        </Typography>
+      </Box>
+    );
+  }
+
+  // יום עם חוגים - הצגת גרף עוגה
+  return (
+    <Box sx={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: 1,
+      py: 1,
+      position: 'relative' // הוסף את זה
+    }}>
+            <motion.div
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
+        style={{
+          // הוסף margin-top כשיש נוכחות מלאה
+          marginTop: day.isDayFullyMarked ? '32px' : '0px',
+          transition: 'margin-top 0.2s ease'
+        }}
+      >
+        <Tooltip
+          title={
+            <Box>
+              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold' }}>
+                חוגים ביום זה:
+              </Typography>
+              {day.pieChartData.map((course, index) => (
+                <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                  <Box sx={{
+                    width: 12,
+                    height: 12,
+                    backgroundColor: course.color,
+                    borderRadius: '50%'
+                  }} />
+                  <Typography variant="body2">
+                    {course.name}: {course.value} {course.value === 1 ? 'קבוצה' : 'קבוצות'}
+                  </Typography>
+                </Box>
+              ))}
+              {hasAttendance && day.attendanceStats && (
+                <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid rgba(255,255,255,0.3)' }}>
+                  <Typography variant="body2">
+                    נוכחות: {day.attendanceStats.presentStudents}/{day.attendanceStats.totalStudents} 
+                    ({day.attendanceStats.percentage}%)
+                  </Typography>
+                </Box>
+              )}
+              {day.isDayFullyMarked && (
+                <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid rgba(255,255,255,0.3)' }}>
+                  <Typography variant="body2" sx={{ color: '#4caf50', fontWeight: 'bold' }}>
+                    ✓ נוכחות נקבעה לכל הקבוצות
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          }
+          arrow
+          placement="top"
+        >
+          <Box sx={{ position: 'relative' }}>
+            {renderPieChart(day)}
+              
+            {(hasAttendance || day.isDayFullyMarked) && (
+              <Box sx={{
+                position: 'absolute',
+                top: -4,
+                right: -4,
+                zIndex: 10
+              }}>
+                <CheckCircleIcon
+                  sx={{
+                    fontSize: 16,
+                    color: day.isDayFullyMarked ? '#4caf50' : getAttendanceColor(day.attendanceStats?.percentage || 0),
+                    backgroundColor: 'white',
+                    borderRadius: '50%',
+                    filter: `drop-shadow(0 2px 4px ${day.isDayFullyMarked ? '#4caf50' : getAttendanceColor(day.attendanceStats?.percentage || 0)}40)`
+                  }}
+                />
+              </Box>
+            )}
+          </Box>
+        </Tooltip>
+      </motion.div>
+
+      <Typography variant="caption" sx={{
+        fontSize: { xs: '0.7rem', sm: '0.75rem' },
+        fontWeight: '600',
+        color: '#4A5568',
+        textAlign: 'center'
+      }}>
+        {formatGroupsCountText(groupsCount)}
+      </Typography>
+
+      {/* עדכן את הצגת הסטטוס */}
+      {day.isDayFullyMarked ? (
+        <Typography
+          variant="caption"
+          sx={{
+            color: '#4caf50',
+            fontWeight: 'bold',
+            fontSize: { xs: '0.65rem', sm: '0.7rem' },
+            backgroundColor: 'rgba(76, 175, 80, 0.2)',
+            padding: '2px 6px',
+            borderRadius: '4px',
+            border: '1px solid rgba(76, 175, 80, 0.4)'
+          }}
+        >
+          ✓ הושלם
+        </Typography>
+      ) : hasAttendance && day.attendanceStats ? (
+        <Typography
+          variant="caption"
+          sx={{
+            color: getAttendanceColor(day.attendanceStats.percentage),
+            fontWeight: 'bold',
+            fontSize: { xs: '0.65rem', sm: '0.7rem' },
+            backgroundColor: `${getAttendanceColor(day.attendanceStats.percentage)}20`,
+            padding: '2px 6px',
+            borderRadius: '4px',
+            border: `1px solid ${getAttendanceColor(day.attendanceStats.percentage)}40`
+          }}
+        >
+          {day.attendanceStats.percentage}%
+        </Typography>
+      ) : null}
+    </Box>
+  );
+};
 
   // טיפול בלחיצה על יום
   const handleDayClick = (day) => {
@@ -883,7 +920,7 @@ const MonthlyCalendar = ({
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <CheckCircleIcon sx={{ fontSize: 20, color: '#10B981' }} />
+                <CheckCircleIcon sx={{ fontSize: 20, color: '#4caf50' }} />
                 <Typography variant="body2">נוכחות נרשמה</Typography>
               </Box>
               
@@ -1015,7 +1052,8 @@ MonthlyCalendar.defaultProps = {
   savedAttendanceRecords: {},
   hebrewHolidays: new Map(),
   isActiveDay: () => true,
-  getHebrewHolidayInfo: () => null
+  getHebrewHolidayInfo: () => null,
+  isMarkedForDayStatus: {}
 };
 
 export default MonthlyCalendar;

@@ -267,7 +267,7 @@ export default function InstructorsTable() {
                       <TableCell className="table-head-cell" style={{ width: 200 }}>🎯 פעולות</TableCell>
                       <TableCell className="table-head-cell" style={{ width: 120 }}>🆔 קוד מדריך</TableCell>
                       <TableCell className="table-head-cell" style={{ width: 120 }}>👤 שם פרטי</TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 160 }}>👥 שם משפחה</TableCell>
+                      <TableCell className="table-head-cell" style={{ width: 140 }}>👥 שם משפחה</TableCell>
                       <TableCell className="table-head-cell" style={{ width: 110 }}>📞 טלפון</TableCell>
                       <TableCell className="table-head-cell" style={{ width: 180 }}>📧 אימייל</TableCell>
                       <TableCell className="table-head-cell" style={{ width: 100 }}>🏙️ עיר</TableCell>
@@ -314,7 +314,12 @@ export default function InstructorsTable() {
                                     });
                                     setOpenEdit(true);
                                   }}
-                               
+                                sx={{
+    '& .MuiButton-startIcon': {
+      marginLeft: 0.5,
+      marginRight: 0,
+    }
+  }}
 
                                 >
                                   ערוך
@@ -336,6 +341,12 @@ export default function InstructorsTable() {
                                     });
                                     setDeleteOpen(true);
                                   }}
+                                   sx={{
+    '& .MuiButton-startIcon': {
+      marginLeft: 0.5,
+      marginRight: 0,
+    }
+  }}
                                 >
                                   מחק
                                 </Button>

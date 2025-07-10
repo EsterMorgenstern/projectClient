@@ -166,6 +166,7 @@
   transition: all 0.3s ease !important;
   border-bottom: 1px solid #e5e7eb !important;
   height: 60px !important;
+
 }
 
 .table-row:hover {
@@ -484,4 +485,8 @@
   font-size: 0.75rem !important;
   padding: 4px 8px !important;
   margin: 1px !important;
+}
+.table-cell,
+.table-head-cell {
+  text-align: center !important;
 }

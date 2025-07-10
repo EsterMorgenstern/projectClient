@@ -8,12 +8,14 @@ import AboutSystem from './aboutSystem';
 import LessonManagement from '../Lessons/components/lessonManagement';
 import AttendanceCalendar from '../Attendance/attendanceCalendar'
 import HomeLayout from '../shared/Layout/components/homeLayout';
+import MyNotes from '../shared/Layout/components/myNotes';
 
 const Routing = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<HomeLayout><Home /></HomeLayout>} />      
+        <Route path="/" element={<HomeLayout><Home /></HomeLayout>} />  
+        <Route path="/my-notes" element={<Layout><MyNotes /></Layout>} />
         <Route path="/aboutSystem" element={<HomeLayout><AboutSystem /></HomeLayout>} />
         <Route path="/students" element={<Layout><StudentsTable /></Layout>} />
         <Route path="/instructors" element={<Layout><InstructorsTable /></Layout>} />

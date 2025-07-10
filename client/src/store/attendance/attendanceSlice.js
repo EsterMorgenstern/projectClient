@@ -7,6 +7,8 @@ import { fetchStudentAttendanceSummary } from './fetchStudentAttendanceSummary';
 import { fetchAttendanceReportsMonthly } from './fetchAttendenceReportsMonthly';
 import { fetchAttendanceReportsOverall } from './fetchAttendanceReportsOverall';
 import { clearGroupsByDay } from '../group/groupSlice';
+import { isMarkedForDate } from './attendanceGetIsMarkedForGroup';
+import { isMarkedForDay } from './attendanceGetIsMarkedForDay';
 
 const attendanceSlice = createSlice({
     name: 'attendance',
@@ -18,7 +20,12 @@ const attendanceSlice = createSlice({
         attendanceData: [],
         attendanceSummary: {},
         attendanceReportsMonthly: null,
-        attendanceReportsOverall: null
+        attendanceReportsOverall: null,
+        isMarked: null,
+        // הוספת state חדש לניהול סטטוס נוכחות
+        attendanceMarkedStatus: {}, 
+        attendanceCheckLoading: false,
+        isMarkedForDay: {}, // ניהול סטטוס נוכחות לפי תאריך
     },
     reducers: {
         clearAttendanceError: (state) => {
@@ -34,6 +41,17 @@ const attendanceSlice = createSlice({
             if (studentIndex >= 0) {
                 state.records[date][studentIndex].wasPresent = wasPresent;
             }
+        },
+
+        // הוספת reducer לניקוי סטטוס נוכחות
+        clearAttendanceMarkedStatus: (state) => {
+            state.attendanceMarkedStatus = {};
+        },
+
+        // הוספת reducer לעדכון סטטוס נוכחות מקומי
+        setAttendanceMarkedStatus: (state, action) => {
+            const { key, isMarked } = action.payload;
+            state.attendanceMarkedStatus[key] = isMarked;
         }
     },
     extraReducers: (builder) => {
@@ -46,20 +64,28 @@ const attendanceSlice = createSlice({
             .addCase(saveAttendance.fulfilled, (state, action) => {
                 state.loading = false;
                 state.lastSaved = new Date().toISOString();
+                
+                // עדכן את הסטטוס שנוכחות נשמרה
+                const { groupId, date } = action.meta.arg;
+                const key = `${groupId}-${date}`;
+                state.attendanceMarkedStatus[key] = true;
             })
             .addCase(saveAttendance.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
             })
+            
             // Fetch attendance by date
             .addCase(fetchAttendanceByDate.fulfilled, (state, action) => {
                 const { date, attendance } = action.payload;
                 state.records[date] = attendance;
             })
+            
             // Fetch attendance range
             .addCase(fetchAttendanceRange.fulfilled, (state, action) => {
                 state.records = { ...state.records, ...action.payload };
             })
+            
             // Fetch student attendance summary
             .addCase(fetchStudentAttendanceSummary.pending, (state) => {
                 state.loading = true;
@@ -100,7 +126,7 @@ const attendanceSlice = createSlice({
             .addCase(fetchAttendanceReportsOverall.fulfilled, (state, action) => {
                 state.loading = false;
                 state.attendanceReportsOverall = action.payload;
-                 state.error = null;
+                state.error = null;
             })
             .addCase(fetchAttendanceReportsOverall.rejected, (state, action) => {
                 state.loading = false;
@@ -108,6 +134,50 @@ const attendanceSlice = createSlice({
                 state.attendanceReportsOverall = null;
             })
 
+            // isMarkedForDate - בדיקת נוכחות
+            .addCase(isMarkedForDate.pending, (state, action) => {
+                state.attendanceCheckLoading = true;
+                state.error = null;
+            })
+            .addCase(isMarkedForDate.fulfilled, (state, action) => {
+                state.attendanceCheckLoading = false;
+                const { key, isMarked } = action.payload;
+                state.attendanceMarkedStatus[key] = isMarked;
+                state.error = null;
+            })
+            .addCase(isMarkedForDate.rejected, (state, action) => {
+                state.attendanceCheckLoading = false;
+                state.error = action.payload;
+                
+                // במקרה של שגיאה, נניח שאין נוכחות
+                if (action.meta?.arg) {
+                    const { groupId, date } = action.meta.arg;
+                    const key = `${groupId}-${date}`;
+                    state.attendanceMarkedStatus[key] = false;
+                }
+            })
+ // isMarkedForDay - בדיקת נוכחות
+            .addCase(isMarkedForDay.pending, (state, action) => {
+                state.attendanceCheckLoading = true;
+                state.error = null;
+            })
+            .addCase(isMarkedForDay.fulfilled, (state, action) => {
+                state.attendanceCheckLoading = false;
+                const { key, isMarked } = action.payload;
+                state.isMarkedForDay[key] = isMarked;
+                state.error = null;
+            })
+            .addCase(isMarkedForDay.rejected, (state, action) => {
+                state.attendanceCheckLoading = false;
+                state.error = action.payload;
+                
+                // במקרה של שגיאה, נניח שאין נוכחות
+                if (action.meta?.arg) {
+                    const { date } = action.meta.arg;
+                    const key = `${date}`;
+                    state.isMarkedForDay[key] = false;
+                }
+            })
             // Fetch attendance history
             .addCase(fetchAttendanceHistory.pending, (state) => {
                 state.loading = true;
@@ -124,5 +194,11 @@ const attendanceSlice = createSlice({
     }
 });
 
-export const { clearAttendanceError, updateLocalAttendance } = attendanceSlice.actions;
+export const { 
+    clearAttendanceError, 
+    updateLocalAttendance, 
+    clearAttendanceMarkedStatus,
+    setAttendanceMarkedStatus
+} = attendanceSlice.actions;
+
 export default attendanceSlice.reducer;
