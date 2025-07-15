@@ -10,6 +10,7 @@ import attendanceReduser from './attendance/attendanceSlice';
 import studentNotesReduser from './studentNotes/studentNoteSlice';
 import usersReducer from './user/userSlice';
 import lessonCancellationsReducer from './lessonsCancelation/lessonsCancelationSlice';
+import paymentsReducer from './payments/paymentsSlice';
 
 const store = configureStore({
   reducer: {
@@ -23,6 +24,8 @@ const store = configureStore({
     attendances:attendanceReduser,
     studentNotes:studentNotesReduser,
     lessonCancellations: lessonCancellationsReducer,
+    payments: paymentsReducer,
+
 
   },
 });

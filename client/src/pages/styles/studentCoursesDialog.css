@@ -50,3 +50,215 @@
 .shadow-elegant {
   box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
 }
+/* אנימציות מותאמות אישית */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.student-courses-dialog {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.course-card:hover {
+  animation: pulse 0.3s ease-in-out;
+}
+
+.payment-method-card {
+  animation: slideInRight 0.4s ease-out;
+  transition: all 0.3s ease;
+}
+
+.payment-method-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(31, 38, 135, 0.4);
+}
+
+/* גרדיאנטים מותאמים */
+.gradient-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.gradient-secondary {
+  background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+}
+
+.gradient-success {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+}
+
+.gradient-payment {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+}
+
+/* אפקטים מיוחדים */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.shadow-elegant {
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+}
+
+.payment-card-default {
+  border: 2px solid #667eea;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+}
+
+/* אייקונים לאמצעי תשלום */
+.payment-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.payment-icon.credit-card {
+  color: #1976d2;
+}
+
+.payment-icon.bank-transfer {
+  color: #388e3c;
+}
+
+.payment-icon.cash {
+  color: #f57c00;
+}
+
+.payment-icon.check {
+  color: #7b1fa2;
+}
+
+/* טבלת תשלומים */
+.payment-history-table {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.payment-history-table .MuiTableHead-root {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.payment-history-table .MuiTableHead-root .MuiTableCell-root {
+  color: white;
+  font-weight: 600;
+}
+
+.payment-row:hover {
+  background-color: rgba(102, 126, 234, 0.05);
+  transition: background-color 0.2s ease;
+}
+
+/* סטטוס צ'יפים */
+.status-chip.completed {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-chip.pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-chip.failed {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+/* אנימציות לטאבים */
+.payment-tabs .MuiTab-root {
+  transition: all 0.3s ease;
+}
+
+.payment-tabs .MuiTab-root:hover {
+  background-color: rgba(102, 126, 234, 0.1);
+}
+
+.payment-tabs .Mui-selected {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
+}
+
+/* דיאלוג תשלום */
+.payment-dialog .MuiDialogTitle-root {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.payment-form-field {
+  margin-bottom: 1rem;
+}
+
+.payment-amount-field .MuiInputAdornment-root {
+  color: #667eea;
+  font-weight: 600;
+}
+
+/* רספונסיביות */
+@media (max-width: 768px) {
+  .payment-method-card {
+    margin-bottom: 1rem;
+  }
+  
+  .payment-history-table {
+    font-size: 0.875rem;
+  }
+  
+  .payment-dialog .MuiDialog-paper {
+    margin: 1rem;
+    width: calc(100% - 2rem);
+  }
+}
+
+/* אפקטים מיוחדים לכרטיסי תשלום */
+.payment-method-card.default-method {
+  position: relative;
+  overflow: hidden;
+}
+
+.payment-method-card.default-method::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+}
+
+/* אנימציה לטעינה */
+.payment-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+}
+
+.payment-loading .MuiCircularProgress-root {
+  color: #667eea;
+}

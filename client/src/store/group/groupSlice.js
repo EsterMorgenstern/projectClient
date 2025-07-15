@@ -3,6 +3,8 @@ import { fetchGroups } from './groupGellAllThunk';
 import { addGroup } from './groupAddThunk';
 import { getGroupsByCourseId } from './groupGetGroupsByCourseIdThunk';
 import { getGroupsByDay } from './groupGetByDayThunk';
+import { delay } from 'framer-motion';
+import { deleteGroup } from './groupDeleteThunk';
 
 const groupSlice = createSlice({
   name: 'groups',
@@ -37,12 +39,12 @@ const groupSlice = createSlice({
         state.loading = false;
         state.error = action.error.message;
       })
-      
+
       // getGroupsByCourseId   
       .addCase(getGroupsByCourseId.pending, (state) => {
         console.log('getGroupsByCourseId...')
         state.loading = true;
-      })   
+      })
       .addCase(getGroupsByCourseId.fulfilled, (state, action) => {
         console.log("groupsByCourseId", action.payload);
         state.loading = false;
@@ -53,12 +55,12 @@ const groupSlice = createSlice({
         state.loading = false;
         state.error = action.error.message;
       })
-      
+
       // getGroupsByDay   
       .addCase(getGroupsByDay.pending, (state) => {
         console.log('getGroupsByDay...')
         state.groupsByDayLoading = true;
-      })   
+      })
       .addCase(getGroupsByDay.fulfilled, (state, action) => {
         console.log("getGroupsByDay", action.payload);
         state.groupsByDayLoading = false;
@@ -69,7 +71,26 @@ const groupSlice = createSlice({
         state.groupsByDayLoading = false;
         state.error = action.error.message;
       })
+      // deleteGroup   
+      .addCase(deleteGroup.pending, (state) => {
+        console.log('deleteGroup...')
+        state.loading = true;
+      })
+      .addCase(deleteGroup.fulfilled, (state, action) => {
+        console.log("deleteGroup", action.payload);
+        state.loading = false;
+        const groupIdToDelete = action.payload.groupId || action.payload;
+
       
+        state.groups = state.groups.filter((group) => group.groupId !== groupIdToDelete);
+        state.groupsByCourseId = state.groupsByCourseId.filter((group) => group.groupId !== groupIdToDelete);
+      })
+      .addCase(deleteGroup.rejected, (state, action) => {
+        console.error('Error deleteGroup:', action.error.message);
+        state.loading = false;
+        state.error = action.error.message;
+      })
+
       // addGroup
       .addCase(addGroup.pending, (state) => {
         console.log('Adding group...');

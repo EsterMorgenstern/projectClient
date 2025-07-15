@@ -58,7 +58,7 @@ import { fetchCourses } from './CoursesGetAllThunk';
       .addCase(deleteCourse.fulfilled, (state, action) => {
         console.log(action.payload);
         state.loading = false;
-        state.courses = state.courses.filter((course) => course.id !== action.payload);
+        state.courses = state.courses.filter((course) => course.courseId !== action.payload.courseId);
       })
       .addCase(deleteCourse.rejected, (state, action) => {
         console.error('Error deleteCourse:', action.error.message);

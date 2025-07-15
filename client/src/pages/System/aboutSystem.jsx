@@ -684,6 +684,7 @@ export const AboutSystem = () => {
                   whileInView="visible"
                   viewport={{ once: true, amount: 0.2 }}
                   transition={{ delay: index * 0.1 }}
+                  sx={{marginRight:'48px'}}
                 >
                   <TechCard>
                     <Typography 
@@ -692,7 +693,8 @@ export const AboutSystem = () => {
                       gutterBottom
                       sx={{ 
                         mb: 4,
-                        color: theme.palette.primary.main
+                        color: theme.palette.primary.main,
+                        
                       }}
                     >
                       {spec.category}
@@ -1044,16 +1046,18 @@ export const AboutSystem = () => {
                         fontWeight="bold" 
                         gutterBottom
                         sx={{ 
+                    
                           mb: 3,
                           color: theme.palette.primary.main
                         }}
                       >
                         יצירת קשר
                       </Typography>
-                      
-                      <Stack 
-                        direction={isMobile ? "column" : "row"} 
-                        spacing={3} 
+
+                      <Stack
+                        direction={isMobile ? "column" : "row"}
+                        spacing={3}
+                        sx={{ direction: 'ltr' }}
                         justifyContent="center"
                         alignItems="center"
                       >
@@ -1341,7 +1345,7 @@ export const AboutSystem = () => {
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                style={{ marginBottom: isMobile ? 24 : 32,marginRight:'460px' }}
+                style={{ marginBottom: isMobile ? 24 : 32,marginRight:'464px' }}
               >
                 <Button
                   variant="contained"
@@ -1390,6 +1394,7 @@ export const AboutSystem = () => {
                   spacing={isMobile ? 2 : 3} 
                   justifyContent="center"
                   alignItems="center"
+                  sx={{direction:'ltr'}}
                 >
                   {/* כפתור אימייל */}
                   <motion.div
@@ -1500,7 +1505,7 @@ export const AboutSystem = () => {
                   spacing={isMobile ? 1 : 3} 
                   justifyContent="center"
                   alignItems="center"
-                  sx={{ fontSize: "0.9rem" }}
+                  sx={{ fontSize: "0.9rem", direction: 'ltr' }}
                 >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <EmailIcon sx={{ fontSize: 18 }} />
