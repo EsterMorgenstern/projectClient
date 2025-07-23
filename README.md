@@ -322,7 +322,6 @@ REACT_APP_ANALYTICS_ID=your-analytics-id
 
 **אסתר מורגנשטרן**
 - 🎓 **התמחות:** Full-Stack Development
-- 💼 **LinkedIn:** [linkedin.com/in/ester-morgenstern](https://linkedin.com/in/ester-morgenstern)
 - 📧 **Email:** em0527104104@gmail.com
 - 💻 **GitHub:** [github.com/EsterMorgenstern](https://github.com/EsterMorgenstern)
 
