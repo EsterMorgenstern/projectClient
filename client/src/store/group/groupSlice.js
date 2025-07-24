@@ -3,8 +3,9 @@ import { fetchGroups } from './groupGellAllThunk';
 import { addGroup } from './groupAddThunk';
 import { getGroupsByCourseId } from './groupGetGroupsByCourseIdThunk';
 import { getGroupsByDay } from './groupGetByDayThunk';
-import { delay } from 'framer-motion';
 import { deleteGroup } from './groupDeleteThunk';
+import { getGroupsByInstructorId } from './groupByInstructorId';
+import { FindBestGroupForStudent, FindBestGroupsForStudent } from './groupFindBestGroupForStudent';
 
 const groupSlice = createSlice({
   name: 'groups',
@@ -14,12 +15,20 @@ const groupSlice = createSlice({
     error: null,
     groupsByCourseId: [],
     groupsByDay: [],
+    bestGroupForStudent: [],
+    instructorGroups : [],
     groupsByDayLoading: false
   },
   reducers: {
     clearGroupsByDay: (state) => {
       state.groupsByDay = [];
       state.groupsByDayLoading = false;
+    },
+     clearBestGroup: (state) => {
+      state.bestGroupForStudent = null;
+    },
+    clearBestGroups: (state) => {
+      state.bestGroupsForStudent = [];
     }
   },
   extraReducers: (builder) => {
@@ -55,7 +64,63 @@ const groupSlice = createSlice({
         state.loading = false;
         state.error = action.error.message;
       })
-
+ // getGroupsByInstructorId   
+      .addCase(getGroupsByInstructorId.pending, (state) => {
+        console.log('getGroupsByInstructorId...')
+        state.loading = true;
+      })
+      .addCase(getGroupsByInstructorId.fulfilled, (state, action) => {
+        console.log("groupsByInstructorId", action.payload);
+        state.loading = false;
+        state.instructorGroups = action.payload;
+      })
+      .addCase(getGroupsByInstructorId.rejected, (state, action) => {
+        console.error('Error getting groups by instructor:', action.error.message);
+        state.loading = false;
+        state.error = action.error.message;
+      })
+        // FindBestGroupsForStudent (מספר קבוצות)
+      .addCase(FindBestGroupsForStudent.pending, (state) => {
+        console.log('🔄 Redux: מתחיל חיפוש קבוצות...');
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(FindBestGroupsForStudent.fulfilled, (state, action) => {
+        console.log('✅ Redux: קיבל קבוצות מהשרת:', action.payload);
+        state.loading = false;
+        state.error = null;
+        
+        // וידוא שהנתונים הם מערך
+        const groups = Array.isArray(action.payload) ? action.payload : [];
+        state.bestGroupsForStudent = groups;
+        
+        console.log('💾 Redux: שמר', groups.length, 'קבוצות מומלצות');
+      })
+      .addCase(FindBestGroupsForStudent.rejected, (state, action) => {
+        console.error('❌ Redux: שגיאה בחיפוש קבוצות:', action.payload);
+        state.loading = false;
+        state.error = action.payload || 'שגיאה בחיפוש קבוצות מתאימות';
+        state.bestGroupsForStudent = [];
+      })
+      
+      // FindBestGroupForStudent (קבוצה אחת - תאימות לאחור)
+      .addCase(FindBestGroupForStudent.pending, (state) => {
+        console.log('🔄 Redux: מתחיל חיפוש קבוצה...');
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(FindBestGroupForStudent.fulfilled, (state, action) => {
+        console.log('✅ Redux: קיבל קבוצה מהשרת:', action.payload);
+        state.loading = false;
+        state.error = null;
+        state.bestGroupForStudent = action.payload;
+      })
+      .addCase(FindBestGroupForStudent.rejected, (state, action) => {
+        console.error('❌ Redux: שגיאה בחיפוש קבוצה:', action.payload);
+        state.loading = false;
+        state.error = action.payload || 'שגיאה בחיפוש קבוצה מתאימה';
+        state.bestGroupForStudent = null;
+      })
       // getGroupsByDay   
       .addCase(getGroupsByDay.pending, (state) => {
         console.log('getGroupsByDay...')

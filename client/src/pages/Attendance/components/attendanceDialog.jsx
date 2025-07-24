@@ -1,5 +1,5 @@
 
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
@@ -16,6 +16,9 @@ import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { styles } from '../styles/dialogStyles';
 import React, { useEffect, useState } from 'react';
+import { getAttendanceByStudent } from '../../../store/attendance/attensanceGetByStudent';
+import AddStudentNoteDialog from '../../Students/components/addStudentNoteDialog';
+import { addStudentNote } from '../../../store/studentNotes/studentNoteAddThunk';
 
 const AttendanceDialog = ({
   open,
@@ -37,7 +40,13 @@ const AttendanceDialog = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [note, setNote] = useState('');
+  const dispatch = useDispatch();
   const attendanceRecords = useSelector(state => state.attendance?.records || {});
+
+  // סטייטים לדיאלוג הערה
+  const [noteDialogOpen, setNoteDialogOpen] = useState(false);
+  const [noteStudent, setNoteStudent] = useState(null);
+  const [noteLoading, setNoteLoading] = useState(false);
 
   // חישוב ערכים
   const dateString = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
@@ -63,7 +72,46 @@ const AttendanceDialog = ({
     });
   }, [displayCourseName, displayBranchName, displayGroupName, courseName, branchName, groupName]);
 
-  // שאר הפונקציות כמו קודם...
+  // פונקציה חדשה לסימון נוכחות עם בדיקת העדרויות
+  const handleAttendanceChangeWithNote = async (studentId, wasPresent) => {
+    if (onAttendanceChange && studentId) {
+      onAttendanceChange(studentId, wasPresent);
+
+      // אם מסמנים כנעדר
+      if (!wasPresent) {
+        setNoteLoading(true);
+        try {
+          const res = await dispatch(getAttendanceByStudent(studentId)).unwrap();
+          const absences = Array.isArray(res)
+            ? res.filter(r => r.wasPresent === false).length
+            : 0;
+          if (absences >= 2) {
+            const studentObj = (students || []).find(s => (s.studentId || s.id) === studentId);
+            const noteStudentObj = studentObj
+              ? { ...studentObj, id: studentObj.id || studentObj.studentId }
+              : { id: studentId };
+            setNoteStudent(noteStudentObj);
+            setNoteDialogOpen(true);
+          }
+        } catch (err) {
+          alert('אירעה שגיאה בשליפת נתוני נוכחות מהשרת');
+        }
+        setNoteLoading(false);
+      }
+    }
+  };
+
+  const handleSaveStudentNote = async (noteData) => {
+  try {
+    await dispatch(addStudentNote(noteData)).unwrap();
+    // אפשר להציג הודעת הצלחה
+  } catch (err) {
+    // אפשר להציג הודעת שגיאה
+  }
+  setNoteDialogOpen(false);
+  setNoteStudent(null);
+};
+
   const markAllPresent = () => {
     if (students && students.length > 0) {
       students.forEach(student => {
@@ -330,12 +378,12 @@ const AttendanceDialog = ({
                       </Avatar>
                     </ListItemIcon>
 
-                     <Box sx={{ flex: 1, ml: 2, textAlign: 'right' }}> 
-    <Typography variant="subtitle1" sx={{ fontWeight: 'medium', direction: 'rtl' }}>
-      {student.studentName || 'תלמיד ללא שם'}
+                    <Box sx={{ flex: 1, ml: 2, textAlign: 'right' }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 'medium', direction: 'rtl' }}>
+                        {student.studentName || 'תלמיד ללא שם'}
                       </Typography>
-                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5, justifyContent: 'flex-end' }}>
-      {student.attendanceRate && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5, justifyContent: 'flex-end' }}>
+                        {student.attendanceRate && (
                           <>
                             <Typography variant="body2" color="textSecondary">•</Typography>
                             <Chip
@@ -369,10 +417,9 @@ const AttendanceDialog = ({
                         edge="end"
                         checked={attendanceData[studentId] || false}
                         onChange={() => {
-                          if (onAttendanceChange && studentId) {
-                            onAttendanceChange(studentId, !attendanceData[studentId]);
-                          }
+                          handleAttendanceChangeWithNote(studentId, !attendanceData[studentId]);
                         }}
+                        disabled={noteLoading}
                         color="primary"
                         size="large"
                         sx={{
@@ -447,6 +494,21 @@ const AttendanceDialog = ({
           שמור נוכחות
         </Button>
       </DialogActions>
+      <AddStudentNoteDialog
+  open={noteDialogOpen}
+  onClose={() => {
+    setNoteDialogOpen(false);
+    setNoteStudent(null);
+  }}
+  student={noteStudent}
+  onSave={handleSaveStudentNote}
+  noteData={{
+    studentId: noteStudent?.id || noteStudent?.studentId || '',
+    noteContent: 'לתשומת ליבך: התלמיד נעדר כבר 3 פעמים',
+    noteType: 'אזהרה',
+    priority: 'גבוה'
+  }}
+/>
     </Dialog>
   );
 };

@@ -736,7 +736,7 @@ export const AboutSystem = () => {
       </Box>
 
       {/* System Advantages */}
-      <Container sx={{ mt: 12, mb: 12 }}>
+      <Container sx={{ mt: 22, mb: 22 }}>
         <MotionBox
           variants={containerVariants}
           initial="hidden"
@@ -799,6 +799,7 @@ export const AboutSystem = () => {
               >
                 <Card
                   sx={{
+                    width:'350px',
                     height: "100%",
                     borderRadius: 3,
                     transition: "all 0.4s ease",
@@ -1221,6 +1222,7 @@ export const AboutSystem = () => {
                     transition: "all 0.4s ease",
                     position: "relative",
                     overflow: "hidden",
+                    marginRight: '48px',
                     "&:hover": {
                       transform: "translateY(-10px)",
                       boxShadow: "0 20px 40px rgba(0, 0, 0, 0.12)",
@@ -1615,7 +1617,7 @@ export const AboutSystem = () => {
                     }}
                   >
                     פותח במיוחד עבור מוסדות חינוך המחפשים פתרון מקצועי, יעיל ואמין לניהול תלמידים, 
-                    ציונים ותעודות. המערכת משלבת טכנולוגיה מתקדמת עם ממשק ידידותי למשתמש.
+                    נוכחות דיווחים וביטולים. המערכת משלבת טכנולוגיה מתקדמת עם ממשק ידידותי למשתמש.
                   </Typography>
                 </MotionBox>
                 

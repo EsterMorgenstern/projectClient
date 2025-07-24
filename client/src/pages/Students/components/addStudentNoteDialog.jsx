@@ -77,7 +77,7 @@ const AddStudentNoteDialog = ({
     const initialFormData = useMemo(() => {
         const userDetails = getUserDetails(currentUser);
         
-        if (editMode && noteData) {
+        if (noteData) {
             return {
                 studentId: noteData.studentId || student?.id || '',
                 authorId: noteData.authorId || userDetails.id,
@@ -386,6 +386,7 @@ const AddStudentNoteDialog = ({
                                                 helperText={errors.authorName}
                                                 size="small"
                                                 required
+                                                disabled
                                                 sx={{
                                                     '& .MuiOutlinedInput-root': {
                                                         borderRadius: '8px',
@@ -405,6 +406,7 @@ const AddStudentNoteDialog = ({
                                                 helperText={errors.authorRole}
                                                 size="small"
                                                 required
+                                                disabled
                                                 sx={{
                                                     '& .MuiOutlinedInput-root': {
                                                         borderRadius: '8px',

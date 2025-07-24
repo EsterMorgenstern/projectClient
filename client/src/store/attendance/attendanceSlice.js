@@ -9,6 +9,7 @@ import { fetchAttendanceReportsOverall } from './fetchAttendanceReportsOverall';
 import { clearGroupsByDay } from '../group/groupSlice';
 import { isMarkedForDate } from './attendanceGetIsMarkedForGroup';
 import { isMarkedForDay } from './attendanceGetIsMarkedForDay';
+import { getAttendanceByStudent } from './attensanceGetByStudent';
 
 const attendanceSlice = createSlice({
     name: 'attendance',
@@ -26,6 +27,7 @@ const attendanceSlice = createSlice({
         attendanceMarkedStatus: {}, 
         attendanceCheckLoading: false,
         isMarkedForDay: {}, // ניהול סטטוס נוכחות לפי תאריך
+    attendanceByStudent: []
     },
     reducers: {
         clearAttendanceError: (state) => {
@@ -190,7 +192,21 @@ const attendanceSlice = createSlice({
             .addCase(fetchAttendanceHistory.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
+            })
+             // getAttendanceByStudent
+            .addCase(getAttendanceByStudent.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(getAttendanceByStudent.fulfilled, (state, action) => {
+                state.loading = false;
+                state.attendanceByStudent = action.payload;
+            })
+            .addCase(getAttendanceByStudent.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
             });
+
     }
 });
 

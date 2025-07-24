@@ -324,20 +324,19 @@ export default function StudentsTable() {
                             }}
                             whileHover={{ scale: 1.001 }}
                           >
-                            {/* עמודת פעולות */}
-             <TableCell className="table-cell" sx={{ py: 1 }}> {/* ✅ הקטנתי מ-py: 2 */}
+                           <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}> {/* ✅ הקטנתי padding */}
   <Box className="action-buttons" sx={{ 
     display: 'flex', 
-    gap: 0.5, // ✅ הקטנתי מ-1
+    gap: 0.3, // ✅ הקטנתי gap
     flexWrap: 'wrap',
     alignItems: 'center',
-    justifyContent: 'center'
-    
+    justifyContent: 'center',
+    minHeight: '30px' // ✅ הקטנתי גובה מינימלי
   }}>
     <Button
       variant="contained"
       startIcon={<Edit />}
-      size="small" // ✅ וודא שזה small
+      size="small"
       className="action-button edit"
       onClick={() => {
         setCurrentStudent({
@@ -354,13 +353,15 @@ export default function StudentsTable() {
         setOpenEdit(true);
       }}
       sx={{
-        minWidth: '60px', // ✅ הקטנתי מהרוחב המינימלי
-        height: '28px', // ✅ גובה קבוע
-        fontSize: '0.75rem', // ✅ הקטנתי את הטקסט
-        px: 1, // ✅ הקטנתי padding
-        py: 0.5,
-         marginLeft: 0.5, // רווח בין האייקון לטקסט (ב-RTL)
-      marginRight: 0
+        minWidth: '55px', // ✅ הקטנתי רוחב
+        height: '22px', // ✅ הקטנתי גובה
+        fontSize: '0.65rem', // ✅ הקטנתי טקסט
+        px: 0.5, // ✅ הקטנתי padding
+        py: 0.2,
+        '& .MuiButton-startIcon': {
+          marginLeft: 0.3,
+          marginRight: 0,
+        }
       }}
     >
       ערוך
@@ -385,15 +386,15 @@ export default function StudentsTable() {
         setDeleteOpen(true);
       }}
       sx={{
-        minWidth: '60px',
-        height: '28px',
-        fontSize: '0.75rem',
-        px: 1,
-        py: 0.5,
-         '& .MuiButton-startIcon': {
-      marginLeft: 0.5,
-      marginRight: 0,
-    }
+        minWidth: '55px',
+        height: '22px',
+        fontSize: '0.65rem',
+        px: 0.5,
+        py: 0.2,
+        '& .MuiButton-startIcon': {
+          marginLeft: 0.3,
+          marginRight: 0,
+        }
       }}
     >
       מחק
@@ -405,15 +406,15 @@ export default function StudentsTable() {
       className="action-button info"
       onClick={() => handleViewCourses(student)}
       sx={{
-        minWidth: '70px', // ✅ קצת יותר רחב לטקסט "פרטים"
-        height: '28px',
-        fontSize: '0.75rem',
-        px: 1,
-        py: 0.5,
-         '& .MuiButton-startIcon': {
-      marginLeft: 0.5,
-      marginRight: 0,
-    }
+        minWidth: '60px',
+        height: '22px',
+        fontSize: '0.65rem',
+        px: 0.5,
+        py: 0.2,
+        '& .MuiButton-startIcon': {
+          marginLeft: 0.3,
+          marginRight: 0,
+        }
       }}
     >
       פרטים
@@ -421,15 +422,15 @@ export default function StudentsTable() {
   </Box>
 </TableCell>
 
-<TableCell className="table-cell" sx={{ py: 1 }}>{student.id}</TableCell>
-<TableCell className="table-cell" sx={{ py: 1 }}>{student.firstName}</TableCell>
-<TableCell className="table-cell" sx={{ py: 1 }}>{student.lastName}</TableCell>
-<TableCell className="table-cell" sx={{ py: 1 }}>{student.phone}</TableCell>
-<TableCell className="table-cell" sx={{ py: 1 }}>{student.city}</TableCell>
-<TableCell className="table-cell" sx={{ py: 1 }}>{student.school}</TableCell>
-<TableCell className="table-cell" sx={{ py: 1 }}>{student.healthFund}</TableCell>
-<TableCell className="table-cell" sx={{ py: 1 }}>{student.gender}</TableCell>
-<TableCell className="table-cell" sx={{ py: 1 }}>{student.sector}</TableCell>
+<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.id}</TableCell>
+<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.firstName}</TableCell>
+<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.lastName}</TableCell>
+<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.phone}</TableCell>
+<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.city}</TableCell>
+<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.school}</TableCell>
+<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.healthFund}</TableCell>
+<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.gender}</TableCell>
+<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.sector}</TableCell>
                           </motion.tr>
                         ))}
                     </AnimatePresence>

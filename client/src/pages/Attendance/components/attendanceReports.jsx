@@ -1004,12 +1004,13 @@ const exportToExcel = () => {
                     <TextField
                       select
                       fullWidth
-                      minWidth={120}
+                     
                       size="small"
                       label="חודש"
                       value={selectedMonth}
                       onChange={(e) => setSelectedMonth(e.target.value)}
                       sx={{
+                        minWidth: 120,
                         '& .MuiOutlinedInput-root': {
                           borderRadius: 2,
                           background: 'white',

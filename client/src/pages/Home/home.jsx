@@ -43,6 +43,7 @@ import NoteIcon from "@mui/icons-material/Note";
 import EventAvailableIcon from "@mui/icons-material/EventAvailable";
 import EmailIcon from "@mui/icons-material/Email";
 import PhoneIcon from "@mui/icons-material/Phone";
+import EventBusyIcon from "@mui/icons-material/EventBusy";
 import { fetchInstructors } from "../../store/instructor/instructorGetAllThunk";
 import { fetchStudents } from "../../store/student/studentGetAllThunk";
 import { fetchCourses } from "../../store/course/CoursesGetAllThunk";
@@ -212,7 +213,7 @@ export const Home = () => {
     },
     {
       title: "מעקב נוכחות",
-      description: "רישום נוכחות תלמידים, יצירת דוחות נוכחות ומעקב אחר השתתפות בחוגים",
+      description: "רישום נוכחות תלמידים, יצירת דוחות נוכחות וסימון אוטומטי",
       icon: CheckCircleIcon,
       path: "/lesson-management",
       color: "#FF6347",
@@ -239,6 +240,16 @@ export const Home = () => {
       gradient: "linear-gradient(135deg, #9370DB, #8A2BE2)",
       badge: "אישי",
       stats: "מעקב מותאם"
+    },
+     {
+      title: "ניהול ביטולים",
+      description: "ביטול חוגים ספציפיים וכן ימים מסויימים מראש עם עדכון אוטומטי בלוח השנה ",
+      icon: EventBusyIcon,
+      path: "/lesson-management",
+      color: "#FF4757",
+      gradient: "linear-gradient(135deg, #FF4757, #FF3742)",
+      badge: "חכם",
+      stats: "ביטול מתוכנן"
     },
     {
       title: "רישום לחוגים",
@@ -435,7 +446,8 @@ export const Home = () => {
                   mx: 1,
                   mb: isMobile ? 2 : 0,
                   fontSize: isMobile ? 14 : 16,
-                  px: isMobile ? 3 : 4
+                  px: isMobile ? 3 : 4,
+                  direction: "ltr"
                 }}
                 endIcon={<ArrowForwardIcon />}
               >
@@ -448,6 +460,7 @@ export const Home = () => {
                 size="large"
                 onClick={() => navigate("/entrollStudent")}
                 sx={{ 
+                  direction:'ltr',
                   mx: 1, 
                   bgcolor: "rgba(255,255,255,0.15)",
                   borderColor: "rgba(255,255,255,0.3)",
@@ -985,7 +998,7 @@ export const Home = () => {
                     </Typography>
                   </Box>
                   <Typography variant="body2" color="text.secondary">
-                    רישום נוכחות דיגיטלי עם דוחות מפורטים ומעקב אחר דפוסי השתתפות
+                     רישום נוכחות דיגיטלי עם דוחות מפורטים ומעקב אחר דפוסי השתתפות וכן סימון אוטומטי בכל יום   
                   </Typography>
                 </Box>
               </Box>
@@ -1019,7 +1032,7 @@ export const Home = () => {
                 spacing={2} 
                 justifyContent="center"
                 alignItems="center"
-                sx={{ fontSize: "0.9rem" }}
+                sx={{ fontSize: "0.9rem",direction:'ltr' }}
               >
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <EmailIcon sx={{ color: theme.palette.primary.main, fontSize: 18 }} />
@@ -1096,6 +1109,7 @@ export const Home = () => {
                     size="large"
                     onClick={() => navigate("/students")}
                     sx={{ 
+                      direction:'ltr',
                       mx: 1,
                       mb: isMobile ? 2 : 0,
                       fontSize: isMobile ? 14 : 16,
