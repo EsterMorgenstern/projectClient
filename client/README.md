@@ -322,7 +322,7 @@ REACT_APP_ANALYTICS_ID=your-analytics-id
 
 **אסתר מורגנשטרן**
 - 🎓 **התמחות:** Full-Stack Development
-- 📧 **Email:** em0527104104@gmail.com
+- 📧 **Email:** em0527104104@gmail.com | st104.mor@gmail.com
 - 💻 **GitHub:** [github.com/EsterMorgenstern](https://github.com/EsterMorgenstern)
 
 ### כישורים טכניים מודגמים

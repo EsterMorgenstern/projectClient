@@ -31,6 +31,7 @@ import { fetchStudents } from '../../../../store/student/studentGetAllThunk';
 
 // ✅ Import הדיאלוג המוכן
 import AddStudentNoteDialog from '../../../Students/components/addStudentNoteDialog';
+import { selectUserData } from '../../../../store/user/userSlice';
 
 const MyNotes = () => {
   const dispatch = useDispatch();
@@ -42,8 +43,8 @@ const MyNotes = () => {
   const { notesByUser, loading, error } = useSelector(state => state.studentNotes);
   
   // ✅ קבלת המשתמש הנוכחי - לפי המבנה שלך
-  const userState = useSelector(state => state.users);
-  const currentUser = userState?.currentUser || userState?.userById;
+const { userById, currentUser } = useSelector(selectUserData);  
+const currentUserI = userById || currentUser;
 
   // ✅ הוסף קבלת רשימת תלמידים
   const { students } = useSelector(state => state.students);
@@ -51,15 +52,14 @@ const MyNotes = () => {
   // ✅ פונקציה לקבלת userId
   const getUserId = () => {
     console.log('🔍 Getting user ID...');
-    console.log('Current user:', currentUser);
-    console.log('User state:', userState);
+    console.log('Current user:', currentUserI);
     
-    if (currentUser) {
+    if (currentUserI) {
       // נסה שדות שונים של userId
-      const userId = currentUser.userId || 
-                    currentUser.id || 
-                    currentUser.UserId || 
-                    currentUser.ID;
+      const userId = currentUserI.userId || 
+                    currentUserI.id || 
+                    currentUserI.UserId || 
+                    currentUserI.ID;
       
       console.log('✅ Found user ID:', userId);
       return userId;
@@ -139,7 +139,7 @@ const MyNotes = () => {
         severity: 'warning'
       });
     }
-  }, [dispatch, currentUser]);
+  }, [dispatch, currentUserI]);
 
   // ✅ Debug - הוסף console.log לראות מה מתקבל
   useEffect(() => {
@@ -339,7 +339,7 @@ const MyNotes = () => {
   };
 
   // ✅ הוסף בדיקה אם המשתמש מחובר
-  if (!currentUser) {
+  if (!currentUserI) {
     return (
       <Box sx={{ 
         minHeight: '100vh',
@@ -816,7 +816,7 @@ const MyNotes = () => {
           onSave={handleSaveNote}
           editMode={editMode}
           noteData={noteDialogData}
-          currentUser={currentUser}
+          currentUser={currentUserI}
           // ✅ הוסף פרמטרים נוספים שהדיאלוג צריך
           selectedStudent={noteDialogData ? {
             studentId: noteDialogData.studentId,

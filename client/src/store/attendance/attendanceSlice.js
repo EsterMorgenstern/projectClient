@@ -10,6 +10,7 @@ import { clearGroupsByDay } from '../group/groupSlice';
 import { isMarkedForDate } from './attendanceGetIsMarkedForGroup';
 import { isMarkedForDay } from './attendanceGetIsMarkedForDay';
 import { getAttendanceByStudent } from './attensanceGetByStudent';
+import { deleteAttendance } from './attendanceDeleteThunk';
 
 const attendanceSlice = createSlice({
     name: 'attendance',
@@ -205,8 +206,22 @@ const attendanceSlice = createSlice({
             .addCase(getAttendanceByStudent.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
+            })
+            
+            // deleteAttendance
+            .addCase(deleteAttendance.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(deleteAttendance.fulfilled, (state, action) => {
+                state.loading = false;
+                state.attendanceData = state.attendanceData.filter(item => item.id !== action.payload.id);
+            })
+            .addCase(deleteAttendance.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
             });
-
+           
     }
 });
 

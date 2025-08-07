@@ -1074,7 +1074,7 @@ export const AboutSystem = () => {
                             <EmailIcon sx={{ fontSize: 18 }} />
                           </Avatar>
                           <Typography variant="body2" fontWeight="500">
-                            em0527104104@gmail.com
+                            em0527104104@gmail.com | st104.mor@gmail.com
                           </Typography>
                         </Box>
                         
@@ -1296,7 +1296,7 @@ export const AboutSystem = () => {
 
       <Box 
         sx={{ 
-          background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`, 
+          background: 'linear-gradient(135deg, #f093fb 0%, #667eea  50%, #36d8d3ff 100%)',
           color: "white", 
           py: 8,
           position: "relative",
@@ -1512,7 +1512,7 @@ export const AboutSystem = () => {
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <EmailIcon sx={{ fontSize: 18 }} />
                     <Typography variant="body2">
-                      em0527104104@gmail.com
+                      em0527104104@gmail.com | st104.mor@gmail.com
                     </Typography>
                   </Box>
                   

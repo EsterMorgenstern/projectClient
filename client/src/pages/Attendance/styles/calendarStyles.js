@@ -767,3 +767,5 @@ export const formatGroupsCountText = (count) => {
   if (count === 2) return 'שני חוגים';
   return `${count} חוגים`;
 };
+
+

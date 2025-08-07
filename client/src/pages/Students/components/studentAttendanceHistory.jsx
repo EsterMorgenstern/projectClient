@@ -41,11 +41,16 @@ import {
   LocationOn as LocationIcon,
   Group as GroupIcon
 } from '@mui/icons-material';
+import DeleteIcon from '@mui/icons-material/Delete';
+
 import { motion } from 'framer-motion';
+import { deleteAttendance } from '../../../store/attendance/attendanceDeleteThunk';
 
 const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) => {
   const dispatch = useDispatch();
-  
+  const [openDialog, setOpenDialog] = useState(false);
+  const [selectedAttendanceId, setSelectedAttendanceId] = useState(null);
+
   const attendanceData = useSelector((state) => state.attendances.attendanceData);
   const attendanceSummary = useSelector((state) => state.attendances.attendanceSummary);
   const loading = useSelector((state) => state.attendances.loading);
@@ -78,6 +83,23 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
     } catch (error) {
       console.error('Error fetching attendance history:', error);
     }
+  };
+
+  // פונקציה לפתיחת דיאלוג מחיקת נוכחות
+  const handleDeleteClick = (attendanceId) => {
+    setSelectedAttendanceId(attendanceId);
+    setOpenDialog(true);
+  };
+
+  const handleConfirmDelete = () => {
+    dispatch(deleteAttendance(selectedAttendanceId));
+    setOpenDialog(false);
+    setSelectedAttendanceId(null);
+  };
+
+  const handleCancel = () => {
+    setOpenDialog(false);
+    setSelectedAttendanceId(null);
   };
 
   // פונקציה לטעינת סיכום נוכחות
@@ -147,13 +169,13 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
               <TextField
                 select
                 fullWidth
-                
+
                 label="בחר שנה"
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
                 size={embedded ? "small" : "medium"}
                 sx={{
-                  width:'110px',
+                  width: '110px',
                   '& .MuiOutlinedInput-root': {
                     borderRadius: '12px',
                     '&.Mui-focused fieldset': {
@@ -181,7 +203,7 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
                 onChange={(e) => setSelectedMonth(e.target.value)}
                 size={embedded ? "small" : "medium"}
                 sx={{
-                                    width:'110px',
+                  width: '110px',
 
                   '& .MuiOutlinedInput-root': {
                     borderRadius: '12px',
@@ -211,7 +233,7 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
                 onChange={(e) => setSelectedCourse(e.target.value)}
                 size={embedded ? "small" : "medium"}
                 sx={{
-                                    width:'110px',
+                  width: '110px',
 
                   '& .MuiOutlinedInput-root': {
                     borderRadius: '12px',
@@ -259,6 +281,7 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
               </Button>
             </Grid>
           </Grid>
+
         </Box>
 
         {loading ? (
@@ -497,6 +520,24 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
                           <Typography sx={{ fontWeight: 'bold' }}>נוכחות</Typography>
                         </Box>
                       </TableCell>
+
+                      <TableCell
+                        align="center"
+                        sx={{
+                          fontWeight: 'bold',
+                          fontSize: embedded ? '0.9rem' : '1rem',
+                          background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                          py: 2,
+                          textAlign: 'center',
+                          direction: 'rtl',
+                          borderBottom: '2px solid #8b5cf6'
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                          <DeleteIcon sx={{ color: '#8b5cf6', fontSize: 18 }} />
+                          <Typography sx={{ fontWeight: 'bold' }}>מחיקה</Typography>
+                        </Box>
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -510,7 +551,7 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
                           transition={{ delay: index * 0.05 }}
                           sx={{
                             '&:nth-of-type(even)': { backgroundColor: 'rgba(139, 92, 246, 0.03)' }, // ✅ סגול עדין
-                            '&:hover': { 
+                            '&:hover': {
                               backgroundColor: 'rgba(139, 92, 246, 0.08)',
                               transform: 'translateY(-1px)',
                               boxShadow: '0 4px 12px rgba(139, 92, 246, 0.15)'
@@ -588,19 +629,26 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
                               </Typography>
                             </Box>
                           </TableCell>
-                          <TableCell align="right" sx={{ py: embedded ? 1.5 : 2 }}>
+                          <TableCell align="center" sx={{ py: embedded ? 1.5 : 2 }}>
                             <Chip
                               icon={record.isPresent ? <CheckCircle sx={{ fontSize: embedded ? 16 : 18 }} /> : <Cancel sx={{ fontSize: embedded ? 16 : 18 }} />}
                               label={record.isPresent ? 'נוכח' : 'נעדר'}
                               color={record.isPresent ? 'success' : 'error'}
                               size={embedded ? "small" : "medium"}
                               variant="outlined"
-                              sx={{ 
+                              sx={{
                                 fontSize: embedded ? '0.75rem' : '0.875rem',
                                 fontWeight: 'medium'
                               }}
                             />
                           </TableCell>
+                           <TableCell align="center" sx={{ py: embedded ? 1.5 : 2 }}>
+          <DeleteIcon
+            color="error"
+            sx={{ cursor: 'pointer', fontSize: embedded ? 20 : 24 }}
+            onClick={() => handleDeleteClick(record.attendanceId)}
+          />
+        </TableCell>
                         </TableRow>
                       ))
                     ) : (
@@ -616,6 +664,13 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
                             </Typography>
                           </Box>
                         </TableCell>
+                        <TableCell align="center" sx={{ py: embedded ? 1.5 : 2 }}>
+                          <DeleteIcon
+                            color="error"
+                            sx={{ cursor: 'pointer', fontSize: embedded ? 20 : 24 }}
+                            onClick={() => handleDeleteClick(record.attendanceId)}
+                          />
+                        </TableCell>
                       </TableRow>
                     )}
                   </TableBody>
@@ -624,6 +679,16 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
             </Card>
           </>
         )}
+        {/* דיאלוג אישור מחיקה */}
+        <Dialog open={openDialog} onClose={handleCancel} sx={{ direction: 'rtl' }}>
+          <DialogTitle>האם למחוק את הנוכחות בתאריך זה?</DialogTitle>
+          <DialogActions>
+            <Button onClick={handleCancel}>ביטול</Button>
+            <Button onClick={handleConfirmDelete} color="error" variant="contained">
+              מחק
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     );
   };
@@ -662,10 +727,10 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
           <Avatar sx={{
             bgcolor: 'rgba(255, 255, 255, 0.2)',
             border: '2px solid rgba(255, 255, 255, 0.3)'
-         }}>
+          }}>
             <HistoryIcon />
           </Avatar>
-<Box>
+          <Box>
             <Typography variant="h6" fontWeight="bold">
               מעקב נוכחות - {student?.firstName} {student?.lastName}
             </Typography>
@@ -696,8 +761,8 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
 
       <Divider sx={{ background: 'linear-gradient(90deg, transparent, #8b5cf6, transparent)' }} />
 
-      <DialogActions sx={{ 
-        p: 2.5, 
+      <DialogActions sx={{
+        p: 2.5,
         background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
         borderTop: '1px solid rgba(139, 92, 246, 0.1)'
       }}>
@@ -728,6 +793,7 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
         </Button>
       </DialogActions>
     </Dialog>
+
   );
 };
 

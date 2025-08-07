@@ -80,7 +80,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { clearCurrentUser, setCurrentUser } from '../../store/user/userSlice';
+import { clearCurrentUser, selectUserData, setCurrentUser } from '../../store/user/userSlice';
 import LoginDialog from '../LogIn/LogInDialog';
 import UserRegistrationDialog from '../LogIn/UserRegistrationDialog';
 
@@ -101,9 +101,7 @@ const [moreMenuAnchor, setMoreMenuAnchor] = useState(null);
 
   // ✅ תיקון Redux state - בדיקה מדויקת יותר
   const userState = useSelector(state => state.users);
-  const userById = useSelector(state => state.users.userById);
-
-  const currentUser = userState?.userById;
+  const { userById, currentUser } = useSelector(selectUserData);
   const loading = userState?.loading;
 
   // ✅ פונקציה לבדיקה אם המשתמש באמת מחובר
@@ -1140,7 +1138,7 @@ const getUserDisplayName = () => {
         position="fixed"
         elevation={0}
         sx={{
-          background: 'linear-gradient(135deg, #f093fb 0%, #764ba2 50%, #667eea 100%)',
+          background: 'linear-gradient(135deg, #f093fb 0%, #667eea  50%, #36d8d3ff 100%)',
           boxShadow: '0 10px 40px rgba(240, 147, 251, 0.3)',
           backdropFilter: 'blur(20px)',
           borderBottom: '1px solid rgba(255,255,255,0.1)',

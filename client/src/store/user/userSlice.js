@@ -1,4 +1,4 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, createSelector } from '@reduxjs/toolkit';
 import { getUserById } from './userGetByIdThunk';
 import { addUser } from './userAddThunk';
 
@@ -109,5 +109,19 @@ export const {
   setRegistrationSuccess, 
   clearRegistrationSuccess 
 } = usersSlice.actions;
+
+export const selectUserData = createSelector(
+  [
+    state => state.users.userById,
+    state => state.users.currentUser
+  ],
+  (userById, currentUser) => ({
+    userById,
+    currentUser
+  })
+);
+
+export const selectUserById = state => state.users.userById;
+export const selectCurrentUser = state => state.users.currentUser;
 
 export default usersSlice.reducer;

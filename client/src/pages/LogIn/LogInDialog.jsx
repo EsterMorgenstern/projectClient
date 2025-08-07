@@ -28,7 +28,7 @@ import {
   School as SchoolIcon
 } from '@mui/icons-material';
 import { getUserById } from '../../store/user/userGetByIdThunk';
-import { setCurrentUser } from '../../store/user/userSlice';
+import { selectUserData, setCurrentUser } from '../../store/user/userSlice';
 
 const LoginDialog = ({ open, onClose, onLoginSuccess }) => {
   const dispatch = useDispatch();
@@ -36,8 +36,8 @@ const LoginDialog = ({ open, onClose, onLoginSuccess }) => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
   // ✅ שינוי הסלקטור
-  const { userById, currentUser, loading, error } = useSelector(state => state.users);
-  
+  const { loading, error } = useSelector(state => state.users);
+  const { userById, currentUser } = useSelector(selectUserData);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
@@ -54,16 +54,12 @@ const LoginDialog = ({ open, onClose, onLoginSuccess }) => {
 
   // ✅ טיפול משופר בתגובה מהשרת
   useEffect(() => {
-    console.log('LoginDialog - userById changed:', userById);
-    console.log('LoginDialog - currentUser changed:', currentUser);
-    console.log('LoginDialog - loginStep:', loginStep);
-    
+   
     if (loginStep === 'loading') {
       // בדוק אם יש נתוני משתמש תקינים
       const validUser = userById || currentUser;
       
       if (validUser && typeof validUser === 'object' && !Array.isArray(validUser)) {
-        console.log('Valid user found:', validUser);
         setLoginStep('success');
         
         setTimeout(() => {
@@ -72,7 +68,6 @@ const LoginDialog = ({ open, onClose, onLoginSuccess }) => {
           setLoginStep('input');
         }, 1500);
       } else if (validUser && Array.isArray(validUser) && validUser.length > 0) {
-        console.log('User array found, taking first:', validUser[0]);
         const user = validUser[0];
         setLoginStep('success');
         

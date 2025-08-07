@@ -85,7 +85,7 @@ const AttendanceDialog = ({
           const absences = Array.isArray(res)
             ? res.filter(r => r.wasPresent === false).length
             : 0;
-          if (absences >= 2) {
+          if (absences == 2) {
             const studentObj = (students || []).find(s => (s.studentId || s.id) === studentId);
             const noteStudentObj = studentObj
               ? { ...studentObj, id: studentObj.id || studentObj.studentId }

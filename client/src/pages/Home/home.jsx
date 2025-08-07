@@ -83,7 +83,7 @@ const MotionBox = ({ children, ...props }) => {
 
 // Styled components
 const HeroSection = styled(Box)(({ theme }) => ({
-             background: 'linear-gradient(135deg,rgb(230, 104, 236) 0%,rgb(29, 148, 199) 100%)',
+          background: 'linear-gradient(135deg, #f093fb 0%, #667eea  50%, #36d8d3ff 100%)',
   color: "white",
   padding: theme.spacing(12, 0, 14),
   textAlign: "center",
@@ -1037,7 +1037,7 @@ export const Home = () => {
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <EmailIcon sx={{ color: theme.palette.primary.main, fontSize: 18 }} />
                   <Typography variant="body2">
-                    em0527104104@gmail.com
+                    em0527104104@gmail.com | st104.mor@gmail.com
                   </Typography>
                 </Box>
                 
@@ -1056,7 +1056,7 @@ export const Home = () => {
       {/* Call to Action Section */}
       <Box 
         sx={{ 
-             background: 'linear-gradient(135deg,rgb(230, 104, 236) 0%,rgb(29, 148, 199) 100%)',
+          background: 'linear-gradient(135deg, #f093fb 0%, #667eea  50%, #36d8d3ff 100%)',
           color: "white", 
           py: 8,
           position: "relative",
