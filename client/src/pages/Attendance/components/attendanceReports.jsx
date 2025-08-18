@@ -1131,6 +1131,7 @@ const exportToExcel = () => {
                     disabled={Boolean(loading)}
                     startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <Assessment />}
                     sx={{
+                      direction: 'ltr',
                       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                       borderRadius: '12px',
                       px: 3,
@@ -1151,7 +1152,7 @@ const exportToExcel = () => {
                       transition: 'all 0.2s ease'
                     }}
                   >
-                    {loading ? 'טוען נתונים...' : 'עדכן דוח'}
+                    {loading ? '... טוען נתונים' : 'עדכן דוח'}
                   </Button>
                 </Box>
               </CardContent>
@@ -1223,6 +1224,7 @@ const exportToExcel = () => {
           disabled={!reportData || Boolean(loading)}
           onClick={exportToExcel}
           sx={{
+            direction: 'ltr',
             borderRadius: '12px',
             px: 3,
             py: 1,

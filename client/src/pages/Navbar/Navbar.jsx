@@ -148,106 +148,69 @@ const [moreMenuAnchor, setMoreMenuAnchor] = useState(null);
   return false;
 };
   // תפריט ניווט עם צבעים יפים יותר וגרדיאנטים מדהימים
-  const navigationItems = [
-    { 
-      title: 'בית', 
-      path: '/', 
-      icon: <Home />, 
-      color: '#FF6B6B',
-      description: 'דף הבית - סקירה כללית של המערכת',
-      gradient: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E53 50%, #FF6B9D 100%)',
-      shadowColor: 'rgba(255, 107, 107, 0.4)'
-    },
-    { 
-      title: 'תלמידים', 
-      path: '/students', 
-      icon: <People />, 
-      color: '#45B7D1',
-      description: 'ניהול תלמידים - רישום, מעקב והערכה',
-      gradient: 'linear-gradient(135deg, #45B7D1 0%, #96C93D 50%, #00D2FF 100%)',
-      shadowColor: 'rgba(69, 183, 209, 0.4)'
-    },
-    { 
-      title: 'מדריכים', 
-      path: '/instructors', 
-      icon: <Person />, 
-      color: '#A78BFA',
-      description: 'ניהול מדריכים - צוות הוראה ומשאבים',
-      gradient: 'linear-gradient(135deg, #A78BFA 0%, #EC4899 50%, #8B5CF6 100%)',
-      shadowColor: 'rgba(167, 139, 250, 0.4)'
-    },
-    { 
-      title: 'חוגים', 
-      path: '/attendanceCalendar', 
-      icon: <School />, 
-      color: '#F093FB',
-      description: 'ניהול חוגים ונוכחות - מעקב ודיווח',
-      gradient: 'linear-gradient(135deg, #F093FB 0%, #F5576C 50%, #4FACFE 100%)',
-      shadowColor: 'rgba(240, 147, 251, 0.4)'
-    },
-    { 
-      title: 'רישום', 
-      path: '/entrollStudent', 
-      icon: <PersonAdd />, 
-      color: '#43E97B',
-      description: 'רישום תלמיד חדש למערכת בקלות',
-      gradient: 'linear-gradient(135deg, #43E97B 0%, #38F9D7 50%, #4FACFE 100%)',
-      shadowColor: 'rgba(67, 233, 123, 0.4)'
-    },
-   
-    { 
-      title: 'שיעורים', 
-      path: '/lesson-management', 
-      icon: <Assignment />, 
-      color: '#FFECD2',
-      description: 'ניהול שיעורים והנפקת דוחות',
-      gradient: 'linear-gradient(135deg, #FFECD2 0%, #FCB69F 50%, #FF8A80 100%)',
-      shadowColor: 'rgba(255, 236, 210, 0.4)'
-    },
-    // { 
-    //   title: 'מטלות', 
-    //   path: '/assignments', 
-    //   icon: <Assignment />, 
-    //   color: '#FFA726',
-    //   description: 'ניהול מטלות ומשימות לתלמידים',
-    //   gradient: 'linear-gradient(135deg, #FFA726 0%, #FF7043 50%, #FF5722 100%)',
-    //   shadowColor: 'rgba(255, 167, 38, 0.4)'
-    // },
-    // { 
-    //   title: 'קבוצות', 
-    //   path: '/groups', 
-    //   icon: <Groups />, 
-    //   color: '#667eea',
-    //   description: 'ניהול קבוצות - חלוקת תלמידים יעילה',
-    //   gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
-    //   shadowColor: 'rgba(102, 126, 234, 0.4)'
-    // },
-    // { 
-    //   title: 'סניפים', 
-    //   path: '/branches', 
-    //   icon: <Business />, 
-    //   color: '#26D0CE',
-    //   description: 'ניהול סניפים - מיקומים ופרטי קשר',
-    //   gradient: 'linear-gradient(135deg, #26D0CE 0%, #1A2980 50%, #26D0CE 100%)',
-    //   shadowColor: 'rgba(38, 208, 206, 0.4)'
-    // },
-    // { 
-    //   title: 'אודות המערכת', 
-    //   path: '/aboutSystem', 
-    //   icon: <Info />, 
-    //   color: '#84FAB0',
-    //   description: 'מידע על המערכת, גרסאות ותמיכה',
-    //   gradient: 'linear-gradient(135deg, #84FAB0 0%, #8FD3F4 50%, #84FAB0 100%)',
-    //   shadowColor: 'rgba(132, 250, 176, 0.4)'
-    // }
+// עדכן את navigationItems (שורה ~80 בערך) עם צבעים חמים יותר:
+const navigationItems = [
+  { 
+    title: 'בית', 
+    path: '/', 
+    icon: <Home />, 
+    color: '#FF6B6B', // אדום חם
+    description: 'דף הבית - סקירה כללית של המערכת',
+    gradient: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E53 50%, #FFB347 100%)',
+    shadowColor: 'rgba(255, 107, 107, 0.4)'
+  },
+  { 
+    title: 'תלמידים', 
+    path: '/students', 
+    icon: <People />, 
+    color: '#45B7D1', // כחול בהיר
+    description: 'ניהול תלמידים - רישום, מעקב והערכה',
+    gradient: 'linear-gradient(135deg, #45B7D1 0%, #4FACFE 50%, #00F2FE 100%)',
+    shadowColor: 'rgba(69, 183, 209, 0.4)'
+  },
+  { 
+    title: 'מדריכים', 
+    path: '/instructors', 
+    icon: <Person />, 
+    color: '#A78BFA', // סגול
+    description: 'ניהול מדריכים - צוות הוראה ומשאבים',
+    gradient: 'linear-gradient(135deg, #A78BFA 0%, #EC4899 50%, #F093FB 100%)',
+    shadowColor: 'rgba(167, 139, 250, 0.4)'
+  },
+  { 
+    title: 'חוגים', 
+    path: '/attendanceCalendar', 
+    icon: <School />, 
+    color: '#43E97B', // ירוק חי
+    description: 'ניהול חוגים ונוכחות - מעקב ודיווח',
+    gradient: 'linear-gradient(135deg, #43E97B 0%, #38F9D7 50%, #4FACFE 100%)',
+    shadowColor: 'rgba(67, 233, 123, 0.4)'
+  },
+  { 
+    title: 'רישום', 
+    path: '/entrollStudent', 
+    icon: <PersonAdd />, 
+    color: '#F6D365', // צהב זהב
+    description: 'רישום תלמיד חדש למערכת בקלות',
+    gradient: 'linear-gradient(135deg, #F6D365 0%, #FDA085 50%, #FF9A9E 100%)',
+    shadowColor: 'rgba(246, 211, 101, 0.4)'
+  },
+  { 
+    title: 'שיעורים', 
+    path: '/lesson-management', 
+    icon: <Assignment />, 
+    color: '#FF8A80', // ורוד אדמדם
+    description: 'ניהול שיעורים והנפקת דוחות',
+    gradient: 'linear-gradient(135deg, #FF8A80 0%, #FFAB91 50%, #FFECD2 100%)',
+    shadowColor: 'rgba(255, 138, 128, 0.4)'
+  },
   { 
     title: 'עוד', 
     path: null, 
-   // icon: <MoreHoriz />, 
-    color: '#84FAB0',
+    color: '#FFA726', // כתום חם
     description: 'תפריט נוסף - הערות אישיות ומידע על המערכת',
-    gradient: 'linear-gradient(135deg, #84FAB0 0%, #8FD3F4 50%, #84FAB0 100%)',
-    shadowColor: 'rgba(132, 250, 176, 0.4)',
+    gradient: 'linear-gradient(135deg, #FFA726 0%, #FF7043 50%, #F48FB1 100%)',
+    shadowColor: 'rgba(255, 167, 38, 0.4)',
     isMore: true 
   }
 ];
@@ -649,16 +612,16 @@ const getUserDisplayName = () => {
       <Button
         onClick={handleUserMenuOpen}
         sx={{
-          borderRadius: '25px',
-          px: 1,
-          py: 1,
-          minWidth: '200px',
-          maxWidth: '250px',
-          width: 'auto',
-          background: 'linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.1) 100%)',
-          backdropFilter: 'blur(20px)',
-          border: '2px solid rgba(255,255,255,0.3)',
-          color: 'white',
+  borderRadius: '25px',
+  px: 1,
+  py: 1,
+  minWidth: '200px',
+  maxWidth: '250px',
+  width: 'auto',
+  background: 'linear-gradient(135deg, rgba(240, 147, 251, 0.25) 0%, rgba(67, 233, 123, 0.25) 50%, rgba(246, 211, 101, 0.25) 100%)', // ✅ גרדיאנט צבעוני
+  backdropFilter: 'blur(20px)',
+  border: '2px solid rgba(255,255,255,0.3)',
+  color: 'white',
           textTransform: 'none',
           fontSize: '1rem',
           fontWeight: 'bold',
@@ -671,11 +634,11 @@ const getUserDisplayName = () => {
           gap: 1, // רווח בין האלמנטים
           position: 'relative', // ✅ חשוב לבקרת z-index
           '&:hover': {
-            background: 'linear-gradient(135deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.2) 100%)',
-            transform: 'translateY(-3px)',
-            boxShadow: '0 15px 40px rgba(0,0,0,0.3)',
-            border: '2px solid rgba(255,255,255,0.5)'
-          },
+    background: 'linear-gradient(135deg, rgba(240, 147, 251, 0.4) 0%, rgba(67, 233, 123, 0.4) 50%, rgba(246, 211, 101, 0.4) 100%)', // ✅ גרדיאנט hover צבעוני
+    transform: 'translateY(-3px)',
+    boxShadow: '0 15px 40px rgba(240, 147, 251, 0.3)',
+    border: '2px solid rgba(255,255,255,0.5)'
+  },
           // ✅ תקן את ה-MuiButton-startIcon ו-endIcon
           '& .MuiButton-startIcon': {
             margin: 0,
@@ -849,12 +812,31 @@ const getUserDisplayName = () => {
               left: '100%'
             }
           },
-          '& .MuiButton-startIcon': {
-             marginLeft: 0.2, // רווח בין האייקון לטקסט (לשפות RTL)
-             marginRight: 0,
-            fontSize: '1.2rem',
-            filter: ((item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path)) ? 'none' : 'drop-shadow(0 0 5px rgba(255,255,255,0.3))'
-          }
+         '& .MuiButton-startIcon': {
+  marginLeft: 0.2,
+  marginRight: 0,
+  fontSize: '1.2rem',
+  
+  // ✅ אייקון לא פעיל - רק צבע ייחודי בלי מסגרת
+  ...(!((item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path)) && {
+    '& svg': {
+      color: item.color, // הצבע הייחודי של הפריט
+      fontSize: '20px',
+      transition: 'all 0.3s ease'
+    }
+  }),
+  
+  // ✅ אייקון פעיל - צבע לבן בלבד
+  ...(((item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path)) && {
+    '& svg': {
+            fontSize: '20px'
+    }
+  })
+},
+'&:hover .MuiButton-startIcon svg': {
+  color: '#FFFFFF !important', // לבן בhover - חשוב ה-!important
+  filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.5))', // אפקט זוהר לבן
+}
         }}
       >
         {item.title}
@@ -867,7 +849,7 @@ const getUserDisplayName = () => {
   const loggedInMenuItems = [
     <Paper key="user-header" sx={{ 
       p: 4, 
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
+  background: 'linear-gradient(135deg, #43E97B 0%, #f093fb 30%, #667eea 60%, #F6D365 100%)', // ✅ גרדיאנט צבעוני
       color: 'white',
       m: 0,
       borderRadius: 0,
@@ -918,7 +900,7 @@ const getUserDisplayName = () => {
             WebkitTextFillColor: 'transparent',
             textShadow: '0 2px 10px rgba(0,0,0,0.3)'
           }}>
-          ! 👋  שלום {getUserDisplayName()}
+           👋  שלום {getUserDisplayName()}
           </Typography>
           <Chip
             label={currentUser?.Role || 'משתמש'}
@@ -962,37 +944,37 @@ const getUserDisplayName = () => {
 
   // ✅ תפריט אורח - זה מה שצריך להיפתח כשהמשתמש לא מחובר
   const guestMenuItems = [
-    <Paper key="guest-header" sx={{ 
-      p: 4, 
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
-      color: 'white',
-      m: 0,
-      borderRadius: 0,
-      position: 'relative',
-      overflow: 'hidden',
-      '&::before': {
-        content: '""',
-        position: 'absolute',
-        top: -100,
-        right: -100,
-        width: 200,
-        height: 200,
-        borderRadius: '50%',
-        background: 'rgba(255,255,255,0.08)',
-        backdropFilter: 'blur(30px)'
-      },
-      '&::after': {
-        content: '""',
-        position: 'absolute',
-        bottom: -50,
-        left: -50,
-        width: 150,
-        height: 150,
-        borderRadius: '50%',
-        background: 'rgba(255,255,255,0.05)',
-        backdropFilter: 'blur(20px)'
-      }
-    }}>
+   <Paper key="guest-header" sx={{ 
+  p: 4, 
+  background: 'linear-gradient(135deg, #43E97B 0%, #f093fb 30%, #667eea 60%, #F6D365 100%)', // ✅ אותו צבע כמו loggedIn
+  color: 'white',
+  m: 0,
+  borderRadius: 0,
+  position: 'relative',
+  overflow: 'hidden',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: -100,
+    right: -100,
+    width: 200,
+    height: 200,
+    borderRadius: '50%',
+    background: 'rgba(255,255,255,0.08)',
+    backdropFilter: 'blur(30px)'
+  },
+  '&::after': {
+    content: '""',
+    position: 'absolute',
+    bottom: -50,
+    left: -50,
+    width: 150,
+    height: 150,
+    borderRadius: '50%',
+    background: 'rgba(255,255,255,0.05)',
+    backdropFilter: 'blur(20px)'
+  }
+}}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, position: 'relative', zIndex: 1 }}>
         <Avatar sx={{
           background: 'linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.1) 100%)',
@@ -1042,7 +1024,7 @@ const getUserDisplayName = () => {
             py: 3,
             mb: 3,
             borderRadius: 4,
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            background: '#2e46b1ff ',
             color: 'white',
             fontWeight: 'bold',
             fontSize: '1.2rem',
@@ -1061,7 +1043,7 @@ const getUserDisplayName = () => {
               transition: 'left 0.5s'
             },
             '&:hover': {
-              background: 'linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)',
+              background: '#5a67d8 ',
               transform: 'translateY(-3px)',
               boxShadow: '0 20px 45px rgba(102, 126, 234, 0.6)',
               '&::before': {
@@ -1138,9 +1120,7 @@ const getUserDisplayName = () => {
         position="fixed"
         elevation={0}
         sx={{
-          background: 'linear-gradient(135deg, #f093fb 0%, #667eea  50%, #36d8d3ff 100%)',
-          boxShadow: '0 10px 40px rgba(240, 147, 251, 0.3)',
-          backdropFilter: 'blur(20px)',
+          background: 'linear-gradient(135deg,#2a5298 50%,#4facfe 100%)',
           borderBottom: '1px solid rgba(255,255,255,0.1)',
           zIndex: theme.zIndex.drawer + 1,
           direction: 'rtl',

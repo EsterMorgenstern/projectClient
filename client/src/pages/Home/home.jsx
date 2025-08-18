@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import {
   Box,
@@ -62,12 +61,12 @@ const MotionBox = ({ children, ...props }) => {
     }
   }, [controls, inView]);
 
-   useEffect(() => {
+  useEffect(() => {
     // טעינת נתונים בסיסיים
     dispatch(fetchStudents());
     dispatch(fetchCourses());
     dispatch(fetchInstructors());
-   },[dispatch]);
+  }, [dispatch]);
   return (
     <Box
       ref={ref}
@@ -83,11 +82,9 @@ const MotionBox = ({ children, ...props }) => {
 
 // Styled components
 const HeroSection = styled(Box)(({ theme }) => ({
-          background: 'linear-gradient(135deg, #f093fb 0%, #667eea  50%, #36d8d3ff 100%)',
   color: "white",
   padding: theme.spacing(12, 0, 14),
-  textAlign: "center",
-  position: "relative",
+  textAlign: "center", background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #4facfe 100%)',
   overflow: "hidden",
   borderRadius: "0 0 50% 50% / 40px",
   boxShadow: "0 10px 30px rgba(0, 0, 0, 0.15)",
@@ -149,6 +146,26 @@ const ScrollDownButton = styled(IconButton)(({ theme }) => ({
   },
 }));
 
+const AnimatedStar = styled(StarIcon)(({ theme }) => ({
+  animation: 'colorChange 3s ease-in-out infinite',
+  '@keyframes colorChange': {
+    '0%': { color: '#4facfe' },      // כחול בהיר
+    '25%': { color: '#667eea' },     // כחול סגול
+    '50%': { color: '#f093fb' },     // ורוד בהיר
+    '75%': { color: '#ff9a9e' },     // ורוד קורל
+    '100%': { color: '#4facfe' }     // חזרה לכחול
+  }
+}));
+const AnimatedArrow = styled(ArrowForwardIcon)(({ theme }) => ({
+  animation: 'colorChange 3s ease-in-out infinite',
+  '@keyframes colorChange': {
+    '0%': { color: '#4facfe' },      // כחול בהיר
+    '25%': { color: '#667eea' },     // כחול סגול
+    '50%': { color: '#f093fb' },     // ורוד בהיר
+    '75%': { color: '#ff9a9e' },     // ורוד קורל
+    '100%': { color: '#4facfe' }     // חזרה לכחול
+  }
+}));
 const DeveloperInfo = styled(Box)(({ theme }) => ({
   background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.secondary.main, 0.1)} 100%)`,
   padding: theme.spacing(3),
@@ -162,7 +179,7 @@ export const Home = () => {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  
+
   // Redux selectors for real data
   const students = useSelector((state) => state.students.students || []);
   const instructors = useSelector((state) => state.instructors.instructors || []);
@@ -175,7 +192,7 @@ export const Home = () => {
   const activeStudents = students.filter(student => student.isActive !== false).length;
   const activeInstructors = instructors.filter(instructor => instructor.isActive !== false).length;
   const activeCourses = courses.filter(course => course.isActive !== false).length;
-  const attendanceRate = attendance.length > 0 
+  const attendanceRate = attendance.length > 0
     ? Math.round((attendance.filter(a => a.isPresent).length / attendance.length) * 100)
     : 95;
 
@@ -241,7 +258,7 @@ export const Home = () => {
       badge: "אישי",
       stats: "מעקב מותאם"
     },
-     {
+    {
       title: "ניהול ביטולים",
       description: "ביטול חוגים ספציפיים וכן ימים מסויימים מראש עם עדכון אוטומטי בלוח השנה ",
       icon: EventBusyIcon,
@@ -274,31 +291,31 @@ export const Home = () => {
   ];
 
   const stats = [
-    { 
-      value: activeStudents.toString(), 
-      label: "תלמידים פעילים", 
-      icon: <GroupIcon fontSize="large" />, 
+    {
+      value: activeStudents.toString(),
+      label: "תלמידים פעילים",
+      icon: <GroupIcon fontSize="large" />,
       color: '#4A90E2',
       description: "תלמידים רשומים ופעילים במערכת"
     },
-    { 
-      value: activeInstructors.toString(), 
-      label: "מדריכים", 
-      icon: <PersonIcon fontSize="large" />, 
+    {
+      value: activeInstructors.toString(),
+      label: "מדריכים",
+      icon: <PersonIcon fontSize="large" />,
       color: '#7B68EE',
       description: "מדריכים מוסמכים ופעילים"
     },
-    { 
-      value: activeCourses.toString(), 
-      label: "חוגים פעילים", 
-      icon: <SchoolIcon fontSize="large" />, 
+    {
+      value: activeCourses.toString(),
+      label: "חוגים פעילים",
+      icon: <SchoolIcon fontSize="large" />,
       color: '#32CD32',
       description: "חוגים הפועלים כעת במערכת"
     },
-    { 
-      value: `${attendanceRate}%`, 
-      label: "אחוז נוכחות", 
-      icon: <CheckCircleIcon fontSize="large" />, 
+    {
+      value: `${attendanceRate}%`,
+      label: "אחוז נוכחות",
+      icon: <CheckCircleIcon fontSize="large" />,
       color: '#FF6347',
       description: "אחוז נוכחות ממוצע בכל החוגים"
     }
@@ -313,7 +330,7 @@ export const Home = () => {
     },
     {
       icon: <SecurityIcon />,
-      title: "אבטחה מתקדמת", 
+      title: "אבטחה מתקדמת",
       description: "הגנה מקסימלית על נתוני התלמידים עם הצפנה מתקדמת ואמצעי אבטחה קפדניים",
       color: '#32CD32'
     },
@@ -349,8 +366,8 @@ export const Home = () => {
       y: 0,
       opacity: 1,
       scale: 1,
-      transition: { 
-        duration: 0.6, 
+      transition: {
+        duration: 0.6,
         ease: [0.175, 0.885, 0.32, 1.275]
       }
     }
@@ -361,8 +378,8 @@ export const Home = () => {
     visible: {
       y: 0,
       opacity: 1,
-      transition: { 
-        duration: 0.8, 
+      transition: {
+        duration: 0.8,
         ease: [0.175, 0.885, 0.32, 1.275]
       }
     }
@@ -373,10 +390,10 @@ export const Home = () => {
   };
 
   return (
-    <Box 
-      component={motion.div} 
-      initial={{ opacity: 0 }} 
-      animate={{ opacity: 1 }} 
+    <Box
+      component={motion.div}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ duration: 1 }}
       sx={{ direction: "rtl" }}
     >
@@ -390,8 +407,8 @@ export const Home = () => {
             sx={{ position: "relative", zIndex: 2 }}
           >
             <MotionBox variants={itemVariants}>
-              <Chip 
-                icon={<StarIcon color="secondary"/>} 
+              <Chip
+                icon={<AnimatedStar />}
                 label="מערכת ניהול חוגים מתקדמת"
                 size="medium"
                 sx={{
@@ -403,12 +420,12 @@ export const Home = () => {
                 }}
               />
             </MotionBox>
-            
+
             <MotionBox variants={itemVariants}>
-              <Typography 
-                variant={isMobile ? "h3" : "h2"} 
-                component="h1" 
-                gutterBottom 
+              <Typography
+                variant={isMobile ? "h3" : "h2"}
+                component="h1"
+                gutterBottom
                 fontWeight="bold"
                 sx={{
                   textShadow: "0 2px 10px rgba(0,0,0,0.2)",
@@ -418,14 +435,14 @@ export const Home = () => {
                 ברוכים הבאים למערכת ניהול החוגים
               </Typography>
             </MotionBox>
-            
+
             <MotionBox variants={itemVariants}>
-              <Typography 
-                variant={isMobile ? "body1" : "h5"} 
-                paragraph 
-                sx={{ 
-                  maxWidth: "800px", 
-                  mx: "auto", 
+              <Typography
+                variant={isMobile ? "body1" : "h5"}
+                paragraph
+                sx={{
+                  maxWidth: "800px",
+                  mx: "auto",
                   mb: 4,
                   opacity: 0.9,
                   lineHeight: 1.6
@@ -435,40 +452,57 @@ export const Home = () => {
                 בממשק חדשני ואינטואיטיבי המותאם לצרכי המנהלים והמדריכים
               </Typography>
             </MotionBox>
-            
+
             <MotionBox variants={itemVariants} sx={{ mt: 5 }}>
               <ActionButton
                 variant="contained"
                 color="secondary"
                 size="large"
                 onClick={() => navigate("/students")}
-                sx={{ 
+                sx={{
                   mx: 1,
                   mb: isMobile ? 2 : 0,
                   fontSize: isMobile ? 14 : 16,
                   px: isMobile ? 3 : 4,
-                  direction: "ltr"
+                  direction: "ltr",
+                  background: 'rgba(255, 255, 255, 0.95)',
+                  color: '#1e3c72',
+                  border: '2px solid rgba(255, 255, 255, 0.3)',
+                  backdropFilter: 'blur(10px)',
+                  fontWeight: 'bold',
+                  '&:hover': {
+                    background: 'rgba(255, 255, 255, 1)',
+                    borderColor: 'rgba(255, 255, 255, 0.3)',
+
+                    transform: 'translateY(-3px)',
+                    boxShadow: '0 15px 30px rgba(255, 255, 255, 0.3)',
+                  }
                 }}
-                endIcon={<ArrowForwardIcon />}
+                endIcon={<AnimatedArrow />}
               >
                 ניהול תלמידים
               </ActionButton>
-              
+
               <ActionButton
                 variant="outlined"
                 color="inherit"
                 size="large"
                 onClick={() => navigate("/entrollStudent")}
-                sx={{ 
-                  direction:'ltr',
-                  mx: 1, 
-                  bgcolor: "rgba(255,255,255,0.15)",
-                  borderColor: "rgba(255,255,255,0.3)",
+                sx={{
+                  direction: 'ltr',
+                  mx: 1,
                   fontSize: isMobile ? 14 : 16,
                   px: isMobile ? 3 : 4,
+                  borderColor: "rgba(255,255,255,0.6)",
+                  color: "white",
+                  background: "rgba(255,255,255,0.1)",
+                  backdropFilter: "blur(10px)",
+                  border: "2px solid rgba(255,255,255,0.3)",
                   "&:hover": {
-                    bgcolor: "rgba(255,255,255,0.25)",
-                    borderColor: "rgba(255,255,255,0.5)",
+                    background: "rgba(255,255,255,0.2)",
+                    borderColor: "rgba(255,255,255,0.8)",
+                    transform: "translateY(-3px)",
+                    boxShadow: "0 12px 25px rgba(255, 255, 255, 0.2)",
                   }
                 }}
                 startIcon={<SchoolIcon />}
@@ -478,7 +512,7 @@ export const Home = () => {
             </MotionBox>
           </MotionBox>
         </Container>
-        
+
         <ScrollDownButton onClick={scrollToFeatures} aria-label="גלול למטה">
           <KeyboardArrowDownIcon />
         </ScrollDownButton>
@@ -494,9 +528,9 @@ export const Home = () => {
           sx={{ textAlign: "center", mb: 6 }}
         >
           <MotionBox variants={fadeInUpVariants}>
-            <Typography 
-              variant="h3" 
-              component="h2" 
+            <Typography
+              variant="h3"
+              component="h2"
               fontWeight="bold"
               sx={{
                 position: "relative",
@@ -518,15 +552,15 @@ export const Home = () => {
               תפריט ראשי
             </Typography>
           </MotionBox>
-          
+
           <MotionBox variants={fadeInUpVariants}>
-            <Typography 
-              variant="h6" 
-              color="textSecondary" 
-              paragraph 
-              sx={{ 
-                maxWidth: 700, 
-                mx: "auto", 
+            <Typography
+              variant="h6"
+              color="textSecondary"
+              paragraph
+              sx={{
+                maxWidth: 700,
+                mx: "auto",
                 mt: 2,
                 mb: 6,
                 opacity: 0.8
@@ -557,7 +591,7 @@ export const Home = () => {
                   transition: { duration: 0.4 }
                 }}
                 whileTap={{ scale: 0.95 }}
-                style={{ perspective: '1000px' ,width:'350px'}}
+                style={{ perspective: '1000px', width: '350px' }}
               >
                 <Card
                   sx={{
@@ -619,7 +653,7 @@ export const Home = () => {
                       zIndex: 0
                     }}
                   />
-                  
+
                   {/* Premium Badge */}
                   <Box
                     sx={{
@@ -650,7 +684,7 @@ export const Home = () => {
                       />
                     </motion.div>
                   </Box>
-                  
+
                   <CardContent sx={{ p: 4, height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 2 }}>
                     <Box sx={{ flex: 1 }}>
                       <Avatar
@@ -667,11 +701,11 @@ export const Home = () => {
                       >
                         <item.icon sx={{ fontSize: 40, color: item.color }} />
                       </Avatar>
-                      
+
                       <Typography variant="h5" fontWeight="700" sx={{ color: '#1e293b', mb: 2, lineHeight: 1.3 }}>
                         {item.title}
                       </Typography>
-                      
+
                       <Typography
                         variant="body2"
                         sx={{
@@ -684,7 +718,7 @@ export const Home = () => {
                         {item.description}
                       </Typography>
                     </Box>
-                    
+
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 'auto' }}>
                       <Typography
                         className="card-stats"
@@ -697,7 +731,7 @@ export const Home = () => {
                       >
                         {item.stats}
                       </Typography>
-                      
+
                       <IconButton
                         size="small"
                         sx={{
@@ -725,9 +759,9 @@ export const Home = () => {
       </Container>
 
       {/* Stats Section */}
-      <Box 
-        sx={{ 
-          bgcolor: alpha(theme.palette.primary.light, 0.05), 
+      <Box
+        sx={{
+          bgcolor: alpha(theme.palette.primary.light, 0.05),
           py: 10,
           position: "relative",
           overflow: "hidden",
@@ -742,9 +776,9 @@ export const Home = () => {
             sx={{ textAlign: "center", mb: 8 }}
           >
             <MotionBox variants={fadeInUpVariants}>
-              <Typography 
-                variant="h3" 
-                component="h2" 
+              <Typography
+                variant="h3"
+                component="h2"
                 fontWeight="bold"
                 sx={{
                   position: "relative",
@@ -766,20 +800,20 @@ export const Home = () => {
                 הנתונים שלנו
               </Typography>
             </MotionBox>
-            
+
             <MotionBox variants={fadeInUpVariants}>
-              <Typography 
-                variant="h6" 
-                color="textSecondary" 
-                paragraph 
-                sx={{ 
-                  maxWidth: 700, 
-                  mx: "auto", 
+              <Typography
+                variant="h6"
+                color="textSecondary"
+                paragraph
+                sx={{
+                  maxWidth: 700,
+                  mx: "auto",
                   mt: 2,
                   opacity: 0.8
                 }}
               >
-                
+
                 סטטיסטיקות עדכניות על פעילות המערכת
               </Typography>
             </MotionBox>
@@ -795,40 +829,40 @@ export const Home = () => {
                   transition={{ delay: index * 0.1, duration: 0.6 }}
                 >
                   <StatsCard>
-                    <Box 
-                      sx={{ 
-                        display: 'flex', 
-                        justifyContent: 'center', 
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
                         mb: 2,
                         color: stat.color
                       }}
                     >
                       {stat.icon}
                     </Box>
-                    
-                    <Typography 
-                      variant="h4" 
+
+                    <Typography
+                      variant="h4"
                       component="p"
-                      fontWeight="bold" 
-                      sx={{ 
+                      fontWeight="bold"
+                      sx={{
                         color: "text.primary",
                         mb: 1
                       }}
                     >
                       {stat.value}
                     </Typography>
-                    
-                    <Typography 
-                      variant="h6" 
+
+                    <Typography
+                      variant="h6"
                       color="primary"
                       fontWeight="medium"
                       sx={{ mb: 1 }}
                     >
                       {stat.label}
                     </Typography>
-                    
-                    <Typography 
-                      variant="body2" 
+
+                    <Typography
+                      variant="body2"
                       color="text.secondary"
                       sx={{ mt: 1, fontSize: "0.875rem" }}
                     >
@@ -852,9 +886,9 @@ export const Home = () => {
               viewport={{ once: true, amount: 0.2 }}
               transition={{ duration: 0.8 }}
             >
-              <Chip 
-                icon={<VerifiedIcon />} 
-                label="ממשק ידידותי למנהלים" 
+              <Chip
+                icon={<VerifiedIcon color="white" />}
+                label="ממשק ידידותי למנהלים"
                 size="medium"
                 sx={{
                   background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
@@ -863,33 +897,33 @@ export const Home = () => {
                   mb: 3
                 }}
               />
-              
-              <Typography 
-                variant="h3" 
-                component="h2" 
-                gutterBottom 
+
+              <Typography
+                variant="h3"
+                component="h2"
+                gutterBottom
                 fontWeight="bold"
                 sx={{ mt: 2, mb: 3 }}
               >
                 חווית משתמש מתקדמת
               </Typography>
-              
+
               <Typography variant="body1" paragraph sx={{ mb: 3, opacity: 0.8, lineHeight: 1.7 }}>
-                המערכת שלנו מציעה ממשק אינטואיטיבי וקל לשימוש, המאפשר למנהלים לנהל חוגים, 
+                המערכת שלנו מציעה ממשק אינטואיטיבי וקל לשימוש, המאפשר למנהלים לנהל חוגים,
                 לעקוב אחר תלמידים ולקבל דוחות מפורטים בקלות ובמהירות.
               </Typography>
-              
+
               <Typography variant="body1" paragraph sx={{ mb: 4, opacity: 0.8, lineHeight: 1.7 }}>
                 עם כלים מתקדמים כמו לוח שנה ייחודי לרישום נוכחות יומי והערות אישיות לכל תלמיד,
                 המנהלים יכולים לקבל תובנות משמעותיות ולהתאים את התכנית בהתאם.
               </Typography>
-              
+
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 {benefits.map((benefit, index) => (
-                  <Box 
+                  <Box
                     key={index}
-                    sx={{ 
-                      display: "flex", 
+                    sx={{
+                      display: "flex",
                       alignItems: "flex-start",
                       gap: 2,
                       p: 2,
@@ -906,8 +940,8 @@ export const Home = () => {
                     transition={{ delay: index * 0.1 + 0.3 }}
                     viewport={{ once: true }}
                   >
-                    <Box 
-                      sx={{ 
+                    <Box
+                      sx={{
                         color: benefit.color,
                         mt: 0.5
                       }}
@@ -927,137 +961,265 @@ export const Home = () => {
               </Box>
             </MotionBox>
           </Grid>
-          
-          <Grid item xs={12} md={6}>
+          {/* <Grid item xs={12}>
             <MotionBox
               initial={{ opacity: 0, x: 60 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, amount: 0.2 }}
               transition={{ duration: 0.8 }}
-            >
-              <Box sx={{ display: "flex", flexDirection: "row", gap: 3 }}>
-                {/* Feature highlights */}
-                <Box
-                  sx={{
-                    p: 4,
-                    borderRadius: 3,
-                    background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)}, ${alpha(theme.palette.secondary.main, 0.1)})`,
-                    border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-                    backdropFilter: "blur(10px)",
-                    width:'350px'
-                  }}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                    <CalendarTodayIcon sx={{ color: theme.palette.primary.main, mr: 2 }} />
-                    <Typography variant="h6" fontWeight="bold">
-                      לוח שנה ייחודי
-                    </Typography>
-                  </Box>
-                  <Typography variant="body2" color="text.secondary">
-                    מערכת לוח שנה מתקדמת לרישום נוכחות יומי, תזכורות ומעקב אחר אירועים חשובים
-                  </Typography>
-                </Box>
+            > */}
+              {/* ✅ Grid נפרד עם 3 קולונות */}
+              {/* <Grid container spacing={3} justifyContent="center"> */}
+                {/* לוח שנה ייחודי */}
+                {/* <Grid item xs={12} md={4}>
+                  <motion.div
+                    whileHover={{ scale: 1.03, y: -8 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <Card
+                      sx={{
+                        p: 2.5,
+                        borderRadius: '20px',
+                        background: 'linear-gradient(135deg, #4facfe 0%, #667eea 50%, #43e97b 100%)',
+                        color: 'white',
+                        border: '2px solid rgba(255, 255, 255, 0.3)',
+                        backdropFilter: 'blur(20px)',
+                        boxShadow: '0 15px 40px rgba(79, 172, 254, 0.3)',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        cursor: 'pointer',
+                        height: '220px',
+                        '&::before': {
+                          content: '""',
+                          position: 'absolute',
+                          top: -50,
+                          right: -50,
+                          width: 150,
+                          height: 150,
+                          borderRadius: '50%',
+                          background: 'rgba(255,255,255,0.1)',
+                          backdropFilter: 'blur(30px)'
+                        },
+                        '&:hover': {
+                          boxShadow: '0 25px 60px rgba(79, 172, 254, 0.4)',
+                          transform: 'translateY(-5px)',
+                          '&::before': {
+                            transform: 'scale(1.2)',
+                          }
+                        },
+                        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+                      }}
+                    >
+                      <Box sx={{ display: "flex", alignItems: "center", mb: 1.5, position: 'relative', zIndex: 1 }}>
+                        <Avatar
+                          sx={{
+                            background: 'rgba(255, 255, 255, 0.25)',
+                            border: '2px solid rgba(255, 255, 255, 0.4)',
+                            width: 40,
+                            height: 40,
+                            mr: 1.5,
+                            boxShadow: '0 8px 25px rgba(255, 255, 255, 0.2)'
+                          }}
+                        >
+                          <CalendarTodayIcon sx={{ color: 'white', fontSize: 20 }} />
+                        </Avatar>
+                        <Typography variant="subtitle1" fontWeight="bold" sx={{
+                          textShadow: '0 2px 10px rgba(0,0,0,0.2)',
+                          background: 'linear-gradient(45deg, #ffffff 0%, rgba(255,255,255,0.8) 100%)',
+                          backgroundClip: 'text',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent'
+                        }}>
+                          לוח שנה ייחודי
+                        </Typography>
+                      </Box>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          position: 'relative',
+                          zIndex: 1,
+                          opacity: 0.95,
+                          lineHeight: 1.4,
+                          fontSize: '0.8rem'
+                        }}
+                      >
+                        מערכת לוח שנה מתקדמת לרישום נוכחות יומי, תזכורות ומעקב אחר אירועים חשובים
+                      </Typography>
+                    </Card>
+                  </motion.div>
+                </Grid> */}
 
-                <Box
-                  sx={{
-                    p: 4,
-                    borderRadius: 3,
-                    background: `linear-gradient(135deg, ${alpha(theme.palette.secondary.main, 0.1)}, ${alpha(theme.palette.primary.main, 0.1)})`,
-                    border: `1px solid ${alpha(theme.palette.secondary.main, 0.2)}`,
-                    backdropFilter: "blur(10px)",
-                                      width:'350px'
+                {/* הערות אישיות */}
+                {/* <Grid item xs={12} md={4}>
+                  <motion.div
+                    whileHover={{ scale: 1.03, y: -8 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <Card
+                      sx={{
+                        p: 2.5,
+                        borderRadius: '20px',
+                        background: 'linear-gradient(135deg, #f093fb 0%, #764ba2 50%, #667eea 100%)',
+                        color: 'white',
+                        border: '2px solid rgba(255, 255, 255, 0.3)',
+                        backdropFilter: 'blur(20px)',
+                        boxShadow: '0 15px 40px rgba(240, 147, 251, 0.3)',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        cursor: 'pointer',
+                        height: '220px',
+                        '&::before': {
+                          content: '""',
+                          position: 'absolute',
+                          bottom: -50,
+                          left: -50,
+                          width: 150,
+                          height: 150,
+                          borderRadius: '50%',
+                          background: 'rgba(255,255,255,0.1)',
+                          backdropFilter: 'blur(30px)'
+                        },
+                        '&:hover': {
+                          boxShadow: '0 25px 60px rgba(240, 147, 251, 0.4)',
+                          transform: 'translateY(-5px)',
+                          '&::before': {
+                            transform: 'scale(1.2)',
+                          }
+                        },
+                        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+                      }}
+                    >
+                      <Box sx={{ display: "flex", alignItems: "center", mb: 1.5, position: 'relative', zIndex: 1 }}>
+                        <Avatar
+                          sx={{
+                            background: 'rgba(255, 255, 255, 0.25)',
+                            border: '2px solid rgba(255, 255, 255, 0.4)',
+                            width: 40,
+                            height: 40,
+                            mr: 1.5,
+                            boxShadow: '0 8px 25px rgba(255, 255, 255, 0.2)'
+                          }}
+                        >
+                          <NoteIcon sx={{ color: 'white', fontSize: 20 }} />
+                        </Avatar>
+                        <Typography variant="subtitle1" fontWeight="bold" sx={{
+                          textShadow: '0 2px 10px rgba(0,0,0,0.2)',
+                          background: 'linear-gradient(45deg, #ffffff 0%, rgba(255,255,255,0.8) 100%)',
+                          backgroundClip: 'text',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent'
+                        }}>
+                          הערות אישיות
+                        </Typography>
+                      </Box>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          position: 'relative',
+                          zIndex: 1,
+                          opacity: 0.95,
+                          lineHeight: 1.4,
+                          fontSize: '0.8rem'
+                        }}
+                      >
+                        מערכת הערות מתקדמת לכל תלמיד, מעקב אחר התקדמות ותיעוד התנהגות אישי
+                      </Typography>
+                    </Card>
+                  </motion.div>
+                </Grid> */}
 
-                  }}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                    <NoteIcon sx={{ color: theme.palette.secondary.main, mr: 2 }} />
-                    <Typography variant="h6" fontWeight="bold">
-                      הערות אישיות
-                    </Typography>
-                  </Box>
-                  <Typography variant="body2" color="text.secondary">
-                    מערכת הערות מתקדמת לכל תלמיד, מעקב אחר התקדמות ותיעוד התנהגות אישי
-                  </Typography>
-                </Box>
-
-                <Box
-                  sx={{
-                    p: 4,
-                    borderRadius: 3,
-                    background: `linear-gradient(135deg, ${alpha('#32CD32', 0.1)}, ${alpha('#20B2AA', 0.1)})`,
-                    border: `1px solid ${alpha('#32CD32', 0.2)}`,
-                    backdropFilter: "blur(10px)",
-                                     width:'350px'
-
-                  }}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                    <EventAvailableIcon sx={{ color: '#32CD32', mr: 2 }} />
-                    <Typography variant="h6" fontWeight="bold">
-                      מעקב נוכחות מתקדם
-                    </Typography>
-                  </Box>
-                  <Typography variant="body2" color="text.secondary">
-                     רישום נוכחות דיגיטלי עם דוחות מפורטים ומעקב אחר דפוסי השתתפות וכן סימון אוטומטי בכל יום   
-                  </Typography>
-                </Box>
-              </Box>
-            </MotionBox>
-          </Grid>
+                {/* מעקב נוכחות מתקדם */}
+                {/* <Grid item xs={12} md={4}>
+                  <motion.div
+                    whileHover={{ scale: 1.03, y: -8 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <Card
+                      sx={{
+                        p: 2.5,
+                        borderRadius: '20px',
+                        background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 50%, #4facfe 100%)',
+                        color: 'white',
+                        border: '2px solid rgba(255, 255, 255, 0.3)',
+                        backdropFilter: 'blur(20px)',
+                        boxShadow: '0 15px 40px rgba(67, 233, 123, 0.3)',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        cursor: 'pointer',
+                        height: '220px',
+                        '&::before': {
+                          content: '""',
+                          position: 'absolute',
+                          top: -30,
+                          left: -30,
+                          width: 120,
+                          height: 120,
+                          borderRadius: '50%',
+                          background: 'rgba(255,255,255,0.1)',
+                          backdropFilter: 'blur(30px)'
+                        },
+                        '&:hover': {
+                          boxShadow: '0 25px 60px rgba(67, 233, 123, 0.4)',
+                          transform: 'translateY(-5px)',
+                          '&::before': {
+                            transform: 'scale(1.2)',
+                          }
+                        },
+                        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+                      }}
+                    >
+                      <Box sx={{ display: "flex", alignItems: "center", mb: 1.5, position: 'relative', zIndex: 1 }}>
+                        <Avatar
+                          sx={{
+                            background: 'rgba(255, 255, 255, 0.25)',
+                            border: '2px solid rgba(255, 255, 255, 0.4)',
+                            width: 40,
+                            height: 40,
+                            mr: 1.5,
+                            boxShadow: '0 8px 25px rgba(255, 255, 255, 0.2)'
+                          }}
+                        >
+                          <EventAvailableIcon sx={{ color: 'white', fontSize: 20 }} />
+                        </Avatar>
+                        <Typography variant="subtitle1" fontWeight="bold" sx={{
+                          textShadow: '0 2px 10px rgba(0,0,0,0.2)',
+                          background: 'linear-gradient(45deg, #ffffff 0%, rgba(255,255,255,0.8) 100%)',
+                          backgroundClip: 'text',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent'
+                        }}>
+                          מעקב נוכחות מתקדם
+                        </Typography>
+                      </Box>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          position: 'relative',
+                          zIndex: 1,
+                          opacity: 0.95,
+                          lineHeight: 1.4,
+                          fontSize: '0.8rem'
+                        }}
+                      >
+                        רישום נוכחות דיגיטלי עם דוחות מפורטים ומעקב אחר דפוסי השתתפות וכן סימון אוטומטי בכל יום
+                      </Typography>
+                    </Card>
+                  </motion.div>
+                </Grid> */}
+              {/* </Grid> */}
+            {/* </MotionBox>
+          </Grid> */}
         </Grid>
       </Container>
 
-      {/* Developer Info Section - Smaller */}
-      <Box sx={{ bgcolor: alpha(theme.palette.primary.main, 0.03), py: 6 }}>
-        <Container>
-          <MotionBox
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.2 }}
-            transition={{ duration: 0.8 }}
-          >
-            <DeveloperInfo>
-              <Typography 
-                variant="h6" 
-                component="h3" 
-                gutterBottom 
-                fontWeight="bold"
-                sx={{ color: theme.palette.primary.main, mb: 1 }}
-              >
-               אסתר מורגנשטרן
-              </Typography>
-              
-              <Stack 
-                direction={isMobile ? "column" : "row"} 
-                spacing={2} 
-                justifyContent="center"
-                alignItems="center"
-                sx={{ fontSize: "0.9rem",direction:'ltr' }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <EmailIcon sx={{ color: theme.palette.primary.main, fontSize: 18 }} />
-                  <Typography variant="body2">
-                    em0527104104@gmail.com | st104.mor@gmail.com
-                  </Typography>
-                </Box>
-                
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <PhoneIcon sx={{ color: theme.palette.primary.main, fontSize: 18 }} />
-                  <Typography variant="body2">
-                    052-710-4104
-                  </Typography>
-                </Box>
-              </Stack>
-            </DeveloperInfo>
-          </MotionBox>
-        </Container>
-      </Box>
+
+          
+        
 
       {/* Call to Action Section */}
-      <Box 
-        sx={{ 
-          background: 'linear-gradient(135deg, #f093fb 0%, #667eea  50%, #36d8d3ff 100%)',
-          color: "white", 
+      <Box
+        sx={{
+          background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #4facfe 100%)', color: "white",
           py: 8,
           position: "relative",
           overflow: "hidden",
@@ -1074,10 +1236,10 @@ export const Home = () => {
             <Grid container spacing={4} justifyContent="center" alignItems="center">
               <Grid item xs={12} md={8} textAlign="center">
                 <MotionBox variants={fadeInUpVariants}>
-                  <Typography 
-                    variant="h4" 
-                    component="h2" 
-                    gutterBottom 
+                  <Typography
+                    variant="h4"
+                    component="h2"
+                    gutterBottom
                     fontWeight="bold"
                     sx={{
                       textShadow: "0 2px 10px rgba(0,0,0,0.2)",
@@ -1086,14 +1248,14 @@ export const Home = () => {
                     מוכנים להתחיל?
                   </Typography>
                 </MotionBox>
-                
+
                 <MotionBox variants={fadeInUpVariants}>
-                  <Typography 
-                    variant="h6" 
+                  <Typography
+                    variant="h6"
                     paragraph
-                    sx={{ 
-                      maxWidth: 700, 
-                      mx: "auto", 
+                    sx={{
+                      maxWidth: 700,
+                      mx: "auto",
                       opacity: 0.9,
                       mb: 4
                     }}
@@ -1102,14 +1264,14 @@ export const Home = () => {
                     וגלו כיצד ניתן לחסוך זמן יקר ולשפר את תהליכי העבודה
                   </Typography>
                 </MotionBox>
-                
+
                 <MotionBox variants={fadeInUpVariants} sx={{ mt: 3 }}>
                   <ActionButton
                     variant="contained"
                     size="large"
                     onClick={() => navigate("/students")}
-                    sx={{ 
-                      direction:'ltr',
+                    sx={{
+                      direction: 'ltr',
                       mx: 1,
                       mb: isMobile ? 2 : 0,
                       fontSize: isMobile ? 14 : 16,
@@ -1117,20 +1279,20 @@ export const Home = () => {
                       bgcolor: "white",
                       color: theme.palette.primary.main,
                       "&:hover": {
-                      bgcolor: "white"
+                        bgcolor: "white"
                       }
                     }}
-                    endIcon={<ArrowForwardIcon />}
+                    endIcon={<AnimatedArrow />}
                   >
                     התחל עכשיו
                   </ActionButton>
-                  
+
                   <ActionButton
                     variant="outlined"
                     size="large"
                     onClick={() => navigate("/aboutSystem")}
-                    sx={{ 
-                      mx: 1, 
+                    sx={{
+                      mx: 1,
                       borderColor: "white",
                       color: "white",
                       fontSize: isMobile ? 14 : 16,

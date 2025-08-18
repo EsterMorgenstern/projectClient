@@ -640,20 +640,20 @@
 }
 
 .smart-matching-container::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+  background: 'linear-gradient(135deg,#2a5298 50%,#4facfe 100%)';
   border-radius: 10px;
   border: 2px solid #f8fafc;
   transition: all 0.3s ease;
 }
 
 .smart-matching-container::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #5a6fd8 0%, #6a4190 100%);
+  background:  #5a6fd8 ;
   border-color: #e2e8f0;
   transform: scale(1.1);
 }
 
 .smart-matching-container::-webkit-scrollbar-thumb:active {
-  background: linear-gradient(180deg, #4c63d2 0%, #5d3a7f 100%);
+  background: #4c63d2;
 }
 
 /* אפקט צל בזמן גלילה */

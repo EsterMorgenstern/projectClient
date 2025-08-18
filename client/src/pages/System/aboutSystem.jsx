@@ -82,7 +82,7 @@ const MotionBox = ({ children, ...props }) => {
 
 // Styled components
 const HeroSection = styled(Box)(({ theme }) => ({
-  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.light} 50%, ${theme.palette.secondary.light} 100%)`,
+  background: 'linear-gradient(135deg,#2a5298 50%,#4facfe 100%)', // ✅ אותו רקע כמו הnavbar
   color: "white",
   padding: theme.spacing(12, 0, 14),
   textAlign: "center",
@@ -95,7 +95,6 @@ const HeroSection = styled(Box)(({ theme }) => ({
     borderRadius: "0 0 50% 50% / 20px",
   },
 }));
-
 const FeatureCard = styled(Card)(({ theme }) => ({
   height: "100%",
   borderRadius: 20,
@@ -385,7 +384,7 @@ export const AboutSystem = () => {
           >
             <MotionBox variants={itemVariants}>
               <Chip 
-                icon={<RocketLaunchIcon />} 
+                icon={<RocketLaunchIcon color="secondary"/>} 
                 label="טכנולוגיה מתקדמת לחינוך"
                 size="large"
                 sx={{

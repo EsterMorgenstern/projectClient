@@ -859,7 +859,7 @@ const EnrollStudent = () => {
     >
       <motion.button
         className="smart-matching-trigger-main"
-        onClick={() => setAlgorithmDialogOpen(true)}
+                onClick={() => setAlgorithmDialogOpen(true)}
         disabled={loading}
         whileHover={{ scale: 1.02, y: -2 }}
         whileTap={{ scale: 0.98 }}
@@ -1581,7 +1581,7 @@ const EnrollStudent = () => {
         >
           <DialogTitle
             style={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    background: 'linear-gradient(135deg,#2a5298 50%,#4facfe 100%)', // ✅ אותו רקע כמו הnavbar
               color: 'white',
               textAlign: 'center',
               padding: '20px',

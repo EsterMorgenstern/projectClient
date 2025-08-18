@@ -1876,10 +1876,11 @@ const LessonCancellationManager = ({
                                                                 fullWidth
                                                                 variant="contained"
                                                                 color="error"
-                                                                onClick={handleBulkCancelDay}
+                                                                                                                                onClick={handleBulkCancelDay}
                                                                 disabled={!selectedDayForBulk || !bulkReason.trim() || bulkOperationLoading}
                                                                 startIcon={bulkOperationLoading ? <CircularProgress size={16} /> : <CancelScheduleSend />}
-                                                            >
+                                                         sx={{direction: 'ltr'}}
+                                                         >
                                                                 {bulkOperationLoading ? 'מבטל...' : 'בטל את כל השיעורים'}
                                                             </Button>
                                                         </Grid>

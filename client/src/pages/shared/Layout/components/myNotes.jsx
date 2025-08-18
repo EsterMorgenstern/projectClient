@@ -382,7 +382,7 @@ const currentUserI = userById || currentUser;
     },
     title: {
       fontWeight: 700,
-      background: 'linear-gradient(45deg, #667eea, #764ba2)',
+      background: '#2d49c7ff',
       backgroundClip: 'text',
       WebkitBackgroundClip: 'text',
       WebkitTextFillColor: 'transparent',

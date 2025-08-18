@@ -5,7 +5,7 @@
 }
 
 .smart-matching-trigger-main {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: 'linear-gradient(135deg, #2a5298 50%, #4facfe 100%)';
   border: none;
   border-radius: 20px;
   padding: 0;
@@ -120,7 +120,7 @@
 }
 
 .smart-matching-trigger-main {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2a5298 50%, #4facfe 100%);
   border: none;
   border-radius: 20px;
   padding: 0;

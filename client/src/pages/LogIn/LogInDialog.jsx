@@ -325,7 +325,7 @@ const LoginDialog = ({ open, onClose, onLoginSuccess }) => {
         }}
       />
       <Typography variant="h6" sx={{ mb: 1 }}>
-        מתחבר למערכת...
+        ...מתחבר למערכת
       </Typography>
       <Typography variant="body2" color="text.secondary">
         אנא המתן בזמן שאנו מאמתים את הפרטים שלך

@@ -414,7 +414,8 @@ const TermsDialog = ({ open, onClose, onAccept }) => {
                                                         sx={{ 
                                                             bgcolor: `${term.color}20`,
                                                             color: term.color,
-                                                            fontWeight: 'bold'
+                                                            fontWeight: 'bold',
+                                                            direction: 'rtl'
                                                         }}
                                                     />
                                                 </Box>
@@ -452,14 +453,7 @@ const TermsDialog = ({ open, onClose, onAccept }) => {
                                 לכל שאלה, הבהרה או בקשה מיוחדת - אנחנו כאן בשבילכם!
                             </Typography>
                             <Box sx={{ display: 'flex', justifyContent: 'center', gap: 4, flexWrap: 'wrap' }}>
-                                <Box sx={{ textAlign: 'center' }}>
-                                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#15803d' }}>
-                                        📞 טלפון
-                                    </Typography>
-                                    <Typography variant="body2" sx={{ color: '#166534' }}>
-                                        .......
-                                    </Typography>
-                                </Box>
+                               
                                 <Box sx={{ textAlign: 'center' }}>
                                     <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#15803d' }}>
                                         ✉️ אימייל
@@ -473,7 +467,7 @@ const TermsDialog = ({ open, onClose, onAccept }) => {
                                         🌐 אתר
                                     </Typography>
                                     <Typography variant="body2" sx={{ color: '#166534' }}>
-                                        ........co.il
+                                        coursenet.nethost.co.il
                                     </Typography>
                                 </Box>
                             </Box>
@@ -705,60 +699,67 @@ const TermsDialog = ({ open, onClose, onAccept }) => {
                                                         }
                                                     }}>
                                                         <CardContent sx={{ p: 2 }}>
-                                                            <ListItem sx={{ p: 0 }}>
-                                                                <ListItemIcon sx={{ minWidth: 50 }}>
-                                                                    <Avatar sx={{ 
-                                                                        bgcolor: term.color, 
-                                                                        width: 40,
-                                                                        height: 40,
-                                                                        boxShadow: `0 4px 12px ${term.color}30`
-                                                                    }}>
-                                                                        <IconComponent sx={{ fontSize: 20 }} />
-                                                                    </Avatar>
-                                                                </ListItemIcon>
-                                                                <ListItemText
-                                                                    primary={
-                                                                        <Box sx={{ 
-                                                                            display: 'flex', 
-                                                                            alignItems: 'center', 
-                                                                            gap: 2, 
-                                                                            mb: 1,
-                                                                            justifyContent: 'space-between'
-                                                                        }}>
-                                                                            <Typography 
-                                                                                variant="subtitle1"
-                                                                                sx={{ 
-                                                                                    fontWeight: 'bold',
-                                                                                    color: term.color
-                                                                                }}
-                                                                            >
-                                                                                {term.title}
-                                                                            </Typography>
-                                                                            <Chip 
-                                                                                label={`סעיף ${term.id}`} 
-                                                                                size="small"
-                                                                                sx={{ 
-                                                                                    bgcolor: `${term.color}20`,
-                                                                                    color: term.color,
-                                                                                    fontWeight: 'bold',
-                                                                                    fontSize: '0.7rem'
-                                                                                }}
-                                                                            />
-                                                                        </Box>
-                                                                    }
-                                                                    secondary={
-                                                                        <Typography 
-                                                                            variant="body2" 
-                                                                            sx={{ 
-                                                                                color: '#374151',
-                                                                                lineHeight: 1.5
-                                                                            }}
-                                                                        >
-                                                                            {term.content}
-                                                                        </Typography>
-                                                                    }
-                                                                />
-                                                            </ListItem>
+<ListItem sx={{ p: 0 }}>
+    <ListItemIcon sx={{ minWidth: 50 }}>
+        <Avatar sx={{ 
+            bgcolor: term.color, 
+            width: 40,
+            height: 40,
+            boxShadow: `0 4px 12px ${term.color}30`
+        }}>
+            <IconComponent sx={{ fontSize: 20 }} />
+        </Avatar>
+    </ListItemIcon>
+    <ListItemText
+        primary={
+            <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'flex-start', // ✅ שנה ל-flex-start
+                gap: 2, 
+                mb: 1,
+                justifyContent: 'space-between' // ✅ זה יפזר בין ימין לשמאל
+            }}>
+                <Box sx={{ flex: 1 }}> {/* ✅ הוסף Box עטיפה לכותרת */}
+                    <Typography 
+                        variant="subtitle1"
+                        sx={{ 
+                            fontWeight: 'bold',
+                            color: term.color,
+                            textAlign: 'right' // ✅ יישור לימין
+                        }}
+                    >
+                        {term.title}
+                    </Typography>
+                </Box>
+                <Chip  
+                    label={`סעיף ${term.id}`} 
+                    size="small"
+                    sx={{ 
+                        bgcolor: `${term.color}20`,
+                        color: term.color,
+                        fontWeight: 'bold',
+                        fontSize: '0.7rem',
+                        direction: 'rtl',
+                        flexShrink: 0 // ✅ מונע כיווץ של הצ'יפ
+                    }}
+                />
+            </Box>
+        }
+        secondary={
+            <Typography 
+                variant="body2" 
+                sx={{ 
+                    color: '#374151',
+                    lineHeight: 1.5,
+                    textAlign: 'right', // ✅ יישור התוכן לימין
+                    mt: 1
+                }}
+            >
+                {term.content}
+            </Typography>
+        }
+    />
+</ListItem>
                                                         </CardContent>
                                                     </Card>
                                                 </motion.div>
@@ -815,6 +816,7 @@ const TermsDialog = ({ open, onClose, onAccept }) => {
                                                 sx={{
                                                     bgcolor: '#0284c7',
                                                     minWidth: '100px',
+                                                    direction: 'ltr',
                                                     height: '40px',
                                                     '&:hover': { bgcolor: '#0369a1' }
                                                 }}
@@ -889,12 +891,13 @@ const TermsDialog = ({ open, onClose, onAccept }) => {
                                                     sx={{ 
                                                         color: accepted ? '#047857' : '#b45309',
                                                         mt: 0.5,
-                                                        fontSize: '0.9rem'
+                                                        fontSize: '0.9rem',
+                                                        direction:'ltr'
                                                     }}
                                                 >
                                                     {accepted 
-                                                        ? 'תודה! כעת תוכלו להמשיך בתהליך ההרשמה' 
-                                                        : 'יש לאשר את התקנון כדי להמשיך'
+                                                        ? ' תודה! כעת תוכלו להמשיך בתהליך ההרשמה' 
+                                                        : ' יש לאשר את התקנון כדי להמשיך'
                                                     }
                                                 </Typography>
                                             </Box>
@@ -955,6 +958,7 @@ const TermsDialog = ({ open, onClose, onAccept }) => {
                             disabled={!accepted}
                             startIcon={<CheckCircleIcon sx={{ fontSize: 18 }} />}
                             sx={{
+                                direction: 'ltr',
                                 borderRadius: '20px',
                                 px: 4,
                                 py: 1,
@@ -1006,8 +1010,8 @@ const TermsDialog = ({ open, onClose, onAccept }) => {
                         }}
                     >
                         המרכז שומר לעצמו את הזכות לעדכן את התקנון מעת לעת • 
-                        עדכונים יפורסמו באתר ויישלחו למשתתפים הרשומים • 
-                        לשאלות: ..... או easyoffice100@gmail.com
+                        עדכונים יפורסמו באתר ויישלחו למשתתפים הרשומים 
+
                     </Typography>
                 </Box>
             </motion.div>

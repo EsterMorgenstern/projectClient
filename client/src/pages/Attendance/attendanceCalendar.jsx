@@ -1428,7 +1428,7 @@ const handleSaveAttendance = async (note = '') => {
         <Box sx={styles.loadingContainer}>
           <CircularProgress size={60} thickness={4} />
           <Typography variant="h6" sx={styles.loadingText}>
-            טוען נתונים...
+           ... טוען נתונים
           </Typography>
         </Box>
       );
