@@ -1,6 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { fetchBranches } from './branchGetAllThunk';
 import { addBranch } from './branchAddThunk';
+import { updateBranch } from './branchUpdateThunk';
 import { deleteBranch } from './branchDelete';
 
 const branchSlice = createSlice({
@@ -57,6 +58,25 @@ const branchSlice = createSlice({
       })
       .addCase(addBranch.rejected, (state, action) => {
         console.error('Error adding branch:', action.error.message);
+        state.loading = false;
+        state.error = action.error.message;
+      })
+      
+// updateBranch
+      .addCase(updateBranch.pending, (state) => {
+        console.log('Updating branch...');
+        state.loading = true;
+      })
+      .addCase(updateBranch.fulfilled, (state, action) => {
+        console.log(action.payload);
+        state.loading = false;
+        const index = state.branches.findIndex((branch) => branch.branchId === action.payload.branchId);
+        if (index !== -1) {
+          state.branches[index] = action.payload;
+        }
+      })
+      .addCase(updateBranch.rejected, (state, action) => {
+        console.error('Error updating branch:', action.error.message);
         state.loading = false;
         state.error = action.error.message;
       });

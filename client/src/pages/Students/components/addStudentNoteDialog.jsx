@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions,
     TextField, Button, Box, Typography, MenuItem,
     FormControlLabel, Switch, Grid, Card, CardContent,
-    Avatar, Chip, Alert
+    Avatar, Chip, Alert, CircularProgress
 } from '@mui/material';
 import {
     Notes as NotesIcon, Person as PersonIcon,
@@ -13,6 +13,7 @@ import {
     CheckCircle as CheckCircleIcon, Info as InfoIcon
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
+import { addStudentNote } from '../../../store/studentNotes/studentNoteAddThunk';
 
 const AddStudentNoteDialog = ({
     open,
@@ -23,6 +24,8 @@ const AddStudentNoteDialog = ({
     noteData = null
 }) => {
     console.log('AddStudentNoteDialog props:', { student, editMode, noteData, open });
+
+    const dispatch = useDispatch();
 
     // קבל את המשתמש הנוכחי מה-Redux עם fallback
     const currentUser = useSelector(state => {
@@ -53,6 +56,7 @@ const AddStudentNoteDialog = ({
     });
 
     const [errors, setErrors] = useState({});
+    const [isSaving, setIsSaving] = useState(false);
 
     // פונקציה לקבלת פרטי המשתמש
     const getUserDetails = (user) => {
@@ -177,15 +181,21 @@ const AddStudentNoteDialog = ({
         }
 
         setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
+        const isValid = Object.keys(newErrors).length === 0;
+        console.log('🔍 Validation result:', isValid, newErrors);
+        return isValid;
     };
 
-   const handleSave = () => {
+   const handleSave = async () => {
     console.log('🔍 Form data before validation:', formData);
+    console.log('🔍 Student data:', student);
+    console.log('🔍 Student ID:', student?.id);
     
     if (validateForm()) {
+        setIsSaving(true);
+        
         const noteToSave = {
-            studentId: formData.studentId,
+            studentId: formData.studentId || student?.id,
             authorId: formData.authorId || 'guest',
             authorName: formData.authorName.trim() || 'משתמש אורח',
             authorRole: formData.authorRole.trim() || 'מורה',
@@ -194,25 +204,55 @@ const AddStudentNoteDialog = ({
             priority: formData.priority,
             isPrivate: Boolean(formData.isPrivate),
             isActive: Boolean(formData.isActive),
-            createdDate: editMode ? noteData?.createdDate : new Date().toISOString(),
-            updatedDate: new Date().toISOString()
+            createdDate: editMode ? noteData?.createdDate : new Date().toISOString().split('T')[0],
+            updatedDate: new Date().toISOString().split('T')[0]
         };
 
         console.log('📤 Note to save (final):', noteToSave);
-        console.log('📤 Note to save (JSON):', JSON.stringify(noteToSave, null, 2));
+        console.log('📤 Note stringified:', JSON.stringify(noteToSave, null, 2));
         
         // בדיקה נוספת לפני שליחה
         const requiredFields = ['studentId', 'authorName', 'authorRole', 'noteContent'];
-        const missingFields = requiredFields.filter(field => !noteToSave[field]);
+        const missingFields = requiredFields.filter(field => !noteToSave[field] || !noteToSave[field].toString().trim());
         
         if (missingFields.length > 0) {
             console.error('❌ Missing required fields:', missingFields);
+            console.error('❌ Note data:', noteToSave);
             alert(`שדות חסרים: ${missingFields.join(', ')}`);
+            setIsSaving(false);
             return;
         }
 
-        onSave(noteToSave);
-        handleClose();
+        try {
+            // שמירה לשרת
+            console.log('🔄 Sending note to server:', noteToSave);
+            const result = await dispatch(addStudentNote(noteToSave));
+            
+            console.log('📥 Server response:', result);
+            console.log('📋 Result type:', result.type);
+            console.log('📄 Result payload:', result.payload);
+            
+            if (result.type === 'studentNotes/add/fulfilled') {
+                console.log('✅ Note saved successfully');
+                
+                // קריאה לפונקציה שהועברה מהחוץ
+                if (onSave) {
+                    onSave(result.payload || noteToSave);
+                }
+                
+                handleClose();
+            } else {
+                console.error('❌ Failed to save note:', result);
+                console.error('❌ Error details:', result.error);
+                const errorMessage = result.payload || result.error?.message || 'אנא נסה שנית';
+                alert('שגיאה בשמירת ההערה: ' + errorMessage);
+            }
+        } catch (error) {
+            console.error('❌ Error saving note:', error);
+            alert('שגיאה בשמירת ההערה: ' + (error.message || 'אנא נסה שנית'));
+        } finally {
+            setIsSaving(false);
+        }
     } else {
         console.log('❌ Validation failed:', errors);
     }
@@ -284,7 +324,11 @@ const AddStudentNoteDialog = ({
                                 {editMode ? 'עריכת הערה' : 'הוספת הערה חדשה'}
                             </Typography>
                             <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                                {student?.firstName} {student?.lastName} • ת"ז: {student?.id}
+                                {student ? (
+                                    `${student.firstName} ${student.lastName} • ת"ז: ${student.id}`
+                                ) : (
+                                    'תלמיד לא נבחר'
+                                )}
                             </Typography>
                         </Box>
                     </Box>
@@ -313,6 +357,17 @@ const AddStudentNoteDialog = ({
                     }
                 }}>
                     <Grid container spacing={2}>
+                        {/* בדיקה אם אין תלמיד */}
+                        {!student && (
+                            <Grid item xs={12}>
+                                <Alert severity="warning" sx={{ mb: 2 }}>
+                                    <Typography variant="body2">
+                                        לא נבחר תלמיד. לא ניתן להוסיף הערה ללא בחירת תלמיד.
+                                    </Typography>
+                                </Alert>
+                            </Grid>
+                        )}
+
                         {/* Debug Info - הסר בייצור */}
                         {process.env.NODE_ENV === 'development' && (
                             <Grid item xs={12}>
@@ -672,8 +727,10 @@ const AddStudentNoteDialog = ({
                         <Button
                             onClick={handleSave}
                             variant="contained"
-                            startIcon={<SaveIcon />}
+                            startIcon={isSaving ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />}
                             disabled={
+                                isSaving ||
+                                !student ||
                                 !formData.noteContent.trim() || 
                                 !formData.authorName.trim() || 
                                 !formData.authorRole.trim()
@@ -698,7 +755,7 @@ const AddStudentNoteDialog = ({
                                 }
                             }}
                         >
-                            {editMode ? 'עדכן הערה' : 'שמור הערה'}
+                            {isSaving ? 'שומר...' : (editMode ? 'עדכן הערה' : 'שמור הערה')}
                         </Button>
                     </Box>
                 </DialogActions>

@@ -46,6 +46,7 @@ import EventBusyIcon from "@mui/icons-material/EventBusy";
 import { fetchInstructors } from "../../store/instructor/instructorGetAllThunk";
 import { fetchStudents } from "../../store/student/studentGetAllThunk";
 import { fetchCourses } from "../../store/course/CoursesGetAllThunk";
+import { fetchGroups } from "../../store/group/groupGellAllThunk";
 
 // Animated components with framer-motion
 const MotionBox = ({ children, ...props }) => {
@@ -66,6 +67,7 @@ const MotionBox = ({ children, ...props }) => {
     dispatch(fetchStudents());
     dispatch(fetchCourses());
     dispatch(fetchInstructors());
+    dispatch(fetchGroups());
   }, [dispatch]);
   return (
     <Box
@@ -184,6 +186,7 @@ export const Home = () => {
   const students = useSelector((state) => state.students.students || []);
   const instructors = useSelector((state) => state.instructors.instructors || []);
   const courses = useSelector((state) => state.courses.courses || []);
+  const groups = useSelector((state) => state.groups.groups || []);
   const attendance = useSelector((state) => state.attendances.attendances || []);
 
 
@@ -192,6 +195,7 @@ export const Home = () => {
   const activeStudents = students.filter(student => student.isActive !== false).length;
   const activeInstructors = instructors.filter(instructor => instructor.isActive !== false).length;
   const activeCourses = courses.filter(course => course.isActive !== false).length;
+  const activeGroups = groups.filter(group => group.isActive !== false).length;
   const attendanceRate = attendance.length > 0
     ? Math.round((attendance.filter(a => a.isPresent).length / attendance.length) * 100)
     : 95;
@@ -219,14 +223,14 @@ export const Home = () => {
       stats: `${activeInstructors} מדריכים`
     },
     {
-      title: "ניהול חוגים",
-      description: "יצירת וניהול חוגים, קביעת לוחות זמנים ומעקב אחר התקדמות הלמידה",
+      title: "ניהול חוגים, סניפים וקבוצות",
+      description: "יצירת וניהול חוגים, סניפים וקבוצות, קביעת לוחות זמנים ומעקב אחר התקדמות הלמידה",
       icon: SchoolIcon,
       path: "/entrollStudent",
       color: "#32CD32",
       gradient: "linear-gradient(135deg, #32CD32, #228B22)",
       badge: "פעיל",
-      stats: `${activeCourses} חוגים`
+      stats: `${activeGroups} קבוצות`
     },
     {
       title: "מעקב נוכחות",

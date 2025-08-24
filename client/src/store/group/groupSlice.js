@@ -1,10 +1,12 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { fetchGroups } from './groupGellAllThunk';
 import { addGroup } from './groupAddThunk';
+import { updateGroup } from './groupUpdateThunk';
 import { getGroupsByCourseId } from './groupGetGroupsByCourseIdThunk';
 import { getGroupsByDay } from './groupGetByDayThunk';
 import { deleteGroup } from './groupDeleteThunk';
 import { getGroupsByInstructorId } from './groupByInstructorId';
+import { getStudentsByGroupId } from './groupGetStudentsByGroupId';
 import { FindBestGroupForStudent, FindBestGroupsForStudent } from './groupFindBestGroupForStudent';
 
 const groupSlice = createSlice({
@@ -17,7 +19,9 @@ const groupSlice = createSlice({
     groupsByDay: [],
     bestGroupForStudent: [],
     instructorGroups : [],
-    groupsByDayLoading: false
+    groupsByDayLoading: false,
+    studentsInGroup: [],
+    studentsInGroupLoading: false
   },
   reducers: {
     clearGroupsByDay: (state) => {
@@ -29,6 +33,10 @@ const groupSlice = createSlice({
     },
     clearBestGroups: (state) => {
       state.bestGroupsForStudent = [];
+    },
+    clearStudentsInGroup: (state) => {
+      state.studentsInGroup = [];
+      state.studentsInGroupLoading = false;
     }
   },
   extraReducers: (builder) => {
@@ -170,9 +178,53 @@ const groupSlice = createSlice({
         console.error('Error adding group:', action.error.message);
         state.loading = false;
         state.error = action.error.message;
+      })
+      
+      // updateGroup
+      .addCase(updateGroup.pending, (state) => {
+        console.log('Updating group...');
+        state.loading = true;
+      })
+      .addCase(updateGroup.fulfilled, (state, action) => {
+        console.log('Group updated:', action.payload);
+        state.loading = false;
+        const groupId = action.payload.groupId;
+        
+        // עדכן במערך הקבוצות הכללי
+        const generalIndex = state.groups.findIndex((group) => group.groupId === groupId);
+        if (generalIndex !== -1) {
+          state.groups[generalIndex] = action.payload;
+        }
+        
+        // עדכן במערך הקבוצות לפי חוג
+        const courseIndex = state.groupsByCourseId.findIndex((group) => group.groupId === groupId);
+        if (courseIndex !== -1) {
+          state.groupsByCourseId[courseIndex] = action.payload;
+        }
+      })
+      .addCase(updateGroup.rejected, (state, action) => {
+        console.error('Error updating group:', action.error.message);
+        state.loading = false;
+        state.error = action.error.message;
+      })
+      
+      // getStudentsByGroupId
+      .addCase(getStudentsByGroupId.pending, (state) => {
+        console.log('Getting students by group ID...');
+        state.studentsInGroupLoading = true;
+      })
+      .addCase(getStudentsByGroupId.fulfilled, (state, action) => {
+        console.log('Students in group:', action.payload);
+        state.studentsInGroupLoading = false;
+        state.studentsInGroup = action.payload;
+      })
+      .addCase(getStudentsByGroupId.rejected, (state, action) => {
+        console.error('Error getting students by group:', action.error.message);
+        state.studentsInGroupLoading = false;
+        state.error = action.error.message;
       });
   },
 });
 
-export const { clearGroupsByDay } = groupSlice.actions;
+export const { clearGroupsByDay, clearBestGroup, clearBestGroups, clearStudentsInGroup } = groupSlice.actions;
 export default groupSlice.reducer;

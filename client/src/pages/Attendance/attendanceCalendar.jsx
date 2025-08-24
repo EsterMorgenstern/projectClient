@@ -777,7 +777,7 @@ const AttendanceCalendar = () => {
         sedrot: false,
         il: true,
         noModern: false,
-        noRoshChodesh: true,
+        noRoshChodesh: false,
         noMinorFasts: false,
         noModernIsrael: false
       });
@@ -805,7 +805,11 @@ const AttendanceCalendar = () => {
           desc.includes('Yom HaShoah') ||
           desc.includes('Yom HaZikaron') ||
           desc.includes('Yom HaAtzmaut') ||
-          desc.includes('Yom Yerushalayim')
+          desc.includes('Yom Yerushalayim') ||
+          desc.includes('Tzom Gedaliah') ||
+          desc.includes('Fast of Gedaliah') ||
+          desc.includes('Fast of the 17th of Tammuz') ||
+          desc.includes('17th of Tammuz')
         );
 
         if (isMajorHoliday) {
@@ -820,8 +824,99 @@ const AttendanceCalendar = () => {
       });
 
       setHebrewHolidays(prev => new Map([...prev, ...holidayMap]));
+      
+      // הוסף חגים מותאמים אישית
+      addCustomHolidays(year);
     } catch (error) {
       console.error('Error loading Hebrew holidays:', error);
+    }
+  };
+
+  // פונקציה להוספת חגים מותאמים אישית
+  const addCustomHolidays = (year) => {
+    try {
+      const customHolidays = new Map();
+      
+      // השתמש בספרייה העברית לחישוב תאריכים מדויקים
+      try {
+        // ג' תשרי - צום גדליה
+        const gTishrei = new HDate(3, 'Tishrei', year + 1).greg();
+        const gTishreiKey = format(gTishrei, 'yyyy-MM-dd');
+        customHolidays.set(gTishreiKey, {
+          name: 'צום גדליה',
+          nameEn: 'Fast of Gedaliah',
+          isYomTov: false,
+          isCustom: true
+        });
+
+        // י"א-י"ד תשרי - בין יו"כ לסוכות
+        for (let i = 11; i <= 14; i++) {
+          const betweenDate = new HDate(i, 'Tishrei', year + 1).greg();
+          const dateKey = format(betweenDate, 'yyyy-MM-dd');
+          customHolidays.set(dateKey, {
+            name: 'בין יו"כ לסוכות',
+            nameEn: 'Between Yom Kippur and Sukkot',
+            isYomTov: false,
+            isCustom: true
+          });
+        }
+
+        // י"ז תמוז - יום צום
+        const yudZayinTammuz = new HDate(17, 'Tamuz', year).greg();
+        const yudZayinTammuzKey = format(yudZayinTammuz, 'yyyy-MM-dd');
+        customHolidays.set(yudZayinTammuzKey, {
+          name: 'יום צום',
+          nameEn: '17th of Tammuz',
+          isYomTov: false,
+          isCustom: true
+        });
+
+        // ח'-כ"ט אב - בין הזמנים (עד לפני ראש השנה, לא כולל א' אלול)
+        for (let i = 8; i <= 29; i++) {
+          const benHazmanimDate = new HDate(i, 'Av', year).greg();
+          const dateKey = format(benHazmanimDate, 'yyyy-MM-dd');
+          customHolidays.set(dateKey, {
+            name: 'בין הזמנים',
+            nameEn: 'Between the times',
+            isYomTov: false,
+            isCustom: true
+          });
+        }
+
+        // ל' אב - ערב ראש השנה (כלול בבין הזמנים)
+        try {
+          const erevRoshHashana = new HDate(30, 'Av', year).greg();
+          const erevRoshHashanaKey = format(erevRoshHashana, 'yyyy-MM-dd');
+          customHolidays.set(erevRoshHashanaKey, {
+            name: 'בין הזמנים',
+            nameEn: 'Between the times - Erev Rosh Hashana',
+            isYomTov: false,
+            isCustom: true
+          });
+        } catch (dateError) {
+          // אב יכול להיות רק 29 ימים
+        }
+
+        // הערה: א' אלול לא נכלל בבין הזמנים - זה יום פעיל לחוגים
+
+      } catch (hebrewDateError) {
+        console.warn('Error calculating Hebrew dates, using approximations:', hebrewDateError);
+        
+        // גיבוי - השתמש בתאריכים גרגוריאניים משוערים
+        // ג' תשרי בערך בספטמבר
+        const approxTishrei3 = new Date(year, 8, 20); // 20 בספטמבר
+        const approxKey = format(approxTishrei3, 'yyyy-MM-dd');
+        customHolidays.set(approxKey, {
+          name: 'צום גדליה',
+          nameEn: 'Fast of Gedaliah (approx)',
+          isYomTov: false,
+          isCustom: true
+        });
+      }
+      
+      setHebrewHolidays(prev => new Map([...prev, ...customHolidays]));
+    } catch (error) {
+      console.error('Error adding custom holidays:', error);
     }
   };
 
@@ -844,7 +939,11 @@ const AttendanceCalendar = () => {
       'Yom Yerushalayim': 'יום ירושלים',
       'Shavuot': 'שבועות',
       'Tish\'a B\'Av': 'תשעה באב',
-      'Rosh Chodesh': 'ראש חודש'
+      'Rosh Chodesh': 'ראש חודש',
+      'Tzom Gedaliah': 'צום גדליה',
+      'Fast of Gedaliah': 'צום גדליה',
+      'Fast of the 17th of Tammuz': 'יום צום',
+      '17th of Tammuz': 'יום צום'
     };
 
     // חיפוש חלקי לחגים מורכבים
@@ -859,21 +958,74 @@ const AttendanceCalendar = () => {
 
   // פונקציה לבדיקה אם יום פעיל לחוגים
   const isActiveDay = (date) => {
+    // ראשית, בדוק תאריכים מיוחדים שתמיד פעילים לחוגים (לפני בדיקת חגים)
+    
+    // בדוק תאריך מיוחד - י"ד אייר (חוגים פעילים)
+    try {
+      const currentYear = date.getFullYear();
+      const yudDaletIyar = new HDate(14, 'Iyyar', currentYear).greg();
+      
+      if (isSameDay(date, yudDaletIyar)) {
+        return true; // י"ד אייר - חוגים פעילים
+      }
+    } catch (hebrewDateError) {
+      // גיבוי - בדוק תאריך גרגוריאני משוער
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      if (month === 5 && day === 14) { // י"ד אייר בערך ב-14 במאי
+        return true;
+      }
+    }
+
+    // בדוק תאריך מיוחד - א' אלול (חוגים פעילים)
+    try {
+      const currentYear = date.getFullYear();
+      const alephElul = new HDate(1, 'Elul', currentYear).greg();
+      
+      if (isSameDay(date, alephElul)) {
+        return true; // א' אלול - חוגים פעילים
+      }
+    } catch (hebrewDateError) {
+      // גיבוי - בדוק תאריך גרגוריאני משוער (בערך באוגוסט-ספטמבר)
+      console.warn('Could not calculate exact Hebrew date for Aleph Elul');
+    }
+
+    // אחרי בדיקת התאריכים המיוחדים, בדוק חגים
     const dateKey = format(date, 'yyyy-MM-dd');
     const holiday = hebrewHolidays.get(dateKey);
 
     // בדוק אם זה יום טוב או חג שבו לא מקיימים חוגים
     if (holiday) {
-      if (holiday.isYomTov ||
-        holiday.name.includes('יום כיפור') ||
-        holiday.name.includes('ראש השנה') ||
-        holiday.name.includes('פסח') ||
-        holiday.name.includes('שבועות') ||
-        holiday.name.includes('סוכות') ||
-        holiday.name.includes('שמיני עצרת') ||
-        holiday.name.includes('שמחת תורה')) {
+      // חגים שבהם כן מקיימים חוגים
+      const allowedHolidays = [
+        'ט"ו בשבט',
+        'יום השואה',
+        'יום העצמאות',
+        'יום הזיכרון',
+        'יום ירושלים',
+        'ראש חודש'
+      ];
+
+      // אם זה חג מותר - יום פעיל
+      if (allowedHolidays.some(allowedHoliday => holiday.name.includes(allowedHoliday))) {
+        return true;
+      }
+
+      // חגים שתמיד לא פעילים
+      const blockedHolidays = [
+        'צום גדליה',
+        'בין יו"כ לסוכות',
+        'יום צום',
+        'בין הזמנים'
+      ];
+
+      // אם זה חג חסום - לא פעיל
+      if (blockedHolidays.some(blockedHoliday => holiday.name.includes(blockedHoliday))) {
         return false;
       }
+
+      // כל שאר החגים - לא פעילים
+      return false;
     }
 
     // בדוק אם זה שבת

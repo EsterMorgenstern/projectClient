@@ -40,7 +40,7 @@ const MONTH_COLORS = [
 ];
 
 
-// צבעים לחוגים שונים
+// צבעים לסניפים שונים
 const COURSE_COLORS = [
   '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', 
   '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
@@ -160,27 +160,27 @@ const MonthlyCalendar = ({
   const createPieChartData = (events) => {
     if (!events || events.length === 0) return [];
 
-    // קיבוץ לפי חוג
-    const courseGroups = {};
+    // קיבוץ לפי סניף
+    const branchGroups = {};
     events.forEach(event => {
-      const courseName = event.courseName || 'חוג לא ידוע';
-      if (!courseGroups[courseName]) {
-        courseGroups[courseName] = {
-          name: courseName,
+      const branchName = event.branchName || 'סניף לא ידוע';
+      if (!branchGroups[branchName]) {
+        branchGroups[branchName] = {
+          name: branchName,
           count: 0,
           groups: []
         };
       }
-      courseGroups[courseName].count++;
-      courseGroups[courseName].groups.push(event);
+      branchGroups[branchName].count++;
+      branchGroups[branchName].groups.push(event);
     });
 
     // המרה למערך עם צבעים
-    return Object.values(courseGroups).map((course, index) => ({
-      name: course.name,
-      value: course.count,
+    return Object.values(branchGroups).map((branch, index) => ({
+      name: branch.name,
+      value: branch.count,
       color: COURSE_COLORS[index % COURSE_COLORS.length],
-      groups: course.groups
+      groups: branch.groups
     }));
   };
 
@@ -585,25 +585,25 @@ const renderMonthHeader = () => {
       >
         <Tooltip
           title={
-            <Box>
+            <Box sx={{ direction: 'rtl' }}>
               <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold' }}>
-                חוגים ביום זה:
+                קבוצות ביום זה:
               </Typography>
-              {day.pieChartData.map((course, index) => (
-                <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+              {day.pieChartData.map((branch, index) => (
+                <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5, direction: 'rtl' }}>
+                  <Typography variant="body2">
+                    {branch.value} {branch.value === 1 ? 'קבוצה' : 'קבוצות'} - {branch.name}
+                  </Typography>
                   <Box sx={{
                     width: 12,
                     height: 12,
-                    backgroundColor: course.color,
+                    backgroundColor: branch.color,
                     borderRadius: '50%'
                   }} />
-                  <Typography variant="body2">
-                    {course.name}: {course.value} {course.value === 1 ? 'קבוצה' : 'קבוצות'}
-                  </Typography>
                 </Box>
               ))}
               {hasAttendance && day.attendanceStats && (
-                <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid rgba(255,255,255,0.3)' }}>
+                <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid rgba(255,255,255,0.3)', direction: 'rtl' }}>
                   <Typography variant="body2">
                     נוכחות: {day.attendanceStats.presentStudents}/{day.attendanceStats.totalStudents} 
                     ({day.attendanceStats.percentage}%)
@@ -611,7 +611,7 @@ const renderMonthHeader = () => {
                 </Box>
               )}
               {day.isDayFullyMarked && (
-                <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid rgba(255,255,255,0.3)' }}>
+                <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid rgba(255,255,255,0.3)', direction: 'rtl' }}>
                   <Typography variant="body2" sx={{ color: '#4caf50', fontWeight: 'bold' }}>
                     ✓ נוכחות נקבעה לכל הקבוצות
                   </Typography>
@@ -938,7 +938,7 @@ const renderMonthHeader = () => {
 
           <Grid item xs={12} md={6}>
             <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 'bold', color: '#4A5568' }}>
-              גרף עוגה - חלוקת חוגים:
+              גרף עוגה - חלוקת סניפים:
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -950,7 +950,7 @@ const renderMonthHeader = () => {
                   border: '2px solid white',
                   boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                 }} />
-                <Typography variant="body2">כל צבע מייצג חוג שונה</Typography>
+                <Typography variant="body2">כל צבע מייצג סניף שונה</Typography>
               </Box>
               
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -998,13 +998,13 @@ const renderMonthHeader = () => {
         {/* דוגמאות צבעים לחוגים */}
         <Box sx={{ mt: 3, pt: 3, borderTop: '1px solid #E2E8F0' }}>
           <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 'bold', color: '#4A5568' }}>
-            צבעי החוגים:
+            צבעי הסניפים:
           </Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
             {COURSE_COLORS.slice(0, 8).map((color, index) => (
               <Chip
                 key={index}
-                label={`חוג ${index + 1}`}
+                label={`סניף ${index + 1}`}
                 size="small"
                 sx={{
                   backgroundColor: color,

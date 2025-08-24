@@ -85,17 +85,17 @@ const CourseSelectionDialog = ({
 
     groupsByDay.forEach(group => {
       const courseName = group.courseName || group.couresName || 'חוג לא ידוע';
-      const branchName = group.branchName || 'סניף לא ידוע';
+      const branchAddress = group.branchAddress || group.address || group.branchName || 'כתובת לא ידועה';
 
       if (!organized[courseName]) {
         organized[courseName] = {};
       }
 
-      if (!organized[courseName][branchName]) {
-        organized[courseName][branchName] = [];
+      if (!organized[courseName][branchAddress]) {
+        organized[courseName][branchAddress] = [];
       }
 
-      organized[courseName][branchName].push(group);
+      organized[courseName][branchAddress].push(group);
     });
 
     return organized;

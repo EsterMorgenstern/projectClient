@@ -25,12 +25,42 @@ const InstructorLoadingSkeleton = () => (
     <Table>
       <TableHead className="table-head">
         <TableRow>
-          <TableCell className="table-head-cell">פעולות</TableCell>
-          <TableCell className="table-head-cell">קוד מדריך</TableCell>
-          <TableCell className="table-head-cell">שם פרטי</TableCell>
-          <TableCell className="table-head-cell">שם משפחה</TableCell>
-          <TableCell className="table-head-cell">טלפון</TableCell>
-          <TableCell className="table-head-cell">אימייל</TableCell>
+          <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>🎯</span>
+              <span>פעולות</span>
+            </div>
+          </TableCell>
+          <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>🆔</span>
+              <span>קוד מדריך</span>
+            </div>
+          </TableCell>
+          <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>👤</span>
+              <span>שם פרטי</span>
+            </div>
+          </TableCell>
+          <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>👥</span>
+              <span>שם משפחה</span>
+            </div>
+          </TableCell>
+          <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>📞</span>
+              <span>טלפון</span>
+            </div>
+          </TableCell>
+          <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>📧</span>
+              <span>אימייל</span>
+            </div>
+          </TableCell>
         </TableRow>
       </TableHead>
       <TableBody>
@@ -886,14 +916,54 @@ export default function InstructorsTable() {
                 <Table>
                   <TableHead className="table-head">
                     <TableRow>
-                      <TableCell className="table-head-cell" style={{ width: 200 }}>🎯 פעולות</TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 120 }}>🆔 קוד מדריך</TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 120 }}>👤 שם פרטי</TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 140 }}>👥 שם משפחה</TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 110 }}>📞 טלפון</TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 180 }}>📧 אימייל</TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 100 }}>🏙️ עיר</TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 120 }}>🌍 מגזר</TableCell>
+                      <TableCell className="table-head-cell" style={{ width: 200, textAlign: 'center' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>🎯</span>
+                          <span>פעולות</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="table-head-cell" style={{ width: 120, textAlign: 'center' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>🆔</span>
+                          <span>קוד מדריך</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="table-head-cell" style={{ width: 120, textAlign: 'center' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>👤</span>
+                          <span>שם פרטי</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="table-head-cell" style={{ width: 140, textAlign: 'center' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>👥</span>
+                          <span>שם משפחה</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="table-head-cell" style={{ width: 110, textAlign: 'center' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>📞</span>
+                          <span>טלפון</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="table-head-cell" style={{ width: 180, textAlign: 'center' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>📧</span>
+                          <span>אימייל</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="table-head-cell" style={{ width: 100, textAlign: 'center' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>🏙️</span>
+                          <span>עיר</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="table-head-cell" style={{ width: 120, textAlign: 'center' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>🌍</span>
+                          <span>מגזר</span>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
