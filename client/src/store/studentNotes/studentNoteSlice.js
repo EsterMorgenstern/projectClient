@@ -4,12 +4,14 @@ import { addStudentNote } from './studentNoteAddThunk';
 import { deleteStudentNote } from './studentNoteDeleteThunk';
 import { updateStudentNote } from './studentNoteUpdateThunk';
 import { getNotesByUserId } from './studentNotesGetByUserId';
+import { getStudentNotesByRegistrationTracking } from './studentNotesGetByRegistrationTracking';
 
 const studentNotesSlice = createSlice({
   name: 'studentNotes',
   initialState: {
     studentNotes: [],
     notesByUser:[],
+    registrationTrackingNotes: [],
     allNotes: [],
     loading: false,
     error: null,
@@ -55,6 +57,20 @@ const studentNotesSlice = createSlice({
       .addCase(getNotesByUserId.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to fetch student notes';
+      })
+
+      // Get notes by registration tracking
+      .addCase(getStudentNotesByRegistrationTracking.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getStudentNotesByRegistrationTracking.fulfilled, (state, action) => {
+        state.loading = false;
+        state.registrationTrackingNotes = action.payload;
+      })
+      .addCase(getStudentNotesByRegistrationTracking.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to fetch registration tracking notes';
       })
       
       // Add student note
@@ -105,4 +121,13 @@ const studentNotesSlice = createSlice({
 });
 
 export const { clearNotes, setSelectedNote, clearError } = studentNotesSlice.actions;
+
+// Selectors
+export const selectStudentNotes = (state) => state.studentNotes.studentNotes;
+export const selectNotesByUser = (state) => state.studentNotes.notesByUser;
+export const selectRegistrationTrackingNotes = (state) => state.studentNotes.registrationTrackingNotes;
+export const selectStudentNotesLoading = (state) => state.studentNotes.loading;
+export const selectStudentNotesError = (state) => state.studentNotes.error;
+export const selectSelectedNote = (state) => state.studentNotes.selectedNote;
+
 export default studentNotesSlice.reducer;

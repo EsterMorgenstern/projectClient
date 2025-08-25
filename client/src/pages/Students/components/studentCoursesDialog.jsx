@@ -1404,7 +1404,7 @@ const StudentCoursesDialog = ({
   if (!student) return null;
 
   const dialogTitle = title || `${student.firstName} ${student.lastName}`;
-  const dialogSubtitle = subtitle || `ת"ז: ${student.id}`;
+  const dialogSubtitle = subtitle || `ת"ז: ${student.id}${student.email ? ` | 📧 ${student.email}` : ''}`;
 
   const getNoteTypeColor = (noteType) => {
     switch (noteType?.toLowerCase()) {

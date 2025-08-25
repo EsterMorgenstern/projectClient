@@ -732,7 +732,8 @@ import {
     Edit as EditIcon,
     Delete as DeleteIcon,
     Star as StarIcon,
-    Payment as PaymentIcon
+    Payment as PaymentIcon,
+    AccountBalanceWallet as WalletIcon
 } from '@mui/icons-material';
 
 import { motion, AnimatePresence } from 'framer-motion';
@@ -741,6 +742,7 @@ import { fetchPaymentMethods } from '../../store/payments/fetchPaymentMethods';
 import { updatePaymentMethod } from '../../store/payments/paymentMethodsUpdate';
 import { addPaymentMethod } from '../../store/payments/addPaymentMethod';
 import { deletePaymentMethod } from '../../store/payments/paymentMethodsDelete';
+import GrowPaymentDialog from './GrowPaymentDialog';
 
 const PaymentsTab = ({ student, embedded = false }) => {
     const dispatch = useDispatch();
@@ -752,6 +754,7 @@ const PaymentsTab = ({ student, embedded = false }) => {
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [snackbarSeverity, setSnackbarSeverity] = useState('success');
+    const [growPaymentDialogOpen, setGrowPaymentDialogOpen] = useState(false);
     
     const [formData, setFormData] = useState({
         methodType: '',
@@ -955,7 +958,17 @@ const PaymentsTab = ({ student, embedded = false }) => {
         setSnackbarOpen(true);
     };
 
-    // 🔧 תיקון הפונקציה handleSetDefault
+    // מטפל בסגירת GROW dialog
+    const handleGrowPaymentClose = (wasSuccessful) => {
+        setGrowPaymentDialogOpen(false);
+        if (wasSuccessful) {
+            // רענון היסטוריית תשלומים אם התשלום הושלם
+            // dispatch(fetchPaymentHistory(student.id));
+            setSnackbarMessage('תשלום GROW הושלם בהצלחה!');
+            setSnackbarSeverity('success');
+            setSnackbarOpen(true);
+        }
+    };
     const handleSetDefault = async (paymentMethodId) => {
         try {
             console.log('🔄 Setting default payment method:', paymentMethodId);
@@ -1124,8 +1137,8 @@ const PaymentsTab = ({ student, embedded = false }) => {
 
     return (
         <Box sx={{ direction: 'rtl' }}>
-            {/* כפתור הוספה */}
-            <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 3 }}>
+            {/* כפתורי פעולה */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 3, gap: 2 }}>
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
@@ -1137,6 +1150,19 @@ const PaymentsTab = ({ student, embedded = false }) => {
                     }}
                 >
                     הוסף אמצעי תשלום
+                </Button>
+                
+                <Button
+                    variant="contained"
+                    startIcon={<WalletIcon />}
+                    onClick={() => setGrowPaymentDialogOpen(true)}
+                    sx={{
+                        background: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)',
+                        borderRadius: '20px',
+                        px: 3
+                    }}
+                >
+                    תשלום דרך GROW
                 </Button>
             </Box>
 
@@ -1334,6 +1360,13 @@ const PaymentsTab = ({ student, embedded = false }) => {
                     {snackbarMessage}
                 </Alert>
             </Snackbar>
+
+            {/* GROW Payment Dialog */}
+            <GrowPaymentDialog
+                open={growPaymentDialogOpen}
+                onClose={handleGrowPaymentClose}
+                student={student}
+            />
         </Box>
     );
 };

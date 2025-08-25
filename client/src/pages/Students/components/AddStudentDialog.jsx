@@ -54,6 +54,7 @@ const AddStudentDialog = ({
     firstName: '',
     lastName: '',
     phone: '',
+    email: '',
     age: '',
     city: '',
     school: '',
@@ -68,6 +69,37 @@ const AddStudentDialog = ({
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
   const [studentNote, setStudentNote] = useState('');
   const [savedStudentData, setSavedStudentData] = useState(null);
+
+  // מצב הצ'קליסט למעקב אחר משימות הרישום
+  const [registrationChecklist, setRegistrationChecklist] = useState({
+    paymentMethodCompleted: false,    // אמצעי תשלום מולא
+    instructorNotified: false,        // מדריך עודכן
+    gisEntered: false,               // הוכנס ל-GIS
+    commitmentExplained: false       // הוסבר על התחייבות/הפניה
+  });
+
+  const checklistItems = [
+    { 
+      key: 'paymentMethodCompleted', 
+      label: '💳 אמצעי תשלום מולא', 
+      description: 'התקבלו פרטי תשלום מלאים במערכת' 
+    },
+    { 
+      key: 'instructorNotified', 
+      label: '👨‍🏫 מדריך עודכן', 
+      description: 'המדריך קיבל הודעה על התלמיד החדש' 
+    },
+    { 
+      key: 'gisEntered', 
+      label: '📱 הוכנס ל-GIS', 
+      description: 'התלמיד נוסף למערכת ההודעות' 
+    },
+    { 
+      key: 'commitmentExplained', 
+      label: '� הוסבר על התחייבות/הפניה', 
+      description: 'הסבר על חובות וזכויות ההורים והתלמיד' 
+    }
+  ];
 
   const healthFundOptions = [
     { value: 'מכבי', label: '🏥 מכבי', icon: '🏥' },
@@ -119,12 +151,20 @@ const AddStudentDialog = ({
     }));
   };
 
+  const handleChecklistChange = (key, checked) => {
+    setRegistrationChecklist(prev => ({
+      ...prev,
+      [key]: checked
+    }));
+  };
+
   const resetForm = () => {
     setNewStudent({
       id: '',
       firstName: '',
       lastName: '',
       phone: '',
+      email: '',
       age: '',
       city: '',
       school: '',
@@ -136,6 +176,14 @@ const AddStudentDialog = ({
     setStudentNote('');
     setSavedStudentData(null);
     
+    // איפוס הצ'קליסט
+    setRegistrationChecklist({
+      paymentMethodCompleted: false,
+      instructorNotified: false,
+      gisEntered: false,
+      commitmentExplained: false
+    });
+    
     // נקה גם מ-localStorage
     localStorage.removeItem('addStudentFormData');
     localStorage.removeItem('addStudentNoteData');
@@ -146,18 +194,20 @@ const AddStudentDialog = ({
   React.useEffect(() => {
     const formData = {
       newStudent,
-      studentNote
+      studentNote,
+      registrationChecklist
     };
     
     // שמור רק אם יש נתונים בטופס
     const hasData = newStudent.firstName || newStudent.lastName || newStudent.id ||
-                   newStudent.phone || newStudent.city || studentNote;
+                   newStudent.phone || newStudent.city || studentNote ||
+                   Object.values(registrationChecklist).some(Boolean);
     
     if (hasData) {
       console.log('💾 שומר נתוני תלמיד חדש ל-localStorage:', formData);
       localStorage.setItem('addStudentFormData', JSON.stringify(formData));
     }
-  }, [newStudent, studentNote]);
+  }, [newStudent, studentNote, registrationChecklist]);
 
   // 📥 טעינת נתוני התלמיד מ-localStorage
   React.useEffect(() => {
@@ -172,6 +222,9 @@ const AddStudentDialog = ({
         }
         if (formData.studentNote) {
           setStudentNote(formData.studentNote);
+        }
+        if (formData.registrationChecklist) {
+          setRegistrationChecklist(prev => ({ ...prev, ...formData.registrationChecklist }));
         }
       } catch (error) {
         console.error('❌ שגיאה בטעינת נתוני תלמיד מ-localStorage:', error);
@@ -213,18 +266,33 @@ const AddStudentDialog = ({
         minute: '2-digit'
       });
       
-      const noteContent = isUpdate 
+      // בדיקת משימות שלא הושלמו
+      const incompleteTasks = checklistItems.filter(item => !registrationChecklist[item.key]);
+      
+      let noteContent = isUpdate 
         ? `פרטי התלמיד עודכנו בתאריך ${currentDate} באמצעות "הוספת תלמיד"`
         : `נרשם בפעם הראשונה למערכת בתאריך ${currentDate} באמצעות "הוספת תלמיד"`;
+      
+      // אם יש משימות שלא הושלמו, הוסף אותן להערה
+      if (incompleteTasks.length > 0) {
+        noteContent += '\n\n🔴 משימות שטרם הושלמו:';
+        incompleteTasks.forEach(task => {
+          noteContent += `\n❌ ${task.label}`;
+        });
+      } else {
+        noteContent += '\n\n✅ כל משימות הרישום הושלמו בהצלחה';
+      }
       
       const noteData = {
         studentId: studentId,
         noteContent: noteContent,
-        noteType: 'כללי',
-        priority: 'בינוני',
+        noteType: incompleteTasks.length > 0 ? 'מעקב רישום' : 'כללי',
+        priority: incompleteTasks.length > 0 ? 'גבוהה' : 'בינוני',
         isPrivate: false,
         authorName: userDetails.fullName,
-        authorRole: userDetails.role
+        authorRole: userDetails.role,
+        createdDate: new Date().toISOString(),
+        updatedDate: new Date().toISOString()
       };
 
       console.log('📝 Creating automatic note:', noteData);
@@ -499,6 +567,19 @@ const AddStudentDialog = ({
 
           <Grid item xs={12} sm={6}>
             <TextField
+              label="📧 מייל"
+              type="email"
+              fullWidth
+              variant="outlined"
+              value={newStudent.email}
+              onChange={(e) => handleInputChange('email', e.target.value)}
+              sx={{ textAlign: 'right' }}
+              placeholder="example@email.com"
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <TextField
               label="👤 שם פרטי"
               fullWidth
               variant="outlined"
@@ -621,9 +702,9 @@ const AddStudentDialog = ({
             </FormControl>
           </Grid>
 
-          <Grid item xs={12} sm={6}>
-            <FormControl fullWidth variant="outlined">
-              <InputLabel>📊 סטטוס תלמיד</InputLabel>
+          <Grid item xs={12} sm={6} sx={{minWidth: '150px'}}>
+            <FormControl fullWidth variant="outlined" >
+              <InputLabel >📊 סטטוס תלמיד</InputLabel>
               <Select
                 value={newStudent.status}
                 onChange={(e) => handleInputChange('status', e.target.value)}
@@ -649,8 +730,98 @@ const AddStudentDialog = ({
               value={studentNote}
               onChange={(e) => setStudentNote(e.target.value)}
               placeholder="ניתן להוסיף כאן הערות חשובות על התלמיד..."
-              sx={{ textAlign: 'right' }}
+              sx={{ textAlign: 'right', minWidth: '250px' }}
             />
+          </Grid>
+
+          <Divider sx={{ width: '100%', my: 2 }} />
+
+          {/* צ'קליסט מעקב רישום */}
+          <Grid item xs={12}>
+            <Typography variant="h6" sx={{ color: '#374151', textAlign: 'right', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+              📋 מעקב משימות רישום
+            </Typography>
+            <Box sx={{ 
+              bgcolor: '#F8FAFC', 
+              borderRadius: '12px', 
+              p: 2, 
+              border: '1px solid #E2E8F0' 
+            }}>
+              <Typography variant="body2" sx={{ color: '#64748B', textAlign: 'right', mb: 2 }}>
+                סמן את המשימות שהושלמו. משימות שלא סומנו יתווספו להערות התלמיד כטעונות טיפול
+              </Typography>
+              <Grid container spacing={2}>
+                {checklistItems.map((item) => (
+                  <Grid item xs={12} key={item.key}>
+                    <Box sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2,
+                      p: 2,
+                      borderRadius: '8px',
+                      bgcolor: registrationChecklist[item.key] ? '#F0FDF4' : '#FEF2F2',
+                      border: `1px solid ${registrationChecklist[item.key] ? '#BBF7D0' : '#FECACA'}`,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        transform: 'translateY(-1px)',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                      }
+                    }}
+                    onClick={() => handleChecklistChange(item.key, !registrationChecklist[item.key])}
+                    >
+                      <Box sx={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: '4px',
+                        bgcolor: registrationChecklist[item.key] ? '#22C55E' : '#FFFFFF',
+                        border: `2px solid ${registrationChecklist[item.key] ? '#22C55E' : '#D1D5DB'}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s ease'
+                      }}>
+                        {registrationChecklist[item.key] && (
+                          <CheckIcon sx={{ color: 'white', fontSize: 16 }} />
+                        )}
+                      </Box>
+                      <Box sx={{ flex: 1, textAlign: 'right' }}>
+                        <Typography variant="body1" sx={{ 
+                          fontWeight: 500, 
+                          color: registrationChecklist[item.key] ? '#166534' : '#DC2626',
+                          textDecoration: registrationChecklist[item.key] ? 'line-through' : 'none'
+                        }}>
+                          {item.label}
+                        </Typography>
+                        <Typography variant="body2" sx={{ 
+                          color: registrationChecklist[item.key] ? '#16A34A' : '#EF4444',
+                          fontSize: '0.875rem'
+                        }}>
+                          {item.description}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Grid>
+                ))}
+              </Grid>
+              
+              {/* סיכום המצב */}
+              <Box sx={{ mt: 2, p: 2, borderRadius: '8px', bgcolor: '#FFFFFF' }}>
+                <Typography variant="body2" sx={{ textAlign: 'right', color: '#374151' }}>
+                  <strong>סיכום:</strong> {Object.values(registrationChecklist).filter(Boolean).length} מתוך {checklistItems.length} משימות הושלמו
+                </Typography>
+                {Object.values(registrationChecklist).filter(Boolean).length === checklistItems.length && (
+                  <Typography variant="body2" sx={{ textAlign: 'right', color: '#16A34A', mt: 1 }}>
+                    ✅ כל המשימות הושלמו! התלמיד מוכן להפעלה
+                  </Typography>
+                )}
+                {Object.values(registrationChecklist).filter(Boolean).length < checklistItems.length && (
+                  <Typography variant="body2" sx={{ textAlign: 'right', color: '#DC2626', mt: 1 }}>
+                    ⚠️ יש משימות שטרם הושלמו - יתווספו להערות התלמיד
+                  </Typography>
+                )}
+              </Box>
+            </Box>
           </Grid>
 
           <Grid item xs={12}>

@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import EditStudentDialog from '../../Students/components/EditStudentDialog';
 import {
   Table,
   TableBody,
@@ -84,6 +85,7 @@ import { deleteGroup } from '../../../store/group/groupDeleteThunk';
 import { FindBestGroupsForStudent } from '../../../store/group/groupFindBestGroupForStudent';
 import StudentCoursesDialog from '../../Students/components/studentCoursesDialog';
 import { getStudentById } from '../../../store/student/studentGetByIdThunk';
+import { editStudent } from '../../../store/student/studentEditThunk';
 import { addStudentNote } from '../../../store/studentNotes/studentNoteAddThunk';
 import SmartMatchingSystem from './smartMatchingSystem';
 import EnrollmentSuccess from './enrollmentSuccess';
@@ -159,6 +161,10 @@ const EnrollStudent = () => {
   const [selectedStudentForDialog, setSelectedStudentForDialog] = useState(null);
   const [selectedStudentCoursesForDialog, setSelectedStudentCoursesForDialog] = useState([]);
 
+  // Edit student dialog states
+  const [editStudentDialogOpen, setEditStudentDialogOpen] = useState(false);
+  const [selectedStudentForEdit, setSelectedStudentForEdit] = useState(null);
+
   // Delete functionality state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteType, setDeleteType] = useState(''); // 'course', 'branch', 'group'
@@ -179,6 +185,7 @@ const EnrollStudent = () => {
   const [successData, setSuccessData] = useState({ student: null, group: null });
   const [studentsListDialogOpen, setStudentsListDialogOpen] = useState(false);
   const [selectedGroupForStudents, setSelectedGroupForStudents] = useState(null);
+  const [enhancedStudentsInGroup, setEnhancedStudentsInGroup] = useState([]);
   const [addStudentDialogOpen, setAddStudentDialogOpen] = useState(false);
 
   // Form data states
@@ -533,10 +540,48 @@ const EnrollStudent = () => {
   const handleViewStudents = async (group) => {
     setSelectedGroupForStudents(group);
     setStudentsListDialogOpen(true);
+    setEnhancedStudentsInGroup([]); // Clear previous data
+    
     try {
-      await dispatch(getStudentsByGroupId(group.groupId));
+      const groupId = group.groupId || group.id;
+      console.log('Getting students by group ID...', groupId);
+      
+      // Get students in group
+      const result = await dispatch(getStudentsByGroupId(groupId));
+      
+      // Get full details for each student
+      if (result.payload && result.payload.length > 0) {
+        console.log('Students in group basic data:', result.payload);
+        
+        // Fetch full details for each student
+        const studentsWithFullDetails = await Promise.all(
+          result.payload.map(async (student) => {
+            try {
+              const studentDetails = await dispatch(getStudentById(student.studentId));
+              if (studentDetails.payload) {
+                return {
+                  ...student,
+                  fullDetails: studentDetails.payload
+                };
+              }
+              return student;
+            } catch (error) {
+              console.error(`Error fetching details for student ${student.studentId}:`, error);
+              return student;
+            }
+          })
+        );
+        
+        console.log('Students with full details:', studentsWithFullDetails);
+        setEnhancedStudentsInGroup(studentsWithFullDetails);
+      } else {
+        // No students in group
+        console.log('No students found in group');
+        setEnhancedStudentsInGroup([]);
+      }
     } catch (error) {
       console.error('Error fetching students:', error);
+      setEnhancedStudentsInGroup([]);
       setNotification({
         open: true,
         message: 'שגיאה בטעינת רשימת התלמידים',
@@ -577,6 +622,42 @@ const EnrollStudent = () => {
     }
   };
 
+  const handleEditStudentDetails = async (student) => {
+    console.log('✏️ Editing student details:', student);
+    
+    try {
+      // Use fullDetails if available, otherwise Student object, otherwise fetch from server
+      if (student.fullDetails) {
+        setSelectedStudentForEdit(student.fullDetails);
+        setEditStudentDialogOpen(true);
+      } else if (student.Student) {
+        setSelectedStudentForEdit(student.Student);
+        setEditStudentDialogOpen(true);
+      } else {
+        // Fallback: Get full student details from the server
+        const studentResult = await dispatch(getStudentById(student.studentId));
+        
+        if (studentResult.payload) {
+          setSelectedStudentForEdit(studentResult.payload);
+          setEditStudentDialogOpen(true);
+        } else {
+          setNotification({
+            open: true,
+            message: 'לא ניתן למצוא את פרטי התלמיד',
+            severity: 'error'
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching student for edit:', error);
+      setNotification({
+        open: true,
+        message: 'שגיאה בטעינת פרטי התלמיד לעריכה',
+        severity: 'error'
+      });
+    }
+  };
+
   // פונקציה ליצירת הערה אוטומטית לתלמיד חדש
   const createAutomaticRegistrationNote = async (studentId) => {
     try {
@@ -597,7 +678,9 @@ const EnrollStudent = () => {
         priority: 'בינוני',
         isPrivate: false,
         authorName: userDetails.fullName,
-        authorRole: userDetails.role
+        authorRole: userDetails.role,
+        createdDate: new Date().toISOString(),
+        updatedDate: new Date().toISOString()
       };
 
       console.log('📝 Creating automatic registration note:', noteData);
@@ -4067,6 +4150,7 @@ const EnrollStudent = () => {
       onClose={() => {
         setStudentsListDialogOpen(false);
         setSelectedGroupForStudents(null);
+        setEnhancedStudentsInGroup([]);
         dispatch(clearStudentsInGroup());
       }}
       maxWidth="md"
@@ -4115,7 +4199,9 @@ const EnrollStudent = () => {
               לחץ על כרטיס התלמיד לצפייה בפרטים המלאים
             </Typography>
             <Grid container spacing={2}>
-              {studentsInGroup.map((student, index) => (
+              {(enhancedStudentsInGroup.length > 0 ? enhancedStudentsInGroup : studentsInGroup).map((student, index) => {
+                console.log('🔍 Student data structure:', student);
+                return (
                 <Grid item xs={12} sm={6} md={4} key={student.studentId || index}>
                   <Tooltip title="לחץ לצפייה בפרטים המלאים של התלמיד" arrow>
                     <Paper
@@ -4144,31 +4230,93 @@ const EnrollStudent = () => {
                         </Typography>
                         <StudentIcon sx={{ color: '#6366F1' }} />
                       </Box>
-                      <InfoIcon sx={{ color: '#6366F1', fontSize: 18, opacity: 0.7 }} />
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <Tooltip title="ערוך פרטי התלמיד">
+                          <IconButton 
+                            size="small" 
+                            sx={{ 
+                              color: '#10b981',
+                              '&:hover': { 
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                transform: 'scale(1.1)'
+                              }
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditStudentDetails(student);
+                            }}
+                          >
+                            <EditIcon sx={{ fontSize: 18 }} />
+                          </IconButton>
+                        </Tooltip>
+                        <InfoIcon sx={{ color: '#6366F1', fontSize: 18, opacity: 0.7 }} />
+                      </Box>
                     </Box>
-                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right' }}>
-                      ת"ז: {student.studentId}
+                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-start', direction: 'rtl' }}>
+                      <span>🆔 ת"ז: {student.fullDetails?.id || student.Student?.id || student.studentId || student.id}</span>
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right' }}>
-                      תאריך רישום: {student.enrollmentDate ? new Date(student.enrollmentDate).toLocaleDateString('he-IL') : 'לא זמין'}
+                    {(student.fullDetails?.phone || student.Student?.phone || student.phone) && (
+                      <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-start', direction: 'rtl' }}>
+                        <span>📞 טלפון: {student.fullDetails?.phone || student.Student?.phone || student.phone}</span>
+                      </Typography>
+                    )}
+                    {(student.fullDetails?.email || student.Student?.email || student.email) && (
+                      <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-start', direction: 'rtl' }}>
+                        <span>📧 מייל: {student.fullDetails?.email || student.Student?.email || student.email}</span>
+                      </Typography>
+                    )}
+                    {(student.fullDetails?.age || student.Student?.age || student.age) && (
+                      <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-start', direction: 'rtl' }}>
+                        <span>🎂 גיל: {student.fullDetails?.age || student.Student?.age || student.age}</span>
+                      </Typography>
+                    )}
+                    {(student.fullDetails?.class || student.Student?.class || student.class) && (
+                      <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-start', direction: 'rtl' }}>
+                        <span>📚 כיתה: {student.fullDetails?.class || student.Student?.class || student.class}</span>
+                      </Typography>
+                    )}
+                    {(student.fullDetails?.city || student.Student?.city || student.city) && (
+                      <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-start', direction: 'rtl' }}>
+                        <span>🏙️ עיר: {student.fullDetails?.city || student.Student?.city || student.city}</span>
+                      </Typography>
+                    )}
+                    {(student.fullDetails?.school || student.Student?.school || student.school) && (
+                      <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-start', direction: 'rtl' }}>
+                        <span>🏫 בית ספר: {student.fullDetails?.school || student.Student?.school || student.school}</span>
+                      </Typography>
+                    )}
+                    {(student.fullDetails?.sector || student.Student?.sector || student.sector) && (
+                      <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-start', direction: 'rtl' }}>
+                        <span>🌍 מגזר: {student.fullDetails?.sector || student.Student?.sector || student.sector}</span>
+                      </Typography>
+                    )}
+                    {(student.fullDetails?.healthFund || student.Student?.healthFund || student.healthFund) && (
+                      <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-start', direction: 'rtl' }}>
+                        <span>🏥 קופת חולים: {student.fullDetails?.healthFund || student.Student?.healthFund || student.healthFund}</span>
+                      </Typography>
+                    )}
+                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-start', direction: 'rtl' }}>
+                      <span>📅 תאריך רישום: {student.enrollmentDate ? new Date(student.enrollmentDate).toLocaleDateString('he-IL') : 'לא זמין'}</span>
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right' }}>
-                      סטטוס: {student.isActive ? 'פעיל' : 'לא פעיל'}
+                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-start', direction: 'rtl' }}>
+                      <span>{student.isActive ? '✅' : '❌'} סטטוס: {student.isActive ? 'פעיל' : 'לא פעיל'}</span>
                     </Typography>
                     {student.branchName && (
-                      <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right' }}>
-                        סניף: {student.branchName}
+                      <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-start', direction: 'rtl' }}>
+                        <span>🏢 סניף: {student.branchName}</span>
                       </Typography>
                     )}
                     {student.instructorName && (
-                      <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right' }}>
-                        מדריך: {student.instructorName}
+                      <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-start', direction: 'rtl' }}>
+                        <span>👨‍🏫 מדריך: {student.instructorName}</span>
                       </Typography>
                     )}
+                   
                   </Paper>
                   </Tooltip>
                 </Grid>
-              ))}
+                );
+              })}
             </Grid>
           </Box>
         )}
@@ -4179,6 +4327,7 @@ const EnrollStudent = () => {
           onClick={() => {
             setStudentsListDialogOpen(false);
             setSelectedGroupForStudents(null);
+            setEnhancedStudentsInGroup([]);
             dispatch(clearStudentsInGroup());
           }}
           sx={{
@@ -4206,6 +4355,161 @@ const EnrollStudent = () => {
       title="הוסף תלמיד חדש ושבץ לקבוצה"
       submitButtonText="הוסף ושבץ מיידית"
       keepOpenAfterSubmit={false}
+    />
+
+    {/* Edit Student Dialog */}
+    <Dialog
+      open={editStudentDialogOpen}
+      onClose={() => {
+        setEditStudentDialogOpen(false);
+        setSelectedStudentForEdit(null);
+      }}
+      maxWidth="md"
+      fullWidth
+      PaperProps={{
+        sx: { borderRadius: '16px', direction: 'rtl' }
+      }}
+    >
+      <DialogTitle sx={{ bgcolor: '#3b82f6', color: 'white', textAlign: 'right' }}>
+        <Typography variant="h6">
+          ערוך פרטי תלמיד
+        </Typography>
+      </DialogTitle>
+      
+      <DialogContent sx={{ p: 3 }}>
+        {selectedStudentForEdit && (
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="שם פרטי"
+                value={selectedStudentForEdit.firstName || ''}
+                onChange={(e) => setSelectedStudentForEdit(prev => ({
+                  ...prev,
+                  firstName: e.target.value
+                }))}
+                sx={{ direction: 'rtl' }}
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="שם משפחה"
+                value={selectedStudentForEdit.lastName || ''}
+                onChange={(e) => setSelectedStudentForEdit(prev => ({
+                  ...prev,
+                  lastName: e.target.value
+                }))}
+                sx={{ direction: 'rtl' }}
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="טלפון"
+                value={selectedStudentForEdit.phone || ''}
+                onChange={(e) => setSelectedStudentForEdit(prev => ({
+                  ...prev,
+                  phone: e.target.value
+                }))}
+                sx={{ direction: 'rtl' }}
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="אימייל"
+                value={selectedStudentForEdit.email || ''}
+                onChange={(e) => setSelectedStudentForEdit(prev => ({
+                  ...prev,
+                  email: e.target.value
+                }))}
+                sx={{ direction: 'rtl' }}
+              />
+            </Grid>
+          </Grid>
+        )}
+      </DialogContent>
+      
+      <DialogActions sx={{ p: 2, direction: 'rtl' }}>
+        <Button 
+          onClick={() => {
+            setEditStudentDialogOpen(false);
+            setSelectedStudentForEdit(null);
+          }}
+        >
+          ביטול
+        </Button>
+        <Button 
+          variant="contained"
+          onClick={async () => {
+            if (selectedStudentForEdit) {
+              try {
+                // Use editStudent thunk to update student
+                const result = await dispatch(editStudent(selectedStudentForEdit));
+                if (result.type === 'students/editStudent/fulfilled') {
+                  setNotification({
+                    open: true,
+                    message: 'פרטי התלמיד עודכנו בהצלחה',
+                    severity: 'success'
+                  });
+                  setEditStudentDialogOpen(false);
+                  setSelectedStudentForEdit(null);
+                  // Refresh the group data if needed
+                  if (selectedGroup) {
+                    dispatch(getStudentsByGroupId(selectedGroup.id));
+                  }
+                } else {
+                  throw new Error('Failed to update student');
+                }
+              } catch (error) {
+                console.error('Error updating student:', error);
+                setNotification({
+                  open: true,
+                  message: 'שגיאה בעדכון פרטי התלמיד',
+                  severity: 'error'
+                });
+              }
+            }
+          }}
+        >
+          שמור שינויים
+        </Button>
+      </DialogActions>
+    </Dialog>
+
+    {/* Edit Student Dialog */}
+    <EditStudentDialog
+      open={editStudentDialogOpen}
+      onClose={() => {
+        setEditStudentDialogOpen(false);
+        setSelectedStudentForEdit(null);
+      }}
+      student={selectedStudentForEdit}
+      onStudentUpdated={async (updatedStudent) => {
+        try {
+          // Refresh the students list for the current group with full details
+          if (selectedGroupForStudents) {
+            console.log('🔄 Refreshing students list after update...');
+            await handleViewStudents(selectedGroupForStudents);
+          }
+          setNotification({
+            open: true,
+            message: 'פרטי התלמיד עודכנו בהצלחה',
+            severity: 'success'
+          });
+        } catch (error) {
+          console.error('Error refreshing students after update:', error);
+          setNotification({
+            open: true,
+            message: 'הנתונים עודכנו אך יש בעיה בטעינה מחדש',
+            severity: 'warning'
+          });
+        }
+      }}
     />
    
     

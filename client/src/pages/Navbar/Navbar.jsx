@@ -205,6 +205,15 @@ const navigationItems = [
     shadowColor: 'rgba(255, 138, 128, 0.4)'
   },
   { 
+    title: 'GROW תשלומים', 
+    path: '/grow-payment-test', 
+    icon: <AccountCircle />, 
+    color: '#00E676', // ירוק בהיר
+    description: 'בדיקת מערכת תשלומי GROW Wallet',
+    gradient: 'linear-gradient(135deg, #00E676 0%, #00C853 50%, #4CAF50 100%)',
+    shadowColor: 'rgba(0, 230, 118, 0.4)'
+  },
+  { 
     title: 'עוד', 
     path: null, 
     color: '#FFA726', // כתום חם
@@ -227,6 +236,11 @@ const handleMoreMenuClose = () => {
 
 const handleNavigateToAbout = () => {
   navigate('/aboutSystem');
+  handleMoreMenuClose();
+};
+
+const handleNavigateToRegistrationTracking = () => {
+  navigate('/registration-tracking');
   handleMoreMenuClose();
 };
   const handleNavigateToNotes = () => {
@@ -1341,6 +1355,21 @@ const getUserDisplayName = () => {
           כלים ומידע נוסף
         </Typography>
       </Paper>
+
+      <Divider />
+
+      {/* מעקב רישום תלמידים */}
+      <MenuItem onClick={handleNavigateToRegistrationTracking} sx={{ py: 2, px: 3 }}>
+        <ListItemIcon>
+          <Assignment sx={{ color: '#667eea' }} />
+        </ListItemIcon>
+        <ListItemText>
+          <Typography variant="body1" sx={{ fontWeight: 600 }}>מעקב רישום</Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            מעקב אחר תהליכי רישום ומשימות תלמידים
+          </Typography>
+        </ListItemText>
+      </MenuItem>
 
       <Divider />
 

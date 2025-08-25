@@ -40,6 +40,7 @@ import {
 } from '@mui/icons-material';
 
 import { motion, AnimatePresence } from 'framer-motion';
+import GrowPaymentButton from '../../components/GrowPaymentButton';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { fetchPaymentHistory } from '../../store/payments/fetchPaymentHistory';
@@ -381,8 +382,8 @@ const PaymentHistoryTab = ({ student, embedded = false }) => {
                 </Grid>
             </Grid>
 
-            {/* כפתור הוספה */}
-            <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 3 }}>
+            {/* כפתורי פעולה */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 3, gap: 2 }}>
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
@@ -395,6 +396,25 @@ const PaymentHistoryTab = ({ student, embedded = false }) => {
                 >
                     הוסף תשלום
                 </Button>
+                
+                {/* כפתור GROW Payment */}
+                <GrowPaymentButton
+                    student={student}
+                    buttonText="תשלום דרך GROW"
+                    size="medium"
+                    sx={{ borderRadius: '20px', px: 3 }}
+                    onSuccess={(paymentData) => {
+                        console.log('✅ GROW payment completed:', paymentData);
+                        // רענון היסטוריית התשלומים
+                        if (student?.id) {
+                            dispatch(fetchPaymentHistory(student.id));
+                        }
+                    }}
+                    onError={(error) => {
+                        console.error('❌ GROW payment failed:', error);
+                        alert(`שגיאה בתשלום GROW: ${error}`);
+                    }}
+                />
             </Box>
 
             {/* הצגת שגיאה */}

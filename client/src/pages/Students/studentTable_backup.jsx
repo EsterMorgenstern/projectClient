@@ -5,8 +5,7 @@ import {
   Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField,
   Box, Typography, MenuItem, TableContainer, Paper, TableHead, TableRow,
   TableCell, TableBody, Chip, InputAdornment, Pagination, FormControl,
-  InputLabel, Select, CircularProgress, Skeleton, Table, Tooltip, Snackbar,
-  Alert
+  InputLabel, Select, CircularProgress, Skeleton, Table, Tooltip
 } from '@mui/material';
 import {
   Add, Edit, Delete, Info as InfoIcon, Check as CheckIcon,
@@ -155,7 +154,6 @@ export default function StudentsTable() {
   const [termsOpen, setTermsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredStudents, setFilteredStudents] = useState([]);
-  const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -494,19 +492,19 @@ export default function StudentsTable() {
                       </TableCell>
                       <TableCell className="table-head-cell" style={{ width: 100, textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🏙️</span>
+                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>�️</span>
                           <span>עיר</span>
                         </div>
                       </TableCell>
                       <TableCell className="table-head-cell" style={{ width: 150, textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🏫</span>
+                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}></span>
                           <span>בית ספר</span>
                         </div>
                       </TableCell>
                       <TableCell className="table-head-cell" style={{ width: 160, textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🏥</span>
+                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>�</span>
                           <span>קופת חולים</span>
                         </div>
                       </TableCell>
@@ -518,7 +516,7 @@ export default function StudentsTable() {
                       </TableCell>
                       <TableCell className="table-head-cell" style={{ width: 180, textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>📧</span>
+                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>�</span>
                           <span>מייל</span>
                         </div>
                       </TableCell>
@@ -1114,43 +1112,17 @@ export default function StudentsTable() {
           }}
           student={selectedStudentForEdit}
           onStudentUpdated={(updatedStudent) => {
-            // Refresh the students list only if update was successful
-            try {
-              dispatch(fetchStudents());
-              setNotification({
-                open: true,
-                message: 'פרטי התלמיד עודכנו בהצלחה',
-                severity: 'success'
-              });
-            } catch (error) {
-              console.error('Error refreshing students:', error);
-              setNotification({
-                open: true,
-                message: 'שגיאה בטעינת הנתונים לאחר העדכון',
-                severity: 'error'
-              });
-            }
+            // Refresh the students list
+            dispatch(fetchStudents());
+            setNotification({
+              open: true,
+              message: 'פרטי התלמיד עודכנו בהצלחה',
+              severity: 'success'
+            });
           }}
         />
 
       </div>
-
-      {/* Notification Snackbar */}
-      <Snackbar
-        open={notification.open}
-        autoHideDuration={4000}
-        onClose={() => setNotification({ ...notification, open: false })}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert
-          onClose={() => setNotification({ ...notification, open: false })}
-          severity={notification.severity}
-          variant="filled"
-          sx={{ width: '100%', direction: 'rtl' }}
-        >
-          {notification.message}
-        </Alert>
-      </Snackbar>
     </motion.div>
   );
 }

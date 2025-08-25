@@ -204,8 +204,8 @@ const AddStudentNoteDialog = ({
             priority: formData.priority,
             isPrivate: Boolean(formData.isPrivate),
             isActive: Boolean(formData.isActive),
-            createdDate: editMode ? noteData?.createdDate : new Date().toISOString().split('T')[0],
-            updatedDate: new Date().toISOString().split('T')[0]
+            createdDate: editMode ? noteData?.createdDate : new Date().toISOString(),
+            updatedDate: new Date().toISOString()
         };
 
         console.log('📤 Note to save (final):', noteToSave);
