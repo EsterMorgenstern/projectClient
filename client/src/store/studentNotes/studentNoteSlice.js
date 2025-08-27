@@ -74,18 +74,18 @@ const studentNotesSlice = createSlice({
       })
       
       // Add student note
-      .addCase(addStudentNote.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(addStudentNote.fulfilled, (state, action) => {
-        state.loading = false;
-        state.studentNotes.push(action.payload);
-      })
-      .addCase(addStudentNote.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload || 'Failed to add student note';
-      })
+        .addCase(addStudentNote.pending, (state) => {
+          state.loading = true;
+          state.error = null;
+        })
+        .addCase(addStudentNote.fulfilled, (state, action) => {
+          state.loading = false;
+          // הרשימה תתעדכן ע"י getNotesByStudentId
+        })
+        .addCase(addStudentNote.rejected, (state, action) => {
+          state.loading = false;
+          state.error = action.payload || 'Failed to add student note';
+        })
       
       // Update student note
       .addCase(updateStudentNote.pending, (state) => {

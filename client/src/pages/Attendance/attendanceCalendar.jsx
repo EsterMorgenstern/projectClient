@@ -1039,6 +1039,18 @@ const AttendanceCalendar = () => {
 
   // פונקציה לקבלת מידע על חג
   const getHebrewHolidayInfo = (date) => {
+    // ראשית, בדוק אם זה א' אלול - אם כן, אל תחזיר מידע על חג
+    try {
+      const currentYear = date.getFullYear();
+      const alephElul = new HDate(1, 'Elul', currentYear).greg();
+      
+      if (isSameDay(date, alephElul)) {
+        return null; // א' אלול - לא מציג כחג, זה יום פעיל רגיל
+      }
+    } catch (hebrewDateError) {
+      // אם יש שגיאה בחישוב התאריך העברי, המשך לבדיקה רגילה
+    }
+
     const dateKey = format(date, 'yyyy-MM-dd');
     return hebrewHolidays.get(dateKey) || null;
   };

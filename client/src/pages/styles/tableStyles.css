@@ -3,6 +3,11 @@
   box-sizing: border-box;
 }
 
+/* תמיכה באמוג'י */
+.emoji-support {
+  font-family: 'Segoe UI', 'Segoe UI Emoji', 'Apple Color Emoji', 'Twemoji Mozilla', 'Noto Color Emoji', 'Helvetica Neue', Arial, sans-serif !important;
+}
+
 .table-container {
   padding: 24px;
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
@@ -150,6 +155,12 @@
   text-align: right !important;
   border: none !important;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3) !important;
+  font-family: 'Segoe UI', 'Segoe UI Emoji', 'Apple Color Emoji', 'Twemoji Mozilla', 'Noto Color Emoji', sans-serif !important;
+}
+
+.table-head-cell span {
+  font-family: 'Segoe UI', 'Segoe UI Emoji', 'Apple Color Emoji', 'Twemoji Mozilla', 'Noto Color Emoji', sans-serif !important;
+  display: inline-block !important;
 }
 
 .table-head-cell.clickable {

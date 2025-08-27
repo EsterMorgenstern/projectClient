@@ -10,7 +10,8 @@ import {
     Notes as NotesIcon, Person as PersonIcon,
     Save as SaveIcon, Close as CloseIcon,
     Warning as WarningIcon, Error as ErrorIcon,
-    CheckCircle as CheckCircleIcon, Info as InfoIcon
+    CheckCircle as CheckCircleIcon, Info as InfoIcon,
+    Assignment as AssignmentIcon
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { addStudentNote } from '../../../store/studentNotes/studentNoteAddThunk';
@@ -21,7 +22,8 @@ const AddStudentNoteDialog = ({
     student,
     onSave,
     editMode = false,
-    noteData = null
+    noteData = null,
+    studentNotes = [] // הוסף prop שמכיל את כל ההערות של התלמיד
 }) => {
     console.log('AddStudentNoteDialog props:', { student, editMode, noteData, open });
 
@@ -133,11 +135,59 @@ const AddStudentNoteDialog = ({
         }
     }, [currentUser, editMode]);
 
+    // משימות רישום קבועות
+    const registrationTasks = [
+      '💳 אמצעי תשלום מולא',
+      '👨‍🏫 מדריך עודכן',
+      '📱 הוכנס ל-GIS',
+      '📋 הוסבר על התחייבות/הפניה'
+    ];
+
+    // בדוק אם יש כבר הערת "מעקב רישום" לתלמיד
+    const hasRegistrationTrackingNote = useMemo(() => {
+      if (!studentNotes || !Array.isArray(studentNotes)) return false;
+      return studentNotes.some(note => note.noteType === 'מעקב רישום');
+    }, [studentNotes]);
+
+    // ערכי ברירת מחדל למשימות רישום
+    const [registrationTaskStatus, setRegistrationTaskStatus] = useState(
+      registrationTasks.reduce((acc, task) => {
+        acc[task] = false;
+        return acc;
+      }, {})
+    );
+
+    // עדכן סטטוס משימה
+    const handleTaskToggle = (task) => {
+      setRegistrationTaskStatus(prev => ({
+        ...prev,
+        [task]: !prev[task]
+      }));
+    };
+
+    // עדכן noteContent אוטומטית אם "מעקב רישום" נבחר
+    useEffect(() => {
+            // עדכון תוכן ההערה אוטומטית רק בסטייט, ללא שמירה אוטומטית לשרת
+            if (formData.noteType === 'מעקב רישום') {
+                const currentDate = new Date().toLocaleDateString('he-IL');
+                let noteContent = `🔴 משימות שטרם הושלמו (עודכן ב-${currentDate}):\n`;
+                const incompleteTasks = registrationTasks.filter(task => !registrationTaskStatus[task]);
+                incompleteTasks.forEach(task => {
+                    noteContent += `❌ ${task}\n`;
+                });
+                if (incompleteTasks.length === 0) {
+                    noteContent = `✅ כל משימות הרישום הושלמו בהצלחה! (עודכן ב-${currentDate})`;
+                }
+                setFormData(prev => ({ ...prev, noteContent }));
+            }
+    }, [formData.noteType, registrationTaskStatus]);
+
     const noteTypes = [
         { value: 'כללי', label: 'כללי', color: '#3b82f6', icon: InfoIcon },
         { value: 'חיובי', label: 'חיובי', color: '#059669', icon: CheckCircleIcon },
         { value: 'שלילי', label: 'שלילי', color: '#dc2626', icon: ErrorIcon },
-        { value: 'אזהרה', label: 'אזהרה', color: '#d97706', icon: WarningIcon }
+        { value: 'אזהרה', label: 'אזהרה', color: '#d97706', icon: WarningIcon },
+        { value: 'מעקב רישום', label: 'מעקב רישום', color: '#0ea5e9', icon: AssignmentIcon }
     ];
 
     const priorities = [
@@ -187,92 +237,63 @@ const AddStudentNoteDialog = ({
     };
 
    const handleSave = async () => {
-    console.log('🔍 Form data before validation:', formData);
-    console.log('🔍 Student data:', student);
-    console.log('🔍 Student ID:', student?.id);
-    
-    if (validateForm()) {
-        setIsSaving(true);
-        
-        const noteToSave = {
-            studentId: formData.studentId || student?.id,
-            authorId: formData.authorId || 'guest',
-            authorName: formData.authorName.trim() || 'משתמש אורח',
-            authorRole: formData.authorRole.trim() || 'מורה',
-            noteContent: formData.noteContent.trim(),
-            noteType: formData.noteType,
-            priority: formData.priority,
-            isPrivate: Boolean(formData.isPrivate),
-            isActive: Boolean(formData.isActive),
-            createdDate: editMode ? noteData?.createdDate : new Date().toISOString(),
-            updatedDate: new Date().toISOString()
-        };
-
-        console.log('📤 Note to save (final):', noteToSave);
-        console.log('📤 Note stringified:', JSON.stringify(noteToSave, null, 2));
-        
-        // בדיקה נוספת לפני שליחה
-        const requiredFields = ['studentId', 'authorName', 'authorRole', 'noteContent'];
-        const missingFields = requiredFields.filter(field => !noteToSave[field] || !noteToSave[field].toString().trim());
-        
-        if (missingFields.length > 0) {
-            console.error('❌ Missing required fields:', missingFields);
-            console.error('❌ Note data:', noteToSave);
-            alert(`שדות חסרים: ${missingFields.join(', ')}`);
-            setIsSaving(false);
+        // מניעת שמירה כפולה של "מעקב רישום" או הערה עם אותו תוכן
+        if (
+            (
+                formData.noteType === 'מעקב רישום' && hasRegistrationTrackingNote && !editMode
+            ) ||
+            (
+                studentNotes && studentNotes.some(n => n.noteContent.trim() === formData.noteContent.trim() && n.noteType === formData.noteType)
+            )
+        ) {
+            alert('לא ניתן להוסיף הערה כפולה (אותו תוכן ואותו סוג) לתלמיד.');
             return;
         }
-
-        try {
-            // שמירה לשרת
-            console.log('🔄 Sending note to server:', noteToSave);
-            const result = await dispatch(addStudentNote(noteToSave));
-            
-            console.log('📥 Server response:', result);
-            console.log('📋 Result type:', result.type);
-            console.log('📄 Result payload:', result.payload);
-            
-            if (result.type === 'studentNotes/add/fulfilled') {
-                console.log('✅ Note saved successfully');
-                
-                // קריאה לפונקציה שהועברה מהחוץ
-                if (onSave) {
-                    onSave(result.payload || noteToSave);
-                }
-                
-                handleClose();
-            } else {
-                console.error('❌ Failed to save note:', result);
-                console.error('❌ Error details:', result.error);
-                const errorMessage = result.payload || result.error?.message || 'אנא נסה שנית';
-                alert('שגיאה בשמירת ההערה: ' + errorMessage);
+        if (!open) return;
+        if (validateForm()) {
+            const noteToSave = {
+                studentId: formData.studentId || student?.id,
+                authorId: formData.authorId || 'guest',
+                authorName: formData.authorName.trim() || 'משתמש אורח',
+                authorRole: formData.authorRole.trim() || 'מורה',
+                noteContent: formData.noteContent.trim(),
+                noteType: formData.noteType,
+                priority: formData.priority,
+                isPrivate: Boolean(formData.isPrivate),
+                isActive: Boolean(formData.isActive),
+                createdDate: editMode ? noteData?.createdDate : new Date().toISOString(),
+                updatedDate: new Date().toISOString()
+            };
+            if (onSave) {
+                onSave(noteToSave);
             }
-        } catch (error) {
-            console.error('❌ Error saving note:', error);
-            alert('שגיאה בשמירת ההערה: ' + (error.message || 'אנא נסה שנית'));
-        } finally {
-            setIsSaving(false);
+            setTimeout(() => {
+                handleClose();
+            }, 200);
         }
-    } else {
-        console.log('❌ Validation failed:', errors);
-    }
 };
 
     const handleClose = () => {
-        const userDetails = getUserDetails(currentUser);
-        setFormData({
-            studentId: student?.id || '',
-            authorId: userDetails.id,
-            authorName: userDetails.fullName,
-            authorRole: userDetails.role,
-            noteContent: '',
-            noteType: 'כללי',
-            priority: 'נמוך',
-            isPrivate: false,
-            isActive: true
-        });
-        setErrors({});
-        onClose();
+    // נקה את ה-flag וה-localStorage כאן
+    if (formData && formData.studentId) {
+        if (window.__studentNoteSaving) window.__studentNoteSaving[formData.studentId] = false;
+        const noteKey = `studentNote_${formData.studentId}_tracking`;
+        localStorage.removeItem(noteKey);
+    }
+    const userDetails = getUserDetails(currentUser);
+    setFormData({
+        studentId: student?.id || '',
+        authorId: userDetails.id,
+        authorName: userDetails.fullName,
+        authorRole: userDetails.role,
+        noteContent: '',
+        noteType: 'כללי',
+        priority: 'נמוך',
+        isPrivate: false,
+        isActive: true
+    });
+    setErrors({});
+    onClose();
     };
 
     const selectedNoteType = noteTypes.find(type => type.value === formData.noteType);
@@ -389,13 +410,16 @@ const AddStudentNoteDialog = ({
                                 background: currentUser 
                                     ? 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)' 
                                     : 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                                maxWidth: '500px',
+                                margin: '0 auto',
+                                overflow: 'auto'
                             }}>
                                 <CardContent sx={{ p: 1.5 }}>
                                     <Box sx={{ 
                                         display: 'flex', 
                                         alignItems: 'center', 
-                                        variant:'body2',
-                                        gap: 1,
+                                        gap: 2,
+                                        flexWrap: 'wrap',
                                         mb: 1
                                     }}>
                                         <PersonIcon sx={{ fontSize: 18 }} />
@@ -491,9 +515,12 @@ const AddStudentNoteDialog = ({
                                         bgcolor: 'white'
                                     }
                                 }}
+                                disabled={hasRegistrationTrackingNote && formData.noteType === 'מעקב רישום'}
                             >
                                 {noteTypes.map((type) => {
                                     const IconComponent = type.icon;
+                                    // אם יש כבר הערת מעקב רישום, אל תציג את האופציה שוב
+                                    if (type.value === 'מעקב רישום' && hasRegistrationTrackingNote) return null;
                                     return (
                                         <MenuItem key={type.value} value={type.value}>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -600,17 +627,20 @@ const AddStudentNoteDialog = ({
 
                         {/* תצוגה מקדימה */}
                         <Grid item xs={12}>
-                            <Card sx={{
+                            <Card sx={{ 
                                 borderRadius: '8px',
                                 border: `2px solid ${selectedNoteType?.color}20`,
-                                bgcolor: `${selectedNoteType?.color}05`
+                                bgcolor: `${selectedNoteType?.color}05`,
+                                maxWidth: '500px',
+                                margin: '0 auto',
+                                overflow: 'auto'
                             }}>
                                 <CardContent sx={{ p: 1.5 }}>
                                     <Typography variant="body2" sx={{ mb: 1, fontWeight: 'bold' }}>
                                         תצוגה מקדימה
                                     </Typography>
 
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', mb: 1 }}>
                                         <Avatar sx={{
                                             bgcolor: selectedNoteType?.color,
                                             width: 32,
@@ -689,6 +719,37 @@ const AddStudentNoteDialog = ({
                                 </Alert>
                             </Grid>
                         )}
+
+                        {/* אם נבחר "מעקב רישום" הצג משימות עם v/x */}
+                        {formData.noteType === 'מעקב רישום' && (
+                          <Grid item xs={12}>
+                            <Card sx={{ borderRadius: '8px', border: '1px solid #e2e8f0', bgcolor: '#e0f2fe', mb: 2, maxWidth: '400px', margin: '0 auto', overflow: 'auto' }}>
+                              <CardContent>
+                                <Typography variant="body2" sx={{ mb: 1, fontWeight: 'bold', color: '#0ea5e9' }}>
+                                  משימות רישום לתלמיד
+                                </Typography>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, flexWrap: 'wrap' }}>
+                                  {registrationTasks.map((task, idx) => (
+                                    <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                      <Button
+                                        variant={registrationTaskStatus[task] ? 'contained' : 'outlined'}
+                                        color={registrationTaskStatus[task] ? 'success' : 'error'}
+                                        size="small"
+                                        onClick={() => handleTaskToggle(task)}
+                                        sx={{ minWidth: 36, borderRadius: 2, px: 1 }}
+                                      >
+                                        {registrationTaskStatus[task] ? '✔️' : '❌'}
+                                      </Button>
+                                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                        {task}
+                                      </Typography>
+                                    </Box>
+                                  ))}
+                                </Box>
+                              </CardContent>
+                            </Card>
+                          </Grid>
+                        )}
                     </Grid>
                 </DialogContent>
 
@@ -733,9 +794,11 @@ const AddStudentNoteDialog = ({
                                 !student ||
                                 !formData.noteContent.trim() || 
                                 !formData.authorName.trim() || 
-                                !formData.authorRole.trim()
+                                !formData.authorRole.trim() ||
+                                (formData.noteType === 'מעקב רישום' && hasRegistrationTrackingNote && !editMode)
                             }
                             sx={{
+                                direction:'ltr',
                                 borderRadius: '8px',
                                 px: 3,
                                 py: 1,

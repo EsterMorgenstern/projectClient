@@ -790,6 +790,15 @@ export default function StudentsTable() {
           <DialogContent className="dialog-content">
             <TextField
               fullWidth
+              label={<span><span role="img" aria-label="person">👤</span> נוצר ע"י</span>}
+              value={newStudent.createdBy || ''}
+              onChange={(e) => setnewStudent({ ...newStudent, createdBy: e.target.value })}
+              className="dialog-field"
+              placeholder="שם משתמש או מלל חופשי"
+              helperText="ניתן לשנות את שם היוצר או להכניס מלל חופשי"
+            />
+            <TextField
+              fullWidth
               label="🆔 תעודת זהות"
               value={newStudent.id || ''}
               onChange={(e) => setnewStudent({ ...newStudent, id: e.target.value })}

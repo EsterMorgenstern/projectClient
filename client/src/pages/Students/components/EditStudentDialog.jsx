@@ -34,6 +34,7 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
     firstName: '',
     lastName: '',
     phone: '',
+    secondaryPhone: '',
     email: '',
     age: '',
     city: '',
@@ -41,7 +42,8 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
     healthFund: '',
     class: '',
     sector: '',
-    status: ''
+    status: '',
+    createdBy: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -141,6 +143,7 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
         firstName: student.firstName || student.firstname || student.studentName?.split(' ')[0] || '',
         lastName: student.lastName || student.lastname || student.studentName?.split(' ').slice(1).join(' ') || '',
         phone: student.phone || '',
+        secondaryPhone: student.secondaryPhone || student.secondary_phone || student.phoneSecondary || '',
         email: student.email || student.mail || student.emailAddress || '',
         age: student.age || '',
         city: student.city || '',
@@ -148,7 +151,8 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
         healthFund: student.healthFund || student.healthfund || '',
         class: normalizeClass(student.class || student.className || student.grade || student.classLevel),
         sector: student.sector || '',
-        status: student.status || (student.isActive !== undefined ? (student.isActive ? 'פעיל' : 'לא פעיל') : '')
+        status: student.status || (student.isActive !== undefined ? (student.isActive ? 'פעיל' : 'לא פעיל') : ''),
+        createdBy: student.createdBy || ''
       };
       
       console.log('🎯 Mapped student data for form:', studentData);
@@ -242,6 +246,7 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
       firstName: '',
       lastName: '',
       phone: '',
+      secondaryPhone: '',
       email: '',
       age: '',
       city: '',
@@ -249,7 +254,8 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
       healthFund: '',
       class: '',
       sector: '',
-      status: ''
+      status: '',
+      createdBy: ''
     });
     setError('');
     onClose();
@@ -296,22 +302,27 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 3, direction: 'rtl' }}>
-        {error && (
-          <Alert severity="error" sx={{ mb: 2, textAlign: 'right' }}>
-            {error}
-          </Alert>
-        )}
-
+      <DialogContent sx={{ p: 3, direction: 'rtl', position: 'relative', pb: error ? 8 : 3 }}>
         <Grid container spacing={3} sx={{ mt: 1 }}>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label={<span><span role="img" aria-label="person">👤</span> נוצר ע"י</span>}
+              fullWidth
+              variant="outlined"
+              value={formData.createdBy}
+              onChange={(e) => handleInputChange('createdBy', e.target.value)}
+              sx={{ textAlign: 'right' }}
+              placeholder="שם יוצר/מלל חופשי"
+            />
+          </Grid>
           <Grid item xs={12} sm={6}>
             <TextField
               label="🆔 תעודת זהות"
               type="number"
               fullWidth
+              disabled={true}
               variant="outlined"
               value={formData.id}
-              onChange={(e) => handleInputChange('id', e.target.value)}
               required
               sx={{ textAlign: 'right' }}
             />
@@ -327,6 +338,19 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
               onChange={(e) => handleInputChange('phone', e.target.value)}
               required
               sx={{ textAlign: 'right' }}
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="📱 טלפון נוסף"
+              type="tel"
+              fullWidth
+              variant="outlined"
+              value={formData.secondaryPhone}
+              onChange={(e) => handleInputChange('secondaryPhone', e.target.value)}
+              sx={{ textAlign: 'right' }}
+              placeholder="טלפון נוסף (אופציונלי)"
             />
           </Grid>
 
@@ -517,6 +541,7 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
           onClick={handleSave}
           disabled={loading || !validateForm()}
           sx={{
+            direction:'ltr',
             borderRadius: '8px',
             px: 3,
             py: 1,

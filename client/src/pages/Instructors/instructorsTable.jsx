@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import {
   Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField,
   Box, Typography, InputAdornment, Pagination, FormControl, InputLabel,
@@ -27,38 +27,38 @@ const InstructorLoadingSkeleton = () => (
         <TableRow>
           <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>🎯</span>
-              <span>פעולות</span>
+              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🎯</span>
+              <span style={{ fontSize: '0.9em' }}>פעולות</span>
             </div>
           </TableCell>
           <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>🆔</span>
-              <span>קוד מדריך</span>
+              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🆔</span>
+              <span style={{ fontSize: '0.9em' }}>קוד מדריך</span>
             </div>
           </TableCell>
           <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>👤</span>
-              <span>שם פרטי</span>
+              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>👤</span>
+              <span style={{ fontSize: '0.9em' }}>שם פרטי</span>
             </div>
           </TableCell>
           <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>👥</span>
-              <span>שם משפחה</span>
+              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>👥</span>
+              <span style={{ fontSize: '0.9em' }}>שם משפחה</span>
             </div>
           </TableCell>
           <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>📞</span>
-              <span>טלפון</span>
+              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>📞</span>
+              <span style={{ fontSize: '0.9em' }}>טלפון</span>
             </div>
           </TableCell>
           <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>📧</span>
-              <span>אימייל</span>
+              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>📧</span>
+              <span style={{ fontSize: '0.9em' }}>אימייל</span>
             </div>
           </TableCell>
         </TableRow>
@@ -892,7 +892,28 @@ export default function InstructorsTable() {
             </Box>
           </Box>
         </motion.div>
-
+ {/* כפתור הוספת מדריך חדש */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+        >
+          <Button
+            onClick={() => {
+              setNewInstructor({
+                id: null, firstName: '', lastName: '', phone: null, email: '', city: '', sector: ''
+              });
+              setOpen(true);
+            }}
+            variant="contained"
+            startIcon={<PersonAdd />}
+            size="large"
+            className="main-add-button glow-effect"
+            fullWidth
+          >
+            ➕ הוסף מדריך חדש
+          </Button>
+        </motion.div>
         {/* טבלה */}
         <AnimatePresence mode="wait">
           {loading ? (
@@ -918,50 +939,50 @@ export default function InstructorsTable() {
                     <TableRow>
                       <TableCell className="table-head-cell" style={{ width: 200, textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>🎯</span>
-                          <span>פעולות</span>
+                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🎯</span>
+                          <span style={{ fontSize: '0.9em' }}>פעולות</span>
                         </div>
                       </TableCell>
                       <TableCell className="table-head-cell" style={{ width: 120, textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>🆔</span>
-                          <span>קוד מדריך</span>
+                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🆔</span>
+                          <span style={{ fontSize: '0.9em' }}>קוד מדריך</span>
                         </div>
                       </TableCell>
                       <TableCell className="table-head-cell" style={{ width: 120, textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>👤</span>
-                          <span>שם פרטי</span>
+                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>👤</span>
+                          <span style={{ fontSize: '0.9em' }}>שם פרטי</span>
                         </div>
                       </TableCell>
                       <TableCell className="table-head-cell" style={{ width: 140, textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>👥</span>
-                          <span>שם משפחה</span>
+                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>👥</span>
+                          <span style={{ fontSize: '0.9em' }}>שם משפחה</span>
                         </div>
                       </TableCell>
                       <TableCell className="table-head-cell" style={{ width: 110, textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>📞</span>
-                          <span>טלפון</span>
+                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>📞</span>
+                          <span style={{ fontSize: '0.9em' }}>טלפון</span>
                         </div>
                       </TableCell>
                       <TableCell className="table-head-cell" style={{ width: 180, textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>📧</span>
-                          <span>אימייל</span>
+                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>📧</span>
+                          <span style={{ fontSize: '0.9em' }}>מייל</span>
                         </div>
                       </TableCell>
                       <TableCell className="table-head-cell" style={{ width: 100, textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>🏙️</span>
-                          <span>עיר</span>
+                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🏙️</span>
+                          <span style={{ fontSize: '0.9em' }}>עיר</span>
                         </div>
                       </TableCell>
                       <TableCell className="table-head-cell" style={{ width: 120, textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>🌍</span>
-                          <span>מגזר</span>
+                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🌍</span>
+                          <span style={{ fontSize: '0.9em' }}>מגזר</span>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -1144,28 +1165,7 @@ export default function InstructorsTable() {
           </motion.div>
         )}
 
-        {/* כפתור הוספת מדריך חדש */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-        >
-          <Button
-            onClick={() => {
-              setNewInstructor({
-                id: null, firstName: '', lastName: '', phone: null, email: '', city: '', sector: ''
-              });
-              setOpen(true);
-            }}
-            variant="contained"
-            startIcon={<PersonAdd />}
-            size="large"
-            className="main-add-button glow-effect"
-            fullWidth
-          >
-            ➕ הוסף מדריך חדש
-          </Button>
-        </motion.div>
+       
 
         {/* דיאלוג הוספת מדריך */}
         <Dialog

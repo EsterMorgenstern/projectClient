@@ -36,50 +36,56 @@ const LoadingSkeleton = () => (
         <TableRow>
           <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>🎯</span>
-              <span>פעולות</span>
+              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🎯</span>
+              <span style={{ fontSize: '0.9em' }}>פעולות</span>
             </div>
           </TableCell>
           <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>🆔</span>
-              <span>קוד תלמיד</span>
+              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🆔</span>
+              <span style={{ fontSize: '0.9em' }}>קוד תלמיד</span>
             </div>
           </TableCell>
           <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>👤</span>
-              <span>שם פרטי</span>
+              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>👤</span>
+              <span style={{ fontSize: '0.9em' }}>שם פרטי</span>
             </div>
           </TableCell>
           <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>👥</span>
-              <span>שם משפחה</span>
+              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>👥</span>
+              <span style={{ fontSize: '0.9em' }}>שם משפחה</span>
             </div>
           </TableCell>
           <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>📞</span>
-              <span>טלפון</span>
+              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>📞</span>
+              <span style={{ fontSize: '0.9em' }}>טלפון</span>
             </div>
           </TableCell>
           <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>📧</span>
-              <span>מייל</span>
+              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>📱</span>
+              <span style={{ fontSize: '0.9em' }}>טלפון נוסף</span>
             </div>
           </TableCell>
           <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>🎂</span>
-              <span>גיל</span>
+              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>📧</span>
+              <span style={{ fontSize: '0.9em' }}>מייל</span>
             </div>
           </TableCell>
           <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.2em', marginBottom: '2px' }}>🏙️</span>
-              <span>עיר</span>
+              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🎂</span>
+              <span style={{ fontSize: '0.9em' }}>גיל</span>
+            </div>
+          </TableCell>
+          <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🏙️</span>
+              <span style={{ fontSize: '0.9em' }}>עיר</span>
             </div>
           </TableCell>
         </TableRow>
@@ -145,11 +151,11 @@ export default function StudentsTable() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [openCoursesDialog, setOpenCoursesDialog] = useState(false);
   const [currentStudent, setCurrentStudent] = useState({
-    id: null, firstName: '', lastName: '', phone: null, age: 0, city: '',
+    id: null, firstName: '', lastName: '', phone: null, secondaryPhone: '', age: 0, city: '',
     school: '', healthFund: '', class: "", sector: "", status: 'פעיל'
   });
   const [newStudent, setnewStudent] = useState({
-    id: null, firstName: '', lastName: '', phone: null, email: '', age: 0,
+    id: null, firstName: '', lastName: '', phone: null, secondaryPhone: '', email: '', age: 0,
     city: '', school: '', healthFund: '', class: "", sector: "", status: 'פעיל'
   });
   const [termsOpen, setTermsOpen] = useState(false);
@@ -226,8 +232,9 @@ export default function StudentsTable() {
       const fullNameMatch = `${student.firstName || ''} ${student.lastName || ''}`.toLowerCase().includes(term);
       const idMatch = student.id?.toString().includes(term);
       const phoneMatch = student.phone?.toString().includes(term);
+      const secondaryPhoneMatch = student.secondaryPhone?.toString().includes(term);
       const cityMatch = student.city?.toLowerCase().includes(term);
-      return firstNameMatch || lastNameMatch || fullNameMatch || idMatch || phoneMatch || cityMatch;
+      return firstNameMatch || lastNameMatch || fullNameMatch || idMatch || phoneMatch || secondaryPhoneMatch || cityMatch;
     });
   };
 
@@ -329,7 +336,7 @@ export default function StudentsTable() {
       
       refreshTable();
       setnewStudent({
-        id: null, firstName: '', lastName: '', phone: null, email: '', age: 0,
+        id: null, firstName: '', lastName: '', phone: null, secondaryPhone: '', email: '', age: 0,
         city: '', school: '', healthFund: '', class: "", sector: "", status: 'פעיל'
       });
     }
@@ -378,12 +385,13 @@ export default function StudentsTable() {
           </Typography>
         </motion.div>
 
+
         {/* שדה חיפוש */}
         <motion.div
           className="search-container slide-in-right"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
+          transition={{ duration: 0.5, delay: 0.25 }}
         >
           <TextField
             fullWidth
@@ -401,6 +409,8 @@ export default function StudentsTable() {
             }}
           />
         </motion.div>
+
+       
 
         {/* בקרות עמוד */}
         <motion.div
@@ -433,6 +443,23 @@ export default function StudentsTable() {
           </Box>
         </motion.div>
 
+ {/* כפתור הוספת תלמיד חדש מעל הטבלה */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.35 }}
+        >
+          <Button
+            onClick={() => setTermsOpen(true)}
+            variant="contained"
+            startIcon={<PersonAdd />}
+            size="large"
+            className="main-add-button glow-effect"
+            fullWidth
+          >
+            ➕ הוסף תלמיד חדש
+          </Button>
+        </motion.div>
         {/* טבלה */}
         <AnimatePresence mode="wait">
           {loading ? (
@@ -459,79 +486,85 @@ export default function StudentsTable() {
                       <TableCell className="table-head-cell" style={{ width: 180, textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                           <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🎯</span>
-                          <span>פעולות</span>
+                          <span style={{ fontSize: '0.9em' }}>פעולות</span>
                         </div>
                       </TableCell>
                       <TableCell className="table-head-cell" style={{ width: 110, textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                           <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🆔</span>
-                          <span>קוד תלמיד</span>
+                          <span style={{ fontSize: '0.9em' }}>קוד תלמיד</span>
                         </div>
                       </TableCell>
                       <TableCell className="table-head-cell" style={{ width: 130, textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                           <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>👤</span>
-                          <span>שם פרטי</span>
+                          <span style={{ fontSize: '0.9em' }}>שם פרטי</span>
                         </div>
                       </TableCell>
                       <TableCell className="table-head-cell" style={{ width: 110, textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                           <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>👥</span>
-                          <span>שם משפחה</span>
+                          <span style={{ fontSize: '0.9em' }}>שם משפחה</span>
                         </div>
                       </TableCell>
                       <TableCell className="table-head-cell" style={{ width: 70, textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                           <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>📞</span>
-                          <span>טלפון</span>
+                          <span style={{ fontSize: '0.9em' }}>טלפון</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="table-head-cell" style={{ width: 80, textAlign: 'center' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <span className="emoji-support" style={{ fontSize: '1.1em', marginBottom: '2px' }}>📱</span>
+                          <span style={{ fontSize: '0.9em' }}>טלפון נוסף</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="table-head-cell" style={{ width: 120, textAlign: 'center' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <span className="emoji-support" style={{ fontSize: '1.1em', marginBottom: '2px' }}>📧</span>
+                          <span style={{ fontSize: '0.9em' }}>מייל</span>
                         </div>
                       </TableCell>
                       <TableCell className="table-head-cell" style={{ width: 60, textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                           <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🎂</span>
-                          <span>גיל</span>
+                          <span style={{ fontSize: '0.9em' }}>גיל</span>
                         </div>
                       </TableCell>
                       <TableCell className="table-head-cell" style={{ width: 100, textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                           <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🏙️</span>
-                          <span>עיר</span>
+                          <span style={{ fontSize: '0.9em' }}>עיר</span>
                         </div>
                       </TableCell>
                       <TableCell className="table-head-cell" style={{ width: 150, textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                           <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🏫</span>
-                          <span>בית ספר</span>
+                          <span style={{ fontSize: '0.9em' }}>בית ספר</span>
                         </div>
                       </TableCell>
                       <TableCell className="table-head-cell" style={{ width: 160, textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                           <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🏥</span>
-                          <span>קופת חולים</span>
+                          <span style={{ fontSize: '0.9em' }}>קופת חולים</span>
                         </div>
                       </TableCell>
                       <TableCell className="table-head-cell" style={{ width: 80, textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                           <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>📚</span>
-                          <span>כיתה</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 180, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>📧</span>
-                          <span>מייל</span>
+                          <span style={{ fontSize: '0.9em' }}>כיתה</span>
                         </div>
                       </TableCell>
                       <TableCell className="table-head-cell" style={{ width: 100, textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                           <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🌍</span>
-                          <span>מגזר</span>
+                          <span style={{ fontSize: '0.9em' }}>מגזר</span>
                         </div>
                       </TableCell>
                       <TableCell className="table-head-cell" style={{ width: 120, textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                           <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>📊</span>
-                          <span>סטטוס</span>
+                          <span style={{ fontSize: '0.9em' }}>סטטוס</span>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -599,6 +632,7 @@ export default function StudentsTable() {
           firstName: student.firstName,
           lastName: student.lastName,
           phone: student.phone,
+          secondaryPhone: student.secondaryPhone,
           age: student.age,
           city: student.city,
           school: student.school,
@@ -650,29 +684,51 @@ export default function StudentsTable() {
 <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.firstName}</TableCell>
 <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.lastName}</TableCell>
 <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.phone}</TableCell>
+<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>
+  {student.secondaryPhone && student.secondaryPhone.trim() ? (
+    <Tooltip title={`טלפון נוסף: ${student.secondaryPhone}`}>
+      <Box 
+        component="span" 
+        sx={{ 
+          color: 'inherit'
+        }}
+      >
+        {student.secondaryPhone}
+      </Box>
+    </Tooltip>
+  ) : (
+    <Typography variant="body2" sx={{ color: '#999', fontStyle: 'italic' }}>
+      אין טלפון נוסף
+    </Typography>
+  )}
+</TableCell>
+<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>
+  {student.email && student.email.trim() ? (
+    <Tooltip title={`שלח מייל ל-${student.email}`}>
+      <Box 
+        component="span" 
+        sx={{ 
+          cursor: 'pointer', 
+          color: '#1976d2',
+          textDecoration: 'underline',
+          '&:hover': { color: '#1565c0' }
+        }}
+        onClick={() => window.open(`mailto:${student.email}`, '_self')}
+      >
+        {student.email}
+      </Box>
+    </Tooltip>
+  ) : (
+    <Typography variant="body2" sx={{ color: '#999', fontStyle: 'italic' }}>
+      אין מייל
+    </Typography>
+  )}
+</TableCell>
 <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.age}</TableCell>
 <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.city}</TableCell>
 <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.school}</TableCell>
 <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.healthFund}</TableCell>
 <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.class}</TableCell>
-<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>
-  {student.email && student.email.trim() ? (
-    <Tooltip title={`שלח מייל ל-${student.email}`}>
-      <Box 
-        component="a"
-        href={`mailto:${student.email}`}
-        sx={{ 
-          color: '#1976d2', 
-          textDecoration: 'none',
-          '&:hover': { textDecoration: 'underline' },
-          fontSize: '0.85rem'
-        }}
-      >
-        {student.email}
-      </Box>
-    </Tooltip>
-  ) : null}
-</TableCell>
 <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.sector}</TableCell>
 <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>
   <Chip
@@ -737,23 +793,6 @@ export default function StudentsTable() {
           </motion.div>
         )}
 
-        {/* כפתור הוספת תלמיד חדש */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-        >
-          <Button
-            onClick={() => setTermsOpen(true)}
-            variant="contained"
-            startIcon={<PersonAdd />}
-            size="large"
-            className="main-add-button glow-effect"
-            fullWidth
-          >
-            ➕ הוסף תלמיד חדש
-          </Button>
-        </motion.div>
 
         {/* דיאלוג חוגים */}
         <StudentCoursesDialog
@@ -771,7 +810,7 @@ export default function StudentsTable() {
           onAccept={() => {
             setTermsOpen(false);
             setnewStudent({
-              id: null, firstName: '', lastName: '', phone: null, age: 0,
+              id: null, firstName: '', lastName: '', phone: null, secondaryPhone: '', age: 0,
               city: '', school: '', healthFund: '', class: "", sector: ""
             });
             setOpen(true);
@@ -790,6 +829,15 @@ export default function StudentsTable() {
             ➕ הוסף תלמיד חדש
           </DialogTitle>
           <DialogContent className="dialog-content">
+            <TextField
+              fullWidth
+              label={<span><span role="img" aria-label="person">👤</span> נרשם ע"י</span>}
+              value={newStudent.createdBy || ''}
+              onChange={(e) => setnewStudent({ ...newStudent, createdBy: e.target.value })}
+              className="dialog-field"
+              placeholder="שם משתמש או מלל חופשי"
+              helperText="ניתן לשנות את שם היוצר או להכניס מלל חופשי"
+            />
             <TextField
               fullWidth
               label="🆔 תעודת זהות"
@@ -817,6 +865,14 @@ export default function StudentsTable() {
               value={newStudent.phone || ''}
               onChange={(e) => setnewStudent({ ...newStudent, phone: e.target.value })}
               className="dialog-field"
+            />
+            <TextField
+              fullWidth
+              label="📱 טלפון נוסף"
+              value={newStudent.secondaryPhone || ''}
+              onChange={(e) => setnewStudent({ ...newStudent, secondaryPhone: e.target.value })}
+              className="dialog-field"
+              placeholder="טלפון נוסף (אופציונלי)"
             />
             <TextField
               fullWidth
@@ -961,6 +1017,14 @@ export default function StudentsTable() {
               value={currentStudent.phone || ''}
               onChange={(e) => setCurrentStudent({ ...currentStudent, phone: e.target.value })}
               className="dialog-field"
+            />
+            <TextField
+              fullWidth
+              label="📱 טלפון נוסף"
+              value={currentStudent.secondaryPhone || ''}
+              onChange={(e) => setCurrentStudent({ ...currentStudent, secondaryPhone: e.target.value })}
+              className="dialog-field"
+              placeholder="טלפון נוסף (אופציונלי)"
             />
             <TextField
               fullWidth
@@ -1154,3 +1218,4 @@ export default function StudentsTable() {
     </motion.div>
   );
 }
+

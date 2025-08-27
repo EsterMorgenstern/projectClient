@@ -54,6 +54,7 @@ const AddStudentDialog = ({
     firstName: '',
     lastName: '',
     phone: '',
+    secondaryPhone: '',
     email: '',
     age: '',
     city: '',
@@ -61,7 +62,8 @@ const AddStudentDialog = ({
     healthFund: '',
     class: '',
     sector: '',
-    status: 'ליד'
+    status: 'ליד',
+    CreatedBy: ''
   });
 
   const [loading, setLoading] = useState(false);
@@ -164,6 +166,7 @@ const AddStudentDialog = ({
       firstName: '',
       lastName: '',
       phone: '',
+      secondaryPhone: '',
       email: '',
       age: '',
       city: '',
@@ -242,22 +245,25 @@ const AddStudentDialog = ({
   // פונקציה ליצירת הערה אוטומטית לתלמיד חדש
   const createAutomaticRegistrationNote = async (studentId, isUpdate = false) => {
     try {
+      // בדוק אם כבר קיימת הערת "מעקב רישום" לתלמיד הזה
+      const notesResponse = await dispatch(getStudentById(studentId));
+      const notes = notesResponse?.payload?.notes || [];
+      if (notes.some(n => n.noteType === 'מעקב רישום')) {
+        console.log('⛔ הערת "מעקב רישום" כבר קיימת לתלמיד, לא תיווצר כפילות.');
+        return;
+      }
       // פונקציה לקבלת פרטי המשתמש
       const getUserDetails = (user) => {
         if (!user) return { fullName: 'מערכת', role: 'מערכת אוטומטית' };
-        
         const firstName = user.firstName || user.FirstName || 'משתמש';
         const lastName = user.lastName || user.LastName || 'אורח';
         const role = user.role || user.Role || 'מורה';
-        
         return {
           fullName: `${firstName} ${lastName}`,
           role
         };
       };
-
       const userDetails = getUserDetails(currentUser);
-      
       const currentDate = new Date().toLocaleDateString('he-IL', {
         day: '2-digit',
         month: '2-digit',
@@ -265,14 +271,11 @@ const AddStudentDialog = ({
         hour: '2-digit',
         minute: '2-digit'
       });
-      
       // בדיקת משימות שלא הושלמו
       const incompleteTasks = checklistItems.filter(item => !registrationChecklist[item.key]);
-      
       let noteContent = isUpdate 
         ? `פרטי התלמיד עודכנו בתאריך ${currentDate} באמצעות "הוספת תלמיד"`
         : `נרשם בפעם הראשונה למערכת בתאריך ${currentDate} באמצעות "הוספת תלמיד"`;
-      
       // אם יש משימות שלא הושלמו, הוסף אותן להערה
       if (incompleteTasks.length > 0) {
         noteContent += '\n\n🔴 משימות שטרם הושלמו:';
@@ -282,7 +285,6 @@ const AddStudentDialog = ({
       } else {
         noteContent += '\n\n✅ כל משימות הרישום הושלמו בהצלחה';
       }
-      
       const noteData = {
         studentId: studentId,
         noteContent: noteContent,
@@ -294,11 +296,8 @@ const AddStudentDialog = ({
         createdDate: new Date().toISOString(),
         updatedDate: new Date().toISOString()
       };
-
       console.log('📝 Creating automatic note:', noteData);
-      
       const result = await dispatch(addStudentNote(noteData));
-      
       if (addStudentNote.fulfilled.match(result)) {
         console.log('✅ Automatic note created successfully');
       } else {
@@ -328,7 +327,8 @@ const AddStudentDialog = ({
       const studentData = {
         ...newStudent,
         age: parseInt(newStudent.age),
-        phone: newStudent.phone.toString()
+        phone: newStudent.phone.toString(),
+        CreatedBy: currentUser ? `${currentUser.firstName || currentUser.FirstName || ''} ${currentUser.lastName || currentUser.LastName || ''}` : 'מערכת'
       };
 
       // ננסה קודם הוספה פשוטה
@@ -398,23 +398,14 @@ const AddStudentDialog = ({
         
         if (verificationResult.type === 'students/GetStudentById/fulfilled' && verificationResult.payload) {
           console.log(`✅ Student ${isUpdateOperation ? 'updated' : 'added'} and verified successfully!`);
-          
-          // יצירת הערה אוטומטית רק עבור תלמידים שנוספו דרך עמוד התלמידים (לא דרך שיבוץ)
-          // אם זה בא מהוספת תלמיד ושיבוץ מיידי, ההערה תתווסף שם
-          if (!onSuccess || (title && !title.includes('שיבוץ'))) {
-            await createAutomaticRegistrationNote(studentToReturn.id || newStudent.id, isUpdateOperation);
-          }
-          
+          // תמיד צור הערות אוטומטיות (מעקב רישום + כללית)
+          await createAutomaticRegistrationNote(studentToReturn.id || newStudent.id, isUpdateOperation);
           setSavedStudentData(studentToReturn);
-          
-          // ניקוי נתונים לאחר הצלחה מאומתת
           clearStudentFormData();
-          
           // אם יש הערה לכתוב, פתח את דיאלוג ההערות
           if (studentNote.trim()) {
             setNoteDialogOpen(true);
           } else {
-            // אם אין הערה, סיים את התהליך
             finishProcess(studentToReturn);
           }
         } else {
@@ -473,15 +464,18 @@ const AddStudentDialog = ({
 
   const handleNoteSubmit = (noteData) => {
     console.log('✅ Note added for student:', noteData);
+    // שמור את ההערה הידנית לשרת
+    dispatch(addStudentNote({
+      ...noteData,
+      studentId: savedStudentData?.id || noteData.studentId
+    }));
     setNoteDialogOpen(false);
     setStudentNote(''); // נקה את ההערה אחרי שמירה
     clearStudentFormData(); // נקה גם מ-localStorage
-    
     // הצג הודעה על הוספת ההערה
     if (onSuccess) {
       onSuccess(savedStudentData, 'התלמיד נוסף בהצלחה וההערה נשמרה!', 'success');
     }
-    
     // אם צריך לסגור את הדיאלוג
     if (!keepOpenAfterSubmit) {
       resetForm();
@@ -540,28 +534,57 @@ const AddStudentDialog = ({
       <DialogContent sx={{ p: 3, direction: 'rtl' }}>
         <Grid container spacing={3} sx={{ mt: 1 }}>
           <Grid item xs={12} sm={6}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <PersonAddIcon sx={{ color: '#10b981' }} />
+              <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#374151' }}>
+                נרשם ע"י:
+              </Typography>
+              <TextField
+                label={<span><span role="img" aria-label="person">👤</span> נרשם ע"י</span>}
+                fullWidth
+                variant="outlined"
+                value={newStudent.CreatedBy || (currentUser ? `${currentUser.firstName || currentUser.FirstName || ''} ${currentUser.lastName || currentUser.LastName || ''}` : 'מערכת')}
+                onChange={(e) => handleInputChange('CreatedBy', e.target.value)}
+                sx={{ textAlign: 'right', mt: 1 }}
+                placeholder={currentUser ? `${currentUser.firstName || currentUser.FirstName || ''} ${currentUser.lastName || currentUser.LastName || ''}` : 'מערכת'}
+                helperText="ניתן לשנות את שם היוצר או להכניס מלל חופשי"
+              />
+              {/* Remove ID field from here, will be placed with phone */}
+            </Box>
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
             <TextField
               label="🆔 תעודת זהות"
               type="number"
-              fullWidth
               variant="outlined"
               value={newStudent.id}
               onChange={(e) => handleInputChange('id', e.target.value)}
               required
-              sx={{ textAlign: 'right' }}
+              sx={{ textAlign: 'right', width: '160px', minWidth: '120px' }}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="📞 טלפון"
+              type="tel"
+              variant="outlined"
+              value={newStudent.phone}
+              onChange={(e) => handleInputChange('phone', e.target.value)}
+              required
+              sx={{ textAlign: 'right', width: '180px', minWidth: '120px' }}
             />
           </Grid>
 
           <Grid item xs={12} sm={6}>
             <TextField
-              label="📞 טלפון"
+              label="📱 טלפון נוסף"
               type="tel"
-              fullWidth
               variant="outlined"
-              value={newStudent.phone}
-              onChange={(e) => handleInputChange('phone', e.target.value)}
-              required
-              sx={{ textAlign: 'right' }}
+              value={newStudent.secondaryPhone}
+              onChange={(e) => handleInputChange('secondaryPhone', e.target.value)}
+              sx={{ textAlign: 'right', width: '180px', minWidth: '120px' }}
+              placeholder="טלפון נוסף (אופציונלי)"
             />
           </Grid>
 
@@ -569,11 +592,10 @@ const AddStudentDialog = ({
             <TextField
               label="📧 מייל"
               type="email"
-              fullWidth
               variant="outlined"
               value={newStudent.email}
               onChange={(e) => handleInputChange('email', e.target.value)}
-              sx={{ textAlign: 'right' }}
+              sx={{ textAlign: 'right', width: '220px', minWidth: '120px' }}
               placeholder="example@email.com"
             />
           </Grid>
@@ -581,24 +603,22 @@ const AddStudentDialog = ({
           <Grid item xs={12} sm={6}>
             <TextField
               label="👤 שם פרטי"
-              fullWidth
               variant="outlined"
               value={newStudent.firstName}
               onChange={(e) => handleInputChange('firstName', e.target.value)}
               required
-              sx={{ textAlign: 'right' }}
+              sx={{ textAlign: 'right', width: '160px', minWidth: '120px' }}
             />
           </Grid>
 
           <Grid item xs={12} sm={6}>
             <TextField
               label="👥 שם משפחה"
-              fullWidth
               variant="outlined"
               value={newStudent.lastName}
               onChange={(e) => handleInputChange('lastName', e.target.value)}
               required
-              sx={{ textAlign: 'right' }}
+              sx={{ textAlign: 'right', width: '160px', minWidth: '120px' }}
             />
           </Grid>
 
@@ -623,12 +643,11 @@ const AddStudentDialog = ({
           <Grid item xs={12} sm={6}>
             <TextField
               label="🏙️ עיר"
-              fullWidth
               variant="outlined"
               value={newStudent.city}
               onChange={(e) => handleInputChange('city', e.target.value)}
               required
-              sx={{ textAlign: 'right' }}
+              sx={{ textAlign: 'right', width: '160px', minWidth: '120px' }}
             />
           </Grid>
 
@@ -832,6 +851,7 @@ const AddStudentDialog = ({
                   startIcon={<TermsIcon />}
                   onClick={() => setTermsDialogOpen(true)}
                   sx={{
+                    direction:'ltr',
                     borderRadius: '8px',
                     px: 3,
                     py: 1.5,

@@ -14,7 +14,8 @@ import {
     FormControl,
     InputLabel,
     Select,
-    MenuItem
+    MenuItem,
+    Snackbar
 } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
 import { createGrowPayment } from '../../store/payments/createGrowPayment';
@@ -39,11 +40,19 @@ const GrowPaymentDialog = ({ open, onClose, student, amount: initialAmount, desc
         creditCardNumber: ''
     });
 
+    const [iframeLoaded, setIframeLoaded] = useState(false);
     const [paymentIframeUrl, setPaymentIframeUrl] = useState(null);
     const [paymentStatus, setPaymentStatus] = useState('form'); // 'form', 'processing', 'iframe', 'sdk', 'success', 'error'
+    const [localError, setLocalError] = useState('');
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
 
     // טיפול באירועי GROW SDK
     useEffect(() => {
+        const handleGrowStart = (event) => {
+            console.log('🚀 GROW Payment Start Event:', event.detail);
+            setPaymentStatus('processing');
+        };
+
         const handleGrowSuccess = (event) => {
             console.log('🎉 GROW Payment Success Event:', event.detail);
             setPaymentStatus('success');
@@ -58,6 +67,12 @@ const GrowPaymentDialog = ({ open, onClose, student, amount: initialAmount, desc
         const handleGrowError = (event) => {
             console.log('🚨 GROW Payment Error Event:', event.detail);
             setPaymentStatus('error');
+            const errorDetail = event.detail;
+            if (errorDetail.isNetFreeError) {
+                setLocalError('התשלום נחסם על ידי NetFree או חומת אש אחרת. אנא פנה לתמיכה טכנית.');
+            } else {
+                setLocalError(errorDetail.userMessage || 'שגיאה בתהליך התשלום');
+            }
         };
 
         const handleGrowCancel = (event) => {
@@ -73,6 +88,7 @@ const GrowPaymentDialog = ({ open, onClose, student, amount: initialAmount, desc
         const handleSDKLoadError = (event) => {
             console.log('🚨 GROW SDK Load Error:', event.detail);
             setPaymentStatus('error');
+            setLocalError('שגיאה בטעינת מערכת התשלומים. ייתכן שהשירות חסום על ידי NetFree או חומת אש אחרת.');
             // אפשר להציג הודעה מיוחדת על NetFree
         };
 
@@ -90,6 +106,7 @@ const GrowPaymentDialog = ({ open, onClose, student, amount: initialAmount, desc
         };
 
         // רישום לאירועים
+        window.addEventListener('growPaymentStart', handleGrowStart);
         window.addEventListener('growPaymentSuccess', handleGrowSuccess);
         window.addEventListener('growPaymentFailure', handleGrowFailure);
         window.addEventListener('growPaymentError', handleGrowError);
@@ -100,6 +117,7 @@ const GrowPaymentDialog = ({ open, onClose, student, amount: initialAmount, desc
 
         // ניקוי
         return () => {
+            window.removeEventListener('growPaymentStart', handleGrowStart);
             window.removeEventListener('growPaymentSuccess', handleGrowSuccess);
             window.removeEventListener('growPaymentFailure', handleGrowFailure);
             window.removeEventListener('growPaymentError', handleGrowError);
@@ -122,6 +140,7 @@ const GrowPaymentDialog = ({ open, onClose, student, amount: initialAmount, desc
             });
             setPaymentIframeUrl(null);
             setPaymentStatus('form');
+            setIframeLoaded(false); // איפוס מצב הטעינה
         }
     }, [open, initialAmount, initialDescription, student]);
 
@@ -179,7 +198,8 @@ const GrowPaymentDialog = ({ open, onClose, student, amount: initialAmount, desc
             return;
         }
 
-        setPaymentStatus('processing');
+    setPaymentStatus('processing');
+    setSnackbar({ open: true, message: 'מעבד תשלום...', severity: 'info' });
 
         try {
             const paymentData = {
@@ -188,30 +208,31 @@ const GrowPaymentDialog = ({ open, onClose, student, amount: initialAmount, desc
                 description: formData.description,
                 fullName: formData.fullName.trim(),
                 phone: formData.phone.trim(),
-                creditCardNumber: formData.creditCardNumber || null
+                creditCardNumber: formData.creditCardNumber || ''
             };
 
-            console.log('🚀 Starting GROW payment process:', paymentData);
+            // שליחה בפורמט FormData
+            const form = new FormData();
+            Object.entries(paymentData).forEach(([key, value]) => {
+                if (value !== null && value !== undefined) form.append(key, value);
+            });
 
-            const result = await dispatch(createGrowPayment(paymentData));
-            
+            console.log('🚀 Starting GROW payment process:', paymentData);
+            const result = await dispatch(createGrowPayment(form));
+
             if (createGrowPayment.fulfilled.match(result)) {
-                // בדיקה אם יש authCode (SDK החדש) או redirectUrl (ישן)
                 if (result.payload.authCode) {
+                    setSnackbar({ open: true, message: 'הארנק נפתח, השלם את התשלום בחלון החדש', severity: 'success' });
                     console.log('✅ Received authCode - using modern SDK:', result.payload.authCode);
-                    
-                    // שימוש ב-SDK החדש
                     const success = openGrowWallet(result.payload.authCode);
                     if (success) {
-                        setPaymentStatus('sdk'); // מצב חדש לSDK
-                        
-                        // התחלת polling לבדיקת סטטוס (אם יש transactionId)
-                        if (result.payload.transactionId) {
-                            console.log('🔍 Starting payment polling...');
+                        setPaymentStatus('sdk');
+                        if (result.payload.transactionId && !result.payload.transactionId.includes('MOCK')) {
                             pollPaymentStatus(result.payload.transactionId)
                                 .then(pollResult => {
                                     if (pollResult.success === true) {
                                         setPaymentStatus('success');
+                                        onClose(true);
                                     } else if (pollResult.success === false) {
                                         setPaymentStatus('error');
                                     }
@@ -221,38 +242,28 @@ const GrowPaymentDialog = ({ open, onClose, student, amount: initialAmount, desc
                                 });
                         }
                     } else {
+                        setSnackbar({ open: true, message: 'שגיאה בפתיחת ארנק GROW', severity: 'error' });
                         throw new Error('שגיאה בפתיחת ארנק GROW');
                     }
                 } else if (result.payload.redirectUrl) {
                     console.log('✅ Received redirect URL (Legacy):', result.payload.redirectUrl);
-                    setPaymentIframeUrl(result.payload.redirectUrl);
-                    setPaymentStatus('iframe');
-                    
-                    // התחלת polling גם עבור iframe (אם יש transactionId)
-                    if (result.payload.transactionId) {
-                        console.log('🔍 Starting payment polling for iframe...');
-                        pollPaymentStatus(result.payload.transactionId)
-                            .then(pollResult => {
-                                if (pollResult.success === true) {
-                                    setPaymentStatus('success');
-                                } else if (pollResult.success === false) {
-                                    setPaymentStatus('error');
-                                }
-                            })
-                            .catch(err => {
-                                console.error('❌ Polling error:', err);
-                            });
-                    }
+                    window.open(result.payload.redirectUrl, '_blank', 'noopener,noreferrer');
+                    setSnackbar({ open: true, message: 'דף התשלום נפתח, השלם את התשלום בחלון החדש', severity: 'success' });
+                    setPaymentStatus('processing');
+                    setTimeout(() => {
+                        setPaymentStatus('success');
+                        onClose(true);
+                    }, 3000);
                 } else {
                     throw new Error('לא התקבל authCode או redirectUrl מהשרת');
                 }
             } else {
                 throw new Error(result.payload || 'שגיאה ביצירת תשלום');
             }
-
         } catch (error) {
             console.error('❌ Error in payment process:', error);
             setPaymentStatus('error');
+            setSnackbar({ open: true, message: 'שגיאה בתהליך התשלום', severity: 'error' });
         }
     };
 
@@ -269,7 +280,7 @@ const GrowPaymentDialog = ({ open, onClose, student, amount: initialAmount, desc
         switch (paymentStatus) {
             case 'form':
                 return (
-                    <Box sx={{ direction: 'rtl' }}>
+                    <Box sx={{ direction: 'rtl', background: '#fff', boxShadow: 0, p: 2, maxHeight: '60vh', overflowY: 'auto' }}>
                         <Grid container spacing={3}>
                             <Grid item xs={12} sm={6}>
                                 <TextField
@@ -280,9 +291,7 @@ const GrowPaymentDialog = ({ open, onClose, student, amount: initialAmount, desc
                                     onChange={(e) => handleInputChange('amount', e.target.value)}
                                     inputProps={{ min: 0, step: 0.01 }}
                                     required
-                                    InputProps={{
-                                        endAdornment: <Typography variant="body2">₪</Typography>
-                                    }}
+                                    InputProps={{ endAdornment: <Typography variant="body2">₪</Typography> }}
                                 />
                             </Grid>
                             <Grid item xs={12} sm={6}>
@@ -323,66 +332,41 @@ const GrowPaymentDialog = ({ open, onClose, student, amount: initialAmount, desc
                                 />
                             </Grid>
                         </Grid>
-
-                        {error && (
-                            <Alert severity="error" sx={{ mt: 2, borderRadius: '12px' }}>
-                                {error}
-                            </Alert>
-                        )}
-                    </Box>
-                );
-
-            case 'processing':
-                return (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 4 }}>
-                        <CircularProgress size={60} sx={{ mb: 2 }} />
-                        <Typography variant="h6">יוצר תהליך תשלום...</Typography>
-                        <Typography variant="body2" color="text.secondary">
-                            אנא המתן, מכין את דף התשלום
-                        </Typography>
                     </Box>
                 );
 
             case 'iframe':
                 return (
-                    <Box sx={{ height: '600px', width: '100%', position: 'relative' }}>
-                        <iframe
-                            src={paymentIframeUrl}
-                            style={{
-                                width: '100%',
-                                height: '100%',
-                                border: 'none',
-                                borderRadius: '8px'
-                            }}
-                            title="GROW Payment"
-                            onLoad={() => {
-                                console.log('📱 Payment iframe loaded successfully');
-                            }}
-                        />
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 4, maxHeight: '60vh', overflowY: 'auto', width: '100%' }}>
+                        <Alert severity="success" sx={{ mb: 2, borderRadius: '12px', width: '100%' }}>
+                            <Typography variant="body2">
+                                ✅ <strong>תהליך התשלום הופעל!</strong> דף התשלום נפתח בחלון חדש.
+                            </Typography>
+                        </Alert>
+                        <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+                            אנא השלם את התשלום בחלון שנפתח. לאחר סיום, חזור לכאן.
+                        </Typography>
                     </Box>
                 );
 
             case 'sdk':
                 return (
-                    <Box sx={{ 
-                        height: '400px', 
-                        width: '100%', 
-                        display: 'flex', 
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 2
-                    }}>
-                        <CircularProgress size={60} />
-                        <Typography variant="h6" align="center">
-                            ארנק GROW נפתח בחלון נפרד
-                        </Typography>
-                        <Typography variant="body2" align="center" color="text.secondary">
-                            אנא בצע את התשלום בחלון שנפתח. אל תסגור חלון זה עד להשלמת התשלום.
-                        </Typography>
-                        <Alert severity="info" sx={{ mt: 2 }}>
+                    <Box sx={{ height: '350px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, p: 3, maxHeight: '60vh', overflowY: 'auto', background: '#f3f4f6', borderRadius: 2 }}>
+                        <Box sx={{ textAlign: 'center', width: '100%' }}>
+                            <CircularProgress size={50} sx={{ mb: 2 }} />
+                            <Typography variant="h6" align="center" sx={{ mb: 1 }}>
+                                ✅ תהליך התשלום הופעל בהצלחה!
+                            </Typography>
+                            <Typography variant="body1" align="center" color="text.secondary" sx={{ mb: 2 }}>
+                                ארנק GROW נפתח בחלון נפרד או כ-overlay
+                            </Typography>
+                        </Box>
+                        <Alert severity="success" sx={{ width: '100%' }}>
                             <Typography variant="body2">
-                                💡 אם החלון לא נפתח, בדוק שלא חסום על ידי popup blocker
+                                🎯 <strong>הוראות:</strong>
+                                <br />• השלם את התשלום בחלון של GROW
+                                <br />• אל תסגור את החלון הזה עד סיום התהליך  
+                                <br />• אם החלון לא נפתח, בדוק popup blocker
                             </Typography>
                         </Alert>
                     </Box>
@@ -390,7 +374,7 @@ const GrowPaymentDialog = ({ open, onClose, student, amount: initialAmount, desc
 
             case 'success':
                 return (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 4 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 4, maxHeight: '60vh', overflowY: 'auto', width: '100%' }}>
                         <Typography variant="h5" color="success.main" sx={{ mb: 2 }}>
                             ✅ התשלום הושלם בהצלחה!
                         </Typography>
@@ -402,16 +386,34 @@ const GrowPaymentDialog = ({ open, onClose, student, amount: initialAmount, desc
 
             case 'error':
                 return (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 4 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 4, maxHeight: '60vh', overflowY: 'auto', width: '100%' }}>
                         <Typography variant="h5" color="error.main" sx={{ mb: 2 }}>
                             ❌ שגיאה בתשלום
                         </Typography>
-                        <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                        <Typography variant="body1" color="text.secondary" sx={{ mb: 3, textAlign: 'center' }}>
                             התרחשה שגיאה בתהליך התשלום
                         </Typography>
+                        {localError && (
+                            <Alert severity="error" sx={{ mb: 3, width: '100%' }}>
+                                <Typography variant="body2">
+                                    {localError}
+                                </Typography>
+                                {localError.includes('NetFree') && (
+                                    <Typography variant="body2" sx={{ mt: 1, fontWeight: 'bold' }}>
+                                        💡 פתרונות אפשריים:
+                                        <br />• פנה לנטפרי לפתיחת הדומיינים: cdn.meshulam.co.il, sandbox.meshulam.co.il
+                                        <br />• נסה לגשת ממחשב אחר ללא NetFree
+                                        <br />• צור קשר עם התמיכה הטכנית
+                                    </Typography>
+                                )}
+                            </Alert>
+                        )}
                         <Button 
                             variant="contained" 
-                            onClick={() => setPaymentStatus('form')}
+                            onClick={() => {
+                                setPaymentStatus('form');
+                                setLocalError('');
+                            }}
                             sx={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}
                         >
                             נסה שוב
@@ -448,41 +450,72 @@ const GrowPaymentDialog = ({ open, onClose, student, amount: initialAmount, desc
     };
 
     return (
-        <Dialog
-            open={open}
-            onClose={handleClose}
-            maxWidth={paymentStatus === 'iframe' ? 'md' : 'sm'}
-            fullWidth
-            sx={{ direction: 'rtl' }}
-            disableEscapeKeyDown={paymentStatus === 'processing'}
-        >
-            <DialogTitle>{getDialogTitle()}</DialogTitle>
-            <DialogContent sx={{ minHeight: paymentStatus === 'iframe' ? '600px' : 'auto' }}>
-                {renderContent()}
-            </DialogContent>
-            {shouldShowActions() && (
-                <DialogActions>
-                    <Button onClick={handleClose} disabled={loading}>
-                        {paymentStatus === 'sdk' ? 'סגור' : 'ביטול'}
-                    </Button>
-                    {paymentStatus === 'form' && (
-                        <Button
-                            variant="contained"
-                            onClick={handleSubmit}
-                            disabled={loading}
-                            sx={{
-                                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                                '&:hover': {
-                                    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)'
-                                }
-                            }}
-                        >
-                            {loading ? 'מעבד...' : 'המשך לתשלום'}
+        <>
+            <Dialog
+                open={open}
+                onClose={handleClose}
+                maxWidth={paymentStatus === 'iframe' ? 'lg' : 'sm'}
+                fullWidth
+                sx={{ 
+                    direction: 'rtl',
+                    zIndex: 9999,
+                    '& .MuiDialog-paper': {
+                        zIndex: 10000,
+                        height: paymentStatus === 'iframe' ? '90vh' : 'auto',
+                        maxHeight: paymentStatus === 'iframe' ? '90vh' : '80vh',
+                        overflowY: 'auto',
+                        background: paymentStatus === 'sdk' ? '#f3f4f6' : '#fff'
+                    }
+                }}
+                disableEscapeKeyDown={paymentStatus === 'processing'}
+            >
+                <DialogTitle>{getDialogTitle()}</DialogTitle>
+                <DialogContent sx={{ 
+                    minHeight: paymentStatus === 'iframe' ? '700px' : 'auto',
+                    padding: paymentStatus === 'iframe' ? 1 : 3,
+                    overflow: paymentStatus === 'iframe' ? 'hidden' : 'auto',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '100%',
+                }}>
+                    {renderContent()}
+                </DialogContent>
+                {shouldShowActions() && (
+                    <DialogActions>
+                        <Button onClick={handleClose} disabled={loading}>
+                            {paymentStatus === 'sdk' ? 'סגור' : 'ביטול'}
                         </Button>
-                    )}
-                </DialogActions>
-            )}
-        </Dialog>
+                        {paymentStatus === 'form' && (
+                            <Button
+                                variant="contained"
+                                onClick={handleSubmit}
+                                disabled={loading}
+                                sx={{
+                                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                                    '&:hover': {
+                                        background: 'linear-gradient(135deg, #059669 0%, #047857 100%)'
+                                    }
+                                }}
+                            >
+                                {loading ? 'מעבד...' : 'המשך לתשלום'}
+                            </Button>
+                        )}
+                    </DialogActions>
+                )}
+            </Dialog>
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={4000}
+                onClose={() => setSnackbar({ ...snackbar, open: false })}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                <Alert severity={snackbar.severity} sx={{ width: '100%' }}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
+        </>
     );
 };
 

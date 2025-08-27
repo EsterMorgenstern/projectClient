@@ -204,15 +204,15 @@ const navigationItems = [
     gradient: 'linear-gradient(135deg, #FF8A80 0%, #FFAB91 50%, #FFECD2 100%)',
     shadowColor: 'rgba(255, 138, 128, 0.4)'
   },
-  { 
-    title: 'GROW תשלומים', 
-    path: '/grow-payment-test', 
-    icon: <AccountCircle />, 
-    color: '#00E676', // ירוק בהיר
-    description: 'בדיקת מערכת תשלומי GROW Wallet',
-    gradient: 'linear-gradient(135deg, #00E676 0%, #00C853 50%, #4CAF50 100%)',
-    shadowColor: 'rgba(0, 230, 118, 0.4)'
-  },
+  // { 
+  //   title: 'GROW תשלומים', 
+  //   path: '/grow-payment-test', 
+  //   icon: <AccountCircle />, 
+  //   color: '#00E676', // ירוק בהיר
+  //   description: 'בדיקת מערכת תשלומי GROW Wallet',
+  //   gradient: 'linear-gradient(135deg, #00E676 0%, #00C853 50%, #4CAF50 100%)',
+  //   shadowColor: 'rgba(0, 230, 118, 0.4)'
+  // },
   { 
     title: 'עוד', 
     path: null, 

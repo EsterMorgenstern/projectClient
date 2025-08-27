@@ -217,6 +217,32 @@ const EnrollStudent = () => {
   const allowedSectors = ['כללי', 'חסידי', 'גור', 'ליטאי'];
   const allowedDays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי'];
 
+const dayOrder = {
+  'ראשון': 1,
+  'שני': 2,
+  'שלישי': 3,
+  'רביעי': 4,
+  'חמישי': 5,
+  'שישי': 6,
+  'שבת': 7
+};
+
+function parseHour(hourStr) {
+  if (!hourStr) return 0;
+  const [h, m] = hourStr.split(':').map(Number);
+  return (isNaN(h) ? 0 : h) * 60 + (isNaN(m) ? 0 : m);
+}
+
+const sortedGroups = groups
+  .filter(group => group.branchId === selectedBranch?.branchId)
+  .slice()
+  .sort((a, b) => {
+    const dayA = dayOrder[a.dayOfWeek] || 99;
+    const dayB = dayOrder[b.dayOfWeek] || 99;
+    if (dayA !== dayB) return dayA - dayB;
+    return parseHour(a.hour) - parseHour(b.hour);
+  });
+
   // Effects
   useEffect(() => {
     dispatch(fetchCourses());
@@ -1669,6 +1695,32 @@ const EnrollStudent = () => {
       animate="visible"
       dir="rtl"
     >
+      {/* שורת כפתור הוספה */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 2 }}>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => setAddCourseDialogOpen(true)}
+          sx={{
+            bgcolor: '#3B82F6',
+            color: 'white',
+            borderRadius: '10px',
+            px: 2,
+            py: 0.5,
+            fontSize: '1rem',
+            minWidth: 120,
+            height: 36,
+            boxShadow: '0 2px 8px rgba(59, 130, 246, 0.15)',
+            '&:hover': {
+              bgcolor: '#2563eb',
+              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)',
+            },
+            transition: 'all 0.3s ease'
+          }}
+        >
+          הוסף חוג חדש
+        </Button>
+      </Box>
       <Grid container spacing={3} justifyContent="center">
         {courses.map((course, index) => (
           <Grid item xs={12} sm={6} md={4} lg={3} key={`course-${course.courseId || course.id || index}`}>
@@ -1735,54 +1787,6 @@ const EnrollStudent = () => {
             </motion.div>
           </Grid>
         ))}
-
-        {/* Add Course Card */}
-        <Grid item xs={12} sm={6} md={4} lg={3} key="add-course-card-unique">
-          <motion.div variants={itemVariants}>
-            <Paper
-              elevation={3}
-              component={motion.div}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.98 }}
-              sx={{
-                p: 3,
-                borderRadius: 3,
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                background: 'linear-gradient(135deg, #e6f7ff 0%, #f0f7ff 100%)',
-                transition: 'all 0.3s ease',
-                border: '2px dashed #3B82F6',
-                '&:hover': {
-                  boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
-                  background: 'linear-gradient(135deg, #dbeeff 0%, #e8f0ff 100%)',
-                }
-              }}
-              onClick={() => setAddCourseDialogOpen(true)}
-            >
-              <Box
-                sx={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: 'rgba(59, 130, 246, 0.1)',
-                  mb: 2
-                }}
-              >
-                <AddIcon sx={{ fontSize: 40, color: '#3B82F6' }} />
-              </Box>
-              <Typography variant="h6" fontWeight="bold" textAlign="center" color="#1E3A8A">
-                הוסף חוג חדש
-              </Typography>
-            </Paper>
-          </motion.div>
-        </Grid>
       </Grid>
     </motion.div>
   );
@@ -1818,49 +1822,92 @@ const EnrollStudent = () => {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
+        dir="rtl"
       >
-        <Box sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
-          <Button
-            startIcon={<BackIcon />}
-            onClick={handleBack}
-            variant="contained"
-            sx={{
-              mr: 2,
-              bgcolor: '#1E40AF',
-              color: 'white',
-              borderRadius: '12px',
-              px: 3,
-              py: 1,
-              boxShadow: '0 4px 14px rgba(30, 64, 175, 0.25)',
-              '&:hover': {
-                bgcolor: '#1E3A8A',
-                boxShadow: '0 6px 20px rgba(30, 64, 175, 0.35)',
-              },
-              transition: 'all 0.3s ease'
-            }}
-          >
-            חזרה לחוגים
-          </Button>
-          <Typography variant="h5" fontWeight="bold" color="#1E3A8A">
-            {selectedCourse?.couresName} - בחר סניף
-          </Typography>
+        <Box sx={{ mb: 3, display: 'flex',direction:'rtl', alignItems: 'center', flexWrap: 'wrap', gap: 2, justifyContent: 'flex-end'  }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', flexDirection: 'row-reverse', justifyContent: 'flex-end', gap: 2 }}>
+            <Typography variant="h5" fontWeight="bold" color="#1E3A8A">
+              {selectedCourse?.couresName} - בחר סניף
+            </Typography>
+             {/* שורת כפתור הוספה לסניפים */}
+        {Object.keys(branchesByCity).length > 0 && (
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end'}}>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setAddBranchDialogOpen(true)}
+              sx={{
+                bgcolor: '#10B981',
+                color: 'white',
+                borderRadius: '10px',
+                px: 2,
+                py: 0.5,
+                fontSize: '1rem',
+                minWidth: 120,
+                height: 36,
+                boxShadow: '0 2px 8px rgba(16, 185, 129, 0.15)',
+                '&:hover': {
+                  bgcolor: '#059669',
+                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)',
+                },
+                transition: 'all 0.3s ease'
+              }}
+            >
+              הוסף סניף חדש
+            </Button>
+          </Box>
+        )}
+            <Button
+              endIcon={<BackIcon style={{ transform: 'scaleX(-1)' }} />}
+              onClick={handleBack}
+              variant="contained"
+              sx={{
+                direction:'ltr',
+                bgcolor: '#1E40AF',
+                color: 'white',
+                borderRadius: '12px',
+                px: 3,
+                py: 1,
+                boxShadow: '0 4px 14px rgba(30, 64, 175, 0.25)',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  bgcolor: '#1E3A8A',
+                  boxShadow: '0 6px 20px rgba(30, 64, 175, 0.35)'
+                }
+              }}
+            >
+              חזרה לחוגים
+            </Button>
+           
+          </Box>
         </Box>
 
         {/* בדיקה אם יש סניפים זמינים */}
         {Object.keys(branchesByCity).length === 0 ? (
-          <Box sx={{ 
-            textAlign: 'center', 
-            py: 8,
-            bgcolor: '#F8F9FA',
-            borderRadius: 3,
-            border: '2px dashed #DEE2E6'
-          }}>
-            <BranchIcon sx={{ fontSize: 64, color: '#6C757D', mb: 2 }} />
-            <Typography variant="h6" color="#6C757D" sx={{ mb: 2 }}>
-              אין סניפים זמינים לחוג זה
-            </Typography>
-            <Typography variant="body1" color="#6C757D" sx={{ mb: 3 }}>
-              הוסף סניף חדש לחוג {selectedCourse?.couresName}
+          <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'flex-start', flexDirection: 'row-reverse', gap: 2 }}>
+            <Button
+              startIcon={<BackIcon />}
+              onClick={handleBack}
+              variant="contained"
+              sx={{
+                bgcolor: '#1E40AF',
+                color: 'white',
+                borderRadius: '12px',
+                px: 3,
+                py: 1,
+                boxShadow: '0 4px 14px rgba(30, 64, 175, 0.25)',
+                '&:hover': {
+                  bgcolor: '#1E3A8A',
+                  boxShadow: '0 6px 20px rgba(30, 64, 175, 0.35)'
+                },
+                transition: 'all 0.3s ease'
+              }}
+            >
+              חזרה לחוגים
+            </Button>
+            
+            <Typography variant="h5" fontWeight="bold" color="#1E3A8A">
+              {selectedCourse?.couresName} - בחר סניף
             </Typography>
             <Button
               variant="contained"
@@ -1874,7 +1921,7 @@ const EnrollStudent = () => {
                 boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)',
                 '&:hover': {
                   bgcolor: '#059669',
-                  boxShadow: '0 6px 20px rgba(16, 185, 129, 0.4)',
+                  boxShadow: '0 6px 20px rgba(16, 185, 129, 0.4)'
                 },
                 transition: 'all 0.3s ease'
               }}
@@ -1899,7 +1946,7 @@ const EnrollStudent = () => {
               <LocationOn sx={{ color: '#10B981', ml: 1 }} />
             </Box>
 
-            <Grid container spacing={3} justifyContent="flex-start">
+            <Grid container spacing={3} justifyContent="center" dir="rtl">
               {cityBranches.map((branch, branchIndex) => {
                 const activeGroupsCount = getActiveGroupsCountForBranch(branch.branchId);
                 const groupsColor = getGroupsCountColor(activeGroupsCount);
@@ -2039,57 +2086,7 @@ const EnrollStudent = () => {
           ))
         )}
 
-        {/* Add Branch Card - רק אם יש כבר סניפים */}
-        {Object.keys(branchesByCity).length > 0 && (
-          <Grid container justifyContent="center" sx={{ mt: 2 }}>
-            <Grid item xs={12} sm={6} md={4} key="add-branch-card-unique">
-              <motion.div variants={itemVariants}>
-                <Paper
-                elevation={3}
-                component={motion.div}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.98 }}
-                sx={{
-                  p: 3,
-                  borderRadius: 3,
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  background: 'linear-gradient(135deg, #e6fff7 0%, #f0fff4 100%)',
-                  transition: 'all 0.3s ease',
-                  border: '2px dashed #10B981',
-                  '&:hover': {
-                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
-                    background: 'linear-gradient(135deg, #d1ffee 0%, #e8ffef 100%)',
-                  }
-                }}
-                onClick={() => setAddBranchDialogOpen(true)}
-              >
-                <Box
-                  sx={{
-                    width: 80,
-                    height: 80,
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: 'rgba(16, 185, 129, 0.1)',
-                    mb: 2
-                  }}
-                >
-                  <AddIcon sx={{ fontSize: 40, color: '#10B981' }} />
-                </Box>
-                <Typography variant="h6" fontWeight="bold" textAlign="center" color="#1E3A8A">
-                  הוסף סניף חדש
-                </Typography>
-              </Paper>
-            </motion.div>
-          </Grid>
-        </Grid>
-        )}
+       
       </motion.div>
     );
   };
@@ -2100,13 +2097,15 @@ const EnrollStudent = () => {
       variants={containerVariants}
       initial="hidden"
       animate="visible"
+      dir="rtl"
     >
       <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
         <Button
-          startIcon={<BackIcon />}
+          endIcon={<BackIcon style={{ transform: 'scaleX(-1)' }} />}
           onClick={handleBack}
           variant="contained"
           sx={{
+            direction:'ltr',
             bgcolor: '#10B981',
             color: 'white',
             borderRadius: '12px',
@@ -2122,235 +2121,238 @@ const EnrollStudent = () => {
         >
           חזרה לסניפים
         </Button>
+          {/* Add Group Card */}
+        {/* שורת כפתור הוספה לקבוצות */}
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setAddGroupDialogOpen(true)}
+            sx={{
+              bgcolor: '#6366F1',
+              color: 'white',
+              borderRadius: '10px',
+              px: 2,
+              py: 0.5,
+              fontSize: '1rem',
+              minWidth: 120,
+              height: 36,
+              boxShadow: '0 2px 8px rgba(99, 102, 241, 0.15)',
+              '&:hover': {
+                bgcolor: '#4f46e5',
+                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.25)',
+              },
+              transition: 'all 0.3s ease'
+            }}
+          >
+            הוסף קבוצה חדשה
+          </Button>
+        </Box>
         <Typography variant="h5" fontWeight="bold" color="#1E3A8A">
           {(() => {
             const courseName = selectedCourse?.couresName || selectedCourse?.courseName || 'חוג לא ידוע';
             const branchAddress = selectedBranch?.address || selectedBranch?.name || 'כתובת לא ידועה';
-            
             return `${courseName} - ${branchAddress} - בחר קבוצה`;
           })()}
         </Typography>
       </Box>
-      <Grid container spacing={3} justifyContent="center">
-        {groups.filter(group => group.branchId === selectedBranch?.branchId).map((group, index) => (
-          <Grid item xs={12} sm={6} md={4} key={`group-${group.groupId || group.id || index}`}>
-            <motion.div variants={itemVariants}>
-              <Paper
-                elevation={3}
-                component={motion.div}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.98 }}
-                sx={{
-                  p: 3,
-                  borderRadius: 3,
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  cursor: 'pointer',
-                  background: group.availableSpots > 0
-                    ? 'linear-gradient(135deg, #ffffff 0%, #f0fff4 100%)'
-                    : 'linear-gradient(135deg, #ffffff 0%, #fff0f0 100%)',
-                  transition: 'all 0.3s ease',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  direction: 'rtl',
-                  textAlign: 'right',
-                  '&:hover': {
-                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
-                  }
-                }}
-                onClick={() => handleGroupSelect(group)}
-              >
-                <IconButton
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    handleMenuOpen(e, group, 'group');
-                  }}
-                  sx={{
-                    position: 'absolute',
-                    top: 8,
-                    left: 8,
-                    color: '#6b7280',
-                    bgcolor: 'rgba(107, 114, 128, 0.1)',
-                    '&:hover': {
-                      bgcolor: 'rgba(107, 114, 128, 0.2)',
-                    },
-                    zIndex: 10
-                  }}
-                  size="small"
-                >
-                  <MoreVertIcon fontSize="small" />
-                </IconButton>
-
-                {group.availableSpots <= 0 && (
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      top: 10,
-                      right: 10,
-                      bgcolor: 'error.main',
-                      color: 'white',
-                      px: 1,
-                      py: 0.5,
-                      borderRadius: 1,
-                      fontSize: '0.75rem',
-                      fontWeight: 'bold',
-                      transform: 'rotate(0deg)',
-                      zIndex: 1
-                    }}
-                  >
-                    מלא
-                  </Box>
-                )}
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, justifyContent: 'flex-start' }}>
-                  <GroupIcon sx={{ fontSize: 40, color: '#6366F1', ml: 1 }} />
-                  <Typography variant="h6" fontWeight="bold" color="#1E3A8A">
-                    קבוצה {group.groupName}
-                  </Typography>
-                </Box>
-                <Divider sx={{ width: '100%', mb: 2 }} />
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'flex-start' }}>
-                  <DayIcon fontSize="small" sx={{ color: '#6366F1', ml: 1 }} />
-                  <Typography variant="body2">
-                    {group.hour} {group.dayOfWeek}
-                  </Typography>
-                </Box>
-
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'flex-start' }}>
-                  <StudentIcon fontSize="small" sx={{ color: '#6366F1', ml: 1 }} />
-                  <Typography variant="body2">
-                    גילאים: {group.ageRange}
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'flex-start' }}>
-                  <SectorIcon fontSize="small" sx={{ color: '#6366F1', ml: 1 }} />
-                  <Typography variant="body2">
-                    מגזר: {group.sector || 'כללי'}
-                  </Typography>
-                </Box>
-                <Box sx={{ mt: 'auto', pt: 2, width: '100%' }}>
-                  {/* שורה ראשונה: מקומות פנויים */}
-                  <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 ,direction:'ltr'}}>
-                    <Chip
-                      icon={group.maxStudents > 0 ? <AvailableIcon /> : <FullIcon />}
-                      label={`${group.maxStudents} מקומות פנויים`}
-                      color={group.maxStudents > 0 ? "success" : "error"}
-                      variant="outlined"
-                      size="small"
-                    />
-                  </Box>
-                  
-                  {/* שורה שנייה: צפה ברשימת התלמידים */}
-                  <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%', mb: 2 }}>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      startIcon={<ViewIcon />}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleViewStudents(group);
-                      }}
+      {/* מיון לפי ימים ושעות, הצגת יום רק אם יש קבוצות */}
+      {(() => {
+        // קיבוץ לפי יום
+        const groupsByDay = {};
+        sortedGroups.forEach(group => {
+          if (!groupsByDay[group.dayOfWeek]) groupsByDay[group.dayOfWeek] = [];
+          groupsByDay[group.dayOfWeek].push(group);
+        });
+        // סדר הימים לפי dayOrder
+        const daysSorted = Object.keys(dayOrder)
+          .filter(day => groupsByDay[day] && groupsByDay[day].length > 0)
+          .sort((a, b) => dayOrder[a] - dayOrder[b]);
+        return daysSorted.map(day => (
+          <Box key={day} sx={{ mb: 4 }}>
+            <Typography variant="h6" fontWeight="bold" color="#6366F1" sx={{ mb: 2, textAlign: 'right' }}>
+              יום {day}
+            </Typography>
+            <Grid container spacing={3} justifyContent="flex-start" dir="rtl">
+              {groupsByDay[day].map((group, index) => (
+                <Grid item xs={12} sm={6} md={4} key={`group-${group.groupId || group.id || index}`}>
+                  <motion.div variants={itemVariants}>
+                    <Paper
+                      elevation={3}
+                      component={motion.div}
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.98 }}
                       sx={{
-                        direction:'ltr',
-                        borderColor: '#6366F1',
-                        color: '#6366F1',
-                        borderRadius: '8px',
-                        px: 2,
+                        p: 3,
+                        borderRadius: 3,
+                        height: '100%',
+                        width: 320,
+                        minWidth: 320,
+                        maxWidth: 320,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        cursor: 'pointer',
+                        background: group.availableSpots > 0
+                          ? 'linear-gradient(135deg, #ffffff 0%, #f0fff4 100%)'
+                          : 'linear-gradient(135deg, #ffffff 0%, #fff0f0 100%)',
+                        transition: 'all 0.3s ease',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        direction: 'rtl',
+                        textAlign: 'right',
                         '&:hover': {
-                          borderColor: '#4f46e5',
-                          color: '#4f46e5',
-                          bgcolor: 'rgba(99, 102, 241, 0.1)',
-                        },
-                        transition: 'all 0.3s ease'
+                          boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                        }
                       }}
+                      onClick={() => handleGroupSelect(group)}
                     >
-                       צפה ברשימת התלמידים בקבוצה זו
-                    </Button>
-                  </Box>
-                  
-                  {/* שורה שלישית: כפתור שיבוץ תלמיד */}
-                  <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-                    <Tooltip title={group.maxStudents > 0 ? "לחץ לשיבוץ תלמיד" : "אין מקומות פנויים"}>
-                      <span>
-                        <Button
-                          variant="contained"
-                          size="small"
-                          disabled={group.maxStudents <= 0}
-                          startIcon={<EnrollIcon />}
+                      <IconButton
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          handleMenuOpen(e, group, 'group');
+                        }}
+                        sx={{
+                          position: 'absolute',
+                          top: 8,
+                          left: 8,
+                          color: '#6b7280',
+                          bgcolor: 'rgba(107, 114, 128, 0.1)',
+                          '&:hover': {
+                            bgcolor: 'rgba(107, 114, 128, 0.2)',
+                          },
+                          zIndex: 10
+                        }}
+                        size="small"
+                      >
+                        <MoreVertIcon fontSize="small" />
+                      </IconButton>
+
+                      {group.availableSpots <= 0 && (
+                        <Box
                           sx={{
-                            direction:'ltr',
-                            bgcolor: group.maxStudents > 0 ? '#10B981' : 'grey.400',
-                            borderRadius: '8px',
-                            boxShadow: group.maxStudents > 0 ? '0 4px 10px rgba(16, 185, 129, 0.2)' : 'none',
-                            px: 3,
-                            py: 1,
-                            '&:hover': {
-                              bgcolor: group.maxStudents > 0 ? '#059669' : 'grey.400',
-                              boxShadow: group.maxStudents > 0 ? '0 6px 15px rgba(16, 185, 129, 0.3)' : 'none',
-                            },
-                            transition: 'all 0.3s ease'
+                            position: 'absolute',
+                            top: 10,
+                            right: 10,
+                            bgcolor: 'error.main',
+                            color: 'white',
+                            px: 1,
+                            py: 0.5,
+                            borderRadius: 1,
+                            fontSize: '0.75rem',
+                            fontWeight: 'bold',
+                            transform: 'rotate(0deg)',
+                            zIndex: 1
                           }}
                         >
-                          שבץ תלמיד חדש/קיים לקבוצה זו
-                        </Button>
-                      </span>
-                    </Tooltip>
-                  </Box>
-                </Box>
-              </Paper>
-            </motion.div>
-          </Grid>
-        ))}
+                          מלא
+                        </Box>
+                      )}
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, justifyContent: 'flex-start' }}>
+                        <GroupIcon sx={{ fontSize: 40, color: '#6366F1', ml: 1 }} />
+                        <Typography variant="h6" fontWeight="bold" color="#1E3A8A">
+                          <span style={{wordBreak: 'break-word', whiteSpace: 'pre-line'}}>
+                            קבוצה {group.groupName}
+                          </span>
+                        </Typography>
+                      </Box>
+                      <Divider sx={{ width: '100%', mb: 2 }} />
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'flex-start' }}>
+                        <DayIcon fontSize="small" sx={{ color: '#6366F1', ml: 1 }} />
+                        <Typography variant="body2">
+                          {group.hour} {group.dayOfWeek}
+                        </Typography>
+                      </Box>
 
-        {/* Add Group Card */}
-        <Grid item xs={12} sm={6} md={4} key="add-group-card-unique">
-          <motion.div variants={itemVariants}>
-            <Paper
-              elevation={3}
-              component={motion.div}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.98 }}
-              sx={{
-                p: 3,
-                borderRadius: 3,
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                background: 'linear-gradient(135deg, #e6e6ff 0%, #f0f0ff 100%)',
-                transition: 'all 0.3s ease',
-                border: '2px dashed #6366F1',
-                '&:hover': {
-                  boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
-                  background: 'linear-gradient(135deg, #dedeff 0%, #e8e8ff 100%)',
-                }
-              }}
-              onClick={() => setAddGroupDialogOpen(true)}
-            >
-              <Box
-                sx={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: 'rgba(99, 102, 241, 0.1)',
-                  mb: 2
-                }}
-              >
-                <AddIcon sx={{ fontSize: 40, color: '#6366F1' }} />
-              </Box>
-              <Typography variant="h6" fontWeight="bold" textAlign="center" color="#1E3A8A">
-                הוסף קבוצה חדשה
-              </Typography>
-            </Paper>
-          </motion.div>
-        </Grid>
-      </Grid>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'flex-start' }}>
+                        <StudentIcon fontSize="small" sx={{ color: '#6366F1', ml: 1 }} />
+                        <Typography variant="body2">
+                          גילאים: {group.ageRange}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'flex-start' }}>
+                        <SectorIcon fontSize="small" sx={{ color: '#6366F1', ml: 1 }} />
+                        <Typography variant="body2">
+                          מגזר: {group.sector || 'כללי'}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ mt: 'auto', pt: 2, width: '100%' }}>
+                        {/* שורה ראשונה: מקומות פנויים */}
+                        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 ,direction:'ltr'}}>
+                          <Chip
+                            icon={group.maxStudents > 0 ? <AvailableIcon /> : <FullIcon />}
+                            label={`${group.maxStudents} מקומות פנויים`}
+                            color={group.maxStudents > 0 ? "success" : "error"}
+                            variant="outlined"
+                            size="small"
+                          />
+                        </Box>
+                        {/* שורה שנייה: צפה ברשימת התלמידים */}
+                        <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%', mb: 2 }}>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<ViewIcon />}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewStudents(group);
+                            }}
+                            sx={{
+                              direction:'ltr',
+                              borderColor: '#6366F1',
+                              color: '#6366F1',
+                              borderRadius: '8px',
+                              px: 2,
+                              '&:hover': {
+                                borderColor: '#4f46e5',
+                                color: '#4f46e5',
+                                bgcolor: 'rgba(99, 102, 241, 0.1)',
+                              },
+                              transition: 'all 0.3s ease'
+                            }}
+                          >
+                            צפה ברשימת התלמידים בקבוצה זו
+                          </Button>
+                        </Box>
+                        {/* שורה שלישית: כפתור שיבוץ תלמיד */}
+                        <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+                          <Tooltip title={group.maxStudents > 0 ? "לחץ לשיבוץ תלמיד" : "אין מקומות פנויים"}>
+                            <span>
+                              <Button
+                                variant="contained"
+                                size="small"
+                                disabled={group.maxStudents <= 0}
+                                startIcon={<EnrollIcon />}
+                                sx={{
+                                  direction:'ltr',
+                                  bgcolor: group.maxStudents > 0 ? '#10B981' : 'grey.400',
+                                  borderRadius: '8px',
+                                  boxShadow: group.maxStudents > 0 ? '0 4px 10px rgba(16, 185, 129, 0.2)' : 'none',
+                                  px: 3,
+                                  py: 1,
+                                  '&:hover': {
+                                    bgcolor: group.maxStudents > 0 ? '#059669' : 'grey.400',
+                                    boxShadow: group.maxStudents > 0 ? '0 6px 15px rgba(16, 185, 129, 0.3)' : 'none',
+                                  },
+                                  transition: 'all 0.3s ease'
+                                }}
+                              >
+                                שבץ תלמיד חדש/קיים לקבוצה זו
+                              </Button>
+                            </span>
+                          </Tooltip>
+                        </Box>
+                      </Box>
+                    </Paper>
+                  </motion.div>
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
+        ));
+      })()}
+
+      
     </motion.div>
   );
 
@@ -4260,6 +4262,11 @@ const EnrollStudent = () => {
                         <span>📞 טלפון: {student.fullDetails?.phone || student.Student?.phone || student.phone}</span>
                       </Typography>
                     )}
+                    {(student.fullDetails?.secondaryPhone || student.Student?.secondaryPhone || student.secondaryPhone) && (
+                      <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-start', direction: 'rtl' }}>
+                        <span>📱 טלפון נוסף: {student.fullDetails?.secondaryPhone || student.Student?.secondaryPhone || student.secondaryPhone}</span>
+                      </Typography>
+                    )}
                     {(student.fullDetails?.email || student.Student?.email || student.email) && (
                       <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-start', direction: 'rtl' }}>
                         <span>📧 מייל: {student.fullDetails?.email || student.Student?.email || student.email}</span>
@@ -4295,6 +4302,14 @@ const EnrollStudent = () => {
                         <span>🏥 קופת חולים: {student.fullDetails?.healthFund || student.Student?.healthFund || student.healthFund}</span>
                       </Typography>
                     )}
+                      {(student.fullDetails?.createdBy || student.Student?.createdBy || student.createdBy) && (
+                        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-start', direction: 'rtl' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366F1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 2, opacity: 0.7 }}><path d="M20 21v-2a4 4 0 0 0-3-3.87"/><path d="M4 21v-2a4 4 0 0 1 3-3.87"/><circle cx="12" cy="7" r="4"/></svg>
+                            <span>נוצר ע"י: {student.fullDetails?.createdBy || student.Student?.createdBy || student.createdBy}</span>
+                          </span>
+                        </Typography>
+                      )}
                     <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-start', direction: 'rtl' }}>
                       <span>📅 תאריך רישום: {student.enrollmentDate ? new Date(student.enrollmentDate).toLocaleDateString('he-IL') : 'לא זמין'}</span>
                     </Typography>
@@ -4353,7 +4368,7 @@ const EnrollStudent = () => {
       onClose={() => setAddStudentDialogOpen(false)}
       onSuccess={handleAddStudentAndEnroll}
       title="הוסף תלמיד חדש ושבץ לקבוצה"
-      submitButtonText="הוסף ושבץ מיידית"
+      submitButtonText=" הוסף ושבץ מיידית"
       keepOpenAfterSubmit={false}
     />
 
@@ -4415,6 +4430,20 @@ const EnrollStudent = () => {
                   phone: e.target.value
                 }))}
                 sx={{ direction: 'rtl' }}
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="📱 טלפון נוסף"
+                value={selectedStudentForEdit.secondaryPhone || ''}
+                onChange={(e) => setSelectedStudentForEdit(prev => ({
+                  ...prev,
+                  secondaryPhone: e.target.value
+                }))}
+                sx={{ direction: 'rtl' }}
+                placeholder="טלפון נוסף (אופציונלי)"
               />
             </Grid>
             

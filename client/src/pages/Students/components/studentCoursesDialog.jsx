@@ -1346,6 +1346,7 @@ import PaymentsTab from '../../Payments/PaymentsTab';
 import PaymentHistoryTab from '../../Payments/PaymentHistoryTab';
 import { deleteGroupStudent } from '../../../store/groupStudent/groupStudentDeleteThunk';
 import { getgroupStudentByStudentId } from '../../../store/groupStudent/groupStudentGetByStudentIdThunk';
+import { updateGroupStudent } from '../../../store/groupStudent/groupStudentUpdateThunk';
 
 const StudentCoursesDialog = ({
   open,
@@ -1359,6 +1360,11 @@ const StudentCoursesDialog = ({
 }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  // moved here: edit dialog states
+  const [editCourseDialogOpen, setEditCourseDialogOpen] = useState(false);
+  const [editingCourse, setEditingCourse] = useState(null);
+  const [editCourseLoading, setEditCourseLoading] = useState(false);
 
   // כל ה-useState hooks בתחילה
   const [currentTab, setCurrentTab] = useState(0);
@@ -1417,9 +1423,18 @@ const StudentCoursesDialog = ({
   };
 
   const handleSaveNote = async (noteData) => {
+    // מניעת שמירת הערת "מעקב רישום" כפולה
+    if (noteData.noteType === 'מעקב רישום' && studentNotes.some(n => n.noteType === 'מעקב רישום')) {
+      alert('לא ניתן להוסיף יותר מהערת מעקב רישום אחת לתלמיד.');
+      return;
+    }
     try {
-      await dispatch(addStudentNote(noteData));
-      await dispatch(getNotesByStudentId(student.id));
+      const result = await dispatch(addStudentNote(noteData));
+      if (result.type === 'studentNotes/add/fulfilled') {
+        await dispatch(getNotesByStudentId(student.id));
+      } else {
+        alert('שגיאה בשמירת ההערה.');
+      }
     } catch (error) {
       console.error('Error saving note:', error);
     }
@@ -1477,6 +1492,33 @@ const StudentCoursesDialog = ({
     event.stopPropagation();
     setCourseMenuAnchor(event.currentTarget);
     setSelectedCourse(course);
+  };
+
+  const handleEditCourse = (course) => {
+    setEditingCourse(course);
+    setEditCourseDialogOpen(true);
+    handleCourseMenuClose();
+  };
+
+  const handleEditCourseSave = async (updatedFields) => {
+    setEditCourseLoading(true);
+    try {
+      const payload = {
+        groupStudentId: editingCourse.groupStudentId,
+        studentId: editingCourse.studentId,
+        groupName: updatedFields.groupName !== undefined ? updatedFields.groupName : editingCourse.groupName,
+        enrollmentDate: updatedFields.enrollmentDate,
+        isActive: updatedFields.isActive
+      };
+      await dispatch(updateGroupStudent(payload));
+      dispatch(getgroupStudentByStudentId(editingCourse.studentId));
+      setEditCourseDialogOpen(false);
+      setEditingCourse(null);
+    } catch (error) {
+      // handle error
+    } finally {
+      setEditCourseLoading(false);
+    }
   };
 
   const handleCourseMenuClose = () => {
@@ -1669,7 +1711,7 @@ const StudentCoursesDialog = ({
     );
   };
 
-  return (
+ return (
     <AnimatePresence>
       {open && (
         <Dialog
@@ -2580,48 +2622,20 @@ const StudentCoursesDialog = ({
 
           {/* תפריט פעולות להערות */}
           <Menu
-            anchorEl={menuAnchor}
-            open={Boolean(menuAnchor)}
-            onClose={handleMenuClose}
-            sx={{
-              direction: 'rtl'
-            }}
-          >
-            <MenuItem
-              onClick={() => {
-                const note = studentNotes.find(n => n.noteId === menuNoteId);
-                handleEditNote(note);
-              }}
-            >
-              <EditIcon fontSize="small" sx={{ ml: 1 }} />
-              עריכה
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
-                const note = studentNotes.find(n => n.noteId === menuNoteId);
-                handleDeleteConfirm(note);
-              }}
-              sx={{ color: '#dc2626' }}
-            >
-              <DeleteIcon fontSize="small" sx={{ ml: 1 }} />
-              מחיקה
-            </MenuItem>
-          </Menu>
-
-          {/* תפריט פעולות לחוגים */}
-          <Menu
             anchorEl={courseMenuAnchor}
             open={Boolean(courseMenuAnchor)}
             onClose={handleCourseMenuClose}
-            sx={{
-              direction: 'rtl'
-            }}
+            sx={{ direction: 'rtl' }}
           >
             <MenuItem
-              onClick={() => {
-                handleDeleteCourseConfirm(selectedCourse);
-              }}
-              sx={{
+              onClick={() => handleEditCourse(selectedCourse)}
+            >
+              <EditIcon fontSize="small" sx={{ ml: 1 }} />
+              ערוך סטטוס/תאריך התחלה
+            </MenuItem>
+            <MenuItem
+              onClick={() => handleDeleteCourseConfirm(selectedCourse)}
+              sx={{ 
                 color: '#dc2626',
                 '&:hover': {
                   backgroundColor: 'rgba(220, 38, 38, 0.1)'
@@ -2629,14 +2643,58 @@ const StudentCoursesDialog = ({
               }}
             >
               <DeleteIcon fontSize="small" sx={{ ml: 1 }} />
-              הסר חוג
+              הסר מהחוג
             </MenuItem>
           </Menu>
+          {/* Edit Course Dialog */}
+          {editingCourse && (
+            <Dialog open={editCourseDialogOpen} onClose={() => { setEditCourseDialogOpen(false); setEditingCourse(null); }} sx={{ direction: 'rtl' }}>
+              <DialogTitle sx={{ fontWeight: 'bold', textAlign: 'center' }}>עריכת סטטוס ותאריך התחלה</DialogTitle>
+              <DialogContent>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 320 }}>
+                  <Typography variant="body1" sx={{ mb: 1 }}>
+                    {editingCourse.courseName} | קבוצה: {editingCourse.groupName} | סניף: {editingCourse.branchName}
+                  </Typography>
+                  <Box>
+                    <Typography variant="subtitle2">סטטוס</Typography>
+                    <Button
+                      variant={editingCourse.isActive ? 'contained' : 'outlined'}
+                      color={editingCourse.isActive ? 'success' : 'error'}
+                      sx={{ mr: 2 }}
+                      onClick={() => setEditingCourse({ ...editingCourse, isActive: !editingCourse.isActive })}
+                    >
+                      {editingCourse.isActive ? 'פעיל' : 'לא פעיל'}
+                    </Button>
+                  </Box>
+                  <Box>
+                    <Typography variant="subtitle2">תאריך התחלה</Typography>
+                    <input
+                      type="date"
+                      value={editingCourse.enrollmentDate ? editingCourse.enrollmentDate.slice(0,10) : ''}
+                      onChange={e => setEditingCourse({ ...editingCourse, enrollmentDate: e.target.value })}
+                      style={{ fontSize: '1rem', padding: '8px', borderRadius: '8px', border: '1px solid #e5e7eb', marginTop: '8px' }}
+                    />
+                  </Box>
+                </Box>
+              </DialogContent>
+              <DialogActions sx={{ justifyContent: 'center', gap: 2 }}>
+                <Button onClick={() => { setEditCourseDialogOpen(false); setEditingCourse(null); }} variant="outlined">ביטול</Button>
+                <Button
+                  onClick={() => handleEditCourseSave({ isActive: editingCourse.isActive, enrollmentDate: editingCourse.enrollmentDate })}
+                  variant="contained"
+                  color="primary"
+                  disabled={editCourseLoading}
+                >
+                  שמור
+                </Button>
+              </DialogActions>
+            </Dialog>
+          )}
 
         </Dialog>
       )}
     </AnimatePresence>
   );
-};
 
+};
 export default StudentCoursesDialog;

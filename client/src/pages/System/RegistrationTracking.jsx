@@ -114,18 +114,16 @@ const RegistrationTracking = () => {
     if (!registrationTrackingNotes || registrationTrackingNotes.length === 0) {
       return [];
     }
-
     const studentNotesMap = new Map();
-    
     registrationTrackingNotes.forEach(note => {
       const studentId = note.studentId;
-      const studentInfo = studentsData[studentId] || { 
-        id: studentId, 
-        firstName: 'לא ידוע', 
+      const studentInfo = studentsData[studentId] || {
+        id: studentId,
+        firstName: 'לא ידוע',
         lastName: 'לא ידוע',
         email: null
       };
-      
+      // שמור רק הערת "מעקב רישום" אחת (הכי חדשה) לכל תלמיד
       if (!studentNotesMap.has(studentId)) {
         studentNotesMap.set(studentId, {
           ...studentInfo,
@@ -135,38 +133,57 @@ const RegistrationTracking = () => {
           priority: 'בינוני'
         });
       }
-      
       const studentData = studentNotesMap.get(studentId);
-      studentData.registrationNotes.push(note);
-      
+      if (note.noteType === 'מעקב רישום') {
+        if (!studentData.registrationNotes.length || new Date(note.updatedDate || note.createdDate) > new Date(studentData.registrationNotes[0].updatedDate || studentData.registrationNotes[0].createdDate)) {
+          studentData.registrationNotes[0] = note;
+        }
+      }
+      // אפשר להוסיף הערות אחרות אם צריך
       const tasks = parseIncompleteTasks(note.noteContent);
       studentData.incompleteTasks = [...new Set([...studentData.incompleteTasks, ...tasks])];
-      
       const noteDate = new Date(note.createdDate || note.updatedDate);
       if (!studentData.lastNoteDate || noteDate > studentData.lastNoteDate) {
         studentData.lastNoteDate = noteDate;
       }
-      
       if (note.priority) {
         studentData.priority = note.priority;
       }
     });
-
     return Array.from(studentNotesMap.values());
   }, [registrationTrackingNotes, studentsData]);
 
   const filteredStudents = studentsWithRegistrationNotes.filter(student => {
-    const matchesSearch = 
-      student.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.id?.toString().includes(searchTerm);
-    
+    // חיפוש חכם לפי שם תלמיד, נרשם על ידי, וקוד תלמיד
+    const term = searchTerm.trim().toLowerCase();
+    let matchesSearch = false;
+    if (!term) {
+      matchesSearch = true;
+    } else {
+      // שם פרטי/משפחה
+      if (student.firstName?.toLowerCase().includes(term) || student.lastName?.toLowerCase().includes(term)) {
+        matchesSearch = true;
+      }
+      // קוד תלמיד
+      if (student.id?.toString().includes(term)) {
+        matchesSearch = true;
+      }
+      // נרשם על ידי
+      if (student.registrationNotes && student.registrationNotes.length > 0) {
+        const authorName = student.registrationNotes[0].authorName?.toLowerCase() || '';
+        if (authorName.includes(term)) {
+          matchesSearch = true;
+        }
+      }
+      // אימייל
+      if (student.email?.toLowerCase().includes(term)) {
+        matchesSearch = true;
+      }
+    }
     const matchesFilter = 
       filterStatus === 'all' ||
       (filterStatus === 'pending' && student.incompleteTasks.length > 0) ||
       (filterStatus === 'completed' && student.incompleteTasks.length === 0);
-    
     return matchesSearch && matchesFilter;
   });
 
@@ -265,6 +282,18 @@ const RegistrationTracking = () => {
     }
   };
 
+  // פונקציה שמחשבת כמה תלמידים רשמה כל אחת
+  const getAuthorCounts = (students) => {
+    const counts = {};
+    students.forEach(student => {
+      const author = student.registrationNotes && student.registrationNotes.length > 0 && student.registrationNotes[0].authorName
+        ? student.registrationNotes[0].authorName
+        : 'לא ידוע';
+      counts[author] = (counts[author] || 0) + 1;
+    });
+    return counts;
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
@@ -288,121 +317,148 @@ const RegistrationTracking = () => {
           <Typography variant="body1" sx={{ color: '#64748b' }}>
             צפייה ומעקב אחר משימות רישום שטרם הושלמו
           </Typography>
+          {/* סיכום כמה תלמידים רשמה כל אחת - עיצוב מודרני עם כרטיסים, אייקונים, אפקטים */}
+          <Box sx={{ mt: 2, mb: 2, p: 0 }}>
+            <Box sx={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 2,
+              justifyContent: 'flex-start',
+              alignItems: 'stretch',
+              bgcolor: '#f1f5f9',
+              borderRadius: 4,
+              boxShadow: 3,
+              p: 3,
+              border: '2px solid #38bdf8',
+              minHeight: 80
+            }}>
+              <Typography variant="h6" sx={{ color: '#3a728bff', fontWeight: 'bold', width: '100%' }}>
+                <span style={{ color: '#0284c7', fontWeight: 'bold', fontSize: 24 }}>👩‍💼</span> סיכום רישום לפי מי רשמה:
+              </Typography>
+              {Object.entries(getAuthorCounts(studentsWithRegistrationNotes)).map(([author, count], idx) => (
+                <Box key={author} sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                  bgcolor: '#e0f2fe',
+                  borderRadius: 3,
+                  boxShadow: 2,
+                  px: 3,
+                  py: 2,
+                  minWidth: 220,
+                  maxWidth: 320,
+                  border: '1.5px solid #0ea5e9',
+                  transition: 'transform 0.2s',
+                  '&:hover': { transform: 'scale(1.04)', boxShadow: 6, borderColor: '#2563eb', bgcolor: '#bae6fd' }
+                }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#38bdf8', borderRadius: '50%', width: 40, height: 40, mr: 1 }}>
+                    <span style={{ fontSize: 24 }}>📝</span>
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                    <Typography variant="subtitle1" sx={{ color: '#0ea5e9', fontWeight: 'bold', fontSize: 18 }}>
+                      {author}
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 400 }}>
+                        רשמה
+                      </Typography>
+                      <Typography variant="h6" sx={{ color: '#2563eb', fontWeight: 'bold', mx: 1, fontSize: 22 }}>
+                        {count}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: '#64748b' }}>
+                        תלמידים
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          </Box>
         </Box>
-
-        <Grid container spacing={3} sx={{ mb: 4 }}>
+  {/* סטטיסטיקות רישום - עיצוב מודרני עם כרטיסים מעוגלים ואייקונים */}
+  <Grid container spacing={3} sx={{ mb: 4 }}>
+      
           <Grid item xs={12} md={3}>
-            <Card sx={{ textAlign: 'center', bgcolor: '#fef2f2', border: '1px solid #fecaca' }}>
+            <Card sx={{ textAlign: 'center', bgcolor: '#fef2f2', border: '2px solid #fecaca', borderRadius: 4, boxShadow: 2, transition: 'transform 0.2s', '&:hover': { transform: 'scale(1.04)', boxShadow: 6, borderColor: '#dc2626', bgcolor: '#fee2e2' } }}>
               <CardContent>
-                <Typography variant="h3" sx={{ color: '#dc2626', fontWeight: 'bold' }}>
-                  {studentsWithRegistrationNotes.filter(s => s.incompleteTasks.length > 0).length}
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#7f1d1d' }}>
-                  תלמידים עם משימות חסרות
-                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                  <span style={{ fontSize: 32 }}>❌</span>
+                  <Typography variant="h3" sx={{ color: '#dc2626', fontWeight: 'bold' }}>
+                    {studentsWithRegistrationNotes.filter(s => s.incompleteTasks.length > 0).length}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#7f1d1d', fontWeight: 500 }}>
+                    תלמידים עם משימות חסרות
+                  </Typography>
+                </Box>
               </CardContent>
             </Card>
           </Grid>
-          
           <Grid item xs={12} md={3}>
-            <Card sx={{ textAlign: 'center', bgcolor: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+            <Card sx={{ textAlign: 'center', bgcolor: '#f0fdf4', border: '2px solid #bbf7d0', borderRadius: 4, boxShadow: 2, transition: 'transform 0.2s', '&:hover': { transform: 'scale(1.04)', boxShadow: 6, borderColor: '#16a34a', bgcolor: '#bbf7d0' } }}>
               <CardContent>
-                <Typography variant="h3" sx={{ color: '#16a34a', fontWeight: 'bold' }}>
-                  {studentsWithRegistrationNotes.filter(s => s.incompleteTasks.length === 0).length}
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#15803d' }}>
-                  תלמידים שהושלמו
-                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                  <span style={{ fontSize: 32 }}>✅</span>
+                  <Typography variant="h3" sx={{ color: '#16a34a', fontWeight: 'bold' }}>
+                    {studentsWithRegistrationNotes.filter(s => s.incompleteTasks.length === 0).length}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#15803d', fontWeight: 500 }}>
+                    תלמידים שהושלמו
+                  </Typography>
+                </Box>
               </CardContent>
             </Card>
           </Grid>
-          
           <Grid item xs={12} md={3}>
-            <Card sx={{ textAlign: 'center', bgcolor: '#fffbeb', border: '1px solid #fed7aa' }}>
+            <Card sx={{ textAlign: 'center', bgcolor: '#fffbeb', border: '2px solid #fed7aa', borderRadius: 4, boxShadow: 2, transition: 'transform 0.2s', '&:hover': { transform: 'scale(1.04)', boxShadow: 6, borderColor: '#d97706', bgcolor: '#fef3c7' } }}>
               <CardContent>
-                <Typography variant="h3" sx={{ color: '#d97706', fontWeight: 'bold' }}>
-                  {studentsWithRegistrationNotes.filter(s => s.priority === 'גבוהה').length}
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#92400e' }}>
-                  עדיפות גבוהה
-                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                  <span style={{ fontSize: 32 }}>🔥</span>
+                  <Typography variant="h3" sx={{ color: '#d97706', fontWeight: 'bold' }}>
+                    {studentsWithRegistrationNotes.filter(s => s.priority === 'גבוהה').length}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#92400e', fontWeight: 500 }}>
+                    עדיפות גבוהה
+                  </Typography>
+                </Box>
               </CardContent>
             </Card>
           </Grid>
-          
           <Grid item xs={12} md={3}>
-            <Card sx={{ textAlign: 'center', bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+            <Card sx={{ textAlign: 'center', bgcolor: '#f8fafc', border: '2px solid #e2e8f0', borderRadius: 4, boxShadow: 2, transition: 'transform 0.2s', '&:hover': { transform: 'scale(1.04)', boxShadow: 6, borderColor: '#475569', bgcolor: '#e0e7ef' } }}>
               <CardContent>
-                <Typography variant="h3" sx={{ color: '#475569', fontWeight: 'bold' }}>
-                  {studentsWithRegistrationNotes.length}
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#64748b' }}>
-                  סה"כ במעקב
-                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                  <span style={{ fontSize: 32 }}>📊</span>
+                  <Typography variant="h3" sx={{ color: '#475569', fontWeight: 'bold' }}>
+                    {studentsWithRegistrationNotes.length}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
+                    סה"כ במעקב
+                  </Typography>
+                </Box>
               </CardContent>
             </Card>
           </Grid>
         </Grid>
-
-        <Card sx={{ mb: 3, direction: 'rtl' }}>
-          <CardContent>
-            <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  placeholder="...חפש לפי שם, מייל או תעודת זהות"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  sx={{ 
-                    direction: 'rtl',
-                    '& .MuiInputBase-input': { textAlign: 'right' }
-                  }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              </Grid>
-              
-              <Grid item xs={12} md={4}>
-                <TextField
-                  select
-                  fullWidth
-                  label="סינון לפי סטטוס"
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  sx={{ 
-                    direction: 'rtl',
-                    '& .MuiInputBase-input': { textAlign: 'right' }
-                  }}
-                  SelectProps={{
-                    native: true,
-                  }}
-                >
-                  <option value="all">כל התלמידים</option>
-                  <option value="pending">משימות חסרות</option>
-                  <option value="completed">הושלם</option>
-                </TextField>
-              </Grid>
-              
-              <Grid item xs={12} md={2}>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  startIcon={<RefreshIcon />}
-                  onClick={loadRegistrationTrackingData}
-                  sx={{ direction: 'ltr' }}
-                >
-                  רענן
-                </Button>
-              </Grid>
-            </Grid>
-          </CardContent>
-        </Card>
-
+  {/* חיפוש מתקדם */}
+        <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-start', direction: 'rtl' }}>
+          <TextField
+            label="חפש תלמיד, קוד תלמיד, או שם רושם"
+            variant="outlined"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            size="medium"
+            sx={{ minWidth: 380, maxWidth: 600, borderRadius: 2, bgcolor: 'white', fontSize: 18, direction: 'ltr', textAlign: 'right' }}
+            InputLabelProps={{ style: { direction: 'rtl', textAlign: 'right' } }}
+            inputProps={{ style: { direction: 'rtl', textAlign: 'right' } }}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <SearchIcon />
+                </InputAdornment>
+              )
+            }}
+          />
+        </Box>
         <Card sx={{ direction: 'rtl' }}>
           <CardContent sx={{ p: 0 }}>
             <TableContainer>
@@ -410,8 +466,8 @@ const RegistrationTracking = () => {
                 <TableHead sx={{ bgcolor: '#f8fafc' }}>
                   <TableRow>
                     <TableCell sx={{ fontWeight: 'bold', textAlign: 'right', direction: 'rtl' }}>סטטוס</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', textAlign: 'right', direction: 'rtl' }}> נרשם על ידי</TableCell>
                     <TableCell sx={{ fontWeight: 'bold', textAlign: 'right', direction: 'rtl' }}>תלמיד</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', textAlign: 'right', direction: 'rtl' }}>מייל</TableCell>
                     <TableCell sx={{ fontWeight: 'bold', textAlign: 'right', direction: 'rtl' }}>משימות חסרות</TableCell>
                     <TableCell sx={{ fontWeight: 'bold', textAlign: 'right', direction: 'rtl' }}>עדיפות</TableCell>
                     <TableCell sx={{ fontWeight: 'bold', textAlign: 'right', direction: 'rtl' }}>תאריך עדכון</TableCell>
@@ -419,124 +475,87 @@ const RegistrationTracking = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  <AnimatePresence>
-                    {filteredStudents.map((student, index) => (
-                      <motion.tr
-                        key={student.id || index}
-                        component={TableRow}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 20 }}
-                        transition={{ duration: 0.3, delay: index * 0.05 }}
-                        sx={{ '&:hover': { bgcolor: '#f8fafc' }, direction: 'rtl' }}
-                      >
-                        <TableCell sx={{ textAlign: 'right' }}>
-                          <Tooltip title={
-                            student.incompleteTasks.length === 0 
-                              ? 'כל המשימות הושלמו' 
-                              : `${student.incompleteTasks.length} משימות חסרות`
-                          }>
-                            {getStatusIcon(student.incompleteTasks)}
-                          </Tooltip>
-                        </TableCell>
-                        
-                        <TableCell sx={{ textAlign: 'right' }}>
-                          <Box>
-                            <Typography variant="body1" sx={{ fontWeight: 600, textAlign: 'right' }}>
-                              {student.firstName} {student.lastName}
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'right' }}>
-                              ת.ז: {student.id}
-                            </Typography>
-                          </Box>
-                        </TableCell>
-                        
-                        <TableCell sx={{ textAlign: 'right' }}>
-                          {student.email && student.email.trim() ? (
-                            <Tooltip title={`שלח מייל ל-${student.email}`}>
-                              <Box 
-                                component="a"
-                                href={`mailto:${student.email}`}
-                                sx={{ 
-                                  color: '#1976d2', 
-                                  textDecoration: 'none',
-                                  '&:hover': { textDecoration: 'underline' },
-                                  fontSize: '0.85rem',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: 0.5,
-                                  justifyContent: 'flex-end'
-                                }}
-                              >
-                                📧 {student.email}
-                              </Box>
-                            </Tooltip>
-                          ) : null}
-                        </TableCell>
-                        
-                        <TableCell sx={{ textAlign: 'right' }}>
-                          <Box>
-                            <Badge badgeContent={student.incompleteTasks.length} color="error">
-                              <AssignmentIcon />
-                            </Badge>
-                            {student.incompleteTasks.length > 0 && (
-                              <Box sx={{ mt: 1, textAlign: 'right' }}>
-                                {student.incompleteTasks.slice(0, 2).map((task, i) => (
-                                  <Chip
-                                    key={i}
-                                    label={task}
-                                    size="small"
-                                    sx={{ 
-                                      mr: 0.5, 
-                                      mb: 0.5, 
-                                      bgcolor: '#fef2f2', 
-                                      color: '#dc2626',
-                                      fontSize: '0.75rem'
-                                    }}
-                                  />
-                                ))}
-                                {student.incompleteTasks.length > 2 && (
-                                  <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'right' }}>
-                                    +{student.incompleteTasks.length - 2} נוספות
-                                  </Typography>
-                                )}
-                              </Box>
-                            )}
-                          </Box>
-                        </TableCell>
-                        
-                        <TableCell sx={{ textAlign: 'right' }}>
-                          <Chip
-                            label={student.priority}
-                            size="small"
-                            sx={{
-                              bgcolor: `${getPriorityColor(student.priority)}20`,
-                              color: getPriorityColor(student.priority),
-                              fontWeight: 600
-                            }}
-                          />
-                        </TableCell>
-                        
-                        <TableCell sx={{ textAlign: 'right' }}>
+                  {filteredStudents.map((student, index) => (
+                    <TableRow key={student.id || index} sx={{ '&:hover': { bgcolor: '#f8fafc' }, direction: 'rtl' }}>
+                      <TableCell sx={{ textAlign: 'right' }}>
+                        <Tooltip title={
+                          student.incompleteTasks.length === 0 
+                            ? 'כל המשימות הושלמו' 
+                            : `${student.incompleteTasks.length} משימות חסרות`
+                        }>
+                          {getStatusIcon(student.incompleteTasks)}
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell sx={{ textAlign: 'right' }}>
+                        {student.registrationNotes && student.registrationNotes.length > 0 && student.registrationNotes[0].authorName ? (
                           <Typography variant="body2" sx={{ textAlign: 'right' }}>
-                            {student.lastNoteDate ? student.lastNoteDate.toLocaleDateString('he-IL') : 'לא זמין'}
+                            {student.registrationNotes[0].authorName}
                           </Typography>
-                        </TableCell>
-                        
-                        <TableCell sx={{ textAlign: 'right' }}>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            startIcon={<EditIcon />}
-                            onClick={() => handleViewDetails(student)}
-                            sx={{ fontSize: '0.75rem' }}
-                          >
-                            עדכן משימות
-                          </Button>
-                        </TableCell>
-                      </motion.tr>
-                    ))}
-                  </AnimatePresence>
+                        ) : (
+                          <Typography variant="body2" sx={{ textAlign: 'right', color: 'text.secondary' }}>
+                            לא ידוע
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell sx={{ textAlign: 'right' }}>
+                        <Typography variant="body1" sx={{ fontWeight: 600, textAlign: 'right' }}>
+                          {student.firstName} {student.lastName}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'right' }}>
+                          ת.ז: {student.id}
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ textAlign: 'right' }}>
+                        <Badge badgeContent={student.incompleteTasks.length} color="error">
+                          <AssignmentIcon />
+                        </Badge>
+                        {student.incompleteTasks.length > 0 && (
+                          <>
+                            {student.incompleteTasks.slice(0, 2).map((task, i) => (
+                              <Chip
+                                key={i}
+                                label={task}
+                                size="small"
+                                sx={{ mr: 0.5, mb: 0.5, bgcolor: '#fef2f2', color: '#dc2626', fontSize: '0.75rem' }}
+                              />
+                            ))}
+                            {student.incompleteTasks.length > 2 && (
+                              <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'right' }}>
+                                +{student.incompleteTasks.length - 2} נוספות
+                              </Typography>
+                            )}
+                          </>
+                        )}
+                      </TableCell>
+                      <TableCell sx={{ textAlign: 'right' }}>
+                        <Chip
+                          label={student.priority}
+                          size="small"
+                          sx={{
+                            bgcolor: `${getPriorityColor(student.priority)}20`,
+                            color: getPriorityColor(student.priority),
+                            fontWeight: 600
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell sx={{ textAlign: 'right' }}>
+                        <Typography variant="body2" sx={{ textAlign: 'right' }}>
+                          {student.lastNoteDate ? student.lastNoteDate.toLocaleDateString('he-IL') : 'לא זמין'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ textAlign: 'right' }}>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          startIcon={<EditIcon />}
+                          onClick={() => handleViewDetails(student)}
+                          sx={{ fontSize: '0.75rem' }}
+                        >
+                          עדכן משימות
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </TableContainer>

@@ -135,13 +135,21 @@ import { fetchPaymentHistory } from './fetchPaymentHistory';
 import { addPayment } from './paymentsAdd';
 import { updatePayment } from './paymentsUpdate';
 import { deletePayment } from './paymentsDelete';
+import { createGrowPayment } from './createGrowPayment';
+import { updatePaymentStatus } from './updatePaymentStatus';
 
 
 const initialState = {
     paymentMethods: [],
     paymentHistory: [],
     loading: false,
-    error: null
+    error: null,
+    growPayment: {
+        loading: false,
+        error: null,
+        redirectUrl: null
+    },
+    lastPaymentStatus: null
 };
 
 const paymentsSlice = createSlice({
@@ -154,6 +162,9 @@ const paymentsSlice = createSlice({
         clearPayments: (state) => {
             state.paymentMethods = [];
             state.paymentHistory = [];
+        },
+        clearGrowPaymentError: (state) => {
+            state.growPayment.error = null;
         }
     },
     extraReducers: (builder) => {
@@ -226,9 +237,44 @@ const paymentsSlice = createSlice({
                 state.paymentHistory = state.paymentHistory.filter(
                     payment => payment.paymentId !== action.payload
                 );
+            })
+            // GROW Payment
+            .addCase(createGrowPayment.pending, (state) => {
+                state.growPayment.loading = true;
+                state.growPayment.error = null;
+            })
+            .addCase(createGrowPayment.fulfilled, (state, action) => {
+                state.growPayment.loading = false;
+                state.growPayment.redirectUrl = action.payload.redirectUrl;
+            })
+            .addCase(createGrowPayment.rejected, (state, action) => {
+                state.growPayment.loading = false;
+                state.growPayment.error = action.payload;
+            })
+            // Update Payment Status
+            .addCase(updatePaymentStatus.pending, (state) => {
+                state.loading = true;
+            })
+            .addCase(updatePaymentStatus.fulfilled, (state, action) => {
+                state.loading = false;
+                state.lastPaymentStatus = action.payload;
+                
+                // עדכון רשימת התשלומים אם קיימת
+                if (state.paymentHistory && Array.isArray(state.paymentHistory)) {
+                    const index = state.paymentHistory.findIndex(
+                        payment => payment.TransactionId === action.payload.TransactionId
+                    );
+                    if (index !== -1) {
+                        state.paymentHistory[index] = { ...state.paymentHistory[index], ...action.payload };
+                    }
+                }
+            })
+            .addCase(updatePaymentStatus.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload?.message || 'שגיאה בעדכון סטטוס התשלום';
             });
     }
 });
 
-export const { clearError, clearPayments } = paymentsSlice.actions;
+export const { clearError, clearPayments, clearGrowPaymentError } = paymentsSlice.actions;
 export default paymentsSlice.reducer;

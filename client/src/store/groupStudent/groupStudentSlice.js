@@ -2,6 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import { getgroupStudentByStudentId } from './groupStudentGetByStudentIdThunk';
 import { groupStudentAddThunk } from './groupStudentAddThunk';
 import { deleteGroupStudent } from './groupStudentDeleteThunk';
+import { updateGroupStudent } from './groupStudentUpdateThunk';
 
 const groupStudentSlice = createSlice({
   name: 'groupStudent',
@@ -25,6 +26,27 @@ const groupStudentSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // עדכון סטטוס ותאריך התחלה
+      .addCase(updateGroupStudent.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateGroupStudent.fulfilled, (state, action) => {
+        state.loading = false;
+        const updated = action.payload;
+        // עדכון במערך groupStudentById
+        state.groupStudentById = state.groupStudentById.map(gs =>
+          gs.groupStudentId === updated.groupStudentId ? { ...gs, ...updated } : gs
+        );
+        // עדכון במערך groupStudent
+        state.groupStudent = state.groupStudent.map(gs =>
+          gs.groupStudentId === updated.groupStudentId ? { ...gs, ...updated } : gs
+        );
+      })
+      .addCase(updateGroupStudent.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to update group student';
+      })
       .addCase(getgroupStudentByStudentId.pending, (state) => {
         state.loading = true;
         state.error = null;
