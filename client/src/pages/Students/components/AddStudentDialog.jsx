@@ -27,6 +27,7 @@ import {
 import { useDispatch } from 'react-redux';
 import { useSelector } from 'react-redux';
 import { addStudent } from '../../../store/student/studentAddThunk';
+import { checkUserPermission } from '../../../utils/permissions';
 import { addStudentNote } from '../../../store/studentNotes/studentNoteAddThunk';
 import { getStudentById } from '../../../store/student/studentGetByIdThunk';
 import { editStudent } from '../../../store/student/studentEditThunk';
@@ -333,7 +334,8 @@ const AddStudentDialog = ({
 
       // ננסה קודם הוספה פשוטה
       console.log('🔍 Trying to add student directly');
-      let result = await dispatch(addStudent(studentData));
+  if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+  let result = await dispatch(addStudent(studentData));
       
       console.log('🔍 AddStudent result:', result);
       
@@ -361,6 +363,7 @@ const AddStudentDialog = ({
           
           if (shouldUpdate) {
             console.log('👤 User chose to update existing student');
+            if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
             result = await dispatch(editStudent(studentData));
             console.log('🔍 EditStudent result:', result);
           } else {

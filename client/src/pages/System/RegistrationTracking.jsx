@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { checkUserPermission } from '../../utils/permissions';
 import {
   Box,
   Typography,
@@ -215,6 +216,11 @@ const RegistrationTracking = () => {
 
   const handleSaveNotes = async () => {
     setSaving(true);
+    const userId = selectedStudent?.registrationNotes?.[0]?.authorId || null;
+    if (!checkUserPermission(userId, (msg, severity) => setAlert({ open: true, message: msg, severity }))) {
+      setSaving(false);
+      return;
+    }
     try {
       const currentDate = new Date().toLocaleDateString('he-IL');
       let noteContent = `🔴 משימות שטרם הושלמו (עודכן ב-${currentDate}):\n`;

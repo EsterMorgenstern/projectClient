@@ -1,4 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
+import { getGroupWithStudentsById } from './groupGetGroupWithStudentsByIdThunk';
 import { fetchGroups } from './groupGellAllThunk';
 import { addGroup } from './groupAddThunk';
 import { updateGroup } from './groupUpdateThunk';
@@ -8,6 +9,7 @@ import { deleteGroup } from './groupDeleteThunk';
 import { getGroupsByInstructorId } from './groupByInstructorId';
 import { getStudentsByGroupId } from './groupGetStudentsByGroupId';
 import { FindBestGroupForStudent, FindBestGroupsForStudent } from './groupFindBestGroupForStudent';
+import { getAllGroupsWithStudents } from './groupGetAllGroupsWithStudentsThunk';
 
 const groupSlice = createSlice({
   name: 'groups',
@@ -21,7 +23,13 @@ const groupSlice = createSlice({
     instructorGroups : [],
     groupsByDayLoading: false,
     studentsInGroup: [],
-    studentsInGroupLoading: false
+    studentsInGroupLoading: false,
+    allGroupsWithStudents: [],
+    allGroupsWithStudentsLoading: false,
+    allGroupsWithStudentsError: null,
+    groupWithStudents: null,
+    groupWithStudentsLoading: false,
+    groupWithStudentsError: null
   },
   reducers: {
     clearGroupsByDay: (state) => {
@@ -40,6 +48,20 @@ const groupSlice = createSlice({
     }
   },
   extraReducers: (builder) => {
+    // getGroupWithStudentsById
+    builder
+      .addCase(getGroupWithStudentsById.pending, (state) => {
+        state.groupWithStudentsLoading = true;
+        state.groupWithStudentsError = null;
+      })
+      .addCase(getGroupWithStudentsById.fulfilled, (state, action) => {
+        state.groupWithStudentsLoading = false;
+        state.groupWithStudents = action.payload;
+      })
+      .addCase(getGroupWithStudentsById.rejected, (state, action) => {
+        state.groupWithStudentsLoading = false;
+        state.groupWithStudentsError = action.payload;
+      });
     builder
       // getAllGroups
       .addCase(fetchGroups.pending, (state) => {
@@ -222,6 +244,20 @@ const groupSlice = createSlice({
         console.error('Error getting students by group:', action.error.message);
         state.studentsInGroupLoading = false;
         state.error = action.error.message;
+      })
+
+      // getAllGroupsWithStudents
+      .addCase(getAllGroupsWithStudents.pending, (state) => {
+        state.allGroupsWithStudentsLoading = true;
+        state.allGroupsWithStudentsError = null;
+      })
+      .addCase(getAllGroupsWithStudents.fulfilled, (state, action) => {
+        state.allGroupsWithStudentsLoading = false;
+        state.allGroupsWithStudents = action.payload;
+      })
+      .addCase(getAllGroupsWithStudents.rejected, (state, action) => {
+        state.allGroupsWithStudentsLoading = false;
+        state.allGroupsWithStudentsError = action.payload;
       });
   },
 });

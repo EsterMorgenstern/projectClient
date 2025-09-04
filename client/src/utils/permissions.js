@@ -1,0 +1,18 @@
+export const allowedUserIds = [
+  329235618,
+  322681008,
+  316488626,
+  315302117,
+  315029371,
+  208958256
+];
+
+export function checkUserPermission(userId, showNotification) {
+  if (!allowedUserIds.includes(Number(userId))) {
+    if (typeof showNotification === 'function') {
+      showNotification('אינך מורשה לבצע פעולה זו, פנה למנהל המערכת', 'error');
+    }
+    return false;
+  }
+  return true;
+}

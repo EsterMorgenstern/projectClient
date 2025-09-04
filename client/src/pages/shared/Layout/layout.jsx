@@ -1,7 +1,6 @@
 import { Box } from '@mui/material';
-import Sidebar from './components/sideBar';
-import Navbar from '../../Navbar/navbar';
 import { motion } from 'framer-motion';
+import Navbar from './components/navbar';
 
 const Layout = ({ children }) => {
   return (

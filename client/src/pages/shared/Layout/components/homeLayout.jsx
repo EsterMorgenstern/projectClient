@@ -1,6 +1,6 @@
 import { Box } from '@mui/material';
-import Navbar from '../../../Navbar/navbar.jsx';
 import { motion } from 'framer-motion';
+import Navbar from './navbar';
 
 export  const HomeLayout = ({ children }) => {
   return (

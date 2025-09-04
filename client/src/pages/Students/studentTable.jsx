@@ -1,5 +1,6 @@
 ﻿
 import React, { useEffect, useState } from 'react';
+import { checkUserPermission } from '../../utils/permissions';
 import EditStudentDialog from './components/EditStudentDialog';
 import {
   Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField,
@@ -162,6 +163,7 @@ export default function StudentsTable() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
+  const [formError, setFormError] = useState('');
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -223,7 +225,7 @@ export default function StudentsTable() {
     // בדיקת בטיחות
     if (!Array.isArray(students)) return [];
     if (!searchTerm?.trim()) return students;
-    
+
     const term = searchTerm.toLowerCase().trim();
     return students.filter(student => {
       if (!student) return false;
@@ -234,7 +236,8 @@ export default function StudentsTable() {
       const phoneMatch = student.phone?.toString().includes(term);
       const secondaryPhoneMatch = student.secondaryPhone?.toString().includes(term);
       const cityMatch = student.city?.toLowerCase().includes(term);
-      return firstNameMatch || lastNameMatch || fullNameMatch || idMatch || phoneMatch || secondaryPhoneMatch || cityMatch;
+      const statusMatch = student.status?.toLowerCase().includes(term);
+      return firstNameMatch || lastNameMatch || fullNameMatch || idMatch || phoneMatch || secondaryPhoneMatch || cityMatch || statusMatch;
     });
   };
 
@@ -329,21 +332,37 @@ export default function StudentsTable() {
   };
 
   const handleAdd = async () => {
+  if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+    // בדיקת שדות חובה
+    const requiredFields = [
+      { key: 'id', label: 'תעודת זהות' },
+      { key: 'firstName', label: 'שם פרטי' },
+      { key: 'lastName', label: 'שם משפחה' },
+      { key: 'phone', label: 'טלפון' },
+      { key: 'age', label: 'גיל' },
+      { key: 'city', label: 'עיר' }
+    ];
+    const missing = requiredFields.filter(f => !newStudent[f.key] || newStudent[f.key].toString().trim() === '' || (f.key === 'age' && (newStudent.age === 0 || isNaN(newStudent.age))));
+    if (missing.length > 0) {
+      setFormError('נא למלא את כל שדות החובה: ' + missing.map(f => f.label).join(', '));
+      return;
+    }
+    setFormError('');
     const addResult = await dispatch(addStudent(newStudent));
     if (addResult.type === 'students/addStudent/fulfilled') {
       // יצירת הערה אוטומטית לתלמיד החדש
       await createAutomaticRegistrationNote(newStudent.id);
-      
       refreshTable();
       setnewStudent({
         id: null, firstName: '', lastName: '', phone: null, secondaryPhone: '', email: '', age: 0,
         city: '', school: '', healthFund: '', class: "", sector: "", status: 'פעיל'
       });
+      setOpen(false);
     }
-    setOpen(false);
   };
 
   const handleEdit = async () => {
+  if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
     if (await dispatch(editStudent(currentStudent))) {
       setOpenEdit(false);
       refreshTable();
@@ -351,6 +370,7 @@ export default function StudentsTable() {
   };
 
   const handleDelete = async (id) => {
+  if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
     if (await dispatch(deleteStudent(id))) {
       refreshTable();
     }
@@ -829,6 +849,9 @@ export default function StudentsTable() {
             ➕ הוסף תלמיד חדש
           </DialogTitle>
           <DialogContent className="dialog-content">
+            {formError && (
+              <Alert severity="error" sx={{ mb: 2 }}>{formError}</Alert>
+            )}
             <TextField
               fullWidth
               label={<span><span role="img" aria-label="person">👤</span> נרשם ע"י</span>}
@@ -840,28 +863,28 @@ export default function StudentsTable() {
             />
             <TextField
               fullWidth
-              label="🆔 תעודת זהות"
+              label={<span>🆔 תעודת זהות <span style={{ color: 'red' }}>*</span></span>}
               value={newStudent.id || ''}
               onChange={(e) => setnewStudent({ ...newStudent, id: e.target.value })}
               className="dialog-field"
             />
             <TextField
               fullWidth
-              label="👤 שם פרטי"
+              label={<span>👤 שם פרטי <span style={{ color: 'red' }}>*</span></span>}
               value={newStudent.firstName}
               onChange={(e) => setnewStudent({ ...newStudent, firstName: e.target.value })}
               className="dialog-field"
             />
             <TextField
               fullWidth
-              label="👥 שם משפחה"
+              label={<span>👥 שם משפחה <span style={{ color: 'red' }}>*</span></span>}
               value={newStudent.lastName}
               onChange={(e) => setnewStudent({ ...newStudent, lastName: e.target.value })}
               className="dialog-field"
             />
             <TextField
               fullWidth
-              label="📞 טלפון"
+              label={<span>📞 טלפון <span style={{ color: 'red' }}>*</span></span>}
               value={newStudent.phone || ''}
               onChange={(e) => setnewStudent({ ...newStudent, phone: e.target.value })}
               className="dialog-field"
@@ -886,7 +909,7 @@ export default function StudentsTable() {
             <TextField
               fullWidth
               select
-              label="🎂 גיל"
+              label={<span>🎂 גיל <span style={{ color: 'red' }}>*</span></span>}
               value={newStudent.age}
               onChange={(e) => setnewStudent({ ...newStudent, age: parseInt(e.target.value) })}
               className="dialog-field"
@@ -899,7 +922,7 @@ export default function StudentsTable() {
             </TextField>
             <TextField
               fullWidth
-              label="🏙️ עיר"
+              label={<span>🏙️ עיר <span style={{ color: 'red' }}>*</span></span>}
               value={newStudent.city}
               onChange={(e) => setnewStudent({ ...newStudent, city: e.target.value })}
               className="dialog-field"

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import './style/smartMatchingSystem.css';
 import { FindBestGroupsForStudent } from '../../../store/group/groupFindBestGroupForStudent';
 import { groupStudentAddThunk } from '../../../store/groupStudent/groupStudentAddThunk';
+import { checkUserPermission } from '../../../utils/permissions';
 
 const SmartMatchingSystem = ({ studentData, onEnrollSuccess, onClose }) => {
   const dispatch = useDispatch();
@@ -57,6 +58,13 @@ const SmartMatchingSystem = ({ studentData, onEnrollSuccess, onClose }) => {
   const handleAutoEnroll = async (group) => {
     if (!studentData?.id || !group?.groupId) {
       console.error('❌ חסרים נתונים לרישום:', { studentData, group });
+      return;
+    }
+
+    // Permission check before enrollment
+    const userId = studentData?.userId || studentData?.id;
+    if (!checkUserPermission(userId, true)) {
+      alert('אין לך הרשאה לבצע רישום תלמיד לקבוצה');
       return;
     }
 

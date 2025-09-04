@@ -18,6 +18,7 @@ import { addInstructor } from '../../store/instructor/instructorAddThunk';
 import { editInstructor } from '../../store/instructor/instructorEditThunk';
 import '../styles/tableStyles.css';
 import { getGroupsByInstructorId } from '../../store/group/groupByInstructorId';
+import { checkUserPermission } from '../../utils/permissions';
 
 // קומפוננטת Loading Skeleton למדריכים
 const InstructorLoadingSkeleton = () => (
@@ -709,6 +710,7 @@ export default function InstructorsTable() {
   const instructors = useSelector((state) => state.instructors.instructors);
   const loading = useSelector((state) => state.instructors.loading);
   const error = useSelector((state) => state.instructors.error);
+  const currentUser = useSelector((state) => state.users?.currentUser);
 
   // הוסף selectors לחוגים
   const instructorGroups = useSelector((state) => state.groups.instructorGroups || []);
@@ -794,6 +796,7 @@ export default function InstructorsTable() {
   };
 
   const handleAdd = async () => {
+    if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
     await dispatch(addInstructor(newInstructor));
     refreshTable();
     setOpen(false);
@@ -803,12 +806,14 @@ export default function InstructorsTable() {
   };
 
   const handleEdit = async () => {
+    if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
     await dispatch(editInstructor(currentInstructor));
     setOpenEdit(false);
     refreshTable();
   };
 
   const handleDelete = async (id) => {
+    if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
     if (await dispatch(deleteInstructor(id))) {
       refreshTable();
     }

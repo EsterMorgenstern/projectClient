@@ -80,9 +80,9 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { clearCurrentUser, selectUserData, setCurrentUser } from '../../store/user/userSlice';
-import LoginDialog from '../LogIn/LogInDialog';
-import UserRegistrationDialog from '../LogIn/UserRegistrationDialog';
+import { clearCurrentUser, selectUserData, setCurrentUser } from '../../../../store/user/userSlice';
+import LoginDialog from '../../../LogIn/LogInDialog';
+import UserRegistrationDialog from '../../../LogIn/UserRegistrationDialog';
 
 const Navbar = () => {
   const dispatch = useDispatch();

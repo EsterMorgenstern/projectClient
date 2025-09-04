@@ -25,9 +25,13 @@ import {
   Save as SaveIcon
 } from '@mui/icons-material';
 import { useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { editStudent } from '../../../store/student/studentEditThunk';
+import { checkUserPermission } from '../../../utils/permissions';
 
 const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
+  // קבלת המשתמש הנוכחי מה-redux
+  const currentUser = useSelector(state => state.user?.currentUser || state.users?.currentUser || null);
   const dispatch = useDispatch();
   const [formData, setFormData] = useState({
     id: '',
@@ -193,6 +197,8 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
   };
 
   const handleSave = async () => {
+    if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setError(msg))) return;
+
     if (!validateForm()) {
       const required = ['id', 'firstName', 'lastName', 'phone', 'age', 'city'];
       const missingFields = required.filter(field => !formData[field] || formData[field].toString().trim() === '');
@@ -212,7 +218,8 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
 
       console.log('Sending student data for update:', studentData);
 
-      const result = await dispatch(editStudent({
+  if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setError(msg))) return;
+  const result = await dispatch(editStudent({
         studentId: formData.id,
         ...studentData
       })).unwrap();

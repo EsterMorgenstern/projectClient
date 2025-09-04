@@ -14,7 +14,7 @@ import {
     Assignment as AssignmentIcon
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
-import { addStudentNote } from '../../../store/studentNotes/studentNoteAddThunk';
+import { checkUserPermission } from '../../../utils/permissions';
 
 const AddStudentNoteDialog = ({
     open,
@@ -237,6 +237,7 @@ const AddStudentNoteDialog = ({
     };
 
    const handleSave = async () => {
+        if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setErrors({ permission: msg }))) return;
         // מניעת שמירה כפולה של "מעקב רישום" או הערה עם אותו תוכן
         if (
             (

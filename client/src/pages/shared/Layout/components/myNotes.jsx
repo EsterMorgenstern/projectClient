@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+
 import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -32,6 +33,7 @@ import { fetchStudents } from '../../../../store/student/studentGetAllThunk';
 // ✅ Import הדיאלוג המוכן
 import AddStudentNoteDialog from '../../../Students/components/addStudentNoteDialog';
 import { selectUserData } from '../../../../store/user/userSlice';
+import { checkUserPermission } from '../../../../utils/permissions';
 
 const MyNotes = () => {
   const dispatch = useDispatch();
@@ -256,6 +258,7 @@ const currentUserI = userById || currentUser;
       return;
     }
 
+    if (!checkUserPermission(userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
     try {
       // ✅ התאם את הנתונים לשרת
       const serverNoteData = {
@@ -300,6 +303,8 @@ const currentUserI = userById || currentUser;
   };
 
   const handleConfirmDelete = async () => {
+    const userId = getUserId();
+    if (!checkUserPermission(userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
     try {
       const noteId = noteToDelete.noteId || noteToDelete.NoteId;
       await dispatch(deleteStudentNote(noteId)).unwrap();
@@ -310,9 +315,8 @@ const currentUserI = userById || currentUser;
       });
       setDeleteDialogOpen(false);
       setNoteToDelete(null);
-      
+                                        
       // רענן את ההערות
-      const userId = getUserId();
       if (userId) {
         dispatch(getNotesByUserId(userId));
       }

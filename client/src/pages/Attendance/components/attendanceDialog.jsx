@@ -19,6 +19,7 @@ import React, { useEffect, useState } from 'react';
 import { getAttendanceByStudent } from '../../../store/attendance/attensanceGetByStudent';
 import AddStudentNoteDialog from '../../Students/components/addStudentNoteDialog';
 import { addStudentNote } from '../../../store/studentNotes/studentNoteAddThunk';
+import { checkUserPermission } from '../../../utils/permissions';
 
 const AttendanceDialog = ({
   open,
@@ -74,6 +75,11 @@ const AttendanceDialog = ({
 
   // פונקציה חדשה לסימון נוכחות עם בדיקת העדרויות
   const handleAttendanceChangeWithNote = async (studentId, wasPresent) => {
+    // בדיקת הרשאה לפני שינוי נוכחות
+    const userId = studentId;
+    if (!checkUserPermission(userId, (msg, type) => alert(msg))) {
+      return;
+    }
     if (onAttendanceChange && studentId) {
       onAttendanceChange(studentId, wasPresent);
 
@@ -102,20 +108,28 @@ const AttendanceDialog = ({
   };
 
   const handleSaveStudentNote = async (noteData) => {
-  try {
-    await dispatch(addStudentNote(noteData)).unwrap();
-    // אפשר להציג הודעת הצלחה
-  } catch (err) {
-    // אפשר להציג הודעת שגיאה
-  }
-  setNoteDialogOpen(false);
-  setNoteStudent(null);
-};
+    // בדיקת הרשאה לפני הוספת הערה
+    const userId = noteData.studentId;
+    if (!checkUserPermission(userId, (msg, type) => alert(msg))) {
+      return;
+    }
+    try {
+      await dispatch(addStudentNote(noteData)).unwrap();
+      // אפשר להציג הודעת הצלחה
+    } catch (err) {
+      // אפשר להציג הודעת שגיאה
+    }
+    setNoteDialogOpen(false);
+    setNoteStudent(null);
+  };
 
   const markAllPresent = () => {
     if (students && students.length > 0) {
       students.forEach(student => {
         const studentId = student.studentId || student.id;
+        if (!checkUserPermission(studentId, (msg, type) => alert(msg))) {
+          return;
+        }
         if (studentId && onAttendanceChange) {
           onAttendanceChange(studentId, true);
         }
@@ -127,6 +141,9 @@ const AttendanceDialog = ({
     if (students && students.length > 0) {
       students.forEach(student => {
         const studentId = student.studentId || student.id;
+        if (!checkUserPermission(studentId, (msg, type) => alert(msg))) {
+          return;
+        }
         if (studentId && onAttendanceChange) {
           onAttendanceChange(studentId, false);
         }
@@ -135,6 +152,12 @@ const AttendanceDialog = ({
   };
 
   const handleSave = () => {
+    // בדיקת הרשאה לפני שמירה
+    // כאן צריך לקבל את ה-userId של המשתמש השומר (לפי המימוש שלך)
+    const userId = (students && students.length > 0) ? (students[0].studentId || students[0].id) : null;
+    if (!checkUserPermission(userId, (msg, type) => alert(msg))) {
+      return;
+    }
     if (onSave) {
       onSave(note);
       setNote('');

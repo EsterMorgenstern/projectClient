@@ -1,7 +1,10 @@
 
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { exportGroupsToExcelWithData } from '../../../utils/exportGroupsToExcelWithData';
 import EditStudentDialog from '../../Students/components/EditStudentDialog';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import { exportGroupStudentsToExcel } from '../../Groups/components/GroupStudentsExportExcel';
 import {
   Table,
   TableBody,
@@ -89,8 +92,19 @@ import { editStudent } from '../../../store/student/studentEditThunk';
 import { addStudentNote } from '../../../store/studentNotes/studentNoteAddThunk';
 import SmartMatchingSystem from './smartMatchingSystem';
 import EnrollmentSuccess from './enrollmentSuccess';
+
 import './style/enrollStudent.css';
 const EnrollStudent = () => {
+  // ...existing code...
+
+  // כפתור יצוא לאקסל
+  const handleExportGroupsExcel = async () => {
+  if (!selectedGroup) {
+    setNotification({ open: true, message: 'לא נבחרה קבוצה לייצוא', severity: 'error' });
+    return;
+  }
+  await exportGroupStudentsToExcel(selectedGroup.groupId, selectedGroup.groupName, dispatch);
+};
   const dispatch = useDispatch();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -468,7 +482,7 @@ const sortedGroups = groups
         default:
           throw new Error('Invalid delete type');
       }
-
+if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
       console.log(`Deleting ${deleteType} with ID:`, itemId);
 
       await dispatch(deleteAction(itemId));
@@ -708,7 +722,7 @@ const sortedGroups = groups
         createdDate: new Date().toISOString(),
         updatedDate: new Date().toISOString()
       };
-
+if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
       console.log('📝 Creating automatic registration note:', noteData);
       
       const result = await dispatch(addStudentNote(noteData));
@@ -768,7 +782,7 @@ const sortedGroups = groups
           entrollmentDate: new Date(Date.now()).toLocaleDateString('he-IL'), // אותו פורמט כמו בפונקציה הרגילה
           isActive: true
         };
-
+if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
         console.log('🔍 Enrollment data to send:', entrollmentData);
 
         const enrollResult = await dispatch(groupStudentAddThunk(entrollmentData));
@@ -913,7 +927,7 @@ const sortedGroups = groups
       entrollmentDate: new Date(Date.now()).toLocaleDateString('he-IL'),
       isActive: true
     };
-
+if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
     await dispatch(groupStudentAddThunk(entrollmentDate));
 
     setEnrollDialogOpen(false);
@@ -1149,6 +1163,7 @@ const sortedGroups = groups
     }
 
     try {
+      if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
       console.log('🔄 Adding course:', newCourse);
       const result = await dispatch(addCourse(newCourse));
       
@@ -1226,7 +1241,7 @@ const sortedGroups = groups
         ...newBranch,
         courseId: selectedCourse.courseId || selectedCourse.id
       };
-
+if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
       console.log('🔄 Adding branch:', branchToAdd);
       const result = await dispatch(addBranch(branchToAdd));
       
@@ -1340,6 +1355,7 @@ const sortedGroups = groups
     };
 
     try {
+      if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
       console.log('🔄 Adding group:', groupData);
       const result = await dispatch(addGroup(groupData));
       
@@ -1405,6 +1421,7 @@ const sortedGroups = groups
     }
 
     try {
+      if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
       await dispatch(updateCourse(editingItem));
       setEditCourseDialogOpen(false);
       setEditingItem(null);
@@ -1436,6 +1453,7 @@ const sortedGroups = groups
     }
 
     try {
+      if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
       await dispatch(updateBranch(editingItem));
       setEditBranchDialogOpen(false);
       setEditingItem(null);
@@ -1463,7 +1481,6 @@ const sortedGroups = groups
       { field: 'dayOfWeek', name: 'יום בשבוע' },
       { field: 'hour', name: 'שעה' },
       { field: 'ageRange', name: 'טווח גילאים' },
-      { field: 'maxStudents', name: 'מספר תלמידים מקסימלי' },
       { field: 'sector', name: 'מגזר' },
       { field: 'numOfLessons', name: 'מספר שיעורים' },
       { field: 'startDate', name: 'תאריך התחלה' },
@@ -1508,6 +1525,7 @@ const sortedGroups = groups
     }
 
     try {
+      if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
       await dispatch(updateGroup(editingItem));
       setEditGroupDialogOpen(false);
       setEditingItem(null);
@@ -2099,6 +2117,7 @@ const sortedGroups = groups
       animate="visible"
       dir="rtl"
     >
+     
       <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
         <Button
           endIcon={<BackIcon style={{ transform: 'scaleX(-1)' }} />}
@@ -2155,6 +2174,30 @@ const sortedGroups = groups
             return `${courseName} - ${branchAddress} - בחר קבוצה`;
           })()}
         </Typography>
+         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+        <Button
+          variant="contained"
+          onClick={handleExportGroupsExcel}
+          sx={{
+            background: 'linear-gradient(90deg, #10b981 0%, #3B82F6 100%)',
+            color: 'white',
+            borderRadius: '16px',
+            px: 4,
+            py: 1.5,
+            fontWeight: 'bold',
+            fontSize: '1.15rem',
+            boxShadow: '0 6px 24px rgba(59,130,246,0.12)',
+            minWidth: 220,
+            transition: 'all 0.3s',
+            '&:hover': {
+              background: 'linear-gradient(90deg, #059669 0%, #2563eb 100%)',
+              boxShadow: '0 10px 32px rgba(59,130,246,0.18)',
+            }
+          }}
+        >
+          <span style={{fontWeight:'bold'}}>יצוא קבוצות + תלמידים לאקסל</span>
+        </Button>
+      </Box>
       </Box>
       {/* מיון לפי ימים ושעות, הצגת יום רק אם יש קבוצות */}
       {(() => {
@@ -2206,6 +2249,29 @@ const sortedGroups = groups
                       }}
                       onClick={() => handleGroupSelect(group)}
                     >
+                      <IconButton
+  onClick={(e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    exportGroupStudentsToExcel(group.groupId, group.groupName, dispatch);
+  }}
+  sx={{
+    position: 'absolute',
+    top: 8,
+    left: 40,
+    color: '#3B82F6',
+    bgcolor: 'rgba(59, 130, 246, 0.1)',
+    '&:hover': {
+      bgcolor: 'rgba(59, 130, 246, 0.2)',
+    },
+    zIndex: 10
+  }}
+  size="small"
+>
+  <Tooltip title="ייצוא לאקסל">
+    <FileDownloadIcon fontSize="small" />
+  </Tooltip>
+</IconButton>
                       <IconButton
                         onClick={(e) => {
                           e.stopPropagation();
@@ -3473,7 +3539,7 @@ const sortedGroups = groups
               <Grid item xs={12} sm={6}>
                 <TextField
                   margin="dense"
-                  label="מספר מקומות מקסימלי"
+                  label="מספר מקומות פנויים"
                   type="number"
                   fullWidth
                   variant="outlined"
@@ -4056,7 +4122,7 @@ const sortedGroups = groups
           <Grid item xs={12} sm={6}>
             <TextField
               margin="dense"
-              label="מספר מקומות מקסימלי"
+              label="מספר מקומות פנויים"
               type="number"
               fullWidth
               variant="outlined"
@@ -4477,6 +4543,7 @@ const sortedGroups = groups
           onClick={async () => {
             if (selectedStudentForEdit) {
               try {
+                if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
                 // Use editStudent thunk to update student
                 const result = await dispatch(editStudent(selectedStudentForEdit));
                 if (result.type === 'students/editStudent/fulfilled') {
