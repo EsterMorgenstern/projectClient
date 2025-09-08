@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { checkUserPermission } from '../../utils/permissions';
 import { useDispatch } from 'react-redux';
 import PropTypes from 'prop-types';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -148,7 +147,7 @@ const UserRegistrationDialog = ({ open, onClose, onRegistrationSuccess }) => {
  // ✅ תקן את handleSubmit
 // ✅ תיקון מושלם - נטפל בכל סוג תגובה מהשרת
 const handleSubmit = async () => {
-  if (!checkUserPermission(formData.id, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+  // הסר בדיקת הרשאות
   if (!validateForm()) return;
 
  

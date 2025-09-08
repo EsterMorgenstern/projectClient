@@ -73,6 +73,8 @@ const AddStudentDialog = ({
   const [studentNote, setStudentNote] = useState('');
   const [savedStudentData, setSavedStudentData] = useState(null);
 
+  const [enrollDate, setEnrollDate] = useState('');
+
   // מצב הצ'קליסט למעקב אחר משימות הרישום
   const [registrationChecklist, setRegistrationChecklist] = useState({
     paymentMethodCompleted: false,    // אמצעי תשלום מולא
@@ -99,7 +101,7 @@ const AddStudentDialog = ({
     },
     { 
       key: 'commitmentExplained', 
-      label: '� הוסבר על התחייבות/הפניה', 
+      label: '📄 הוסבר על התחייבות/הפניה', 
       description: 'הסבר על חובות וזכויות ההורים והתלמיד' 
     }
   ];
@@ -311,14 +313,21 @@ const AddStudentDialog = ({
   };
 
   const validateForm = () => {
-    const required = ['id', 'firstName', 'lastName', 'phone', 'age', 'city'];
-    return required.every(field => newStudent[field] && newStudent[field].toString().trim() !== '');
+  const required = ['id', 'firstName', 'lastName', 'phone', 'age', 'city'];
+  // דרוש גם תאריך התחלה
+  const isStudentFieldsValid = required.every(field => newStudent[field] && newStudent[field].toString().trim() !== '');
+  const isEnrollDateValid = enrollDate && enrollDate.trim() !== '';
+  return isStudentFieldsValid && isEnrollDateValid;
   };
 
   const handleSubmit = async () => {
     if (!validateForm()) {
+      let errorMsg = 'נא למלא את כל השדות הנדרשים';
+      if (!enrollDate || enrollDate.trim() === '') {
+        errorMsg = 'יש לבחור תאריך התחלה';
+      }
       if (onSuccess) {
-        onSuccess(null, 'נא למלא את כל השדות הנדרשים', 'error');
+        onSuccess(null, errorMsg, 'error');
       }
       return;
     }
@@ -461,7 +470,8 @@ const AddStudentDialog = ({
     
     if (onSuccess) {
       console.log('📤 Sending student data to callback:', studentData);
-      onSuccess(studentData, 'התלמיד נוסף בהצלחה!', 'success');
+        onSuccess({ ...studentData, enrollDate }, 'התלמיד נוסף בהצלחה!', 'success');
+
     }
   };
 
@@ -653,7 +663,38 @@ const AddStudentDialog = ({
               sx={{ textAlign: 'right', width: '160px', minWidth: '120px' }}
             />
           </Grid>
-
+<TextField
+  label="📅 תאריך התחלה"
+  type="date"
+  variant="outlined"
+  value={enrollDate}
+  onChange={e => setEnrollDate(e.target.value)}
+  InputLabelProps={{ shrink: true }}
+  fullWidth
+  required
+  error={!enrollDate}
+  sx={{
+    mt: 1,
+    bgcolor: 'rgba(16,185,129,0.04)',
+    borderRadius: '4px',
+    boxShadow: '0 2px 8px rgba(16,185,129,0.08)',
+    '& .MuiOutlinedInput-root': {
+      borderRadius: '4px',
+      fontWeight: 'bold',
+      fontSize: '1.08rem',
+      letterSpacing: '0.04em',
+      '&:hover .MuiOutlinedInput-notchedOutline': {
+        borderColor: '#10B981',
+        borderWidth: '2px'
+      },
+      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+        borderColor: '#10B981',
+        borderWidth: '2px'
+      }
+    }
+  }}
+  helperText={!enrollDate ? 'שדה חובה: יש לבחור תאריך התחלה' : 'יש לבחור תאריך התחלה לתלמיד'}
+/>
           <Divider sx={{ width: '100%', my: 2 }} />
           
           <Grid item xs={12}>

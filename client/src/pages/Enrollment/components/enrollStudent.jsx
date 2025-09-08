@@ -92,8 +92,10 @@ import { editStudent } from '../../../store/student/studentEditThunk';
 import { addStudentNote } from '../../../store/studentNotes/studentNoteAddThunk';
 import SmartMatchingSystem from './smartMatchingSystem';
 import EnrollmentSuccess from './enrollmentSuccess';
+import { checkUserPermission } from'../../../utils/permissions';
 
 import './style/enrollStudent.css';
+import { fetchInstructors } from '../../../store/instructor/instructorGetAllThunk';
 const EnrollStudent = () => {
   // ...existing code...
 
@@ -125,6 +127,8 @@ const EnrollStudent = () => {
   const bestGroup = useSelector(state => state.groups.bestGroupForStudent);
   const studentsInGroup = useSelector(state => state.groups.studentsInGroup || []);
   const studentsInGroupLoading = useSelector(state => state.groups.studentsInGroupLoading);
+const instructors = useSelector(state => state.instructors.instructors || []);
+
   const loading = useSelector(state =>
     state.courses.loading ||
     state.branches.loading ||
@@ -157,8 +161,10 @@ const EnrollStudent = () => {
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [enrollDialogOpen, setEnrollDialogOpen] = useState(false);
   const [studentId, setStudentId] = useState('');
+  const [enrollDate, setEnrollDate] = useState('');
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
   const [view, setView] = useState('courses'); // courses, branches, groups
+const [selectedInstructorId, setSelectedInstructorId] = useState('');
 
   // Dialog states
   const [addCourseDialogOpen, setAddCourseDialogOpen] = useState(false);
@@ -206,7 +212,7 @@ const EnrollStudent = () => {
   const [studentGroupData, setStudentGroupData] = useState({
     studentId: 0,
     groupId: null,
-    entrollmentDate: new Date(Date.now()).toLocaleDateString('he-IL'),
+    entrollmentDate: '',
     isActive: true
   });
 
@@ -261,6 +267,12 @@ const sortedGroups = groups
   useEffect(() => {
     dispatch(fetchCourses());
   }, [dispatch]);
+
+  useEffect(() => {
+  if (addGroupDialogOpen) {
+    dispatch(fetchInstructors());
+  }
+}, [addGroupDialogOpen, dispatch]);
 
   useEffect(() => {
     if (selectedCourse) {
@@ -774,12 +786,12 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
           });
           return;
         }
-        
+       
         // שיבוץ התלמיד החדש לקבוצה הנוכחית
         const entrollmentData = {
           studentId: studentData.id, // אותו טיפוס כמו בפונקציה הרגילה
           groupId: selectedGroup.groupId,
-          entrollmentDate: new Date(Date.now()).toLocaleDateString('he-IL'), // אותו פורמט כמו בפונקציה הרגילה
+          enrollmentDate: studentData.enrollDate, 
           isActive: true
         };
 if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
@@ -919,12 +931,12 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
     });
     return;
   }
-
+alert('תאריך רישום: ' + (enrollDate ? new Date(enrollDate).toISOString().split('T')[0] : ''));
   try {
     const entrollmentDate = {
       studentId: studentId,
       groupId: groupId,
-      entrollmentDate: new Date(Date.now()).toLocaleDateString('he-IL'),
+      enrollmentDate: enrollDate ? new Date(enrollDate).toISOString().split('T')[0] : '',
       isActive: true
     };
 if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
@@ -963,6 +975,7 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
     });
 
     setStudentId('');
+    setEnrollDate('');
   } catch (error) {
     console.error("Error enrolling student:", error);
     setNotification({
@@ -1303,16 +1316,14 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
       { field: 'maxStudents', name: 'מספר תלמידים מקסימלי' },
       { field: 'sector', name: 'מגזר' },
       { field: 'numOfLessons', name: 'מספר שיעורים' },
-      { field: 'startDate', name: 'תאריך התחלה' },
-      { field: 'instructorId', name: 'קוד מדריך' }
+      { field: 'startDate', name: 'תאריך התחלה' }
+     
     ];
 
     // בדיקה אם יש שדות חסרים (כולל קוד מדריך שלא יכול להיות 0)
     const missingFields = requiredFields.filter(({ field }) => {
       const value = newGroup[field];
-      if (field === 'instructorId') {
-        return !value || value === 0;
-      }
+     
       return !value || value === '' || value === 0;
     });
 
@@ -1350,6 +1361,7 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
 
     const groupData = {
       ...newGroup,
+       instructorId: selectedInstructorId,
       courseId: selectedCourse?.courseId,
       branchId: selectedBranch?.branchId
     };
@@ -3000,8 +3012,14 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
               onChange={(e) => { setStudentId(e.target.value) }}
               sx={{
                 mt: 2,
+                bgcolor: 'rgba(59,130,246,0.04)',
+                borderRadius: '14px',
+                boxShadow: '0 2px 8px rgba(59,130,246,0.08)',
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: '10px',
+                  borderRadius: '14px',
+                  fontWeight: 'bold',
+                  fontSize: '1.08rem',
+                  letterSpacing: '0.04em',
                   '&:hover .MuiOutlinedInput-notchedOutline': {
                     borderColor: '#3B82F6',
                     borderWidth: '2px'
@@ -3010,9 +3028,57 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
                     borderColor: '#3B82F6',
                     borderWidth: '2px'
                   }
+                },
+                '& .MuiInputAdornment-root': {
+                  color: '#3B82F6',
+                  fontSize: '1.3rem'
                 }
               }}
-              inputProps={{ dir: 'rtl' }}
+              inputProps={{ dir: 'rtl', maxLength: 9, style: { fontWeight: 'bold', fontSize: '1.08rem', letterSpacing: '0.04em' } }}
+              InputProps={{
+                startAdornment: (
+                  <span style={{marginRight:8, color:'#3B82F6', fontSize:'1.3rem'}}>🆔</span>
+                )
+              }}
+              helperText="יש להזין 9 ספרות של תעודת זהות"
+            />
+            <TextField
+              label="תאריך התחלה"
+              type="date"
+              value={enrollDate}
+              onChange={e => setEnrollDate(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+              sx={{
+                mt: 2,
+                bgcolor: 'rgba(16,185,129,0.04)',
+                borderRadius: '14px',
+                boxShadow: '0 2px 8px rgba(16,185,129,0.08)',
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '14px',
+                  fontWeight: 'bold',
+                  fontSize: '0.9rem',
+                  letterSpacing: '0.04em',
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#10B981',
+                    borderWidth: '2px'
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#10B981',
+                    borderWidth: '2px'
+                  }
+                },
+                '& .MuiInputAdornment-root': {
+                  color: '#10B981',
+                  fontSize: '1.3rem'
+                }
+              }}
+              InputProps={{
+                startAdornment: (
+                  <span style={{marginRight:8, color:'#10B981', fontSize:'1.3rem'}}>📅</span>
+                )
+              }}
+              helperText="יש לבחור תאריך התחלה לחוג"
             />
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 3, justifyContent: 'space-between', direction: 'rtl', gap: 2 }}>
@@ -3596,16 +3662,20 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField
-                  margin="dense"
-                  label="קוד מדריך"
-                  type="number"
-                  fullWidth
-                  variant="outlined"
-                  inputProps={{ dir: 'rtl' }}
-                  value={newGroup.instructorId}
-                  onChange={(e) => setNewGroup({ ...newGroup, instructorId: e.target.value })}
-                />
+                <FormControl fullWidth>
+  <InputLabel>בחר מדריך</InputLabel>
+  <Select
+    value={selectedInstructorId}
+    onChange={e => setSelectedInstructorId(e.target.value)}
+    label="בחר מדריך"
+  >
+    {instructors.map(inst => (
+      <MenuItem key={inst.id} value={inst.id}>
+        {inst.firstName} {inst.lastName}
+      </MenuItem>
+    ))}
+  </Select>
+</FormControl>
               </Grid>
             </Grid>
           </DialogContent>

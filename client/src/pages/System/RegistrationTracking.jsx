@@ -73,6 +73,7 @@ const RegistrationTracking = () => {
   // Redux selectors
   const registrationTrackingNotes = useSelector(selectRegistrationTrackingNotes);
   const notesLoading = useSelector(selectStudentNotesLoading);
+const currentUser = useSelector(state => state.user?.currentUser || state.users?.currentUser || null);
 
   // Load data
   useEffect(() => {
@@ -215,12 +216,11 @@ const RegistrationTracking = () => {
   };
 
   const handleSaveNotes = async () => {
-    setSaving(true);
-    const userId = selectedStudent?.registrationNotes?.[0]?.authorId || null;
-    if (!checkUserPermission(userId, (msg, severity) => setAlert({ open: true, message: msg, severity }))) {
-      setSaving(false);
-      return;
-    }
+   setSaving(true);
+  if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setAlert({ open: true, message: msg, severity }))) {
+    setSaving(false);
+    return;
+  }
     try {
       const currentDate = new Date().toLocaleDateString('he-IL');
       let noteContent = `🔴 משימות שטרם הושלמו (עודכן ב-${currentDate}):\n`;
