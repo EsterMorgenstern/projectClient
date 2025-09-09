@@ -16,7 +16,14 @@ import {
   Grid,
   IconButton,
   Alert,
-  Tooltip
+  Tooltip,
+  Card,
+  CardContent,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Chip,
+  Avatar
 } from '@mui/material';
 import { 
   Close as CloseIcon, 
@@ -27,7 +34,13 @@ import {
 import { useDispatch } from 'react-redux';
 import { useSelector } from 'react-redux';
 import { editStudent } from '../../../store/student/studentEditThunk';
+import { getNotesByStudentId } from '../../../store/studentNotes/studentNotesGetById';
 import { checkUserPermission } from '../../../utils/permissions';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import InfoIcon from '@mui/icons-material/Info';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
+import WarningIcon from '@mui/icons-material/Warning';
 
 const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
   // קבלת המשתמש הנוכחי מה-redux
@@ -51,6 +64,9 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [notesDialogOpen, setNotesDialogOpen] = useState(false);
+  const [studentNotes, setStudentNotes] = useState([]);
+  const [notesLoading, setNotesLoading] = useState(false);
 
   // אפשרויות קופת חולים עם אייקונים
   const healthFundOptions = [
@@ -99,6 +115,18 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
     { value: 'פעיל', label: '✅ פעיל', icon: '✅', color: '#10b981' },
     { value: 'ליד', label: '⏳ ליד', icon: '⏳', color: '#f59e0b' },
     { value: 'לא רלוונטי', label: '❌ לא רלוונטי', icon: '❌', color: '#ef4444' }
+  ];
+
+  const noteTypes = [
+    { value: 'כללי', label: 'כללי', color: '#3b82f6', icon: InfoIcon },
+    { value: 'חיובי', label: 'חיובי', color: '#059669', icon: CheckCircleIcon },
+    { value: 'שלילי', label: 'שלילי', color: '#dc2626', icon: ErrorIcon },
+    { value: 'אזהרה', label: 'אזהרה', color: '#d97706', icon: WarningIcon }
+  ];
+  const priorities = [
+    { value: 'נמוך', label: 'נמוך', color: '#6b7280' },
+    { value: 'בינוני', label: 'בינוני', color: '#d97706' },
+    { value: 'גבוה', label: 'גבוה', color: '#dc2626' }
   ];
 
   useEffect(() => {
@@ -247,6 +275,18 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
     }
   };
 
+  // const handleRefreshNotes = async () => {
+  //   setNotesLoading(true);
+  //   try {
+  //     const result = await dispatch(getNotesByStudentId(formData.id)).unwrap();
+  //     setStudentNotes(result || []);
+  //   } catch (error) {
+  //     setStudentNotes([]);
+  //   } finally {
+  //     setNotesLoading(false);
+  //   }
+  // };
+
   const handleClose = () => {
     setFormData({
       id: '',
@@ -265,7 +305,90 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
       createdBy: ''
     });
     setError('');
+    setNotesDialogOpen(false);
+    setStudentNotes([]);
     onClose();
+  };
+
+  const handleOpenNotesDialog = async () => {
+    setNotesDialogOpen(true);
+    setNotesLoading(true);
+    try {
+      const result = await dispatch(getNotesByStudentId(formData.id)).unwrap();
+      setStudentNotes(result || []);
+    } catch (error) {
+      setStudentNotes([]);
+    } finally {
+      setNotesLoading(false);
+    }
+  };
+
+  const handleCloseNotesDialog = () => {
+    setNotesDialogOpen(false);
+    setStudentNotes([]);
+  };
+
+  const renderStudentNotes = () => {
+    if (notesLoading) {
+      return <Typography sx={{ textAlign: 'center', py: 2 }}>טוען הערות...</Typography>;
+    }
+    if (!studentNotes || studentNotes.length === 0) {
+      return <Typography sx={{ textAlign: 'center', py: 2 }}>אין הערות עבור תלמיד זה</Typography>;
+    }
+    return (
+      <Box sx={{ mt: 2 }}>
+        {studentNotes.map((note, index) => {
+          const selectedNoteType = noteTypes.find(type => type.value === note.noteType) || noteTypes[0];
+          const selectedPriority = priorities.find(priority => priority.value === note.priority) || priorities[0];
+          return (
+            <Accordion key={note.noteId} sx={{ mb: 1, borderRadius: '8px !important' }}>
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon />}
+                sx={{
+                  backgroundColor: `${selectedNoteType?.color}10`,
+                  borderLeft: `4px solid ${selectedNoteType?.color}`,
+                  borderRadius: '8px',
+                  mb: 1,
+                  '&:hover': { backgroundColor: `${selectedNoteType?.color}20` },
+                  '& .MuiAccordionSummary-content': { alignItems: 'center', gap: 2 }
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+                  <Avatar sx={{ bgcolor: selectedNoteType?.color, width: 32, height: 32 }}>
+                    {selectedNoteType?.icon && (
+                      <selectedNoteType.icon sx={{ fontSize: 16 }} />
+                    )}
+                  </Avatar>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 'bold', fontSize: '15px' }}>
+                      {note.noteType}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" fontSize='13px'>
+                      {new Date(note.createdDate).toLocaleDateString('he-IL')} • {note.authorName} • {note.authorRole}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {note.priority && (
+                      <Chip
+                        label={note.priority}
+                        size="small"
+                        sx={{ bgcolor: `${selectedPriority?.color}20`, color: selectedPriority?.color, fontWeight: 'bold' }}
+                      />
+                    )}
+                    {note.isPrivate && (
+                      <Chip label="פרטי" size="small" color="warning" variant="outlined" />
+                    )}
+                  </Box>
+                </Box>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Typography variant="body2">{note.noteContent}</Typography>
+              </AccordionDetails>
+            </Accordion>
+          );
+        })}
+      </Box>
+    );
   };
 
   return (
@@ -521,7 +644,29 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
               </Select>
             </FormControl>
           </Grid>
+            <Button
+          variant="outlined"
+          color="primary"
+          onClick={handleOpenNotesDialog}
+          sx={{ borderRadius: '8px', px: 2, py: 1, fontWeight: 'bold', mb: 2, mr: 1 }}
+        >
+          הצג הערות תלמיד
+        </Button>
+        {/* <Button
+          variant="outlined"
+          color="secondary"
+          onClick={handleRefreshNotes}
+          sx={{ borderRadius: '8px', px: 2, py: 1, fontWeight: 'bold', mb: 2 }}
+        >
+          רענן הערות
+        </Button> */}
         </Grid>
+
+      
+        {notesLoading && <Typography sx={{ textAlign: 'center', py: 2 }}>טוען הערות...</Typography>}
+        {!notesLoading && notesDialogOpen && (
+          <Box sx={{ mb: 2 }}>{renderStudentNotes()}</Box>
+        )}
       </DialogContent>
 
       <DialogActions sx={{ p: 2, gap: 1, direction: 'rtl' }}>

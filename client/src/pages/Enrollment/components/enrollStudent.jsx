@@ -358,6 +358,16 @@ const sortedGroups = groups
     }
   }, []); // רק בטעינה הראשונית
 
+useEffect(() => {
+  if (open && !enrollDate) {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    setEnrollDate(`${yyyy}-${mm}-${dd}`);
+  }
+}, [open, enrollDate]);
+
   // 🗑️ פונקציה לניקוי נתוני הטופס מ-localStorage
   const clearFormData = () => {
     console.log('🗑️ מנקה נתוני טופס מ-localStorage');

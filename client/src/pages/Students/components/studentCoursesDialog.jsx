@@ -52,6 +52,7 @@ const StudentCoursesDialog = ({
 }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const currentUser = useSelector(state => state.users.currentUser);
 
   // moved here: edit dialog states
   const [editCourseDialogOpen, setEditCourseDialogOpen] = useState(false);
@@ -403,7 +404,31 @@ const [selectedGroupId, setSelectedGroupId] = useState(null);
             );
           })}
         </AnimatePresence>
+    <Menu
+  anchorEl={menuAnchor}
+  open={Boolean(menuAnchor)}
+  onClose={handleMenuClose}
+  sx={{ direction: 'rtl' }}
+>
+  <MenuItem onClick={() => handleEditNote(studentNotes.find(n => n.noteId === menuNoteId))}>
+    <EditIcon fontSize="small" sx={{ ml: 1 }} />
+    ערוך הערה
+  </MenuItem>
+  <MenuItem
+    onClick={() => handleDeleteConfirm(studentNotes.find(n => n.noteId === menuNoteId))}
+    sx={{
+      color: '#dc2626',
+      '&:hover': {
+        backgroundColor: 'rgba(220, 38, 38, 0.1)'
+      }
+    }}
+  >
+    <DeleteIcon fontSize="small" sx={{ ml: 1 }} />
+    מחק הערה
+  </MenuItem>
+</Menu>
       </Box>
+      
     );
   };
 
