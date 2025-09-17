@@ -128,10 +128,22 @@ const MonthlyCalendar = ({
 
       const attendanceStats = calculateAttendanceStats(date, dayEvents);
       const isActiveDayForEvents = isActiveDay ? isActiveDay(date) : true;
-      const holidayInfo = getHebrewHolidayInfo ? getHebrewHolidayInfo(date) : null;
+      let holidayInfo = getHebrewHolidayInfo ? getHebrewHolidayInfo(date) : null;
 
-   const dateStr = format(date, 'yyyy-MM-dd');
-   const isDayFullyMarked = isMarkedForDayStatus[dateStr] === true;
+      // אם היום לא פעיל, ואין holidayInfo, נבדוק אם זה בין הזמנים לפי השנה והחודש העברי
+      if (!isActiveDayForEvents && !holidayInfo) {
+        try {
+          const hdate = new HDate(date);
+          const monthName = hdate.getMonthName();
+          const dayNum = hdate.getDate();
+          if (monthName === 'Av' && dayNum >= 8 && dayNum <= 29) {
+            holidayInfo = { name: 'בין הזמנים', nameEn: 'Bein Hazmanim', isCustom: true };
+          }
+        } catch (e) {}
+      }
+
+      const dateStr = format(date, 'yyyy-MM-dd');
+      const isDayFullyMarked = isMarkedForDayStatus[dateStr] === true;
 
       return {
         id: `${format(date, 'yyyy-MM-dd')}-${index}`,

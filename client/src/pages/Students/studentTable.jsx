@@ -181,7 +181,8 @@ export default function StudentsTable() {
     { value: 'מכבי', label: '🏥 מכבי', icon: '🏥' },
     { value: 'מאוחדת', label: '🏥 מאוחדת', icon: '🏥' },
     { value: 'לאומית', label: '🏥 לאומית', icon: '🏥' },
-    { value: 'כללית', label: '🏥 כללית', icon: '🏥' }
+    { value: 'כללית', label: '🏥 כללית', icon: '🏥' },
+    { value: 'הסדר אחר', label: '🏥 הסדר אחר', icon: '🏥' }
   ];
 
   const ageOptions = [

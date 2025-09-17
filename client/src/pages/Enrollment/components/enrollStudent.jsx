@@ -165,6 +165,7 @@ const instructors = useSelector(state => state.instructors.instructors || []);
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
   const [view, setView] = useState('courses'); // courses, branches, groups
 const [selectedInstructorId, setSelectedInstructorId] = useState('');
+const [studentLessons, setStudentLessons] = useState([]);
 
   // Dialog states
   const [addCourseDialogOpen, setAddCourseDialogOpen] = useState(false);
@@ -248,7 +249,7 @@ const dayOrder = {
 };
 
 function parseHour(hourStr) {
-  if (!hourStr) return 0;
+  if (!hourStr || typeof hourStr !== 'string') return 0;
   const [h, m] = hourStr.split(':').map(Number);
   return (isNaN(h) ? 0 : h) * 60 + (isNaN(m) ? 0 : m);
 }
@@ -367,7 +368,35 @@ useEffect(() => {
     setEnrollDate(`${yyyy}-${mm}-${dd}`);
   }
 }, [open, enrollDate]);
-
+useEffect(() => {
+  if (
+    selectedGroup &&
+    enrollDate &&
+    selectedGroup.startDate &&
+    selectedGroup.dayOfWeek &&
+    selectedGroup.numOfLessons
+  ) {
+    const dayOfWeekMap = {
+      'ראשון': 0,
+      'שני': 1,
+      'שלישי': 2,
+      'רביעי': 3,
+      'חמישי': 4,
+      'שישי': 5,
+      'שבת': 6
+    };
+    const lessonDayOfWeek = dayOfWeekMap[selectedGroup.dayOfWeek];
+    const lessonsCount = calculateStudentLessons(
+      selectedGroup.startDate,
+      enrollDate,
+ lessonDayOfWeek,
+      selectedGroup.numOfLessons
+    );
+    setStudentLessons(lessonsCount);
+  } else {
+    setStudentLessons(0);
+  }
+}, [enrollDate, selectedGroup]);
   // 🗑️ פונקציה לניקוי נתוני הטופס מ-localStorage
   const clearFormData = () => {
     console.log('🗑️ מנקה נתוני טופס מ-localStorage');
@@ -413,43 +442,28 @@ useEffect(() => {
       dispatch(getGroupsByCourseId(selectedCourse.courseId));
     }
   };
-
-
-  //   <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
-  //     <motion.div
-  //       whileHover={{ scale: 1.02 }}
-  //       whileTap={{ scale: 0.98 }}
-  //     >
-  //       <Button
-  //         variant="contained"
-  //         size="large"
-  //         onClick={() => setAlgorithmDialogOpen(true)}
-  //         sx={{
-  //           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  //           borderRadius: '20px',
-  //           px: 4,
-  //           py: 2,
-  //           fontSize: '1.1rem',
-  //           fontWeight: 'bold',
-  //           boxShadow: '0 8px 25px rgba(102, 126, 234, 0.4)',
-  //           '&:hover': {
-  //             background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
-  //             boxShadow: '0 12px 35px rgba(102, 126, 234, 0.5)',
-  //           },
-  //           transition: 'all 0.3s ease'
-  //         }}
-  //         startIcon={
-  //          <CustomRocketIcon />
-  //         }
-  //       >
-  //         מערכת התאמה חכמה - שיבוץ אוטומטי
-  //       </Button>
-  //     </motion.div>
-  //   </Box>
-  // );
-
-  // Menu functions
-  const handleMenuOpen = (event, item, type) => {
+  // פונקציה שמחשבת את מספר השיעורים לתלמיד
+function calculateStudentLessons(groupStartDate, enrollDate, lessonDayOfWeek, numOfLessons) {
+  if (!groupStartDate || !enrollDate || lessonDayOfWeek === undefined || !numOfLessons) return 0;
+  let start = new Date(groupStartDate);
+  let enroll = new Date(enrollDate);
+  let lessons = [];
+  let count = 0;
+  // מצא את השיעור הראשון ביום השבוע הנכון
+  while (start.getDay() !== lessonDayOfWeek) {
+    start.setDate(start.getDate() + 1);
+  }
+  // עבור כל שיעור, בדוק אם הוא אחרי תאריך ההרשמה
+  while (count < numOfLessons) {
+    if (start >= enroll) {
+      lessons.push(new Date(start));
+    }
+    start.setDate(start.getDate() + 7);
+    count++;
+  }
+  return lessons.length;
+} 
+ const handleMenuOpen = (event, item, type) => {
     event.stopPropagation();
     event.preventDefault();
     setMenuAnchor(event.currentTarget);
@@ -941,7 +955,7 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
     });
     return;
   }
-alert('תאריך רישום: ' + (enrollDate ? new Date(enrollDate).toISOString().split('T')[0] : ''));
+
   try {
     const entrollmentDate = {
       studentId: studentId,
@@ -1991,7 +2005,7 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
                 const activeGroupsCount = getActiveGroupsCountForBranch(branch.branchId);
                 const groupsColor = getGroupsCountColor(activeGroupsCount);
                 const statusText = getGroupsStatusText(activeGroupsCount);
-
+const studentsInBranch = groups.filter(g => g.branchId === branch.branchId).reduce((acc, g) => acc + (g.studentsCount || 0), 0);
                 return (
                   <Grid item xs={12} sm={6} md={4} key={`branch-${branch.branchId || branch.id || `${cityIndex}-${branchIndex}`}`}>
                     <motion.div variants={itemVariants}>
@@ -2023,6 +2037,7 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
                         }}
                         onClick={() => handleBranchSelect(branch)}
                       >
+                      
                         <IconButton
                           onClick={(e) => {
                             e.stopPropagation();
@@ -3090,6 +3105,51 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
               }}
               helperText="יש לבחור תאריך התחלה לחוג"
             />
+            {/* הצגת מספר שיעורים ותאריכים ראשונים לתלמיד מתחת לתאריך התחלה */}
+            {(() => {
+              // המרת יום השבוע למספר
+              const dayOfWeekMap = {
+                'ראשון': 0,
+                'שני': 1,
+                'שלישי': 2,
+                'רביעי': 3,
+                'חמישי': 4,
+                'שישי': 5,
+                'שבת': 6
+              };
+              let lessonDayOfWeek = selectedGroup?.dayOfWeek;
+              if (typeof lessonDayOfWeek === 'string') {
+                lessonDayOfWeek = dayOfWeekMap[lessonDayOfWeek];
+              }
+              const groupStartDate = selectedGroup?.startDate;
+              const numOfLessons = selectedGroup?.numOfLessons;
+              const enrollDateForCalc = enrollDate || groupStartDate;
+              function getStudentLessonDates(groupStartDate, enrollDate, lessonDayOfWeek, numOfLessons) {
+                let start = new Date(Math.max(new Date(groupStartDate), new Date(enrollDate)));
+                let lessons = [];
+                let count = 0;
+                while (start.getDay() !== lessonDayOfWeek) {
+                  start.setDate(start.getDate() + 1);
+                }
+                while (count < numOfLessons) {
+                  lessons.push(new Date(start));
+                  start.setDate(start.getDate() + 7);
+                  count++;
+                }
+                return lessons;
+              }
+              const lessonsForStudent = (groupStartDate && enrollDateForCalc && lessonDayOfWeek !== undefined && numOfLessons)
+                ? getStudentLessonDates(groupStartDate, enrollDateForCalc, lessonDayOfWeek, numOfLessons)
+                : [];
+              return (
+                <Box sx={{ mt: 2, bgcolor: '#ECFDF5', p: 2, borderRadius: 2 }}>
+  <Typography variant="body2" sx={{ color: '#10b981', fontWeight: 'bold' }}>
+    מספר שיעורים לתלמיד: {studentLessons}
+  </Typography>
+</Box>
+
+              );
+            })()}
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 3, justifyContent: 'space-between', direction: 'rtl', gap: 2 }}>
             <Button
@@ -4516,7 +4576,113 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
       title="הוסף תלמיד חדש ושבץ לקבוצה"
       submitButtonText=" הוסף ושבץ מיידית"
       keepOpenAfterSubmit={false}
+      selectedGroup={selectedGroup}
     />
+
+    {/* דיאלוג שיבוץ תלמיד קיים */}
+    {editStudentDialogOpen && selectedStudentForEdit && selectedGroup && (
+      <Dialog
+        open={editStudentDialogOpen}
+        onClose={() => {
+          setEditStudentDialogOpen(false);
+          setSelectedStudentForEdit(null);
+        }}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: '16px', direction: 'rtl' } }}
+      >
+        <DialogTitle sx={{ bgcolor: '#3b82f6', color: 'white', textAlign: 'right' }}>
+          <Typography variant="h6">שיבוץ תלמיד קיים לחוג</Typography>
+        </DialogTitle>
+        <DialogContent sx={{ p: 3 }}>
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#1E3A8A' }}>
+              {selectedStudentForEdit.firstName} {selectedStudentForEdit.lastName} | ת"ז: {selectedStudentForEdit.id}
+            </Typography>
+          </Box>
+          <Box sx={{ mb: 2, bgcolor: '#F3F4F6', p: 2, borderRadius: 2 }}>
+            <Typography variant="body2" sx={{ color: '#374151' }}>
+              <strong>קבוצה:</strong> {selectedGroup.groupName}<br />
+              <strong>יום בשבוע:</strong> {selectedGroup.dayOfWeek}<br />
+              <strong>תאריך התחלה:</strong> {selectedGroup.startDate}<br />
+              <strong>מספר שיעורים בקבוצה:</strong> {selectedGroup.numOfLessons}
+            </Typography>
+            {/* הצגת מספר שיעורים לתלמיד מתחת לתאריך התחלה */}
+            {(() => {
+              // המרת יום השבוע למספר
+              const dayOfWeekMap = {
+                'ראשון': 0,
+                'שני': 1,
+                'שלישי': 2,
+                'רביעי': 3,
+                'חמישי': 4,
+                'שישי': 5,
+                'שבת': 6
+              };
+              let lessonDayOfWeek = selectedGroup.dayOfWeek;
+              if (typeof lessonDayOfWeek === 'string') {
+                lessonDayOfWeek = dayOfWeekMap[lessonDayOfWeek];
+              }
+              const groupStartDate = selectedGroup.startDate;
+              const numOfLessons = selectedGroup.numOfLessons;
+              // השתמש בשדה enrollDate שהמשתמש ממלא
+              const enrollDate = enrollDateInputValue || groupStartDate;
+              function getStudentLessonDates(groupStartDate, enrollDate, lessonDayOfWeek, numOfLessons) {
+                let start = new Date(Math.max(new Date(groupStartDate), new Date(enrollDate)));
+                let lessons = [];
+                let count = 0;
+                while (start.getDay() !== lessonDayOfWeek) {
+                  start.setDate(start.getDate() + 1);
+                }
+                while (count < numOfLessons) {
+                  lessons.push(new Date(start));
+                  start.setDate(start.getDate() + 7);
+                  count++;
+                }
+                return lessons;
+              }
+              const lessonsForStudent = (groupStartDate && enrollDate && lessonDayOfWeek !== undefined && numOfLessons)
+                ? getStudentLessonDates(groupStartDate, enrollDate, lessonDayOfWeek, numOfLessons)
+                : [];
+              return (
+                  <Box sx={{ mt: 2, bgcolor: '#ECFDF5', p: 2, borderRadius: 2 }}>
+                    <Typography variant="body2" sx={{ color: '#10b981', fontWeight: 'bold' }}>
+                      מספר שיעורים לתלמיד: {lessonsForStudent.length}
+                    </Typography>
+                    {lessonsForStudent.length > 0 && (
+                      <Typography variant="body2" sx={{ color: '#374151', mt: 1 }}>
+                        תאריכי שיעורים ראשונים: {lessonsForStudent.slice(0,3).map(d => d.toLocaleDateString('he-IL')).join(', ')}
+                      </Typography>
+                    )}
+                  </Box>
+                );
+            })()}
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1, direction: 'rtl' }}>
+          <Button
+            variant="outlined"
+            color="error"
+            onClick={() => {
+              setEditStudentDialogOpen(false);
+              setSelectedStudentForEdit(null);
+            }}
+            sx={{ borderRadius: '8px', px: 3, py: 1 }}
+          >
+            ביטול
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<PersonAddIcon />}
+            onClick={() => {/* כאן תוכל להוסיף את הלוגיקה לשיבוץ */}}
+            sx={{ borderRadius: '8px', px: 3, py: 1, bgcolor: '#3B82F6', color: 'white' }}
+          >
+            שבץ תלמיד
+          </Button>
+        </DialogActions>
+      </Dialog>
+    )}
+   
 
     {/* Edit Student Dialog */}
     <Dialog

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -41,8 +41,11 @@ const AddStudentDialog = ({
   title = "הוסף תלמיד חדש",
   submitButtonText = "הוסף תלמיד",
   showSuccessMessage = true,
-  keepOpenAfterSubmit = false // פרמטר חדש לשמירת הדיאלוג פתוח
+  keepOpenAfterSubmit = false,
+  selectedGroup = null // הוספת prop חדש
 }) => {
+  // Debug: show selectedGroup prop
+  console.log('AddStudentDialog selectedGroup:', selectedGroup);
   const dispatch = useDispatch();
   
   // קבלת המשתמש הנוכחי
@@ -74,6 +77,7 @@ const AddStudentDialog = ({
   const [savedStudentData, setSavedStudentData] = useState(null);
 
   const [enrollDate, setEnrollDate] = useState('');
+  // הסרנו שדות תאריך סיום ויום שיעור - הכל מחושב מנתוני הקבוצה
 
   // מצב הצ'קליסט למעקב אחר משימות הרישום
   const [registrationChecklist, setRegistrationChecklist] = useState({
@@ -110,7 +114,8 @@ const AddStudentDialog = ({
     { value: 'מכבי', label: '🏥 מכבי', icon: '🏥' },
     { value: 'מאוחדת', label: '🏥 מאוחדת', icon: '🏥' },
     { value: 'לאומית', label: '🏥 לאומית', icon: '🏥' },
-    { value: 'כללית', label: '🏥 כללית', icon: '🏥' }
+    { value: 'כללית', label: '🏥 כללית', icon: '🏥' },
+        { value: 'הסדר אחר', label: '🏥 הסדר אחר', icon: '🏥' }
   ];
 
   const ageOptions = [
@@ -320,6 +325,26 @@ const AddStudentDialog = ({
   return isStudentFieldsValid && isEnrollDateValid;
   };
 
+  // פונקציה לחישוב תאריכי שיעורים לתלמיד לפי נתוני הקבוצה בלבד
+  function getStudentLessonDates(groupStartDate, enrollDate, lessonDayOfWeek, numOfLessons) {
+    let start = new Date(Math.max(new Date(groupStartDate), new Date(enrollDate)));
+    let lessons = [];
+    let count = 0;
+    // מצא את היום הראשון המתאים
+    while (start.getDay() !== lessonDayOfWeek) {
+      start.setDate(start.getDate() + 1);
+    }
+    // הוסף תאריכים עד שמגיעים למספר השיעורים של הקבוצה
+    while (count < numOfLessons) {
+      lessons.push(new Date(start));
+      start.setDate(start.getDate() + 7);
+      count++;
+    }
+    return lessons;
+  }
+
+// אין צורך לחשב מספר שיעורים ידנית, הכל מוצג לפי נתוני הקבוצה
+
   const handleSubmit = async () => {
     if (!validateForm()) {
       let errorMsg = 'נא למלא את כל השדות הנדרשים';
@@ -514,6 +539,74 @@ React.useEffect(() => {
   }
 }, [open, enrollDate]);
 
+  // חישוב שיעורים לתלמיד לפי נתוני הקבוצה בלבד
+const numOfLessons = selectedGroup?.numOfLessons || 0;
+const groupStartDate = selectedGroup?.startDate || '';
+// המרת יום השבוע ממחרוזת למספר
+const dayOfWeekMap = {
+  'ראשון': 0,
+  'שני': 1,
+  'שלישי': 2,
+  'רביעי': 3,
+  'חמישי': 4,
+  'שישי': 5,
+  'שבת': 6
+};
+function calculateStudentLessons(groupStartDate, enrollDate, lessonDayOfWeek, numOfLessons) {
+  if (!groupStartDate || !enrollDate || lessonDayOfWeek === undefined || !numOfLessons) return 0;
+  let start = new Date(groupStartDate);
+  let enroll = new Date(enrollDate);
+  let lessons = [];
+  let count = 0;
+  // מצא את השיעור הראשון ביום השבוע הנכון
+  while (start.getDay() !== lessonDayOfWeek) {
+    start.setDate(start.getDate() + 1);
+  }
+  // עבור כל שיעור, בדוק אם הוא אחרי תאריך ההרשמה
+  while (count < numOfLessons) {
+    if (start >= enroll) {
+      lessons.push(new Date(start));
+    }
+    start.setDate(start.getDate() + 7);
+    count++;
+  }
+  return lessons.length;
+}
+let lessonDayOfWeek = selectedGroup?.dayOfWeek;
+if (typeof lessonDayOfWeek === 'string') {
+  lessonDayOfWeek = dayOfWeekMap[lessonDayOfWeek];
+}
+const lessonsForStudent = (groupStartDate && enrollDate && lessonDayOfWeek !== undefined && numOfLessons)
+  ? getStudentLessonDates(groupStartDate, enrollDate, lessonDayOfWeek, numOfLessons)
+  : [];
+  const lessonsForStudentCount = (groupStartDate && enrollDate && lessonDayOfWeek !== undefined && numOfLessons)
+  ? calculateStudentLessons(groupStartDate, enrollDate, lessonDayOfWeek, numOfLessons)
+  : 0;
+
+// הצגת מידע החישוב בקונסול כאשר הדיאלוג נפתח ויש ערכים תקינים
+useEffect(() => {
+  // Debug: show all values
+  console.log('Lesson calculation debug:', {
+    open,
+    enrollDate,
+    groupStartDate,
+    lessonDayOfWeek,
+    numOfLessons,
+    lessonsForStudent
+  });
+  if (
+    open &&
+    enrollDate && enrollDate !== '' &&
+    groupStartDate && groupStartDate !== '' &&
+    lessonDayOfWeek !== undefined &&
+    numOfLessons > 0
+  ) {
+    const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+    const details = `חישוב מספר שיעורים:\nתאריך התחלה קבוצה: ${groupStartDate}\nתאריך הרשמת תלמיד: ${enrollDate}\nיום שיעור: ${dayNames[lessonDayOfWeek]}\nמספר שיעורים בקבוצה: ${numOfLessons}\n\nמספר שיעורים לתלמיד: ${lessonsForStudentCount}`;
+    console.log(details);
+  }
+}, [open, enrollDate, groupStartDate, lessonDayOfWeek, numOfLessons, lessonsForStudent]);
+
   return (
     <Dialog
       open={open}
@@ -706,6 +799,14 @@ React.useEffect(() => {
   }}
   helperText={!enrollDate ? 'שדה חובה: יש לבחור תאריך התחלה' : 'יש לבחור תאריך התחלה לתלמיד'}
 />
+          {/* שדות תאריך סיום ויום שיעור הוסרו - הכל מחושב מנתוני הקבוצה */}
+  <Box sx={{ mt: 2, bgcolor: '#ECFDF5', p: 2, borderRadius: 2 }}>
+                  <Typography variant="body2" sx={{ color: '#10b981', fontWeight: 'bold' }}>
+                    מספר שיעורים לתלמיד: {lessonsForStudentCount}
+                  </Typography>
+                  {/* לא להציג תאריכים ראשונים */}
+                </Box>
+
           <Divider sx={{ width: '100%', my: 2 }} />
           
           <Grid item xs={12}>
@@ -930,6 +1031,40 @@ React.useEffect(() => {
               </Tooltip>
             </Box>
           </Grid>
+        </Grid>
+        <br />
+        {selectedGroup?.startDate && (
+          <Grid item xs={6}>
+            <Typography variant="body2">
+              <strong>תאריך התחלה של התלמיד:</strong> {new Date(enrollDate).toLocaleDateString('he-IL')}
+            </Typography>
+          </Grid>
+        )}
+        {selectedGroup?.numOfLessons && (
+          <Grid item xs={6}>
+            <Typography variant="body2">
+              <strong>מספר שיעורים:</strong> {selectedGroup.numOfLessons}
+            </Typography>
+          </Grid>
+        )}
+        {selectedGroup?.lessonsCompleted && (
+          <Grid item xs={6}>
+            <Typography variant="body2">
+              <strong>מספר שיעורים שהיו:</strong> {selectedGroup.lessonsCompleted}
+            </Typography>
+          </Grid>
+        )}
+        <Grid item xs={12}>
+          <Typography variant="body1" sx={{ color: '#10b981', fontWeight: 'bold', mt: 2 }}>
+            שיעורים שיהיו לתלמיד: {lessonsForStudentCount}
+          </Typography>
+          {lessonsForStudentCount > 0 && (
+            <Typography variant="body2" sx={{ color: '#374151', mt: 1 }}>
+              ביום: {selectedGroup?.dayOfWeek}
+              <br />
+              תאריך התחלה של הקבוצה: {groupStartDate ? new Date(groupStartDate).toLocaleDateString('he-IL') : ''}
+            </Typography>
+          )}
         </Grid>
       </DialogContent>
 

@@ -145,9 +145,18 @@ const AttendanceCalendar = () => {
           });
         }
       });
-
+const alephElul = new HDate(1, 'Elul', year).greg();
+const alephElulKey = format(alephElul, 'yyyy-MM-dd');
+holidayMap.delete(alephElulKey);
+      // מחק א' אלול מהמפה כדי שלא יוצג כחג
+      try {
+        const alephElul = new HDate(1, 'Elul', year).greg();
+        const alephElulKey = format(alephElul, 'yyyy-MM-dd');
+        holidayMap.delete(alephElulKey);
+      } catch (e) {
+        console.warn("לא ניתן לחשב א' אלול למחיקה מהמפה", e);
+      }
       setHebrewHolidays(prev => new Map([...prev, ...holidayMap]));
-      
       // הוסף חגים מותאמים אישית
       addCustomHolidays(year);
     } catch (error) {
@@ -172,6 +181,18 @@ const AttendanceCalendar = () => {
           isCustom: true
         });
 
+        // ט' תשרי (ערב יום כיפור) - חסימה
+        const tetTishrei = new HDate(9, 'Tishrei', year + 1).greg();
+        const tetTishreiKey = format(tetTishrei, 'yyyy-MM-dd');
+        customHolidays.set(tetTishreiKey, {
+          name: 'ערב יום כיפור',
+          nameEn: 'Erev Yom Kippur',
+          isYomTov: false,
+          isCustom: true
+        });
+
+        // י' תשרי (יום כיפור) - כבר מופיע בחגים המרכזיים
+
         // י"א-י"ד תשרי - בין יו"כ לסוכות
         for (let i = 11; i <= 14; i++) {
           const betweenDate = new HDate(i, 'Tishrei', year + 1).greg();
@@ -184,8 +205,84 @@ const AttendanceCalendar = () => {
           });
         }
 
-        // י"ז תמוז - יום צום
-        const yudZayinTammuz = new HDate(17, 'Tamuz', year).greg();
+        // אסרו חג סוכות (כ"ג תשרי)
+        const isruChagSukkot = new HDate(23, 'Tishrei', year + 1).greg();
+        const isruChagSukkotKey = format(isruChagSukkot, 'yyyy-MM-dd');
+        customHolidays.set(isruChagSukkotKey, {
+          name: 'אסרו חג סוכות',
+          nameEn: 'Isru Chag Sukkot',
+          isYomTov: false,
+          isCustom: true
+        });
+
+        // חנוכה: כ"ד כסלו - ב' טבת
+        for (let i = 24; i <= 30; i++) {
+          const hanukkahDate = new HDate(i, 'Kislev', year + 1).greg();
+          const dateKey = format(hanukkahDate, 'yyyy-MM-dd');
+          customHolidays.set(dateKey, {
+            name: 'חנוכה',
+            nameEn: 'Hanukkah',
+            isYomTov: false,
+            isCustom: true
+          });
+        }
+        for (let i = 1; i <= 2; i++) {
+          const hanukkahDate = new HDate(i, 'Tevet', year + 1).greg();
+          const dateKey = format(hanukkahDate, 'yyyy-MM-dd');
+          customHolidays.set(dateKey, {
+            name: 'חנוכה',
+            nameEn: 'Hanukkah',
+            isYomTov: false,
+            isCustom: true
+          });
+        }
+
+        // י' טבת
+        const yudTevet = new HDate(10, 'Tevet', year + 1).greg();
+        const yudTevetKey = format(yudTevet, 'yyyy-MM-dd');
+        customHolidays.set(yudTevetKey, {
+          name: 'יום צום',
+          nameEn: '10th of Tevet',
+          isYomTov: false,
+          isCustom: true
+        });
+
+        // י"ג-ט"ו אדר
+        for (let i = 13; i <= 15; i++) {
+          const adarDate = new HDate(i, 'Adar', year + 1).greg();
+          const dateKey = format(adarDate, 'yyyy-MM-dd');
+          customHolidays.set(dateKey, {
+            name: ' פורים',
+            nameEn: 'Purim',
+            isYomTov: false,
+            isCustom: true
+          });
+        }
+
+        // ח'-כ"ב ניסן (פסח + אסרו חג)
+        for (let i = 8; i <= 22; i++) {
+          const pesachDate = new HDate(i, 'Nisan', year + 1).greg();
+          const dateKey = format(pesachDate, 'yyyy-MM-dd');
+          customHolidays.set(dateKey, {
+            name: 'פסח',
+            nameEn: 'Pesach',
+            isYomTov: false,
+            isCustom: true
+          });
+        }
+
+        // ז' סיון
+        const zainSivan = new HDate(7, 'Sivan', year + 1).greg();
+        const zainSivanKey = format(zainSivan, 'yyyy-MM-dd');
+        customHolidays.set(zainSivanKey, {
+          name: 'אסרו חג שבועות',
+          nameEn: 'Isru Chag Shavuot',
+          isYomTov: false,
+          isCustom: true
+        });
+
+        // י"ז תמוז
+        const yudZayinTammuz = new HDate(17, 'Tamuz', year + 1).greg();
         const yudZayinTammuzKey = format(yudZayinTammuz, 'yyyy-MM-dd');
         customHolidays.set(yudZayinTammuzKey, {
           name: 'יום צום',
@@ -194,9 +291,19 @@ const AttendanceCalendar = () => {
           isCustom: true
         });
 
-        // ח'-כ"ט אב - בין הזמנים (עד לפני ראש השנה, לא כולל א' אלול)
+        // 10 בתמוז
+        const yudTamuz = new HDate(10, 'Tamuz', year + 1).greg();
+        const yudTamuzKey = format(yudTamuz, 'yyyy-MM-dd');
+        customHolidays.set(yudTamuzKey, {
+          name: 'יום צום',
+          nameEn: '10th of Tamuz',
+          isYomTov: false,
+          isCustom: true
+        });
+
+        // בין הזמנים - ח' אב עד כ"ט אב
         for (let i = 8; i <= 29; i++) {
-          const benHazmanimDate = new HDate(i, 'Av', year).greg();
+          const benHazmanimDate = new HDate(i, 'Av', year + 1).greg();
           const dateKey = format(benHazmanimDate, 'yyyy-MM-dd');
           customHolidays.set(dateKey, {
             name: 'בין הזמנים',
@@ -208,7 +315,7 @@ const AttendanceCalendar = () => {
 
         // ל' אב - ערב ראש השנה (כלול בבין הזמנים)
         try {
-          const erevRoshHashana = new HDate(30, 'Av', year).greg();
+          const erevRoshHashana = new HDate(30, 'Av', year + 1).greg();
           const erevRoshHashanaKey = format(erevRoshHashana, 'yyyy-MM-dd');
           customHolidays.set(erevRoshHashanaKey, {
             name: 'בין הזמנים',
@@ -220,7 +327,20 @@ const AttendanceCalendar = () => {
           // אב יכול להיות רק 29 ימים
         }
 
-        // הערה: א' אלול לא נכלל בבין הזמנים - זה יום פעיל לחוגים
+        // כ"ט אלול - ערב ראש השנה
+        try {
+          const kafTetElul = new HDate(29, 'Elul', year + 1).greg();
+          const kafTetElulKey = format(kafTetElul, 'yyyy-MM-dd');
+          customHolidays.set(kafTetElulKey, {
+            name: 'ערב ראש השנה',
+            nameEn: 'Erev Rosh Hashana',
+            isYomTov: false,
+            isCustom: true
+          });
+        } catch (dateError) {}
+
+        // י"ד אייר - יום שמותר בו חוגים (לא חסום)
+        // לא נוסיף אותו ל-customHolidays כדי שלא ייחסם
 
       } catch (hebrewDateError) {
         console.warn('Error calculating Hebrew dates, using approximations:', hebrewDateError);
@@ -281,6 +401,27 @@ const AttendanceCalendar = () => {
 
   // פונקציה לבדיקה אם יום פעיל לחוגים
   const isActiveDay = (date) => {
+    // י"ח אייר תמיד יום פעיל לחוגים (ל"ג בעומר)
+    try {
+      const hdate = new HDate(date);
+      if (hdate.getMonthName() === 'Iyyar' && hdate.getDate() === 18) {
+        return true; // י"ח אייר - חוגים פעילים תמיד
+      }
+    } catch (e) {}
+    // י"ד אייר תמיד יום פעיל לחוגים
+    try {
+      const hdate = new HDate(date);
+      if (hdate.getMonthName() === 'Iyyar' && hdate.getDate() === 14) {
+        return true; // י"ד אייר - חוגים פעילים תמיד
+      }
+    } catch (e) {}
+    // חסימה מפורשת לכ"ב ניסן
+    try {
+      const hdate = new HDate(date);
+      if (hdate.getMonthName() === 'Nisan' && hdate.getDate() === 22) {
+        return false; // כ"ב ניסן - חסום תמיד
+      }
+    } catch (e) {}
     // ראשית, בדוק תאריכים מיוחדים שתמיד פעילים לחוגים (לפני בדיקת חגים)
     
     // בדוק תאריך מיוחד - י"ד אייר (חוגים פעילים)
@@ -300,17 +441,20 @@ const AttendanceCalendar = () => {
       }
     }
 
-    // בדוק תאריך מיוחד - א' אלול (חוגים פעילים)
+    // בדוק תאריך מיוחד - א' אלול (חוגים פעילים תמיד)
     try {
-      const currentYear = date.getFullYear();
-      const alephElul = new HDate(1, 'Elul', currentYear).greg();
-      
-      if (isSameDay(date, alephElul)) {
-        return true; // א' אלול - חוגים פעילים
+      const hdate = new HDate(date);
+      if (hdate.getMonthName() === 'Elul' && hdate.getDate() === 1) {
+        return true; // א' אלול - חוגים פעילים תמיד
       }
     } catch (hebrewDateError) {
       // גיבוי - בדוק תאריך גרגוריאני משוער (בערך באוגוסט-ספטמבר)
-      console.warn('Could not calculate exact Hebrew date for Aleph Elul');
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      // א' אלול נופל לרוב באוגוסט/ספטמבר
+      if ((month === 8 || month === 9) && day === 1) {
+        return true;
+      }
     }
 
     // אחרי בדיקת התאריכים המיוחדים, בדוק חגים
@@ -326,7 +470,10 @@ const AttendanceCalendar = () => {
         'יום העצמאות',
         'יום הזיכרון',
         'יום ירושלים',
-        'ראש חודש'
+        'ראש חודש',
+        'פסח שני'
+       
+
       ];
 
       // אם זה חג מותר - יום פעיל
@@ -362,18 +509,33 @@ const AttendanceCalendar = () => {
 
   // פונקציה לקבלת מידע על חג
   const getHebrewHolidayInfo = (date) => {
+    // דיאגנוסטיקה: הדפס את כל האירועים סביב א' אלול
+    try {
+      const currentYear = date.getFullYear();
+      const alephElul = new HDate(1, 'Elul', currentYear).greg();
+      const startDiag = addDays(alephElul, -3);
+      const endDiag = addDays(alephElul, 3);
+      let diagMsg = "אירועים סביב א' אלול:\n";
+      for (let d = new Date(startDiag); d <= endDiag; d = addDays(d, 1)) {
+        const key = format(d, 'yyyy-MM-dd');
+        const event = hebrewHolidays.get(key);
+        diagMsg += `${key}: ${event ? event.name + ' (' + event.nameEn + ')' : '---'}\n`;
+      }
+      // הדפס לדפדפן
+      console.log("-------------------------"+diagMsg);
+    } catch (e) {
+      console.warn('Diagnostic failed:', e);
+    }
     // ראשית, בדוק אם זה א' אלול - אם כן, אל תחזיר מידע על חג
     try {
       const currentYear = date.getFullYear();
       const alephElul = new HDate(1, 'Elul', currentYear).greg();
-      
       if (isSameDay(date, alephElul)) {
         return null; // א' אלול - לא מציג כחג, זה יום פעיל רגיל
       }
     } catch (hebrewDateError) {
       // אם יש שגיאה בחישוב התאריך העברי, המשך לבדיקה רגילה
     }
-
     const dateKey = format(date, 'yyyy-MM-dd');
     return hebrewHolidays.get(dateKey) || null;
   };
@@ -433,10 +595,23 @@ useEffect(() => {
           dispatch(fetchGroups()).unwrap()
         ]);
 
-        // טען חגים עבריים לשנה הנוכחית
+        // טען חגים עבריים לשנה הגרגוריאנית הנוכחית והשנה הבאה
         const currentYear = new Date().getFullYear();
         loadHebrewHolidays(currentYear);
         loadHebrewHolidays(currentYear + 1);
+
+        // טען גם לפי השנה העברית הנוכחית (למניעת חוסר ב"בין הזמנים")
+        try {
+          const today = new Date();
+          const hdate = new HDate(today);
+          const hebrewYear = hdate.getFullYear();
+          // נטען רק אם לא טענו כבר (למניעת כפילות)
+          if (hebrewYear !== currentYear && hebrewYear !== currentYear + 1) {
+            loadHebrewHolidays(hebrewYear);
+          }
+        } catch (e) {
+          console.warn('לא ניתן לחשב שנה עברית לטעינת חגים נוספים', e);
+        }
 
       } catch (error) {
         console.error('Error initializing data:', error);

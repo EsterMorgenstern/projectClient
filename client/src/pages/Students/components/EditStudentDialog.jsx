@@ -73,7 +73,8 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
     { value: 'מכבי', label: '🏥 מכבי', icon: '🏥' },
     { value: 'מאוחדת', label: '🏥 מאוחדת', icon: '🏥' },
     { value: 'לאומית', label: '🏥 לאומית', icon: '🏥' },
-    { value: 'כללית', label: '🏥 כללית', icon: '🏥' }
+    { value: 'כללית', label: '🏥 כללית', icon: '🏥' },
+        { value: 'הסדר אחר', label: '🏥 הסדר אחר', icon: '🏥' }
   ];
 
   // אפשרויות גיל עם אייקונים
