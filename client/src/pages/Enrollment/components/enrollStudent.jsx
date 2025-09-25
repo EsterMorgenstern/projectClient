@@ -1849,10 +1849,8 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
   const renderBranches = () => {
     // סנן רק סניפים הקשורים לחוג שנבחר
     const filteredBranches = branches.filter(branch => {
-      // בדוק אם הסניף קשור לחוג שנבחר
       return branch.courseId === selectedCourse?.courseId || 
              branch.courseId === selectedCourse?.id ||
-             // אם אין courseId בסניף, זה אומר שהוא זמין לכל החוגים (מבנה ישן)
              !branch.courseId;
     });
 
@@ -1871,6 +1869,13 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
       return acc;
     }, {});
 
+    // פריסה חדשה: 5 עמודות של ערים, מתחת לכל עיר סניפים בטור
+    const cityNames = Object.keys(branchesByCity);
+    const rows = [];
+    for (let i = 0; i < cityNames.length; i += 5) {
+      rows.push(cityNames.slice(i, i + 5));
+    }
+
     return (
       <motion.div
         variants={containerVariants}
@@ -1878,270 +1883,146 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
         animate="visible"
         dir="rtl"
       >
-        <Box sx={{ mb: 3, display: 'flex',direction:'rtl', alignItems: 'center', flexWrap: 'wrap', gap: 2, justifyContent: 'flex-end'  }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', flexDirection: 'row-reverse', justifyContent: 'flex-end', gap: 2 }}>
-            <Typography variant="h5" fontWeight="bold" color="#1E3A8A">
-              {selectedCourse?.couresName} - בחר סניף
-            </Typography>
-             {/* שורת כפתור הוספה לסניפים */}
-        {Object.keys(branchesByCity).length > 0 && (
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end'}}>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => setAddBranchDialogOpen(true)}
-              sx={{
-                bgcolor: '#10B981',
-                color: 'white',
-                borderRadius: '10px',
-                px: 2,
-                py: 0.5,
-                fontSize: '1rem',
-                minWidth: 120,
-                height: 36,
-                boxShadow: '0 2px 8px rgba(16, 185, 129, 0.15)',
-                '&:hover': {
-                  bgcolor: '#059669',
-                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)',
-                },
-                transition: 'all 0.3s ease'
-              }}
-            >
-              הוסף סניף חדש
-            </Button>
-          </Box>
-        )}
-            <Button
-              endIcon={<BackIcon style={{ transform: 'scaleX(-1)' }} />}
-              onClick={handleBack}
-              variant="contained"
-              sx={{
-                direction:'ltr',
-                bgcolor: '#1E40AF',
-                color: 'white',
-                borderRadius: '12px',
-                px: 3,
-                py: 1,
-                boxShadow: '0 4px 14px rgba(30, 64, 175, 0.25)',
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                  bgcolor: '#1E3A8A',
-                  boxShadow: '0 6px 20px rgba(30, 64, 175, 0.35)'
-                }
-              }}
-            >
-              חזרה לחוגים
-            </Button>
-           
-          </Box>
+               
+        <Box sx={{ mb: 3, display: 'flex', direction: 'rtl', alignItems: 'center', flexWrap: 'wrap', gap: 2, justifyContent: 'flex-start' }}>
+         <Button
+            endIcon={<BackIcon style={{ transform: 'scaleX(-1)' }} />}
+            onClick={handleBack}
+            variant="contained"
+            sx={{
+              direction: 'ltr',
+              bgcolor: '#1E40AF',
+              color: 'white',
+              borderRadius: '12px',
+              px: 3,
+              py: 1,
+              boxShadow: '0 4px 14px rgba(30, 64, 175, 0.25)',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                bgcolor: '#1E3A8A',
+                boxShadow: '0 6px 20px rgba(30, 64, 175, 0.35)'
+              }
+            }}
+          >
+            חזרה לחוגים
+          </Button>
+           <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setAddBranchDialogOpen(true)}
+            sx={{
+              bgcolor: '#10B981',
+              color: 'white',
+              borderRadius: '10px',
+              px: 2,
+              py: 0.5,
+              fontSize: '1rem',
+              minWidth: 120,
+              height: 36,
+              boxShadow: '0 2px 8px rgba(16, 185, 129, 0.15)',
+              '&:hover': {
+                bgcolor: '#059669',
+                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)',
+              },
+              transition: 'all 0.3s ease'
+            }}
+          >
+            הוסף סניף חדש
+          </Button>
+          <Typography variant="h5" fontWeight="bold" color="#1E3A8A">
+            {selectedCourse?.couresName} - בחר סניף
+          </Typography>
+  
+         
         </Box>
-
-        {/* בדיקה אם יש סניפים זמינים */}
-        {Object.keys(branchesByCity).length === 0 ? (
-          <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'flex-start', flexDirection: 'row-reverse', gap: 2 }}>
-            <Button
-              startIcon={<BackIcon />}
-              onClick={handleBack}
-              variant="contained"
-              sx={{
-                bgcolor: '#1E40AF',
-                color: 'white',
-                borderRadius: '12px',
-                px: 3,
-                py: 1,
-                boxShadow: '0 4px 14px rgba(30, 64, 175, 0.25)',
-                '&:hover': {
-                  bgcolor: '#1E3A8A',
-                  boxShadow: '0 6px 20px rgba(30, 64, 175, 0.35)'
-                },
-                transition: 'all 0.3s ease'
-              }}
-            >
-              חזרה לחוגים
-            </Button>
-            
-            <Typography variant="h5" fontWeight="bold" color="#1E3A8A">
-              {selectedCourse?.couresName} - בחר סניף
-            </Typography>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => setAddBranchDialogOpen(true)}
-              sx={{
-                borderRadius: '12px',
-                px: 4,
-                py: 1.5,
-                bgcolor: '#10B981',
-                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)',
-                '&:hover': {
-                  bgcolor: '#059669',
-                  boxShadow: '0 6px 20px rgba(16, 185, 129, 0.4)'
-                },
-                transition: 'all 0.3s ease'
-              }}
-            >
-              הוסף סניף ראשון
-            </Button>
-          </Box>
-        ) : (
-          Object.entries(branchesByCity).map(([city, cityBranches], cityIndex) => (
-          <Box key={`city-${city}-${cityIndex}`} sx={{ mb: 4 }}>
-            <Box sx={{
-              display: 'flex',
-              alignItems: 'center',
-              mb: 2,
-              pb: 1,
-              borderBottom: '1px solid rgba(0,0,0,0.1)',
-              justifyContent: 'center'
-            }}>
-              <Typography variant="h6" fontWeight="bold" color="#1E3A8A">
-                {city}
-              </Typography>
-              <LocationOn sx={{ color: '#10B981', ml: 1 }} />
-            </Box>
-
-            <Grid container spacing={3} justifyContent="center" dir="rtl">
-              {cityBranches.map((branch, branchIndex) => {
-                const activeGroupsCount = getActiveGroupsCountForBranch(branch.branchId);
-                const groupsColor = getGroupsCountColor(activeGroupsCount);
-                const statusText = getGroupsStatusText(activeGroupsCount);
-const studentsInBranch = groups.filter(g => g.branchId === branch.branchId).reduce((acc, g) => acc + (g.studentsCount || 0), 0);
-                return (
-                  <Grid item xs={12} sm={6} md={4} key={`branch-${branch.branchId || branch.id || `${cityIndex}-${branchIndex}`}`}>
-                    <motion.div variants={itemVariants}>
-                      <Paper
-                        elevation={3}
-                        component={motion.div}
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.98 }}
-                        sx={{
-                          p: 3,
-                          borderRadius: 3,
-                          height: '100%',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          cursor: activeGroupsCount > 0 ? 'pointer' : 'not-allowed',
-                          background: activeGroupsCount > 0
-                            ? 'linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%)'
-                            : 'linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)',
-                          transition: 'all 0.3s ease',
-                          border: `2px solid ${activeGroupsCount > 0 ? 'transparent' : '#e5e7eb'}`,
-                          opacity: activeGroupsCount > 0 ? 1 : 0.7,
-                          position: 'relative',
-                          '&:hover': {
-                            boxShadow: activeGroupsCount > 0
-                              ? '0 8px 25px rgba(0,0,0,0.15)'
-                              : '0 4px 12px rgba(0,0,0,0.1)',
-                          }
-                        }}
-                        onClick={() => handleBranchSelect(branch)}
-                      >
-                      
-                        <IconButton
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            handleMenuOpen(e, branch, 'branch');
-                          }}
+        {/* טבלת ערים וסניפים */}
+        <Box sx={{ width: '100%', overflowX: 'auto', mt: 2 }}>
+          {rows.map((citiesRow, rowIdx) => (
+            <Grid container spacing={2} key={`cities-row-${rowIdx}`} sx={{ mb: 4 }}>
+              {citiesRow.map((city, colIdx) => (
+                <Grid item xs={12} sm={6} md={2.4} key={`city-col-${city}-${colIdx}`}> {/* 2.4*5=12 */}
+                  <Paper elevation={2} sx={{ p: 2, borderRadius: 3, minHeight: 320, minWidth: 200, maxWidth: 280, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#f5f7fa' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <Typography variant="h6" fontWeight="bold" color="#1E3A8A">
+                        {city}
+                      </Typography>
+                      <LocationOn sx={{ color: '#10B981', ml: 1 }} />
+                    </Box>
+                    {branchesByCity[city].map((branch, branchIdx) => {
+                      const activeGroupsCount = getActiveGroupsCountForBranch(branch.branchId);
+                      const groupsColor = getGroupsCountColor(activeGroupsCount);
+                      const statusText = getGroupsStatusText(activeGroupsCount);
+                      const studentsInBranch = groups.filter(g => g.branchId === branch.branchId).reduce((acc, g) => acc + (g.studentsCount || 0), 0);
+                      return (
+                        <Paper
+                          key={`branch-${branch.branchId || branch.id || `${colIdx}-${branchIdx}`}`}
+                          elevation={3}
                           sx={{
-                            position: 'absolute',
-                            top: 8,
-                            left: 8,
-                            color: '#6b7280',
-                            bgcolor: 'rgba(107, 114, 128, 0.1)',
+                            p: 2,
+                            borderRadius: 2,
+                            mb: 2,
+                            width: '100%',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            cursor: activeGroupsCount > 0 ? 'pointer' : 'not-allowed',
+                            background: activeGroupsCount > 0
+                              ? 'linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%)'
+                              : 'linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)',
+                            transition: 'all 0.3s ease',
+                            border: `2px solid ${activeGroupsCount > 0 ? 'transparent' : '#e5e7eb'}`,
+                            opacity: activeGroupsCount > 0 ? 1 : 0.7,
+                            position: 'relative',
                             '&:hover': {
-                              bgcolor: 'rgba(107, 114, 128, 0.2)',
-                            },
-                            zIndex: 10
+                              boxShadow: activeGroupsCount > 0
+                                ? '0 8px 25px rgba(0,0,0,0.15)'
+                                : '0 4px 12px rgba(0,0,0,0.1)',
+                            }
                           }}
-                          size="small"
+                          onClick={() => handleBranchSelect(branch)}
                         >
-                          <MoreVertIcon fontSize="small" />
-                        </IconButton>
-
-                        <Box sx={{ position: 'relative', mb: 2 }}>
-                          <BranchIcon
-                            sx={{
-                              fontSize: 50,
-                              color: activeGroupsCount > 0 ? '#10B981' : '#9ca3af',
-                              transition: 'color 0.3s ease'
+                          <IconButton
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              handleMenuOpen(e, branch, 'branch');
                             }}
-                          />
-                          <Box
                             sx={{
                               position: 'absolute',
-                              top: -2,
-                              right: -2,
-                              width: 16,
-                              height: 16,
-                              borderRadius: '50%',
-                              backgroundColor: groupsColor,
-                              border: '2px solid white',
-                              boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                              top: 8,
+                              left: 8,
+                              zIndex: 10
                             }}
-                          />
-                        </Box>
-
-                        <Typography
-                          variant="h6"
-                          fontWeight="bold"
-                          textAlign="center"
-                          color={activeGroupsCount > 0 ? "#1E3A8A" : "#6b7280"}
-                          sx={{ transition: 'color 0.3s ease' }}
-                        >
-                          {branch.name}
-                        </Typography>
-
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          textAlign="center"
-                          sx={{ mt: 1 }}
-                        >
-                          {branch.address}
-                        </Typography>
-
-                        <Box sx={{
-                          mt: 2,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 1,
-                          p: 1.5,
-                          borderRadius: 2,
-                          backgroundColor: activeGroupsCount > 0
-                            ? `${groupsColor}15`
-                            : '#f3f4f6',
-                          border: `1px solid ${groupsColor}30`,
-                          minWidth: '100%',
-                          justifyContent: 'center'
-                        }}>
-                          <GroupIcon
-                            fontSize="small"
-                            sx={{ color: groupsColor }}
-                          />
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: groupsColor,
-                              fontWeight: 'bold',
-                              fontSize: '0.85rem'
-                            }}
+                            size="small"
                           >
+                            <MoreVertIcon fontSize="small" />
+                          </IconButton>
+                          <BranchIcon sx={{ fontSize: 40, color: '#10B981', mb: 1 }} />
+                          <Typography variant="subtitle1" fontWeight="bold" textAlign="center" color="#1E3A8A">
+                            {branch.name}
+                          </Typography>
+                          <Divider sx={{ width: '80%', my: 1 }} />
+                          <Typography variant="body2" color="text.secondary" textAlign="center">
+                            {branch.address || 'כתובת לא ידועה'}
+                          </Typography>
+                          <Chip
+                            label={`ילדים פעילים: ${studentsInBranch}`}
+                            color="secondary"
+                            size="small"
+                            sx={{ mt: 1, bgcolor: '#6366F1', color: 'white', fontWeight: 'bold' }}
+                          />
+                          <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ mt: 1 }}>
                             {statusText}
                           </Typography>
-                        </Box>
-                      </Paper>
-                    </motion.div>
-                  </Grid>
-                );
-              })}
+                        </Paper>
+                      );
+                    })}
+                  </Paper>
+                </Grid>
+              ))}
             </Grid>
-          </Box>
-          ))
-        )}
-
-       
+          ))}
+        </Box>
       </motion.div>
     );
   };
@@ -4626,7 +4507,7 @@ const studentsInBranch = groups.filter(g => g.branchId === branch.branchId).redu
               const groupStartDate = selectedGroup.startDate;
               const numOfLessons = selectedGroup.numOfLessons;
               // השתמש בשדה enrollDate שהמשתמש ממלא
-              const enrollDate = enrollDateInputValue || groupStartDate;
+              const enrollDateCalc = enrollDate || groupStartDate;
               function getStudentLessonDates(groupStartDate, enrollDate, lessonDayOfWeek, numOfLessons) {
                 let start = new Date(Math.max(new Date(groupStartDate), new Date(enrollDate)));
                 let lessons = [];
@@ -4641,8 +4522,8 @@ const studentsInBranch = groups.filter(g => g.branchId === branch.branchId).redu
                 }
                 return lessons;
               }
-              const lessonsForStudent = (groupStartDate && enrollDate && lessonDayOfWeek !== undefined && numOfLessons)
-                ? getStudentLessonDates(groupStartDate, enrollDate, lessonDayOfWeek, numOfLessons)
+              const lessonsForStudent = (groupStartDate && enrollDateCalc && lessonDayOfWeek !== undefined && numOfLessons)
+                ? getStudentLessonDates(groupStartDate, enrollDateCalc, lessonDayOfWeek, numOfLessons)
                 : [];
               return (
                   <Box sx={{ mt: 2, bgcolor: '#ECFDF5', p: 2, borderRadius: 2 }}>

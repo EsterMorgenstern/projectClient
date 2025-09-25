@@ -153,16 +153,21 @@ export default function StudentsTable() {
   const [openCoursesDialog, setOpenCoursesDialog] = useState(false);
   const [currentStudent, setCurrentStudent] = useState({
     id: null, firstName: '', lastName: '', phone: null, secondaryPhone: '', age: 0, city: '',
-    school: '', healthFund: '', class: "", sector: "", status: 'פעיל'
+    school: '', healthFund: '', class: "", sector: "", status: 'פעיל', identityCard: ''
   });
   const [newStudent, setnewStudent] = useState({
     id: null, firstName: '', lastName: '', phone: null, secondaryPhone: '', email: '', age: 0,
-    city: '', school: '', healthFund: '', class: "", sector: "", status: 'פעיל'
+    city: '', school: '', healthFund: '', class: "", sector: "", status: 'פעיל', identityCard: ''
   });
   const [termsOpen, setTermsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredStudents, setFilteredStudents] = useState([]);
-  const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
+  const [notification, setNotification] = useState({ open: false, message: '', severity: 'success', action: null });
+  // Notification Snackbar close handler
+  const handleCloseNotification = (event, reason) => {
+    if (reason === 'clickaway') return;
+    setNotification({ ...notification, open: false });
+  };
   const [formError, setFormError] = useState('');
 
   // Pagination states
@@ -234,11 +239,12 @@ export default function StudentsTable() {
       const lastNameMatch = student.lastName?.toLowerCase().includes(term);
       const fullNameMatch = `${student.firstName || ''} ${student.lastName || ''}`.toLowerCase().includes(term);
       const idMatch = student.id?.toString().includes(term);
+      const identityCardMatch = student.identityCard?.toString().includes(term);
       const phoneMatch = student.phone?.toString().includes(term);
       const secondaryPhoneMatch = student.secondaryPhone?.toString().includes(term);
       const cityMatch = student.city?.toLowerCase().includes(term);
       const statusMatch = student.status?.toLowerCase().includes(term);
-      return firstNameMatch || lastNameMatch || fullNameMatch || idMatch || phoneMatch || secondaryPhoneMatch || cityMatch || statusMatch;
+      return firstNameMatch || lastNameMatch || fullNameMatch || idMatch || identityCardMatch || phoneMatch || secondaryPhoneMatch || cityMatch || statusMatch;
     });
   };
 
@@ -356,7 +362,7 @@ export default function StudentsTable() {
       refreshTable();
       setnewStudent({
         id: null, firstName: '', lastName: '', phone: null, secondaryPhone: '', email: '', age: 0,
-        city: '', school: '', healthFund: '', class: "", sector: "", status: 'פעיל'
+        city: '', school: '', healthFund: '', class: "", sector: "", status: 'פעיל', identityCard: ''
       });
       setOpen(false);
     }
@@ -516,6 +522,12 @@ export default function StudentsTable() {
                           <span style={{ fontSize: '0.9em' }}>קוד תלמיד</span>
                         </div>
                       </TableCell>
+                      <TableCell className="table-head-cell" style={{ width: 110, textAlign: 'center' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🪪</span>
+                          <span style={{ fontSize: '0.9em' }}>מספר זיהוי</span>
+                        </div>
+                      </TableCell>
                       <TableCell className="table-head-cell" style={{ width: 130, textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                           <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>👤</span>
@@ -588,6 +600,7 @@ export default function StudentsTable() {
                           <span style={{ fontSize: '0.9em' }}>סטטוס</span>
                         </div>
                       </TableCell>
+                     
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -702,6 +715,7 @@ export default function StudentsTable() {
 </TableCell>
 
 <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.id}</TableCell>
+<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.identityCard || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}</TableCell>
 <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.firstName}</TableCell>
 <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.lastName}</TableCell>
 <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.phone}</TableCell>
@@ -714,7 +728,7 @@ export default function StudentsTable() {
           color: 'inherit'
         }}
       >
-        {student.secondaryPhone}
+        {student.secondaryPhone || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}
       </Box>
     </Tooltip>
   ) : (
@@ -736,7 +750,7 @@ export default function StudentsTable() {
         }}
         onClick={() => window.open(`mailto:${student.email}`, '_self')}
       >
-        {student.email}
+        {student.email || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}
       </Box>
     </Tooltip>
   ) : (
@@ -745,12 +759,12 @@ export default function StudentsTable() {
     </Typography>
   )}
 </TableCell>
-<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.age}</TableCell>
-<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.city}</TableCell>
-<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.school}</TableCell>
-<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.healthFund}</TableCell>
-<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.class}</TableCell>
-<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.sector}</TableCell>
+<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.age || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}</TableCell>
+<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.city || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}</TableCell>
+<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.school || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}</TableCell>
+<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.healthFund || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}</TableCell>
+<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.class || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}</TableCell>
+<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.sector || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}</TableCell>
 <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>
   <Chip
     label={student.status || 'פעיל'}
@@ -868,6 +882,14 @@ export default function StudentsTable() {
               value={newStudent.id || ''}
               onChange={(e) => setnewStudent({ ...newStudent, id: e.target.value })}
               className="dialog-field"
+            />
+            <TextField
+              fullWidth
+              label={<span>🪪 מספר זיהוי (אופציונלי)</span>}
+              value={newStudent.identityCard || ''}
+              onChange={(e) => setnewStudent({ ...newStudent, identityCard: e.target.value })}
+              className="dialog-field"
+              placeholder="הזן מספר זיהוי נוסף"
             />
             <TextField
               fullWidth
@@ -1202,6 +1224,9 @@ export default function StudentsTable() {
           }}
           student={selectedStudentForEdit}
           onStudentUpdated={(updatedStudent) => {
+            // Close dialog immediately
+            setEditStudentDialogOpen(false);
+            setSelectedStudentForEdit(null);
             // Refresh the students list only if update was successful
             try {
               dispatch(fetchStudents());
@@ -1223,18 +1248,28 @@ export default function StudentsTable() {
 
       </div>
 
-      {/* Notification Snackbar */}
+      {/* Notification Snackbar - updated design */}
       <Snackbar
         open={notification.open}
-        autoHideDuration={4000}
-        onClose={() => setNotification({ ...notification, open: false })}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        autoHideDuration={notification.action ? 10000 : 6000}
+        onClose={handleCloseNotification}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        action={notification.action}
       >
         <Alert
-          onClose={() => setNotification({ ...notification, open: false })}
+          onClose={handleCloseNotification}
           severity={notification.severity}
-          variant="filled"
-          sx={{ width: '100%', direction: 'rtl' }}
+          xs={2}
+          sx={{
+            width: '100%',
+            borderRadius: '8px',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+            direction: 'ltr',
+            '& .MuiAlert-icon': {
+              fontSize: '1.5rem'
+            }
+          }}
+          action={notification.action}
         >
           {notification.message}
         </Alert>

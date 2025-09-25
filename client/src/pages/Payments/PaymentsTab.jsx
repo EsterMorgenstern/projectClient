@@ -181,24 +181,24 @@
 //                     setSnackbarMessage('אמצעי התשלום עודכן בהצלחה');
 //                     setSnackbarSeverity('success');
 //                     setEditDialogOpen(false);
-//                 }   console.log('Update failed, trying delete and re-add...');
-        
-//         try {
-//             await dispatch(deletePaymentMethod(selectedMethod.paymentMethodId));
-//             const addResult = await dispatch(addPaymentMethod(basePayload));
+//                 } else {
+//                     console.log('Update failed, trying delete and re-add...');
             
-//             if (addPaymentMethod.fulfilled.match(addResult)) {
-//                 setSnackbarMessage('אמצעי התשלום עודכן בהצלחה (דרך מחיקה והוספה מחדש)');
-//                 setSnackbarSeverity('success');
-//                 setEditDialogOpen(false);
-//             } else {
-//                 throw new Error('גם המחיקה וההוספה מחדש נכשלו');
-//             }
-//         } catch (fallbackError) {
-//             throw new Error(result.payload?.message || result.payload || 'שגיאה בעדכון אמצעי התשלום');
-//         }
-  
-
+//                     try {
+//                         await dispatch(deletePaymentMethod(selectedMethod.paymentMethodId));
+//                         const addResult = await dispatch(addPaymentMethod(basePayload));
+                        
+//                         if (addPaymentMethod.fulfilled.match(addResult)) {
+//                             setSnackbarMessage('אמצעי התשלום עודכן בהצלחה (דרך מחיקה והוספה מחדש)');
+//                             setSnackbarSeverity('success');
+//                             setEditDialogOpen(false);
+//                         } else {
+//                             throw new Error('גם המחיקה וההוספה מחדש נכשלו');
+//                         }
+//                     } catch (fallbackError) {
+//                         throw new Error(result.payload?.message || result.payload || 'שגיאה בעדכון אמצעי התשלום');
+//                     }
+//                 }
 //             } else {
 //                 const result = await dispatch(addPaymentMethod(basePayload));
                 
@@ -1011,9 +1011,6 @@ const PaymentsTab = ({ student, embedded = false }) => {
         }
     };
 
-    // 🗑️ הסרת הפונקציה handleEditPaymentMethod הכפולה
-    // (כבר יש לנו handleEditMethod)
-
     const renderPaymentMethodForm = () => (
         <Box sx={{ pt: 2 }}>
             <Grid container spacing={2}>
@@ -1029,6 +1026,7 @@ const PaymentsTab = ({ student, embedded = false }) => {
                             <MenuItem value="BANK_TRANSFER">העברה בנקאית</MenuItem>
                             <MenuItem value="CASH">מזומן</MenuItem>
                             <MenuItem value="CHECK">צ'ק</MenuItem>
+                            <MenuItem value="STANDING_ORDER">הו"ק</MenuItem>
                         </Select>
                     </FormControl>
                 </Grid>
@@ -1362,11 +1360,13 @@ const PaymentsTab = ({ student, embedded = false }) => {
             </Snackbar>
 
             {/* GROW Payment Dialog */}
-            <GrowPaymentDialog
+            {growPaymentDialogOpen && (
+              <GrowPaymentDialog
                 open={growPaymentDialogOpen}
                 onClose={handleGrowPaymentClose}
                 student={student}
-            />
+              />
+            )}
         </Box>
     );
 };

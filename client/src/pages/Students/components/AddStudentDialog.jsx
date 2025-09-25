@@ -54,7 +54,8 @@ const AddStudentDialog = ({
   });
   
   const [newStudent, setNewStudent] = useState({
-    id: '',
+  id: '',
+  IdentityCard: '',
     firstName: '',
     lastName: '',
     phone: '',
@@ -679,6 +680,17 @@ useEffect(() => {
               onChange={(e) => handleInputChange('id', e.target.value)}
               required
               sx={{ textAlign: 'right', width: '160px', minWidth: '120px' }}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="🪪 מספר זיהוי (אופציונלי)"
+              type="text"
+              variant="outlined"
+              value={newStudent.IdentityCard}
+              onChange={(e) => handleInputChange('IdentityCard', e.target.value)}
+              sx={{ textAlign: 'right', width: '160px', minWidth: '120px' }}
+              placeholder="הזן מספר זיהוי נוסף"
             />
           </Grid>
           <Grid item xs={12} sm={6}>

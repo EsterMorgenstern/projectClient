@@ -15,7 +15,6 @@ import {
   Divider,
   Grid,
   IconButton,
-  Alert,
   Tooltip,
   Card,
   CardContent,
@@ -23,7 +22,9 @@ import {
   AccordionSummary,
   AccordionDetails,
   Chip,
-  Avatar
+  Avatar,
+  Snackbar,
+  Alert
 } from '@mui/material';
 import { 
   Close as CloseIcon, 
@@ -43,11 +44,14 @@ import ErrorIcon from '@mui/icons-material/Error';
 import WarningIcon from '@mui/icons-material/Warning';
 
 const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
+  // Notification Snackbar state
+  const [notification, setNotification] = useState({ open: false, message: '', severity: 'success', action: null });
   // קבלת המשתמש הנוכחי מה-redux
   const currentUser = useSelector(state => state.user?.currentUser || state.users?.currentUser || null);
   const dispatch = useDispatch();
   const [formData, setFormData] = useState({
-    id: '',
+  id: '',
+  IdentityCard: '',
     firstName: '',
     lastName: '',
     phone: '',
@@ -74,7 +78,7 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
     { value: 'מאוחדת', label: '🏥 מאוחדת', icon: '🏥' },
     { value: 'לאומית', label: '🏥 לאומית', icon: '🏥' },
     { value: 'כללית', label: '🏥 כללית', icon: '🏥' },
-        { value: 'הסדר אחר', label: '🏥 הסדר אחר', icon: '🏥' }
+    { value: 'הסדר אחר', label: '🏥 הסדר אחר', icon: '🏥' }
   ];
 
   // אפשרויות גיל עם אייקונים
@@ -185,7 +189,8 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
         class: normalizeClass(student.class || student.className || student.grade || student.classLevel),
         sector: student.sector || '',
         status: student.status || (student.isActive !== undefined ? (student.isActive ? 'פעיל' : 'לא פעיל') : ''),
-        createdBy: student.createdBy || ''
+        createdBy: student.createdBy || '',
+        IdentityCard: student.IdentityCard || student.identityCard || ''
       };
       
       console.log('🎯 Mapped student data for form:', studentData);
@@ -232,6 +237,12 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
       const required = ['id', 'firstName', 'lastName', 'phone', 'age', 'city'];
       const missingFields = required.filter(field => !formData[field] || formData[field].toString().trim() === '');
       setError(`נא למלא את השדות הנדרשים: ${missingFields.join(', ')}`);
+      setNotification({
+        open: true,
+        message: `נא למלא את השדות הנדרשים: ${missingFields.join(', ')}`,
+        severity: 'error',
+        action: null
+      });
       return;
     }
 
@@ -247,8 +258,8 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
 
       console.log('Sending student data for update:', studentData);
 
-  if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setError(msg))) return;
-  const result = await dispatch(editStudent({
+      if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setError(msg))) return;
+      const result = await dispatch(editStudent({
         studentId: formData.id,
         ...studentData
       })).unwrap();
@@ -258,22 +269,41 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
       if (onStudentUpdated) {
         onStudentUpdated(result);
       }
+      // setNotification({
+      //   open: true,
+      //   message: 'התלמיד עודכן בהצלחה',
+      //   severity: 'success',
+      //   action: null
+      // });
+      // setTimeout(() => {
+      //   onClose();
+      // }, 1200);
       
-      onClose();
     } catch (error) {
       console.error('Error updating student:', error);
-      
-      // More detailed error handling
+      let errorMsg = '';
       if (error.message) {
-        setError(`שגיאה בעדכון פרטי התלמיד: ${error.message}`);
+        errorMsg = `שגיאה בעדכון פרטי התלמיד: ${error.message}`;
       } else if (typeof error === 'string') {
-        setError(`שגיאה בעדכון פרטי התלמיד: ${error}`);
+        errorMsg = `שגיאה בעדכון פרטי התלמיד: ${error}`;
       } else {
-        setError('שגיאה בעדכון פרטי התלמיד. אנא נסה שוב.');
+        errorMsg = 'שגיאה בעדכון פרטי התלמיד. אנא נסה שוב.';
       }
+      setError(errorMsg);
+      setNotification({
+        open: true,
+        message: errorMsg,
+        severity: 'error',
+        action: null
+      });
     } finally {
       setLoading(false);
     }
+  };
+  // Notification Snackbar close handler
+  const handleCloseNotification = (event, reason) => {
+    if (reason === 'clickaway') return;
+    setNotification({ ...notification, open: false });
   };
 
   // const handleRefreshNotes = async () => {
@@ -303,7 +333,8 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
       class: '',
       sector: '',
       status: '',
-      createdBy: ''
+      createdBy: '',
+      IdentityCard: ''
     });
     setError('');
     setNotesDialogOpen(false);
@@ -456,6 +487,18 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
               value={formData.id}
               required
               sx={{ textAlign: 'right' }}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="🪪 מספר זיהוי (אופציונלי)"
+              type="text"
+              fullWidth
+              variant="outlined"
+              value={formData.IdentityCard}
+              onChange={(e) => handleInputChange('IdentityCard', e.target.value)}
+              sx={{ textAlign: 'right' }}
+              placeholder="הזן מספר זיהוי נוסף"
             />
           </Grid>
 
@@ -668,6 +711,30 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
         {!notesLoading && notesDialogOpen && (
           <Box sx={{ mb: 2 }}>{renderStudentNotes()}</Box>
         )}
+        {/* Notification Snackbar */}
+        <Snackbar
+          open={notification.open}
+          autoHideDuration={notification.action ? 10000 : 6000}
+          onClose={handleCloseNotification}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+          action={notification.action}
+        >
+          <Alert
+            onClose={handleCloseNotification}
+            severity={notification.severity}
+            sx={{
+              width: '100%',
+              borderRadius: '8px',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+              '& .MuiAlert-icon': {
+                fontSize: '1.5rem'
+              }
+            }}
+            action={notification.action}
+          >
+            {notification.message}
+          </Alert>
+        </Snackbar>
       </DialogContent>
 
       <DialogActions sx={{ p: 2, gap: 1, direction: 'rtl' }}>
