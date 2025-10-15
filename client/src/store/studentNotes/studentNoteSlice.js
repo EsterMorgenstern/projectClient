@@ -111,7 +111,7 @@ const studentNotesSlice = createSlice({
       })
       .addCase(deleteStudentNote.fulfilled, (state, action) => {
         state.loading = false;
-        state.studentNotes = state.studentNotes.filter(note => note.noteId !== action.payload);
+        state.studentNotes = state.studentNotes.filter(note => note.noteId !== action.payload.id);
       })
       .addCase(deleteStudentNote.rejected, (state, action) => {
         state.loading = false;

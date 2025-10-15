@@ -11,7 +11,8 @@ import {
     Save as SaveIcon, Close as CloseIcon,
     Warning as WarningIcon, Error as ErrorIcon,
     CheckCircle as CheckCircleIcon, Info as InfoIcon,
-    Assignment as AssignmentIcon
+    Assignment as AssignmentIcon,
+    AttachMoney as AttachMoneyIcon
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { checkUserPermission } from '../../../utils/permissions';
@@ -47,6 +48,7 @@ const AddStudentNoteDialog = ({
 
     const [formData, setFormData] = useState({
         studentId: student?.id || '',
+        studentName: student?.studentName || student?.name || student?.firstName + ' ' + student?.lastName || '',
         authorId: '',
         authorName: '',
         authorRole: '',
@@ -86,24 +88,25 @@ const AddStudentNoteDialog = ({
         if (noteData) {
             return {
                 studentId: noteData.studentId || student?.id || '',
+                studentName: noteData.studentName || student?.studentName || student?.name || student?.firstName + ' ' + student?.lastName || '',
                 authorId: noteData.authorId || userDetails.id,
                 authorName: noteData.authorName || userDetails.fullName,
                 authorRole: noteData.authorRole || userDetails.role,
                 noteContent: noteData.noteContent || '',
-                noteType: noteData.noteType || 'כללי',
+                noteType: noteData.noteType || (student?.noteType ? student.noteType : 'כללי'),
                 priority: noteData.priority || 'נמוך',
                 isPrivate: noteData.isPrivate || false,
                 isActive: noteData.isActive !== undefined ? noteData.isActive : true
             };
         }
-        
         return {
             studentId: student?.id || '',
+            studentName: student?.studentName || student?.name || student?.firstName + ' ' + student?.lastName || '',
             authorId: userDetails.id,
             authorName: userDetails.fullName,
             authorRole: userDetails.role,
             noteContent: '',
-            noteType: 'כללי',
+            noteType: student?.noteType ? student.noteType : 'כללי',
             priority: 'נמוך',
             isPrivate: false,
             isActive: true
@@ -187,6 +190,7 @@ const AddStudentNoteDialog = ({
         { value: 'חיובי', label: 'חיובי', color: '#059669', icon: CheckCircleIcon },
         { value: 'שלילי', label: 'שלילי', color: '#dc2626', icon: ErrorIcon },
         { value: 'אזהרה', label: 'אזהרה', color: '#d97706', icon: WarningIcon },
+        { value: 'הערת גביה', label: 'הערת גביה', color: '#22c55e', icon: AttachMoneyIcon },
         { value: 'מעקב רישום', label: 'מעקב רישום', color: '#0ea5e9', icon: AssignmentIcon }
     ];
 
@@ -253,6 +257,7 @@ const AddStudentNoteDialog = ({
         if (!open) return;
         if (validateForm()) {
             const noteToSave = {
+                ...(editMode && noteData?.noteId ? { noteId: noteData.noteId } : {}),
                 studentId: formData.studentId || student?.id,
                 authorId: formData.authorId || 'guest',
                 authorName: formData.authorName.trim() || 'משתמש אורח',
@@ -346,10 +351,14 @@ const AddStudentNoteDialog = ({
                                 {editMode ? 'עריכת הערה' : 'הוספת הערה חדשה'}
                             </Typography>
                             <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                                {student ? (
-                                    `${student.firstName} ${student.lastName} • ת"ז: ${student.id}`
+                                {formData.studentName ? (
+                                    `${formData.studentName} • ת"ז: ${formData.studentId}`
                                 ) : (
-                                    'תלמיד לא נבחר'
+                                    student ? (
+                                        `${student.firstName} ${student.lastName} • ת"ז: ${student.id}`
+                                    ) : (
+                                        'תלמיד לא נבחר'
+                                    )
                                 )}
                             </Typography>
                         </Box>

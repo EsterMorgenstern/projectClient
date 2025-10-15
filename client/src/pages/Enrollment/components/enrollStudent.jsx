@@ -1952,7 +1952,6 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
                       const activeGroupsCount = getActiveGroupsCountForBranch(branch.branchId);
                       const groupsColor = getGroupsCountColor(activeGroupsCount);
                       const statusText = getGroupsStatusText(activeGroupsCount);
-                      const studentsInBranch = groups.filter(g => g.branchId === branch.branchId).reduce((acc, g) => acc + (g.studentsCount || 0), 0);
                       return (
                         <Paper
                           key={`branch-${branch.branchId || branch.id || `${colIdx}-${branchIdx}`}`}
@@ -2006,7 +2005,7 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
                             {branch.address || 'כתובת לא ידועה'}
                           </Typography>
                           <Chip
-                            label={`ילדים פעילים: ${studentsInBranch}`}
+                            label={`ילדים פעילים: ${branch.maxGroupSize }`}
                             color="secondary"
                             size="small"
                             sx={{ mt: 1, bgcolor: '#6366F1', color: 'white', fontWeight: 'bold' }}
@@ -4400,9 +4399,27 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
                     <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-start', direction: 'rtl' }}>
                       <span>📅 תאריך רישום: {student.enrollmentDate ? new Date(student.enrollmentDate).toLocaleDateString('he-IL') : 'לא זמין'}</span>
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-start', direction: 'rtl' }}>
-                      <span>{student.isActive ? '✅' : '❌'} סטטוס: {student.isActive ? 'פעיל' : 'לא פעיל'}</span>
-                    </Typography>
+                   <Typography
+  variant="body2"
+  color="text.secondary"
+  sx={{
+    textAlign: 'right',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 0.5,
+    justifyContent: 'flex-start',
+    direction: 'rtl'
+  }}
+>
+  <span>
+    {student.status === 1
+      ? '✅ סטטוס: פעיל'
+      : student.status === 2
+      ? '❌ סטטוס: לא רלוונטי'
+      : '🟡 סטטוס: ליד'}
+  </span>
+</Typography>
+
                     {student.branchName && (
                       <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-start', direction: 'rtl' }}>
                         <span>🏢 סניף: {student.branchName}</span>

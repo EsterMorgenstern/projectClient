@@ -12,6 +12,7 @@ import MyNotes from '../shared/Layout/components/myNotes';
 import GrowPaymentCallback from '../Payments/GrowPaymentCallback';
 import GrowPaymentTest from '../Payments/GrowPaymentTest';
 import RegistrationTracking from './RegistrationTracking';
+import HealthFundManagement from '../Payments/HealthFundManagement';
 
 const Routing = () => {
   return (
@@ -25,7 +26,8 @@ const Routing = () => {
         <Route path="/instructors" element={<Layout><InstructorsTable /></Layout>} />
         <Route path="/attendanceCalendar" element={<Layout><AttendanceCalendar /></Layout>} />
         <Route path="/entrollStudent" element={<Layout><EntrollStudent /></Layout>} />
-        <Route path="/lesson-management" element={<Layout><LessonManagement /></Layout>} />
+  <Route path="/lesson-management" element={<Layout><LessonManagement /></Layout>} />
+  <Route path="/health-fund-management" element={<Layout><HealthFundManagement /></Layout>} />
         <Route path="/grow-payment-callback" element={<GrowPaymentCallback />} />
         <Route path="/grow-payment-test" element={<Layout><GrowPaymentTest /></Layout>} />
       </Routes>

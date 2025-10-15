@@ -12,6 +12,9 @@ import usersReducer from './user/userSlice';
 import lessonCancellationsReducer from './lessonsCancelation/lessonsCancelationSlice';
 import paymentsReducer from './payments/paymentsSlice';
 
+import healthFundReducer from './healthFund/healthFundSlice';
+import studentHealthFundReducer from './studentHealthFund/studentHealthFundSlice';
+
 const store = configureStore({
   reducer: {
     users: usersReducer,
@@ -25,6 +28,9 @@ const store = configureStore({
     studentNotes:studentNotesReduser,
     lessonCancellations: lessonCancellationsReducer,
     payments: paymentsReducer,
+
+    healthFunds: healthFundReducer,
+    studentHealthFunds: studentHealthFundReducer,
 
 
   },

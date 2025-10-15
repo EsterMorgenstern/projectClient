@@ -204,6 +204,15 @@ const navigationItems = [
     gradient: 'linear-gradient(135deg, #FF8A80 0%, #FFAB91 50%, #FFECD2 100%)',
     shadowColor: 'rgba(255, 138, 128, 0.4)'
   },
+  {
+    title: 'גביה',
+    path: '/health-fund-management',
+    icon: <AssessmentIcon />,
+    color: '#43E97B', // ירוק חי
+    description: 'ניהול קופות חולים והצגת גביה',
+    gradient: 'linear-gradient(135deg, #43E97B 0%, #38F9D7 50%, #4FACFE 100%)',
+    shadowColor: 'rgba(67, 233, 123, 0.4)'
+  },
   // { 
   //   title: 'GROW תשלומים', 
   //   path: '/grow-payment-test', 
@@ -474,6 +483,30 @@ const getUserDisplayName = () => {
       }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            
+            <Box>
+              <Box sx={{ minWidth: 10, maxWidth: 30 }}>
+                <Typography variant="h6" sx={{ 
+                  fontWeight: 'bold',
+                  fontSize: '1.1rem',
+                  color: 'white',
+                  textShadow: '0 2px 10px rgba(0,0,0,0.3)',
+                  maxWidth: 30,
+                  whiteSpace: 'normal'
+                }}>
+                  מערכת ניהול חוגים
+                </Typography>
+                <Typography variant="caption" sx={{ 
+                  opacity: 0.9,
+                  fontSize: '0.8rem',
+                  color: 'white',
+                  maxWidth: 30,
+                  whiteSpace: 'normal'
+                }}>
+                  ניהול חכם ויעיל
+                </Typography>
+              </Box>
+            </Box>
             <Avatar sx={{
               background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 100%)',
               border: '3px solid rgba(255,255,255,0.4)',
@@ -484,23 +517,6 @@ const getUserDisplayName = () => {
             }}>
               <School sx={{ fontSize: 30, color: 'white' }} />
             </Avatar>
-            <Box>
-              <Typography variant="h6" sx={{ 
-                fontWeight: 'bold',
-                fontSize: '1.4rem',
-                color: 'white',
-                textShadow: '0 2px 10px rgba(0,0,0,0.3)'
-              }}>
-                מערכת ניהול חוגים
-              </Typography>
-              <Typography variant="caption" sx={{ 
-                opacity: 0.9,
-                fontSize: '0.8rem',
-                color: 'white'
-              }}>
-                ניהול חכם ויעיל
-              </Typography>
-            </Box>
           </Box>
           <IconButton 
             onClick={handleDrawerToggle}
@@ -628,9 +644,9 @@ const getUserDisplayName = () => {
         sx={{
   borderRadius: '25px',
   px: 1,
-  py: 1,
-  minWidth: '200px',
-  maxWidth: '250px',
+  py: 0.7,
+  minWidth: '130px',
+  maxWidth: '210px',
   width: 'auto',
   background: 'linear-gradient(135deg, rgba(240, 147, 251, 0.25) 0%, rgba(67, 233, 123, 0.25) 50%, rgba(246, 211, 101, 0.25) 100%)', // ✅ גרדיאנט צבעוני
   backdropFilter: 'blur(20px)',
@@ -751,7 +767,7 @@ const getUserDisplayName = () => {
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent'
           }}>
-         {item.title}
+            {item.title}
           </Typography>
           <Typography variant="body2" sx={{ 
             fontSize: '0.85rem', 
@@ -762,36 +778,23 @@ const getUserDisplayName = () => {
           </Typography>
         </Box>
       }
-      arrow
-      placement="bottom"
-      sx={{
-        '& .MuiTooltip-tooltip': {
-          background: 'linear-gradient(135deg, rgba(30, 58, 138, 0.95) 0%, rgba(79, 70, 229, 0.95) 100%)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: 3,
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-        },
-        '& .MuiTooltip-arrow': {
-          color: 'rgba(30, 58, 138, 0.95)',
-        }
-      }}
     >
       <Button
-        onClick={item.isMore ? handleMoreMenuOpen : () => handleNavigate(item.path)} // ✅ טיפול מיוחד לכפתור "עוד"
-        startIcon={item.icon}
-        endIcon={item.isMore ? <ExpandMore /> : null} // ✅ הוסף חץ לכפתור "עוד"
+        onClick={item.isMore ? handleMoreMenuOpen : () => handleNavigate(item.path)}
+        startIcon={item.isMore ? <ExpandMore /> : item.icon}
         sx={{
           color: (item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path) ? '#1E3A8A' : '#FFFFFF',
-          background: (item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path) 
+          background: (item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path)
             ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%)'
             : 'rgba(255, 255, 255, 0.1)',
           borderRadius: 3,
-          px: 2.5,
+          px: item.isMore ? 1 : { xs: 1.5, sm: 2.5, md: 3.5, lg: 4.5 },
           py: 1.2,
           mx: 0.5,
-          minWidth: 'auto',
-          fontSize: '0.9rem',
+          minWidth: item.isMore ? 53 : { xs: 40, sm: 80, md: 60, lg: 99 },
+          maxWidth: item.isMore ? 59 : { xs: 80, sm: 100, md: 90, lg: 97 },
+          flexGrow: item.isMore ? 0 : 1,
+          fontSize: { xs: '0.85rem', sm: '0.9rem', md: '0.95rem' },
           fontWeight: ((item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path)) ? 700 : 600,
           textTransform: 'none',
           backdropFilter: 'blur(20px)',
@@ -804,6 +807,8 @@ const getUserDisplayName = () => {
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           position: 'relative',
           overflow: 'hidden',
+          whiteSpace: 'nowrap',
+          textOverflow: 'ellipsis',
           '&::before': {
             content: '""',
             position: 'absolute',
@@ -826,31 +831,27 @@ const getUserDisplayName = () => {
               left: '100%'
             }
           },
-         '& .MuiButton-startIcon': {
-  marginLeft: 0.2,
-  marginRight: 0,
-  fontSize: '1.2rem',
-  
-  // ✅ אייקון לא פעיל - רק צבע ייחודי בלי מסגרת
-  ...(!((item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path)) && {
-    '& svg': {
-      color: item.color, // הצבע הייחודי של הפריט
-      fontSize: '20px',
-      transition: 'all 0.3s ease'
-    }
-  }),
-  
-  // ✅ אייקון פעיל - צבע לבן בלבד
-  ...(((item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path)) && {
-    '& svg': {
-            fontSize: '20px'
-    }
-  })
-},
-'&:hover .MuiButton-startIcon svg': {
-  color: '#FFFFFF !important', // לבן בhover - חשוב ה-!important
-  filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.5))', // אפקט זוהר לבן
-}
+          '& .MuiButton-startIcon': {
+            marginLeft: 0.2,
+            marginRight: 0,
+            fontSize: '1.2rem',
+            ...(!((item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path)) && {
+              '& svg': {
+                color: item.color,
+                fontSize: '20px',
+                transition: 'all 0.3s ease'
+              }
+            }),
+            ...(((item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path)) && {
+              '& svg': {
+                fontSize: '20px'
+              }
+            })
+          },
+          '&:hover .MuiButton-startIcon svg': {
+            color: '#FFFFFF !important',
+            filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.5))'
+          }
         }}
       >
         {item.title}
@@ -1161,7 +1162,16 @@ const getUserDisplayName = () => {
 
           {/* תפריט ניווט - במרכז */}
           {!isMobile && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0}}>
+            <Box sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0,
+              flexWrap: 'nowrap',
+              overflowX: 'auto',
+              width: '100%',
+              minHeight: 64,
+              '::-webkit-scrollbar': { height: 0 },
+            }}>
               {navigationItems.map((item) => (
                 <NavButton key={item.title} item={item} />
               ))}
@@ -1174,7 +1184,40 @@ const getUserDisplayName = () => {
               whileHover={{ rotate: 360 }}
               transition={{ duration: 0.6 }}
             >
-              <Avatar sx={{
+             
+            </motion.div>
+            
+            <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+              <Box sx={{ minWidth: 138, maxWidth: 260 }}>
+                <Typography variant="h6" sx={{ 
+                  fontWeight: 'bold',
+                  fontSize: '1.1rem',
+                  color: 'white',
+                  textShadow: '0 2px 10px rgba(0,0,0,0.3)',
+                  background: 'linear-gradient(45deg, #ffffff 0%, rgba(255,255,255,0.8) 100%)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  maxWidth: 250,
+                  whiteSpace: 'normal'
+                }}>
+                  מערכת ניהול חוגים
+                </Typography>
+                <Typography variant="caption" sx={{ 
+                  opacity: 0.9,
+                  fontSize: '0.75rem',
+                  color: 'white',
+                  display: 'block',
+                  textAlign: 'center',
+                  maxWidth: 250,
+                  whiteSpace: 'normal'
+                }}>
+                  ניהול חכם ויעיל
+                </Typography>
+              </Box>
+            </Box>
+
+             <Avatar sx={{
                 background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 100%)',
                 border: '3px solid rgba(255,255,255,0.4)',
                 backdropFilter: 'blur(20px)',
@@ -1185,31 +1228,6 @@ const getUserDisplayName = () => {
               }}>
                 <School sx={{ fontSize: 28, color: 'white' }} />
               </Avatar>
-            </motion.div>
-            
-            <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-              <Typography variant="h6" sx={{ 
-                fontWeight: 'bold',
-                fontSize: '1.1rem',
-                color: 'white',
-                textShadow: '0 2px 10px rgba(0,0,0,0.3)',
-                background: 'linear-gradient(45deg, #ffffff 0%, rgba(255,255,255,0.8) 100%)',
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent'
-              }}>
-                מערכת ניהול חוגים
-              </Typography>
-              <Typography variant="caption" sx={{ 
-                opacity: 0.9,
-                fontSize: '0.75rem',
-                color: 'white',
-                display: 'block',
-                textAlign: 'center'
-              }}>
-                ניהול חכם ויעיל
-              </Typography>
-            </Box>
           </Box>
 
 
