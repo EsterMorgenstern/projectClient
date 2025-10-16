@@ -17,6 +17,7 @@ const noteTypeIcons = {
 const StudentNotesDialog = ({ open, onClose, notes = [], student, onAddNote, onEditNote, onDeleteNote }) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [noteToDelete, setNoteToDelete] = useState(null);
+  const [showAllNotes, setShowAllNotes] = useState(false);
 
   const handleDeleteClick = (note) => {
     setNoteToDelete(note);
@@ -35,6 +36,15 @@ const StudentNotesDialog = ({ open, onClose, notes = [], student, onAddNote, onE
     setDeleteDialogOpen(false);
     setNoteToDelete(null);
   };
+
+  // פילטור ההערות בהתאם למצב התצוגה
+  const filteredNotes = showAllNotes 
+    ? [...notes] 
+    : notes.filter(note => note.noteType === 'הערת גביה');
+
+  // ספירת הערות לפי סוג
+  const billingNotesCount = notes.filter(note => note.noteType === 'הערת גביה').length;
+  const otherNotesCount = notes.length - billingNotesCount;
 
   return (
     <Dialog
@@ -103,44 +113,214 @@ const StudentNotesDialog = ({ open, onClose, notes = [], student, onAddNote, onE
         {notes.length === 0 ? (
           <Typography color="textSecondary">אין הערות להצגה</Typography>
         ) : (
-          <List sx={{ direction: 'rtl' }}>
-            {notes.map((note, idx) => (
-              <ListItem key={idx} alignItems="flex-start" sx={{ bgcolor: '#fff', borderRadius: 2, mb: 2, boxShadow: '0 2px 8px rgba(34,197,94,0.08)', position: 'relative' }}>
-                <ListItemAvatar>
+          <><br />
+            {/* כפתור להצגת הערות נוסxxx */}
+            {!showAllNotes && otherNotesCount > 0 && (
+              <Box sx={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                mb: 2,
+                
+                direction: 'rtl'
+              }}>
+                <Button
+                  variant="outlined"
+                  onClick={() => setShowAllNotes(true)}
+                  sx={{
+                    borderRadius: '25px',
+                    px: 3,
+                    py: 1.5,
+                    border: '2px solid #22c55e',
+                    color: '#22c55e',
+                    fontWeight: 'bold',
+                    fontSize: '0.9rem',
+                    background: 'linear-gradient(45deg, rgba(34,197,94,0.05) 0%, rgba(5,150,105,0.05) 100%)',
+                    boxShadow: '0 4px 12px rgba(34,197,94,0.15)',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      background: 'linear-gradient(45deg, rgba(34,197,94,0.1) 0%, rgba(5,150,105,0.1) 100%)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 6px 20px rgba(34,197,94,0.25)',
+                      borderColor: '#059669'
+                    },
+                    '&:active': {
+                      transform: 'translateY(0px)'
+                    }
+                  }}
+                >
+                  📋 צפה בהערות מקטגוריות נוספות ({otherNotesCount})
+                </Button>
+              </Box>
+            )}
+
+            {/* כפתור להסתרת הערות נוספות */}
+            {showAllNotes && (
+              <Box sx={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                mb: 2,
+                direction: 'rtl'
+              }}>
+                <Button
+                  variant="contained"
+                  onClick={() => setShowAllNotes(false)}
+                  sx={{
+                    borderRadius: '25px',
+                    px: 3,
+                    py: 1.5,
+                    bgcolor: '#22c55e',
+                    fontWeight: 'bold',
+                    fontSize: '0.9rem',
+                    boxShadow: '0 4px 12px rgba(34,197,94,0.25)',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      bgcolor: '#059669',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 6px 20px rgba(34,197,94,0.35)',
+                    },
+                    '&:active': {
+                      transform: 'translateY(0px)'
+                    }
+                  }}
+                >
+                  💰 הצג רק הערות גביה ({billingNotesCount})
+                </Button>
+              </Box>
+            )}
+
+            <List sx={{ direction: 'rtl' }}>
+              {filteredNotes
+              .sort((a, b) => {
+                // הערות גביה יופיעו קודם
+                if (a.noteType === 'הערת גביה' && b.noteType !== 'הערת גביה') return -1;
+                if (a.noteType !== 'הערת גביה' && b.noteType === 'הערת גביה') return 1;
+                // אם שתיהן הערות גביה או שתיהן לא, ממיין לפי תאריך (החדש קודם)
+                return new Date(b.createdDate) - new Date(a.createdDate);
+              })
+              .map((note, idx) => (
+              <ListItem 
+                key={idx} 
+                alignItems="flex-start" 
+                sx={{ 
+                  bgcolor: '#fff', 
+                  borderRadius: 2, 
+                  mb: 2, 
+                  boxShadow: '0 2px 8px rgba(34,197,94,0.08)', 
+                  position: 'relative',
+                  paddingLeft: '80px', // השארת מקום לאייקונים בצד שמאל
+                  minHeight: '80px',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+              >
+                <ListItemAvatar sx={{ minWidth: 56 }}>
                   <Avatar>
                     {noteTypeIcons[note.noteType] || <NotesIcon />}
                   </Avatar>
                 </ListItemAvatar>
-                <ListItemText
-                  primary={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Chip label={note.noteType} size="small" sx={{ bgcolor: '#e0f2fe', color: '#059669', fontWeight: 'bold' }} />
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#059669' }}>{note.authorName}</Typography>
-                      <Typography variant="caption" sx={{ color: '#64748b', ml: 1 }}>{note.authorRole}</Typography>
-                      {/* מלל ההערה ותאריך בצד ימין */}
-                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', ml: 'auto', minWidth: 120 }}>
-                       <br/> <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5, textAlign: 'right' }}>{note.noteContent}</Typography>
-                        <Typography variant="caption" color="textSecondary" sx={{ textAlign: 'right' }}>{new Date(note.createdDate).toLocaleDateString('he-IL')}</Typography>
-                      </Box>
-                    </Box>
-                  }
-                />
-                {/* פעולות עריכה ומחיקה */}
-                <Box sx={{ position: 'absolute', left: 16, top: 16, display: 'flex', gap: 1 }}>
-                  <IconButton color="info" size="small" onClick={() => onEditNote(note)}>
-                    <EditIcon />
+                
+                {/* תוכן ההערה - יתפוס את כל המקום הפנוי עד לאייקונים */}
+                <Box sx={{ 
+                  flexGrow: 1, 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: 1,
+                  paddingRight: 2,
+                  overflow: 'hidden'
+                }}>
+                  {/* שורה עליונה - סוג הערה ופרטי יוצר */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                    <Chip label={note.noteType} size="small" sx={{ bgcolor: '#e0f2fe', color: '#059669', fontWeight: 'bold' }} />
+                    <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#059669' }}>{note.authorName}</Typography>
+                    <Typography variant="caption" sx={{ color: '#64748b' }}>({note.authorRole})</Typography>
+                  </Box>
+                  
+                  {/* תוכן ההערה */}
+                  <Typography 
+                    variant="body2" 
+                    color="textSecondary" 
+                    sx={{ 
+                      textAlign: 'right', 
+                      wordBreak: 'break-word',
+                      lineHeight: 1.4,
+                      marginBottom: 1
+                    }}
+                  >
+                    {note.noteContent}
+                  </Typography>
+                  
+                  {/* תאריך */}
+                  <Typography 
+                    variant="caption" 
+                    color="textSecondary" 
+                    sx={{ 
+                      textAlign: 'right',
+                      alignSelf: 'flex-end'
+                    }}
+                  >
+                    {(() => {
+                      // בדיקה של כל השדות האפשריים לתאריך
+                      const dateField = note.createdDate || note.dateCreated || note.created || note.date;
+                      console.log('🔍 תאריך הערה:', { 
+                        raw: note, 
+                        createdDate: note.createdDate,
+                        dateCreated: note.dateCreated,
+                        created: note.created,
+                        date: note.date,
+                        finalDate: dateField
+                      });
+                      
+                      if (!dateField || dateField === '0001-01-01T00:00:00' || new Date(dateField).getFullYear() === 1) {
+                        return new Date().toLocaleDateString('he-IL'); // תאריך נוכחי כברירת מחדל
+                      }
+                      
+                      return new Date(dateField).toLocaleDateString('he-IL');
+                    })()}
+                  </Typography>
+                </Box>
+
+                {/* פעולות עריכה ומחיקה - קבועות בצד שמאל במרכז */}
+                <Box sx={{ 
+                  position: 'absolute', 
+                  left: 8, 
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  display: 'flex', 
+                  flexDirection: 'column',
+                  gap: 0.5,
+                  zIndex: 10
+                }}>
+                  <IconButton 
+                    color="info" 
+                    size="small" 
+                    onClick={() => onEditNote(note)}
+                    sx={{ 
+                      bgcolor: 'rgba(59, 130, 246, 0.1)',
+                      '&:hover': { bgcolor: 'rgba(59, 130, 246, 0.2)' }
+                    }}
+                  >
+                    <EditIcon fontSize="small" />
                   </IconButton>
-                  <IconButton color="error" size="small" onClick={() => handleDeleteClick(note)}>
-                    <DeleteIcon />
+                  <IconButton 
+                    color="error" 
+                    size="small" 
+                    onClick={() => handleDeleteClick(note)}
+                    sx={{ 
+                      bgcolor: 'rgba(220, 38, 38, 0.1)',
+                      '&:hover': { bgcolor: 'rgba(220, 38, 38, 0.2)' }
+                    }}
+                  >
+                    <DeleteIcon fontSize="small" />
                   </IconButton>
                 </Box>
               </ListItem>
             ))}
-          </List>
+            </List>
+          </>
         )}
       </DialogContent>
       <DialogActions sx={{ p: 3, gap: 2, flexDirection: 'row', justifyContent: 'flex-end', bgcolor: '#f8fafc', direction: 'rtl' }}>
-        <Button variant="contained" color="success" onClick={() => onAddNote(student)} sx={{ borderRadius: '8px', px: 3, py: 1, fontWeight: 'bold', fontSize: '1rem', boxShadow: '0 2px 8px rgba(34,197,94,0.18)' }}>
+        <Button variant="contained"  onClick={() => onAddNote(student)} sx={{backgroundColor:'rgba(35, 145, 75, 0.99)' ,borderRadius: '8px', px: 3, py: 1, fontWeight: 'bold', fontSize: '1rem', boxShadow: '0 2px 8px rgba(36, 188, 92, 0.99)' }}>
           הוסף הערת גביה
         </Button>
         <Button variant="outlined" color="primary" onClick={onClose} sx={{ borderRadius: '8px', px: 3, py: 1, fontWeight: 'bold' }}>

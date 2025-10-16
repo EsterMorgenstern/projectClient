@@ -133,7 +133,12 @@ const HealthFundManagement = () => {
   }, [dispatch]);
 
   return (
-    <Box sx={{ p: 4, direction: 'rtl', bgcolor: 'white', borderRadius: 8, boxShadow: '0 8px 32px rgba(67,233,123,0.10)', minHeight: '80vh' }}>
+  <Box sx={{ 
+        background: 'linear-gradient(to right, #e0f2fe, #f8fafc)',
+          minHeight: '100vh',
+          borderRadius: 8,
+        py: 4
+      }}> <Box sx={{ p: 4, direction: 'rtl', bgcolor:  'linear-gradient(to right, #e0f2fe, #f8fafc)', borderRadius: 8, boxShadow: '0 8px 32px rgba(67,233,123,0.10)', minHeight: '80vh' }}>
       {/* טבלת סטודנט-קופה מוצגת מיד */}
       <Box sx={{ mb: 6 }}>
         
@@ -455,7 +460,7 @@ const HealthFundManagement = () => {
           <Button variant="contained" startIcon={<Save />} onClick={handleSave} disabled={saving} sx={{ borderRadius: '8px', px: 3, py: 1,direction:'ltr' ,bgcolor: '#43E97B', boxShadow: '0 4px 14px rgba(67,233,123,0.3)', '&:hover': { bgcolor: '#38F9D7' }, '&:disabled': { bgcolor: '#94A3B8', boxShadow: 'none' }, transition: 'all 0.3s ease' }}>{saving ? '...שומר' : 'שמור'}</Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </Box></Box>
   );
 };
 

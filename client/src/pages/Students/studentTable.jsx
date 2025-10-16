@@ -222,7 +222,7 @@ export default function StudentsTable() {
 
   const statusOptions = [
     { value: 'פעיל', label: '✅ פעיל', icon: '✅' },
-    { value: 'ליד', label: '🟡 ליד', icon: '🟡' },
+    { value: 'ליד', label: '🤝 ליד', icon: '🤝' },
     { value: 'לא רלוונטי', label: '❌ לא רלוונטי', icon: '❌' }
   ];
 

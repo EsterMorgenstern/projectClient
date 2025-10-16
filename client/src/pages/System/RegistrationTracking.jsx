@@ -314,269 +314,712 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-    >
+    ><Box sx={{ 
+        background: 'linear-gradient(to right, #e0f2fe, #f8fafc)',
+          minHeight: '100vh',
+          borderRadius: 8,
+        py: 4
+      }}>
       <Box sx={{ p: 3, direction: 'rtl', fontFamily: 'Arial, sans-serif' }}>
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1e293b', mb: 2 }}>
-            📋 מעקב רישום תלמידים
-          </Typography>
-          <Typography variant="body1" sx={{ color: '#64748b' }}>
-            צפייה ומעקב אחר משימות רישום שטרם הושלמו
-          </Typography>
-          {/* סיכום כמה תלמידים רשמה כל אחת - עיצוב מודרני עם כרטיסים, אייקונים, אפקטים */}
-          <Box sx={{ mt: 2, mb: 2, p: 0 }}>
-            <Box sx={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 2,
-              justifyContent: 'flex-start',
-              alignItems: 'stretch',
-              bgcolor: '#f1f5f9',
-              borderRadius: 4,
-              boxShadow: 3,
-              p: 3,
-              border: '2px solid #38bdf8',
-              minHeight: 80
-            }}>
-              <Typography variant="h6" sx={{ color: '#3a728bff', fontWeight: 'bold', width: '100%' }}>
-                <span style={{ color: '#0284c7', fontWeight: 'bold', fontSize: 24 }}>👩‍💼</span> סיכום רישום לפי מי רשמה:
+        <Box sx={{ mb: 6 }}>
+        
+          <Typography
+            variant={"h3"}
+            sx={{
+              fontWeight: 'bold',
+              color: '#1E3A8A',
+              mb: 1,
+              fontFamily: 'Heebo, sans-serif',
+              textAlign: 'center',
+            }}
+          >
+מעקב רישום          </Typography>
+          <Typography
+            variant="h6"
+            sx={{
+              color: '#334155',
+              textAlign: 'center',
+              mb: 3,
+              fontSize: { xs: '1rem', md: '1.25rem' }
+            }}
+          >
+      ניהול רישום התלמידים במערכת    
+      </Typography>
+          
+      </Box>
+  {/* סטטיסטיקות רישום - עיצוב אלגנטי ומתקדם */}
+  <Box sx={{ display: 'flex', justifyContent: 'center', mb: 5 }}>
+    <Grid container spacing={4} sx={{ maxWidth: '1200px' }}>
+      <Grid item xs={12} md={3}>
+        <Card sx={{ 
+          textAlign: 'center', 
+          background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 50%, #fca5a5 100%)', 
+          borderRadius: '20px', 
+          boxShadow: '0 10px 30px rgba(220, 38, 38, 0.15)', 
+          transition: 'all 0.3s ease',
+          border: '1px solid rgba(220, 38, 38, 0.2)',
+          overflow: 'hidden',
+          position: 'relative',
+          '&:hover': { 
+            transform: 'translateY(-8px)', 
+            boxShadow: '0 20px 40px rgba(220, 38, 38, 0.25)',
+            '& .stat-icon': { transform: 'scale(1.1) rotate(5deg)' },
+            '& .stat-number': { transform: 'scale(1.05)' }
+          },
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '4px',
+            background: 'linear-gradient(90deg, #dc2626, #ef4444)'
+          }
+        }}>
+          <CardContent sx={{ py: 3 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
+              <Box className="stat-icon" sx={{ 
+                fontSize: 40, 
+                transition: 'transform 0.3s ease',
+                filter: 'drop-shadow(0 4px 8px rgba(220, 38, 38, 0.3))'
+              }}>❌</Box>
+              <Typography className="stat-number" variant="h3" sx={{ 
+                color: '#dc2626', 
+                fontWeight: 800,
+                fontSize: '2.5rem',
+                transition: 'transform 0.3s ease',
+                textShadow: '0 2px 4px rgba(220, 38, 38, 0.2)'
+              }}>
+                {studentsWithRegistrationNotes.filter(s => s.incompleteTasks.length > 0).length}
               </Typography>
-              {Object.entries(getAuthorCounts(studentsWithRegistrationNotes)).map(([author, count], idx) => (
-                <Box key={author} sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 2,
-                  bgcolor: '#e0f2fe',
-                  borderRadius: 3,
-                  boxShadow: 2,
-                  px: 3,
-                  py: 2,
-                  minWidth: 220,
-                  maxWidth: 320,
-                  border: '1.5px solid #0ea5e9',
-                  transition: 'transform 0.2s',
-                  '&:hover': { transform: 'scale(1.04)', boxShadow: 6, borderColor: '#2563eb', bgcolor: '#bae6fd' }
-                }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#38bdf8', borderRadius: '50%', width: 40, height: 40, mr: 1 }}>
-                    <span style={{ fontSize: 24 }}>📝</span>
-                  </Box>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                    <Typography variant="subtitle1" sx={{ color: '#0ea5e9', fontWeight: 'bold', fontSize: 18 }}>
-                      {author}
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 400 }}>
-                        רשמה
-                      </Typography>
-                      <Typography variant="h6" sx={{ color: '#2563eb', fontWeight: 'bold', mx: 1, fontSize: 22 }}>
-                        {count}
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: '#64748b' }}>
-                        תלמידים
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Box>
-              ))}
+              <Typography variant="body1" sx={{ 
+                color: '#7f1d1d', 
+                fontWeight: 600,
+                fontSize: '0.95rem',
+                textAlign: 'center'
+              }}>
+                תלמידים עם משימות חסרות
+              </Typography>
             </Box>
+          </CardContent>
+        </Card>
+      </Grid>
+      
+      <Grid item xs={12} md={3}>
+        <Card sx={{ 
+          textAlign: 'center', 
+          background: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 50%, #86efac 100%)', 
+          borderRadius: '20px', 
+          boxShadow: '0 10px 30px rgba(22, 163, 74, 0.15)', 
+          transition: 'all 0.3s ease',
+          border: '1px solid rgba(22, 163, 74, 0.2)',
+          overflow: 'hidden',
+          position: 'relative',
+          '&:hover': { 
+            transform: 'translateY(-8px)', 
+            boxShadow: '0 20px 40px rgba(22, 163, 74, 0.25)',
+            '& .stat-icon': { transform: 'scale(1.1) rotate(-5deg)' },
+            '& .stat-number': { transform: 'scale(1.05)' }
+          },
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '4px',
+            background: 'linear-gradient(90deg, #16a34a, #22c55e)'
+          }
+        }}>
+          <CardContent sx={{ py: 3 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
+              <Box className="stat-icon" sx={{ 
+                fontSize: 40, 
+                transition: 'transform 0.3s ease',
+                filter: 'drop-shadow(0 4px 8px rgba(22, 163, 74, 0.3))'
+              }}>✅</Box>
+              <Typography className="stat-number" variant="h3" sx={{ 
+                color: '#16a34a', 
+                fontWeight: 800,
+                fontSize: '2.5rem',
+                transition: 'transform 0.3s ease',
+                textShadow: '0 2px 4px rgba(22, 163, 74, 0.2)'
+              }}>
+                {studentsWithRegistrationNotes.filter(s => s.incompleteTasks.length === 0).length}
+              </Typography>
+              <Typography variant="body1" sx={{ 
+                color: '#15803d', 
+                fontWeight: 600,
+                fontSize: '0.95rem',
+                textAlign: 'center'
+              }}>
+                תלמידים שהושלמו
+              </Typography>
+            </Box>
+          </CardContent>
+        </Card>
+      </Grid>
+      
+      <Grid item xs={12} md={3}>
+        <Card sx={{ 
+          textAlign: 'center', 
+          background: 'linear-gradient(135deg, #fef3c7 0%, #fed7aa 50%, #fdba74 100%)', 
+          borderRadius: '20px', 
+          boxShadow: '0 10px 30px rgba(217, 119, 6, 0.15)', 
+          transition: 'all 0.3s ease',
+          border: '1px solid rgba(217, 119, 6, 0.2)',
+          overflow: 'hidden',
+          position: 'relative',
+          '&:hover': { 
+            transform: 'translateY(-8px)', 
+            boxShadow: '0 20px 40px rgba(217, 119, 6, 0.25)',
+            '& .stat-icon': { transform: 'scale(1.1) rotate(10deg)' },
+            '& .stat-number': { transform: 'scale(1.05)' }
+          },
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '4px',
+            background: 'linear-gradient(90deg, #d97706, #f59e0b)'
+          }
+        }}>
+          <CardContent sx={{ py: 3 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
+              <Box className="stat-icon" sx={{ 
+                fontSize: 40, 
+                transition: 'transform 0.3s ease',
+                filter: 'drop-shadow(0 4px 8px rgba(217, 119, 6, 0.3))'
+              }}>🔥</Box>
+              <Typography className="stat-number" variant="h3" sx={{ 
+                color: '#d97706', 
+                fontWeight: 800,
+                fontSize: '2.5rem',
+                transition: 'transform 0.3s ease',
+                textShadow: '0 2px 4px rgba(217, 119, 6, 0.2)'
+              }}>
+                {studentsWithRegistrationNotes.filter(s => s.priority === 'גבוהה').length}
+              </Typography>
+              <Typography variant="body1" sx={{ 
+                color: '#92400e', 
+                fontWeight: 600,
+                fontSize: '0.95rem',
+                textAlign: 'center'
+              }}>
+                עדיפות גבוהה
+              </Typography>
+            </Box>
+          </CardContent>
+        </Card>
+      </Grid>
+      
+      <Grid item xs={12} md={3}>
+        <Card sx={{ 
+          textAlign: 'center', 
+          background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 50%, #cbd5e1 100%)', 
+          borderRadius: '20px', 
+          boxShadow: '0 10px 30px rgba(71, 85, 105, 0.15)', 
+          transition: 'all 0.3s ease',
+          border: '1px solid rgba(71, 85, 105, 0.2)',
+          overflow: 'hidden',
+          position: 'relative',
+          '&:hover': { 
+            transform: 'translateY(-8px)', 
+            boxShadow: '0 20px 40px rgba(71, 85, 105, 0.25)',
+            '& .stat-icon': { transform: 'scale(1.1) rotate(-10deg)' },
+            '& .stat-number': { transform: 'scale(1.05)' }
+          },
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '4px',
+            background: 'linear-gradient(90deg, #475569, #64748b)'
+          }
+        }}>
+          <CardContent sx={{ py: 3 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
+              <Box className="stat-icon" sx={{ 
+                fontSize: 40, 
+                transition: 'transform 0.3s ease',
+                filter: 'drop-shadow(0 4px 8px rgba(71, 85, 105, 0.3))'
+              }}>📊</Box>
+              <Typography className="stat-number" variant="h3" sx={{ 
+                color: '#475569', 
+                fontWeight: 800,
+                fontSize: '2.5rem',
+                transition: 'transform 0.3s ease',
+                textShadow: '0 2px 4px rgba(71, 85, 105, 0.2)'
+              }}>
+                {studentsWithRegistrationNotes.length}
+              </Typography>
+              <Typography variant="body1" sx={{ 
+                color: '#64748b', 
+                fontWeight: 600,
+                fontSize: '0.95rem',
+                textAlign: 'center'
+              }}>
+                סה"כ במעקב
+              </Typography>
+            </Box>
+          </CardContent>
+        </Card>
+      </Grid>
+    </Grid>
+  </Box>
+        
+        {/* אזור חיפוש מעוצב */}
+        <Box sx={{ 
+          mb: 4, 
+          p: 4,
+          background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(147, 197, 253, 0.05) 100%)',
+          borderRadius: '24px',
+          border: '1px solid rgba(59, 130, 246, 0.1)',
+          boxShadow: '0 8px 32px rgba(59, 130, 246, 0.08)',
+          position: 'relative',
+          overflow: 'hidden',
+          direction: 'rtl',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '3px',
+            background: 'linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4)'
+          }
+        }}>
+          <Box sx={{ display: 'flex', gap: 3, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <TextField
+              label="🔍 חפש תלמיד, קוד תלמיד, או שם רושם"
+              variant="outlined"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              size="large"
+              sx={{ 
+                flex: 1,
+                minWidth: 400, 
+                maxWidth: 700,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '20px',
+                  bgcolor: 'white',
+                  boxShadow: '0 8px 25px rgba(59, 130, 246, 0.12)',
+                  border: '2px solid transparent',
+                  transition: 'all 0.3s ease',
+                  fontSize: '1.1rem',
+                  '&:hover': {
+                    boxShadow: '0 12px 35px rgba(59, 130, 246, 0.18)',
+                    transform: 'translateY(-2px)',
+                  },
+                  '&.Mui-focused': {
+                    boxShadow: '0 15px 45px rgba(59, 130, 246, 0.25)',
+                    transform: 'translateY(-3px)',
+                    border: '2px solid rgba(59, 130, 246, 0.3)',
+                  }
+                },
+                '& .MuiInputLabel-root': {
+                  fontSize: '1.1rem',
+                  fontWeight: 500,
+                  color: '#64748b'
+                },
+                '& .MuiOutlinedInput-input': {
+                  direction: 'ltr',
+                  textAlign: 'left',
+                  fontSize: '1.1rem',
+                  py: 2
+                }
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ 
+                      color: '#3b82f6', 
+                      fontSize: '1.5rem',
+                      filter: 'drop-shadow(0 2px 4px rgba(59, 130, 246, 0.3))'
+                    }} />
+                  </InputAdornment>
+                )
+              }}
+            />
+            
+            <Button
+              variant="contained"
+              startIcon={<RefreshIcon />}
+              onClick={loadRegistrationTrackingData}
+              sx={{
+                borderRadius: '20px',
+                px: 4,
+                py: 2,
+                fontSize: '1.1rem',
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                boxShadow: '0 8px 25px rgba(59, 130, 246, 0.3)',
+                border: 'none',
+                transition: 'all 0.3s ease',
+                minWidth: 160,
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%)',
+                  boxShadow: '0 12px 35px rgba(59, 130, 246, 0.4)',
+                  transform: 'translateY(-3px)',
+                },
+                '&:active': {
+                  transform: 'translateY(-1px)',
+                }
+              }}
+            >
+              רענן נתונים
+            </Button>
           </Box>
         </Box>
-  {/* סטטיסטיקות רישום - עיצוב מודרני עם כרטיסים מעוגלים ואייקונים */}
-  <Grid container spacing={3} sx={{ mb: 4 }}>
-      
-          <Grid item xs={12} md={3}>
-            <Card sx={{ textAlign: 'center', bgcolor: '#fef2f2', border: '2px solid #fecaca', borderRadius: 4, boxShadow: 2, transition: 'transform 0.2s', '&:hover': { transform: 'scale(1.04)', boxShadow: 6, borderColor: '#dc2626', bgcolor: '#fee2e2' } }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                  <span style={{ fontSize: 32 }}>❌</span>
-                  <Typography variant="h3" sx={{ color: '#dc2626', fontWeight: 'bold' }}>
-                    {studentsWithRegistrationNotes.filter(s => s.incompleteTasks.length > 0).length}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: '#7f1d1d', fontWeight: 500 }}>
-                    תלמידים עם משימות חסרות
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <Card sx={{ textAlign: 'center', bgcolor: '#f0fdf4', border: '2px solid #bbf7d0', borderRadius: 4, boxShadow: 2, transition: 'transform 0.2s', '&:hover': { transform: 'scale(1.04)', boxShadow: 6, borderColor: '#16a34a', bgcolor: '#bbf7d0' } }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                  <span style={{ fontSize: 32 }}>✅</span>
-                  <Typography variant="h3" sx={{ color: '#16a34a', fontWeight: 'bold' }}>
-                    {studentsWithRegistrationNotes.filter(s => s.incompleteTasks.length === 0).length}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: '#15803d', fontWeight: 500 }}>
-                    תלמידים שהושלמו
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <Card sx={{ textAlign: 'center', bgcolor: '#fffbeb', border: '2px solid #fed7aa', borderRadius: 4, boxShadow: 2, transition: 'transform 0.2s', '&:hover': { transform: 'scale(1.04)', boxShadow: 6, borderColor: '#d97706', bgcolor: '#fef3c7' } }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                  <span style={{ fontSize: 32 }}>🔥</span>
-                  <Typography variant="h3" sx={{ color: '#d97706', fontWeight: 'bold' }}>
-                    {studentsWithRegistrationNotes.filter(s => s.priority === 'גבוהה').length}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: '#92400e', fontWeight: 500 }}>
-                    עדיפות גבוהה
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <Card sx={{ textAlign: 'center', bgcolor: '#f8fafc', border: '2px solid #e2e8f0', borderRadius: 4, boxShadow: 2, transition: 'transform 0.2s', '&:hover': { transform: 'scale(1.04)', boxShadow: 6, borderColor: '#475569', bgcolor: '#e0e7ef' } }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                  <span style={{ fontSize: 32 }}>📊</span>
-                  <Typography variant="h3" sx={{ color: '#475569', fontWeight: 'bold' }}>
-                    {studentsWithRegistrationNotes.length}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
-                    סה"כ במעקב
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-  {/* חיפוש מתקדם */}
-        <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-start', direction: 'rtl' }}>
-          <TextField
-            label="חפש תלמיד, קוד תלמיד, או שם רושם"
-            variant="outlined"
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            size="medium"
-            sx={{ minWidth: 380, maxWidth: 600, borderRadius: 2, bgcolor: 'white', fontSize: 18, direction: 'ltr', textAlign: 'right' }}
-            InputLabelProps={{ style: { direction: 'rtl', textAlign: 'right' } }}
-            inputProps={{ style: { direction: 'rtl', textAlign: 'right' } }}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <SearchIcon />
-                </InputAdornment>
-              )
-            }}
-          />
-        </Box>
-        <Card sx={{ direction: 'rtl' }}>
-          <CardContent sx={{ p: 0 }}>
-            <TableContainer>
-              <Table sx={{ direction: 'rtl' }}>
-                <TableHead sx={{ bgcolor: '#f8fafc' }}>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 'bold', textAlign: 'right', direction: 'rtl' }}>סטטוס</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', textAlign: 'right', direction: 'rtl' }}> נרשם על ידי</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', textAlign: 'right', direction: 'rtl' }}>תלמיד</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', textAlign: 'right', direction: 'rtl' }}>משימות חסרות</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', textAlign: 'right', direction: 'rtl' }}>עדיפות</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', textAlign: 'right', direction: 'rtl' }}>תאריך עדכון</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', textAlign: 'right', direction: 'rtl' }}>פעולות</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredStudents.map((student, index) => (
-                    <TableRow key={student.id || index} sx={{ '&:hover': { bgcolor: '#f8fafc' }, direction: 'rtl' }}>
-                      <TableCell sx={{ textAlign: 'right' }}>
+
+        {/* טבלה מעוצבת */}
+        <Paper 
+          sx={{ 
+            borderRadius: '20px',
+            overflow: 'hidden',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.08)',
+            border: '1px solid rgba(59, 130, 246, 0.1)',
+            direction: 'rtl'
+          }}
+        >
+          <TableContainer>
+            <Table sx={{ direction: 'rtl' }}>
+              <TableHead 
+                sx={{ 
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                  '& .MuiTableCell-head': {
+                    color: 'white',
+                    fontWeight: 'bold',
+                    fontSize: '0.95rem',
+                    textAlign: 'center',
+                    py: 2,
+                    borderBottom: 'none'
+                  }
+                }}
+              >
+                <TableRow>
+                  <TableCell sx={{ textAlign: 'center', direction: 'rtl' }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                      <Box sx={{ fontSize: '1.2em', mb: 0.5 }}>📊</Box>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'white' }}>
+                        סטטוס
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ textAlign: 'center', direction: 'rtl' }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                      <Box sx={{ fontSize: '1.2em', mb: 0.5 }}>👤</Box>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'white' }}>
+                        נרשם על ידי
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ textAlign: 'center', direction: 'rtl' }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                      <Box sx={{ fontSize: '1.2em', mb: 0.5 }}>🎓</Box>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'white' }}>
+                        תלמיד
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ textAlign: 'center', direction: 'rtl', width: '250px' }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                      <Box sx={{ fontSize: '1.2em', mb: 0.5 }}>📋</Box>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'white' }}>
+                        משימות חסרות
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ textAlign: 'center', direction: 'rtl' }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                      <Box sx={{ fontSize: '1.2em', mb: 0.5 }}>⚡</Box>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'white' }}>
+                        עדיפות
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ textAlign: 'center', direction: 'rtl' }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                      <Box sx={{ fontSize: '1.2em', mb: 0.5 }}>📅</Box>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'white' }}>
+                        תאריך עדכון
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ textAlign: 'center', direction: 'rtl' }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                      <Box sx={{ fontSize: '1.2em', mb: 0.5 }}>🎯</Box>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'white' }}>
+                        פעולות
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredStudents.map((student, index) => (
+                  <TableRow 
+                    key={student.id || index} 
+                    sx={{ 
+                      '&:hover': { 
+                        bgcolor: 'rgba(59, 130, 246, 0.04)',
+                        transform: 'scale(1.005)',
+                        transition: 'all 0.2s ease',
+                        boxShadow: '0 4px 20px rgba(59, 130, 246, 0.1)'
+                      },
+                      '&:nth-of-type(even)': {
+                        bgcolor: 'rgba(248, 250, 252, 0.5)'
+                      },
+                      direction: 'rtl',
+                      borderBottom: '1px solid rgba(226, 232, 240, 0.8)'
+                    }}
+                  >
+                    <TableCell sx={{ textAlign: 'center', py: 1.5 }}>
+                      <Box sx={{ 
+                        display: 'flex', 
+                        justifyContent: 'center', 
+                        alignItems: 'center',
+                        gap: 1
+                      }}>
                         <Tooltip title={
                           student.incompleteTasks.length === 0 
                             ? 'כל המשימות הושלמו' 
                             : `${student.incompleteTasks.length} משימות חסרות`
                         }>
-                          {getStatusIcon(student.incompleteTasks)}
+                          <Box sx={{
+                            p: 1,
+                            borderRadius: '50%',
+                            bgcolor: student.incompleteTasks.length === 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}>
+                            {getStatusIcon(student.incompleteTasks)}
+                          </Box>
                         </Tooltip>
-                      </TableCell>
-                      <TableCell sx={{ textAlign: 'right' }}>
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ textAlign: 'center', py: 1.5 }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                         {student.registrationNotes && student.registrationNotes.length > 0 && student.registrationNotes[0].authorName ? (
-                          <Typography variant="body2" sx={{ textAlign: 'right' }}>
-                            {student.registrationNotes[0].authorName}
-                          </Typography>
+                          <>
+                            <Typography variant="body2" sx={{ 
+                              fontWeight: 600,
+                              color: '#1e293b',
+                              textAlign: 'center'
+                            }}>
+                              {student.registrationNotes[0].authorName}
+                            </Typography>
+                            <Typography variant="caption" sx={{ 
+                              color: '#64748b',
+                              textAlign: 'center'
+                            }}>
+                              {student.registrationNotes[0].authorRole || 'רושם'}
+                            </Typography>
+                          </>
                         ) : (
-                          <Typography variant="body2" sx={{ textAlign: 'right', color: 'text.secondary' }}>
+                          <Typography variant="body2" sx={{ 
+                            textAlign: 'center', 
+                            color: '#94a3b8',
+                            fontStyle: 'italic'
+                          }}>
                             לא ידוע
                           </Typography>
                         )}
-                      </TableCell>
-                      <TableCell sx={{ textAlign: 'right' }}>
-                        <Typography variant="body1" sx={{ fontWeight: 600, textAlign: 'right' }}>
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ textAlign: 'center', py: 1.5 }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <Typography variant="body1" sx={{ 
+                          fontWeight: 700,
+                          color: '#1e293b',
+                          textAlign: 'center',
+                          mb: 0.5
+                        }}>
                           {student.firstName} {student.lastName}
                         </Typography>
-                        <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'right' }}>
-                          ת.ז: {student.id}
-                        </Typography>
-                      </TableCell>
-                      <TableCell sx={{ textAlign: 'right' }}>
-                        <Badge badgeContent={student.incompleteTasks.length} color="error">
-                          <AssignmentIcon />
+                        <Chip
+                          label={`ת.ז: ${student.id}`}
+                          size="small"
+                          sx={{
+                            bgcolor: 'rgba(59, 130, 246, 0.1)',
+                            color: '#3b82f6',
+                            fontWeight: 600,
+                            fontSize: '0.7rem',
+                            fontFamily: 'monospace'
+                          }}
+                        />
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ textAlign: 'center', py: 1.5, width: '250px' }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                        <Badge 
+                          badgeContent={student.incompleteTasks.length} 
+                          color="error"
+                          sx={{
+                            '& .MuiBadge-badge': {
+                              bgcolor: student.incompleteTasks.length === 0 ? '#10b981' : '#ef4444',
+                              color: 'white',
+                              fontWeight: 'bold'
+                            }
+                          }}
+                        >
+                          <AssignmentIcon sx={{ 
+                            color: student.incompleteTasks.length === 0 ? '#10b981' : '#ef4444',
+                            fontSize: '1.5rem'
+                          }} />
                         </Badge>
                         {student.incompleteTasks.length > 0 && (
-                          <>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, alignItems: 'center' }}>
                             {student.incompleteTasks.slice(0, 2).map((task, i) => (
                               <Chip
                                 key={i}
                                 label={task}
                                 size="small"
-                                sx={{ mr: 0.5, mb: 0.5, bgcolor: '#fef2f2', color: '#dc2626', fontSize: '0.75rem' }}
+                                sx={{ 
+                                  bgcolor: '#fef2f2', 
+                                  color: '#dc2626', 
+                                  fontSize: '0.7rem',
+                                  maxWidth: '120px',
+                                  '& .MuiChip-label': {
+                                    px: 1
+                                  }
+                                }}
                               />
                             ))}
                             {student.incompleteTasks.length > 2 && (
-                              <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'right' }}>
+                              <Typography variant="caption" sx={{ 
+                                color: '#64748b',
+                                textAlign: 'center',
+                                fontWeight: 500
+                              }}>
                                 +{student.incompleteTasks.length - 2} נוספות
                               </Typography>
                             )}
-                          </>
+                          </Box>
                         )}
-                      </TableCell>
-                      <TableCell sx={{ textAlign: 'right' }}>
-                        <Chip
-                          label={student.priority}
-                          size="small"
-                          sx={{
-                            bgcolor: `${getPriorityColor(student.priority)}20`,
-                            color: getPriorityColor(student.priority),
-                            fontWeight: 600
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell sx={{ textAlign: 'right' }}>
-                        <Typography variant="body2" sx={{ textAlign: 'right' }}>
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ textAlign: 'center', py: 1.5 }}>
+                      <Chip
+                        label={student.priority}
+                        size="medium"
+                        sx={{
+                          bgcolor: `${getPriorityColor(student.priority)}15`,
+                          color: getPriorityColor(student.priority),
+                          fontWeight: 700,
+                          borderRadius: '12px',
+                          px: 2,
+                          '&:hover': {
+                            bgcolor: `${getPriorityColor(student.priority)}25`,
+                          }
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ textAlign: 'center', py: 1.5 }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <Typography variant="body2" sx={{ 
+                          fontWeight: 600,
+                          color: '#1e293b',
+                          textAlign: 'center'
+                        }}>
                           {student.lastNoteDate ? student.lastNoteDate.toLocaleDateString('he-IL') : 'לא זמין'}
                         </Typography>
-                      </TableCell>
-                      <TableCell sx={{ textAlign: 'right' }}>
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          startIcon={<EditIcon />}
-                          onClick={() => handleViewDetails(student)}
-                          sx={{ fontSize: '0.75rem' }}
-                        >
-                          עדכן משימות
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-            
-            {filteredStudents.length === 0 && (
-              <Box sx={{ textAlign: 'center', py: 4 }}>
-                <Typography variant="h6" sx={{ color: 'text.secondary' }}>
-                  לא נמצאו תלמידים בהתאם לחיפוש
-                </Typography>
+                        <Typography variant="caption" sx={{ 
+                          color: '#64748b',
+                          textAlign: 'center'
+                        }}>
+                          עדכון אחרון
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ textAlign: 'center', py: 1.5 }}>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        startIcon={<EditIcon />}
+                        onClick={() => handleViewDetails(student)}
+                        sx={{ 
+                          borderRadius: '12px',
+                          px: 2,
+                          py: 1,
+                          bgcolor: '#3b82f6',
+                          fontWeight: 600,
+                          fontSize: '0.8rem',
+                          boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)',
+                          '&:hover': {
+                            bgcolor: '#1d4ed8',
+                            transform: 'translateY(-2px)',
+                            boxShadow: '0 6px 20px rgba(59, 130, 246, 0.35)',
+                          },
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        עדכן משימות
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          
+          {filteredStudents.length === 0 && (
+            <Box sx={{ 
+              textAlign: 'center', 
+              py: 8,
+              background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+              borderRadius: '0 0 20px 20px'
+            }}>
+              <Box sx={{
+                background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                borderRadius: '50%',
+                p: 3,
+                mb: 3,
+                display: 'inline-flex',
+                boxShadow: '0 10px 30px rgba(59, 130, 246, 0.3)'
+              }}>
+                <SearchIcon sx={{ fontSize: 48, color: 'white' }} />
               </Box>
-            )}
-          </CardContent>
-        </Card>
-
-        <Dialog
+              <Typography variant="h5" sx={{ 
+                color: '#1e293b',
+                fontWeight: 'bold',
+                mb: 1
+              }}>
+                לא נמצאו תלמידים
+              </Typography>
+              <Typography variant="body1" sx={{ 
+                color: '#64748b',
+                mb: 3
+              }}>
+                {searchTerm ? `לא נמצאו תלמידים המתאימים לחיפוש "${searchTerm}"` : 'לא נמצאו תלמידים במעקב רישום'}
+              </Typography>
+              {searchTerm && (
+                <Button
+                  variant="outlined"
+                  onClick={() => setSearchTerm('')}
+                  sx={{
+                    borderRadius: '12px',
+                    px: 3,
+                    py: 1,
+                    borderColor: '#3b82f6',
+                    color: '#3b82f6',
+                    '&:hover': {
+                      bgcolor: 'rgba(59, 130, 246, 0.1)',
+                      borderColor: '#1d4ed8'
+                    }
+                  }}
+                >
+                  נקה חיפוש
+                </Button>
+              )}
+            </Box>
+          )}
+        </Paper>        <Dialog
           open={detailsDialogOpen}
           onClose={handleCloseDialog}
           maxWidth="md"
@@ -725,7 +1168,7 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
             {alert.message}
           </Alert>
         )}
-      </Box>
+      </Box>  </Box>
     </motion.div>
   );
 };
