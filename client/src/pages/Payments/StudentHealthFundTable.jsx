@@ -2,13 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, Typography, Box, Skeleton, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Grid, IconButton, Tooltip, Divider, MenuItem, ListItemIcon, ListItemText, FormControlLabel, Checkbox } from '@mui/material';
 import { motion } from 'framer-motion';
-import { AddCircle, Person, LocalHospital, CalendarMonth, Healing, AssignmentTurnedIn, Description, Note, Save, Close, Face, LocationCity, Groups, Event, Check as CheckIcon, AttachMoney as AttachMoneyIcon } from '@mui/icons-material';
+import { AddCircle, Person, LocalHospital, CalendarMonth, Healing, AssignmentTurnedIn, Description, Note, Save, Close, Face, LocationCity, Groups, Event, Check as CheckIcon, AttachMoney as AttachMoneyIcon, Info as InfoIcon, FileDownload } from '@mui/icons-material';
+import ExcelExportDialog from '../../components/ExcelExportDialog';
 import NotesIcon from '@mui/icons-material/Notes';
 import StudentNotesDialog from '../Students/components/StudentNotesDialog';
 import { fetchStudentHealthFunds } from '../../store/studentHealthFund/fetchStudentHealthFunds';
 import { addStudentHealthFund } from '../../store/studentHealthFund/addStudentHealthFund';
 import { updateStudentHealthFund } from '../../store/studentHealthFund/updateStudentHealthFund';
 import { deleteStudentHealthFund } from '../../store/studentHealthFund/deleteStudentHealthFund';
+import { fetchUnreportedDates } from '../../store/studentHealthFund/fetchUnreportedDates';
+import { fetchReportedDates } from '../../store/studentHealthFund/fetchReportedDates';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddStudentNoteDialog from '../Students/components/addStudentNoteDialog';
@@ -51,6 +54,15 @@ const StudentHealthFundTable = () => {
   // דיאלוג הוספת הערה
   const [addNoteDialogOpen, setAddNoteDialogOpen] = useState(false);
   const [addNoteStudent, setAddNoteStudent] = useState(null);
+  // דיאלוג תאריכים לא מדווחים
+  const [unreportedDatesDialogOpen, setUnreportedDatesDialogOpen] = useState(false);
+  const [selectedStudentForDates, setSelectedStudentForDates] = useState(null);
+  // דיאלוג תאריכים שדווחו
+  const [reportedDatesDialogOpen, setReportedDatesDialogOpen] = useState(false);
+  const [selectedStudentForReportedDates, setSelectedStudentForReportedDates] = useState(null);
+  
+  // דיאלוג ייצוא אקסל
+  const [excelExportDialogOpen, setExcelExportDialogOpen] = useState(false);
 
   // TODO: fetch notes from store/api if needed
   const handleOpenNotesDialog = async (studentRow) => {
@@ -125,6 +137,12 @@ const StudentHealthFundTable = () => {
   const error = studentHealthFundState.error;
   // קופות החולים מהסטייט
   const healthFundList = useSelector(state => (state.healthFunds && state.healthFunds.items) ? state.healthFunds.items : []);
+  // תאריכים לא מדווחים
+  const unreportedDates = useSelector(state => state.studentHealthFunds?.unreportedDates || []);
+  const unreportedDatesLoading = useSelector(state => state.studentHealthFunds?.unreportedDatesLoading || false);
+  // תאריכים שדווחו
+  const reportedDates = useSelector(state => state.studentHealthFunds?.reportedDates || []);
+  const reportedDatesLoading = useSelector(state => state.studentHealthFunds?.reportedDatesLoading || false);
   
   // קבלת המשתמש הנוכחי
   const currentUser = useSelector(state => {
@@ -227,8 +245,9 @@ const StudentHealthFundTable = () => {
     studentId: '',
     healthFundId: '',
     startDate: '',
-    treatmentsUsed: '',
+    treatmentsUsed: '0',
     commitmentTreatments: '',
+    reportedTreatments: '0',
     referralFilePath: '',
     commitmentFilePath: '',
     notes: ''
@@ -251,6 +270,12 @@ const StudentHealthFundTable = () => {
   }, [dispatch]);
 
   const handleOpenAddDialog = () => {
+    // Set current date as default for startDate
+    const today = new Date().toISOString().split('T')[0];
+    setFormData(prev => ({
+      ...prev,
+      startDate: today
+    }));
     setAddDialogOpen(true);
   };
   const handleCloseAddDialog = () => {
@@ -259,8 +284,9 @@ const StudentHealthFundTable = () => {
       studentId: '',
       healthFundId: '',
       startDate: '',
-      treatmentsUsed: '',
+      treatmentsUsed: '0',
       commitmentTreatments: '',
+      reportedTreatments: '0',
       referralFilePath: '',
       commitmentFilePath: '',
       notes: ''
@@ -299,7 +325,7 @@ const StudentHealthFundTable = () => {
       requiredFields.push('תאריך התחלה');
     }
     if (!formData.treatmentsUsed && formData.treatmentsUsed !== 0) {
-      requiredFields.push('טיפולים בשימוש');
+      requiredFields.push('טיפולים שכבר דווחו');
     }
     if (!formData.commitmentTreatments) {
       requiredFields.push('התחייבות טיפולים');
@@ -529,25 +555,99 @@ const StudentHealthFundTable = () => {
     setDeleteSaving(false);
   };
 
+  // פונקציות לטיפול בדיאלוג תאריכים לא מדווחים
+  const handleOpenUnreportedDatesDialog = async (row) => {
+    setSelectedStudentForDates(row);
+    setUnreportedDatesDialogOpen(true);
+    // קריאה לתאריכים הלא מדווחים
+    try {
+      const result = await dispatch(fetchUnreportedDates(row.id)).unwrap();
+      console.log('🔍 תאריכים שחזרו מהשרת:', result);
+      console.log('🔍 סוג הנתונים:', typeof result);
+      console.log('🔍 האם זה מערך:', Array.isArray(result));
+      if (Array.isArray(result) && result.length > 0) {
+        console.log('🔍 פריט ראשון:', result[0]);
+        console.log('🔍 מפתחות של פריט ראשון:', Object.keys(result[0]));
+      }
+    } catch (err) {
+      console.error('Failed to fetch unreported dates:', err);
+    }
+  };
+  const handleCloseUnreportedDatesDialog = () => {
+    setUnreportedDatesDialogOpen(false);
+    setSelectedStudentForDates(null);
+  };
+
+  // פונקציות לטיפול בדיאלוג תאריכים שדווחו
+  const handleOpenReportedDatesDialog = async (row) => {
+    setSelectedStudentForReportedDates(row);
+    setReportedDatesDialogOpen(true);
+    // קריאה לתאריכים שדווחו
+    try {
+      const result = await dispatch(fetchReportedDates(row.id)).unwrap();
+      console.log('🔍 תאריכים שדווחו שחזרו מהשרת:', result);
+    } catch (err) {
+      console.error('Failed to fetch reported dates:', err);
+    }
+  };
+  const handleCloseReportedDatesDialog = () => {
+    setReportedDatesDialogOpen(false);
+    setSelectedStudentForReportedDates(null);
+  };
+
+  // פונקציות לטיפול בדיאלוג ייצוא אקסל
+  const handleOpenExcelExportDialog = () => {
+    setExcelExportDialogOpen(true);
+  };
+  const handleCloseExcelExportDialog = () => {
+    setExcelExportDialogOpen(false);
+  };
+
   return (
   <Box sx={{ bgcolor: 'transparent', p: 0 }}>
     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-      <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#667eea', textAlign: 'right', ml: 2 }}>
+      <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1d4fbaff', textAlign: 'right', ml: 2 }}>
         ניהול גביה תלמידים
       </Typography>
-      <Button
-        variant="contained"
-        startIcon={<AddCircle />}
-        color="primary"
-        sx={{ borderRadius: '24px', direction: 'ltr', fontWeight: 'bold', px: 4, py: 1.5, boxShadow: '0 4px 14px rgba(37,99,235,0.18)', fontSize: '1rem', transition: 'all 0.2s', bgcolor: '#2563EB', '&:hover': { bgcolor: '#1D4ED8' } }}
-        onClick={handleOpenAddDialog}
-      >
-        הוספה
-      </Button>
+      <Box sx={{ display: 'flex', gap: 2 }}>
+        <Button
+          variant="outlined"
+          startIcon={<FileDownload />}
+          color="primary"
+          sx={{ 
+            borderRadius: '24px', 
+            direction: 'ltr', 
+            fontWeight: 'bold', 
+            px: 4, 
+            py: 1.5, 
+            fontSize: '1rem', 
+            transition: 'all 0.2s',
+            borderColor: '#2563EB',
+            color: '#2563EB',
+            '&:hover': { 
+              bgcolor: '#2563EB', 
+              color: 'white',
+              borderColor: '#2563EB'
+            }
+          }}
+          onClick={handleOpenExcelExportDialog}
+        >
+          ייצוא
+        </Button>
+        <Button
+          variant="contained"
+          startIcon={<AddCircle />}
+          color="primary"
+          sx={{ borderRadius: '24px', direction: 'ltr', fontWeight: 'bold', px: 4, py: 1.5, boxShadow: '0 4px 14px rgba(37,99,235,0.18)', fontSize: '1rem', transition: 'all 0.2s', bgcolor: '#2563EB', '&:hover': { bgcolor: '#1D4ED8' } }}
+          onClick={handleOpenAddDialog}
+        >
+          הוספה
+        </Button>
+      </Box>
     </Box>
     <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: 2, overflowX: 'auto', background: 'white', p: 0 }}>
       <Table sx={{ minWidth: 1400 }}>
-          <TableHead sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+          <TableHead sx={{ background: '#1d4fbaff' }}>
             <TableRow>
               <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center' }}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -599,8 +699,15 @@ const StudentHealthFundTable = () => {
               </TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center', width: 60, minWidth: 40, maxWidth: 80 }}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <AssignmentTurnedIn sx={{ color: '#10b981' }} />
+                  <span>טיפולים שכבר דווחו</span>
+                </Box>
+              </TableCell>
+              
+              <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center', width: 60, minWidth: 40, maxWidth: 80 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <Healing sx={{ color: '#F59E42' }} />
-                  <span>טיפולים בשימוש</span>
+                  <span>טיפולים שצריך לדווח</span>
                 </Box>
               </TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center', width: 60, minWidth: 40, maxWidth: 80 }}>
@@ -688,7 +795,36 @@ const StudentHealthFundTable = () => {
                     })()}
                   </TableCell>
                   <TableCell align="center">{new Date(row.startDate).toLocaleDateString('he-IL')}</TableCell>
-                  <TableCell align="center">{row.treatmentsUsed}</TableCell>
+                  <TableCell align="center">
+                    <Tooltip title="לחץ כדי לראות תאריכים" arrow>
+                      <Typography 
+                        sx={{ 
+                          cursor: 'pointer', 
+                          color: '#10b981', 
+                          fontWeight: 'bold',
+                          '&:hover': { textDecoration: 'underline' }
+                        }}
+                        onClick={() => handleOpenReportedDatesDialog(row)}
+                      >
+                        {row.reportedTreatments || 0}
+                      </Typography>
+                    </Tooltip>
+                  </TableCell>
+                  <TableCell align="center">
+                    <Tooltip title="לחץ כדי לראות תאריכים" arrow>
+                      <Typography 
+                        sx={{ 
+                          cursor: 'pointer', 
+                          color: '#2563EB', 
+                          fontWeight: 'bold',
+                          '&:hover': { textDecoration: 'underline' }
+                        }}
+                        onClick={() => handleOpenUnreportedDatesDialog(row)}
+                      >
+                        {row.treatmentsUsed}
+                      </Typography>
+                    </Tooltip>
+                  </TableCell>
                   <TableCell align="center">{row.commitmentTreatments}</TableCell>
                   <TableCell align="center">{row.referralFilePath ? <Chip label="קיים" color="primary" /> : <Chip label="אין" color="default" />}</TableCell>
                   <TableCell align="center">{row.commitmentFilePath ? <Chip label="קיים" color="primary" /> : <Chip label="אין" color="default" />}</TableCell>
@@ -871,10 +1007,13 @@ const StudentHealthFundTable = () => {
                 <TextField label="תאריך התחלה" type="date" fullWidth variant="outlined" value={editFormData.startDate} onChange={e => handleEditInputChange('startDate', e.target.value)} InputLabelProps={{ shrink: true }} inputProps={{ style: { direction: 'rtl', textAlign: 'right' } }} />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField label="טיפולים בשימוש" type="number" fullWidth variant="outlined" value={editFormData.treatmentsUsed} onChange={e => handleEditInputChange('treatmentsUsed', e.target.value)} inputProps={{ style: { direction: 'rtl', textAlign: 'right' } }} />
+                <TextField label="טיפולים שכבר דווחו" type="number" fullWidth variant="outlined" value={editFormData.treatmentsUsed} onChange={e => handleEditInputChange('treatmentsUsed', e.target.value)} inputProps={{ style: { direction: 'rtl', textAlign: 'right' } }} />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField label="התחייבות טיפולים" type="number" fullWidth variant="outlined" value={editFormData.commitmentTreatments} onChange={e => handleEditInputChange('commitmentTreatments', e.target.value)} inputProps={{ style: { direction: 'rtl', textAlign: 'right' } }} />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField label="טיפולים שצריך לדווח" type="number" fullWidth variant="outlined" value={editFormData.reportedTreatments || ''} onChange={e => handleEditInputChange('reportedTreatments', e.target.value)} inputProps={{ style: { direction: 'rtl', textAlign: 'right' } }} />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField label="קובץ הפניה" fullWidth variant="outlined" value={editFormData.referralFilePath} onChange={e => handleEditInputChange('referralFilePath', e.target.value)} />
@@ -960,8 +1099,28 @@ const StudentHealthFundTable = () => {
           </Box>
           <IconButton onClick={handleCloseAddDialog} sx={{ color: 'white' }} size="small"><Close /></IconButton>
         </DialogTitle>
-        <DialogContent sx={{ p: 3, direction: 'rtl' }}>
-          <br />
+        <DialogContent sx={{ p: 3, direction: 'rtl' }}> <br />
+          <Box sx={{ 
+            mb: 3, 
+            p: 2, 
+            bgcolor: '#e3f2fd', 
+            borderRadius: '8px', 
+            border: '1px solid #2196f3',
+            direction: 'rtl'
+          }}>            
+
+            <Typography variant="body2" sx={{ 
+              color: '#1565c0', 
+              fontWeight: 500,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              direction: 'rtl'
+            }}>
+              <InfoIcon sx={{ fontSize: 18 }} />
+            הערה: כאשר מכניסים תלמיד חדש, אוטומטית כל השיעורים שהוא היה בהם יסומנו כטיפולים שכבר דווחו
+            </Typography>
+          </Box>
           <Grid container spacing={2} sx={{ direction: 'rtl' }}>
             <Grid item xs={12} sm={6}>
               <TextField 
@@ -1008,7 +1167,7 @@ const StudentHealthFundTable = () => {
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField 
-                label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, direction: 'rtl' }}><Healing sx={{ color: '#F59E42' }} /> <span>טיפולים בשימוש</span><span style={{ color: '#d32f2f', fontWeight: 'bold', marginRight: 2 }}>*</span></Box>} 
+                label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, direction: 'rtl' }}><AssignmentTurnedIn sx={{ color: '#10b981' }} /> <span>טיפולים שכבר דווחו</span><span style={{ color: '#d32f2f', fontWeight: 'bold', marginRight: 2 }}>*</span></Box>} 
                 type="number" 
                 fullWidth 
                 variant="outlined" 
@@ -1025,6 +1184,17 @@ const StudentHealthFundTable = () => {
                 variant="outlined" 
                 value={formData.commitmentTreatments} 
                 onChange={e => handleInputChange('commitmentTreatments', e.target.value)} 
+                inputProps={{ style: { direction: 'rtl', textAlign: 'right' } }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField 
+                label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, direction: 'rtl' }}><Healing sx={{ color: '#F59E42' }} /> <span>טיפולים שצריך לדווח</span></Box>} 
+                type="number" 
+                fullWidth 
+                variant="outlined" 
+                value={formData.reportedTreatments} 
+                onChange={e => handleInputChange('reportedTreatments', e.target.value)} 
                 inputProps={{ style: { direction: 'rtl', textAlign: 'right' } }}
               />
             </Grid>
@@ -1149,6 +1319,388 @@ const StudentHealthFundTable = () => {
           <Button variant="contained" startIcon={<Save />} onClick={handleSave} disabled={saving} sx={{ borderRadius: '8px', px: 3, py: 1, bgcolor: '#2563EB',direction:'ltr', boxShadow: '0 4px 14px rgba(37,99,235,0.3)', '&:hover': { bgcolor: '#1D4ED8' }, '&:disabled': { bgcolor: '#94A3B8', boxShadow: 'none' }, transition: 'all 0.3s ease' }}>{saving ? '...שומר' : 'שמור'}</Button>
         </DialogActions>
       </Dialog>
+
+      {/* דיאלוג תאריכים לא מדווחים */}
+      <Dialog
+        open={unreportedDatesDialogOpen}
+        onClose={handleCloseUnreportedDatesDialog}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '16px',
+            boxShadow: '0 20px 60px rgba(37,99,235,0.15)',
+            direction: 'rtl',
+            bgcolor: 'white',
+            background: 'white',
+          }
+        }}
+      >
+        <DialogTitle sx={{
+          bgcolor: 'linear-gradient(90deg, #2563EB 0%, #43E97B 100%)',
+          color: 'white',
+          fontWeight: 'bold',
+          borderRadius: '16px 16px 0 0',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          direction: 'rtl',
+          minHeight: 60,
+          boxShadow: '0 2px 8px rgba(37,99,235,0.10)',
+          background: 'linear-gradient(90deg, #2563EB 0%, #43E97B 100%)',
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <CalendarMonth sx={{ fontSize: 32, color: 'white' }} />
+            <Typography variant="h5" component="span" sx={{ color: 'white', fontWeight: 'bold', ml: 1 }}>
+              תאריכי טיפולים לא מדווחים
+            </Typography>
+          </Box>
+          <IconButton onClick={handleCloseUnreportedDatesDialog} sx={{ color: 'white' }} size="small">
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{
+          p: 4,
+          direction: 'rtl',
+          bgcolor: 'white',
+          background: 'white',
+          borderRadius: 0,
+        }}>
+          <br />
+          {selectedStudentForDates && (
+            <Typography variant="h6" sx={{ 
+              color: '#2563EB', 
+              fontWeight: 'bold', 
+              mb: 3, 
+              textAlign: 'center',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 1
+            }}>
+              <Person />
+              תלמיד: {selectedStudentForDates.studentName || selectedStudentForDates.studentId}
+            </Typography>
+          )}
+          
+          <Divider sx={{ mb: 3, bgcolor: '#e3f0ff' }} />
+          
+          {unreportedDatesLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <Typography>טוען תאריכים...</Typography>
+            </Box>
+          ) : unreportedDates.length === 0 ? (
+            <Box sx={{ textAlign: 'center', p: 3 }}>
+              <Typography variant="h6" sx={{ color: '#10b981', fontWeight: 'bold' }}>
+                 כל הטיפולים דווחו! 🎉
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#64748B', mt: 1 }}>
+                אין תאריכים שטרם דווחו עבור תלמיד זה
+              </Typography>
+            </Box>
+          ) : (
+            <Box>
+              <Typography variant="body1" sx={{ 
+                color: '#374151', 
+                fontWeight: 'bold', 
+                mb: 2,
+                textAlign: 'center'
+              }}>
+                תאריכים שטרם דווחו ({unreportedDates.length}):
+              </Typography>
+              
+              {(() => {
+                // קיבוץ התאריכים לפי חודשים
+                const datesByMonth = unreportedDates.reduce((acc, dateItem) => {
+                  const date = new Date(dateItem);
+                  const monthKey = `${date.getFullYear()}-${date.getMonth() + 1}`;
+                  const monthName = date.toLocaleDateString('he-IL', { year: 'numeric', month: 'long' });
+                  
+                  if (!acc[monthKey]) {
+                    acc[monthKey] = {
+                      monthName: monthName,
+                      dates: []
+                    };
+                  }
+                  acc[monthKey].dates.push(date);
+                  return acc;
+                }, {});
+                
+                // מיון החודשים לפי תאריך
+                const sortedMonths = Object.keys(datesByMonth).sort((a, b) => {
+                  const [yearA, monthA] = a.split('-').map(Number);
+                  const [yearB, monthB] = b.split('-').map(Number);
+                  return yearA !== yearB ? yearA - yearB : monthA - monthB;
+                });
+                
+                return sortedMonths.map((monthKey, monthIndex) => (
+                  <Box key={monthKey} sx={{ mb: 3 }}>
+                    <Typography variant="h6" sx={{ 
+                      color: '#2563EB', 
+                      fontWeight: 'bold', 
+                      mb: 2,
+                      textAlign: 'center',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 1
+                    }}>
+                      📅 {datesByMonth[monthKey].monthName}
+                    </Typography>
+                    
+                    <Grid container spacing={2} justifyContent="center">
+                      {datesByMonth[monthKey].dates
+                        .sort((a, b) => a - b) // מיון התאריכים בתוך החודש
+                        .map((date, dateIndex) => (
+                        <Grid item xs={6} sm={4} md={3} key={`${monthKey}-${dateIndex}`}>
+                          <Box sx={{
+                            p: 2,
+                            bgcolor: '#FEF2F2',
+                            borderRadius: '8px',
+                            border: '1px solid #FECACA',
+                            textAlign: 'center',
+                            mx: 'auto',
+                            maxWidth: 120
+                          }}>
+                            <Typography sx={{ 
+                              color: '#DC2626',
+                              fontWeight: 'bold',
+                              fontSize: '1.1rem'
+                            }}>
+                              {date.getDate().toString().padStart(2, '0')}/{(date.getMonth() + 1).toString().padStart(2, '0')}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                      ))}
+                    </Grid>
+                  </Box>
+                ));
+              })()}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{
+          p: 2,
+          gap: 1,
+          direction: 'rtl',
+          bgcolor: 'transparent',
+          borderRadius: '0 0 16px 16px',
+          background: 'linear-gradient(90deg, #2563EB 0%, #43E97B 100%)',
+        }}>
+          <Button 
+            variant="contained" 
+            color="primary" 
+            onClick={handleCloseUnreportedDatesDialog} 
+            sx={{ 
+              borderRadius: '8px', 
+              px: 3, 
+              py: 1, 
+              fontWeight: 'bold', 
+              fontSize: '1rem', 
+              boxShadow: '0 2px 8px rgba(37,99,235,0.18)', 
+              bgcolor: '#2563EB', 
+              '&:hover': { bgcolor: '#1D4ED8' } 
+            }}
+          >
+            סגור
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* דיאלוג תאריכים שדווחו */}
+      <Dialog
+        open={reportedDatesDialogOpen}
+        onClose={handleCloseReportedDatesDialog}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '16px',
+            boxShadow: '0 20px 60px rgba(37,99,235,0.15)',
+            direction: 'rtl',
+            bgcolor: 'white',
+            background: 'white',
+          }
+        }}
+      >
+        <DialogTitle sx={{
+          bgcolor: 'linear-gradient(90deg, #10b981 0%, #3b82f6 100%)',
+          color: 'white',
+          fontWeight: 'bold',
+          borderRadius: '16px 16px 0 0',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          direction: 'rtl',
+          minHeight: 60,
+          boxShadow: '0 2px 8px rgba(16,185,129,0.10)',
+          background: 'linear-gradient(90deg, #10b981 0%, #3b82f6 100%)',
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <CheckIcon sx={{ fontSize: 32, color: 'white' }} />
+            <Typography variant="h5" component="span" sx={{ color: 'white', fontWeight: 'bold', ml: 1 }}>
+              תאריכי טיפולים שדווחו
+            </Typography>
+          </Box>
+          <IconButton onClick={handleCloseReportedDatesDialog} sx={{ color: 'white' }} size="small">
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{
+          p: 4,
+          direction: 'rtl',
+          bgcolor: 'white',
+          background: 'white',
+          borderRadius: 0,
+        }}>
+          <br />
+          {selectedStudentForReportedDates && (
+            <Typography variant="h6" sx={{ 
+              color: '#10b981', 
+              fontWeight: 'bold', 
+              mb: 3, 
+              textAlign: 'center',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 1
+            }}>
+              <Person />
+              תלמיד: {selectedStudentForReportedDates.studentName || selectedStudentForReportedDates.studentId}
+            </Typography>
+          )}
+          
+          <Divider sx={{ mb: 3, bgcolor: '#d1fae5' }} />
+          
+          {reportedDatesLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <Typography>טוען תאריכים...</Typography>
+            </Box>
+          ) : reportedDates.length === 0 ? (
+            <Box sx={{ textAlign: 'center', p: 3 }}>
+              <Typography variant="h6" sx={{ color: '#ef4444', fontWeight: 'bold' }}>
+                 לא דווחו טיפולים עדיין 📋
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#64748B', mt: 1 }}>
+                אין תאריכים שדווחו עבור תלמיד זה
+              </Typography>
+            </Box>
+          ) : (
+            <Box>
+              <Typography variant="body1" sx={{ 
+                color: '#374151', 
+                fontWeight: 'bold', 
+                mb: 2,
+                textAlign: 'center'
+              }}>
+                תאריכים שדווחו ({reportedDates.length}):
+              </Typography>
+              
+              {(() => {
+                // קיבוץ התאריכים לפי חודשים
+                const datesByMonth = reportedDates.reduce((acc, dateItem) => {
+                  const date = new Date(dateItem);
+                  const monthKey = `${date.getFullYear()}-${date.getMonth() + 1}`;
+                  const monthName = date.toLocaleDateString('he-IL', { year: 'numeric', month: 'long' });
+                  
+                  if (!acc[monthKey]) {
+                    acc[monthKey] = {
+                      monthName: monthName,
+                      dates: []
+                    };
+                  }
+                  acc[monthKey].dates.push(date);
+                  return acc;
+                }, {});
+                
+                // מיון החודשים לפי תאריך
+                const sortedMonths = Object.keys(datesByMonth).sort((a, b) => {
+                  const [yearA, monthA] = a.split('-').map(Number);
+                  const [yearB, monthB] = b.split('-').map(Number);
+                  return yearA !== yearB ? yearA - yearB : monthA - monthB;
+                });
+                
+                return sortedMonths.map((monthKey, monthIndex) => (
+                  <Box key={monthKey} sx={{ mb: 3 }}>
+                    <Typography variant="h6" sx={{ 
+                      color: '#10b981', 
+                      fontWeight: 'bold', 
+                      mb: 2,
+                      textAlign: 'center',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 1
+                    }}>
+                      ✅ {datesByMonth[monthKey].monthName}
+                    </Typography>
+                    
+                    <Grid container spacing={2} justifyContent="center">
+                      {datesByMonth[monthKey].dates
+                        .sort((a, b) => a - b) // מיון התאריכים בתוך החודש
+                        .map((date, dateIndex) => (
+                        <Grid item xs={6} sm={4} md={3} key={`${monthKey}-${dateIndex}`}>
+                          <Box sx={{
+                            p: 2,
+                            bgcolor: '#f0fdf4',
+                            borderRadius: '8px',
+                            border: '1px solid #bbf7d0',
+                            textAlign: 'center',
+                            mx: 'auto',
+                            maxWidth: 120
+                          }}>
+                            <Typography sx={{ 
+                              color: '#166534',
+                              fontWeight: 'bold',
+                              fontSize: '1.1rem'
+                            }}>
+                              {date.getDate().toString().padStart(2, '0')}/{(date.getMonth() + 1).toString().padStart(2, '0')}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                      ))}
+                    </Grid>
+                  </Box>
+                ));
+              })()}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{
+          p: 2,
+          gap: 1,
+          direction: 'rtl',
+          bgcolor: 'transparent',
+          borderRadius: '0 0 16px 16px',
+          background: 'linear-gradient(90deg, #10b981 0%, #3b82f6 100%)',
+        }}>
+          <Button 
+            variant="contained" 
+            color="primary" 
+            onClick={handleCloseReportedDatesDialog} 
+            sx={{ 
+              borderRadius: '8px', 
+              px: 3, 
+              py: 1, 
+              fontWeight: 'bold', 
+              fontSize: '1rem', 
+              boxShadow: '0 2px 8px rgba(16,185,129,0.18)', 
+              bgcolor: '#10b981', 
+              '&:hover': { bgcolor: '#059669' } 
+            }}
+          >
+            סגור
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* דיאלוג ייצוא אקסל */}
+      <ExcelExportDialog
+        open={excelExportDialogOpen}
+        onClose={handleCloseExcelExportDialog}
+        data={healthFunds}
+        healthFundList={healthFundList}
+      />
     </Box>
   );
 };

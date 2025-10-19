@@ -165,7 +165,7 @@ const instructors = useSelector(state => state.instructors.instructors || []);
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
   const [view, setView] = useState('courses'); // courses, branches, groups
 const [selectedInstructorId, setSelectedInstructorId] = useState('');
-const [studentLessons, setStudentLessons] = useState([]);
+const [studentLessons, setStudentLessons] = useState(0);
 
   // Dialog states
   const [addCourseDialogOpen, setAddCourseDialogOpen] = useState(false);
@@ -389,8 +389,9 @@ useEffect(() => {
     const lessonsCount = calculateStudentLessons(
       selectedGroup.startDate,
       enrollDate,
- lessonDayOfWeek,
-      selectedGroup.numOfLessons
+      lessonDayOfWeek,
+      selectedGroup.numOfLessons,
+      selectedGroup.lessonsCompleted
     );
     setStudentLessons(lessonsCount);
   } else {
@@ -443,26 +444,47 @@ useEffect(() => {
     }
   };
   // פונקציה שמחשבת את מספר השיעורים לתלמיד
-function calculateStudentLessons(groupStartDate, enrollDate, lessonDayOfWeek, numOfLessons) {
+/**
+ * מחשבת את מספר השיעורים לתלמיד בקבוצה לפי תאריך התחלה, שיעורים שהיו, ושיעורים "אבודים"
+ * @param {string} groupStartDate - תאריך התחלת הקבוצה (YYYY-MM-DD)
+ * @param {string} enrollDate - תאריך התחלת התלמיד (YYYY-MM-DD)
+ * @param {number} lessonDayOfWeek - יום בשבוע בו מתקיים השיעור (0=ראשון, 1=שני, ...)
+ * @param {number} numOfLessons - מספר שיעורים כולל בקבוצה
+ * @param {number} lessonsCompleted - מספר שיעורים שכבר התקיימו בקבוצה
+ * @returns {number} מספר שיעורים לתלמיד
+ */
+
+
+function calculateStudentLessons(groupStartDate, enrollDate, lessonDayOfWeek, numOfLessons, lessonsCompleted) {
   if (!groupStartDate || !enrollDate || lessonDayOfWeek === undefined || !numOfLessons) return 0;
-  let start = new Date(groupStartDate);
-  let enroll = new Date(enrollDate);
-  let lessons = [];
-  let count = 0;
-  // מצא את השיעור הראשון ביום השבוע הנכון
-  while (start.getDay() !== lessonDayOfWeek) {
-    start.setDate(start.getDate() + 1);
+
+  let lessonDates = [];
+  let current = new Date(groupStartDate);
+  while (current.getDay() !== lessonDayOfWeek) {
+    current.setDate(current.getDate() + 1);
   }
-  // עבור כל שיעור, בדוק אם הוא אחרי תאריך ההרשמה
-  while (count < numOfLessons) {
-    if (start >= enroll) {
-      lessons.push(new Date(start));
-    }
-    start.setDate(start.getDate() + 7);
-    count++;
+  for (let i = 0; i < numOfLessons; i++) {
+    lessonDates.push(new Date(current));
+    current.setDate(current.getDate() + 7);
   }
-  return lessons.length;
-} 
+
+  const today = new Date();
+  today.setHours(0,0,0,0); // השוואה לפי יום בלבד
+  const enroll = new Date(enrollDate);
+  enroll.setHours(0,0,0,0);
+
+  // השתמש תמיד ב-lessonsCompleted אם קיים
+  const completed = typeof lessonsCompleted === 'number' ? lessonsCompleted : lessonDates.filter(date => date < today).length;
+
+  // אם תאריך ההרשמה הוא היום או לפני, לא מחסירים missedLessons
+  let missedLessons = 0;
+  if (enroll > today) {
+    missedLessons = lessonDates.filter(date => date >= today && date < enroll).length;
+  }
+
+  let studentLessons = numOfLessons - completed - missedLessons;
+  return Math.max(studentLessons, 0);
+}
  const handleMenuOpen = (event, item, type) => {
     event.stopPropagation();
     event.preventDefault();
@@ -855,36 +877,6 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
             >
               צפה בחוגים
             </Button>
-          )
-        });          // סגירת דיאלוג הרישום
-          setEnrollDialogOpen(false);
-          setStudentId('');
-        } else {
-          // הצגת שגיאה ספציפית מהשרת
-          const errorMessage = enrollResult.payload || 'שגיאה לא ידועה בשיבוץ';
-          console.error('❌ Enrollment failed:', errorMessage);
-          
-          setNotification({
-            open: true,
-            message: `התלמיד נוסף בהצלחה אך היתה שגיאה בשיבוץ לקבוצה: ${errorMessage}`,
-            severity: 'warning',
-            action: (
-              <Button
-                color="inherit"
-                size="small"
-                onClick={() => fetchAndShowStudentCourses(studentData.id)}
-                sx={{
-                  fontWeight: 'bold',
-                  bgcolor: 'rgba(255, 255, 255, 0.2)',
-                  borderRadius: '8px',
-                  px: 2,
-                  '&:hover': {
-                    bgcolor: 'rgba(255, 255, 255, 0.3)',
-                  }
-                }}
-              >
-                צפה בחוגים
-              </Button>
             )
           });
         }
@@ -1477,7 +1469,19 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
       });
     }
   };
-
+// קומפוננטה לאייקון סטטוס
+function StatusIcon({ status }) {
+  if (status === 'פעיל') {
+    return <span role="img" aria-label="פעיל" style={{ fontSize: 13 }}>✅</span>;
+  }
+  if (status === 'ליד') {
+    return <span role="img" aria-label="ליד" style={{ fontSize: 13 }}>🤝</span>;
+  }
+  if (status === 'לא רלוונטי') {
+    return <span role="img" aria-label="לא רלוונטי" style={{ fontSize: 13 }}>🚫</span>;
+  }
+  return null;
+}
   const handleUpdateBranch = async () => {
     if (!editingItem || !editingItem.name || !editingItem.city) {
       setNotification({
@@ -2947,89 +2951,141 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
               }}
               helperText="יש להזין 9 ספרות של תעודת זהות"
             />
-            <TextField
-              label="תאריך התחלה"
-              type="date"
-              value={enrollDate}
-              onChange={e => setEnrollDate(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-              fullWidth
-              sx={{
-                mt: 2,
-                bgcolor: 'rgba(16,185,129,0.04)',
-                borderRadius: '14px',
-                boxShadow: '0 2px 8px rgba(16,185,129,0.08)',
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '14px',
-                  fontWeight: 'bold',
-                  fontSize: '0.9rem',
-                  letterSpacing: '0.04em',
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#10B981',
-                    borderWidth: '2px'
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#10B981',
-                    borderWidth: '2px'
-                  }
-                },
-                '& .MuiInputAdornment-root': {
-                  color: '#10B981',
-                  fontSize: '1.3rem'
-                }
-              }}
-              InputProps={{
-                startAdornment: (
-                  <span style={{marginRight:8, color:'#10B981', fontSize:'1.3rem'}}>📅</span>
-                )
-              }}
-              helperText="יש לבחור תאריך התחלה לחוג"
-            />
-            {/* הצגת מספר שיעורים ותאריכים ראשונים לתלמיד מתחת לתאריך התחלה */}
-            {(() => {
-              // המרת יום השבוע למספר
-              const dayOfWeekMap = {
-                'ראשון': 0,
-                'שני': 1,
-                'שלישי': 2,
-                'רביעי': 3,
-                'חמישי': 4,
-                'שישי': 5,
-                'שבת': 6
-              };
-              let lessonDayOfWeek = selectedGroup?.dayOfWeek;
-              if (typeof lessonDayOfWeek === 'string') {
-                lessonDayOfWeek = dayOfWeekMap[lessonDayOfWeek];
-              }
-              const groupStartDate = selectedGroup?.startDate;
-              const numOfLessons = selectedGroup?.numOfLessons;
-              const enrollDateForCalc = enrollDate || groupStartDate;
-              function getStudentLessonDates(groupStartDate, enrollDate, lessonDayOfWeek, numOfLessons) {
-                let start = new Date(Math.max(new Date(groupStartDate), new Date(enrollDate)));
-                let lessons = [];
-                let count = 0;
-                while (start.getDay() !== lessonDayOfWeek) {
-                  start.setDate(start.getDate() + 1);
-                }
-                while (count < numOfLessons) {
-                  lessons.push(new Date(start));
-                  start.setDate(start.getDate() + 7);
-                  count++;
-                }
-                return lessons;
-              }
-              const lessonsForStudent = (groupStartDate && enrollDateForCalc && lessonDayOfWeek !== undefined && numOfLessons)
-                ? getStudentLessonDates(groupStartDate, enrollDateForCalc, lessonDayOfWeek, numOfLessons)
-                : [];
-              return (
-                <Box sx={{ mt: 2, bgcolor: '#ECFDF5', p: 2, borderRadius: 2 }}>
-  <Typography variant="body2" sx={{ color: '#10b981', fontWeight: 'bold' }}>
-    מספר שיעורים לתלמיד: {studentLessons}
-  </Typography>
-</Box>
+         <TextField
+  label="תאריך התחלה"
+  type="date"
+  value={enrollDate}
+  onChange={e => setEnrollDate(e.target.value)}
+  InputLabelProps={{ shrink: true }}
+  fullWidth
+  sx={{
+    mt: 2,
+    bgcolor: 'rgba(16,185,129,0.04)',
+    borderRadius: '14px',
+    boxShadow: '0 2px 8px rgba(16,185,129,0.08)',
+    '& .MuiOutlinedInput-root': {
+      borderRadius: '14px',
+      fontWeight: 'bold',
+      fontSize: '0.9rem',
+      letterSpacing: '0.04em',
+      '&:hover .MuiOutlinedInput-notchedOutline': {
+        borderColor: '#10B981',
+        borderWidth: '2px'
+      },
+      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+        borderColor: '#10B981',
+        borderWidth: '2px'
+      }
+    },
+    '& .MuiInputAdornment-root': {
+      color: '#10B981',
+      fontSize: '1.3rem'
+    }
+  }}
+  InputProps={{
+    startAdornment: (
+      <span style={{marginRight:8, color:'#10B981', fontSize:'1.3rem'}}>📅</span>
+    )
+  }}
+  helperText="יש לבחור תאריך התחלה לחוג"
+/>
 
-              );
-            })()}
+{/* חישוב מספר השיעורים לתלמיד ותאריכים עתידיים */}
+{(() => {
+  const dayOfWeekMap = {
+    'ראשון': 0,
+    'שני': 1,
+    'שלישי': 2,
+    'רביעי': 3,
+    'חמישי': 4,
+    'שישי': 5,
+    'שבת': 6
+  };
+
+  const lessonDayOfWeek =
+    typeof selectedGroup?.dayOfWeek === 'string'
+      ? dayOfWeekMap[selectedGroup.dayOfWeek]
+      : selectedGroup?.dayOfWeek;
+
+  const groupStartDate = selectedGroup?.startDate;
+  const numOfLessons = selectedGroup?.numOfLessons || 0;
+  const lessonsCompleted = selectedGroup?.lessonsCompleted || 0;
+
+  // === פונקציה עוזרת לבניית מערך תאריכים של כל השיעורים ===
+function getAllLessonDates(startDate, lessonDay, totalLessons) {
+  if (!startDate || typeof lessonDay !== 'number' || totalLessons <= 0) return [];
+  const lessons = [];
+  // נוודא שעובדים על תאריכים חופפים (00:00)
+  let current = new Date(startDate.getFullYear ? startDate : new Date(startDate));
+  current = new Date(current.getFullYear(), current.getMonth(), current.getDate());
+  // מצא את היום הראשון שבו השיעור מתקיים (כולל startDate אם מתאים)
+  while (current.getDay() !== lessonDay) {
+    current.setDate(current.getDate() + 1);
+  }
+  for (let i = 0; i < totalLessons; i++) {
+    lessons.push(new Date(current.getFullYear(), current.getMonth(), current.getDate()));
+    current.setDate(current.getDate() + 7);
+  }
+  return lessons;
+}
+
+function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, lessonsDone) {
+  if (!groupStart || !enroll || typeof lessonDay !== 'number' || totalLessons <= 0) 
+    return { count: 0, dates: [] };
+
+  const allLessons = getAllLessonDates(new Date(groupStart), lessonDay, totalLessons);
+  const enrollDateObj = new Date(enroll);
+  const enrollMid = new Date(enrollDateObj.getFullYear(), enrollDateObj.getMonth(), enrollDateObj.getDate());
+
+  // אילו שיעורים לפי לו"ז הם מתאריך ההרשמה והלאה
+  const remainingLessons = allLessons.filter(d => d >= enrollMid);
+
+  // מספר שיעורים שנשארו לתלמיד
+  const studentLessonsCount = remainingLessons.length;
+
+  // אם רוצים לשמור על עקביות עם סה״כ - כבר היו שיעורים
+  // אפשר לוודא שהוא לא עולה על numOfLessons - lessonsCompleted
+  const maxAllowed = Math.max(totalLessons - lessonsDone, 0);
+  const finalCount = Math.min(studentLessonsCount, maxAllowed);
+
+  const studentDates = remainingLessons.slice(0, finalCount);
+
+  return { count: finalCount, dates: studentDates };
+}
+
+
+
+
+  const result = calculateStudentLessons(
+    groupStartDate,
+    enrollDate,
+    lessonDayOfWeek,
+    numOfLessons,
+    lessonsCompleted
+  );
+
+  return (
+    <Box sx={{ mt: 2, bgcolor: '#ECFDF5', p: 2, borderRadius: 2 }}>
+      <Typography variant="body2" sx={{ color: '#10b981', fontWeight: 'bold' }}>
+        מספר שיעורים לתלמיד: {result.count}
+      </Typography>
+
+      {result.dates.length > 0 && (
+        <>
+          <Typography variant="body2" sx={{ mt: 1, fontWeight: 'bold' }}>
+            5 השיעורים הראשונים:
+          </Typography>
+          {result.dates.slice(0, 5).map((d, i) => (
+            <Typography key={i} variant="body2">
+              {d.toLocaleDateString('he-IL')}
+            </Typography>
+          ))}
+        </>
+      )}
+    </Box>
+  );
+})()}
+
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 3, justifyContent: 'space-between', direction: 'rtl', gap: 2 }}>
             <Button
@@ -4332,6 +4388,7 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
                             onClick={(e) => {
                               e.stopPropagation();
                               handleEditStudentDetails(student);
+                            
                             }}
                           >
                             <EditIcon sx={{ fontSize: 18 }} />
@@ -4365,7 +4422,9 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
                     )}
                     {(student.fullDetails?.class || student.Student?.class || student.class) && (
                       <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-start', direction: 'rtl' }}>
-                        <span>📚 כיתה: {student.fullDetails?.class || student.Student?.class || student.class}</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          📚 כיתה: {student.fullDetails?.class || student.Student?.class || student.class}
+                        </span>
                       </Typography>
                     )}
                     {(student.fullDetails?.city || student.Student?.city || student.city) && (
@@ -4411,12 +4470,28 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
     direction: 'rtl'
   }}
 >
-  <span>
-    {student.status === 1
-      ? '✅ סטטוס: פעיל'
-      : student.status === 2
-      ? '❌ סטטוס: לא רלוונטי'
-      : '🟡 סטטוס: ליד'}
+  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+    <StatusIcon status={student.student?.status} />
+    סטטוס: {student.student?.status}
+  </span>
+
+
+</Typography>
+ <Typography
+  variant="body2"
+  color="text.secondary"
+  sx={{
+    textAlign: 'right',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 0.5,
+    justifyContent: 'flex-start',
+    direction: 'rtl'
+  }}
+>
+  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+    {student.isActive ? '✅' : '❌'}
+    סטטוס בחוג: {student.isActive ? 'פעיל' : 'לא פעיל'}
   </span>
 </Typography>
 

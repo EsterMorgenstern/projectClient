@@ -25,6 +25,15 @@ export const addStudentNote = createAsyncThunk(
             console.error('❌ Server error:', error.response?.data);
             console.error('❌ Status:', error.response?.status);
             console.error('❌ Headers:', error.response?.headers);
+            
+            // הדפסת פרטי validation errors אם יש
+            if (error.response?.data?.errors) {
+                console.error('❌ Validation errors details:');
+                Object.keys(error.response.data.errors).forEach(field => {
+                    console.error(`   - ${field}: ${error.response.data.errors[field]}`);
+                });
+            }
+            
             return rejectWithValue(error.response?.data || error.message);
         }
     }

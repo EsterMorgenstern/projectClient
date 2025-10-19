@@ -595,7 +595,7 @@ const [selectedGroupId, setSelectedGroupId] = useState(null);
                   {localStudentCourses && localStudentCourses.length > 0 ? (
                     <Box>
                       {/* סטטיסטיקות */}
-                      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 2, mb: 2.5, height: '150px' }}>
+                      {/* <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 2, mb: 2.5, height: '150px' }}>
                         <Card sx={{
                           background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                           color: 'white',
@@ -649,7 +649,7 @@ const [selectedGroupId, setSelectedGroupId] = useState(null);
                             </Typography>
                           </CardContent>
                         </Card>
-                      </Box>
+                      </Box> */}
 
                       {/* טבלת החוגים */}
                       <Card sx={{

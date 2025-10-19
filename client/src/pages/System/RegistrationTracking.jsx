@@ -577,7 +577,7 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
           mb: 4, 
           p: 4,
           background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(147, 197, 253, 0.05) 100%)',
-          borderRadius: '24px',
+          borderRadius: '54px',
           border: '1px solid rgba(59, 130, 246, 0.1)',
           boxShadow: '0 8px 32px rgba(59, 130, 246, 0.08)',
           position: 'relative',
@@ -595,8 +595,8 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
         }}>
           <Box sx={{ display: 'flex', gap: 3, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
             <TextField
-              label="🔍 חפש תלמיד, קוד תלמיד, או שם רושם"
-              variant="outlined"
+              label="  🔍 חפש תלמיד, קוד תלמיד, או שם רושם"
+              variant="filled"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               size="large"
@@ -624,23 +624,30 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                 '& .MuiInputLabel-root': {
                   fontSize: '1.1rem',
                   fontWeight: 500,
-                  color: '#64748b'
+                  color: '#64748b',
+                  right: 14,
+                  left: 'auto',
+                  transformOrigin: 'top right',
+                  '&.Mui-focused, &.MuiFormLabel-filled': {
+                    // right: 14,
+                    // left: 'auto'
+                  }
                 },
                 '& .MuiOutlinedInput-input': {
-                  direction: 'ltr',
-                  textAlign: 'left',
+                  direction: 'rtl',
+                  textAlign: 'right',
                   fontSize: '1.1rem',
                   py: 2
                 }
               }}
               InputProps={{
-                startAdornment: (
+                endAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon sx={{ 
+                    {/* <SearchIcon sx={{ 
                       color: '#3b82f6', 
                       fontSize: '1.5rem',
                       filter: 'drop-shadow(0 2px 4px rgba(59, 130, 246, 0.3))'
-                    }} />
+                    }} /> */}
                   </InputAdornment>
                 )
               }}
@@ -654,7 +661,7 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                 borderRadius: '20px',
                 px: 4,
                 py: 2,
-                fontSize: '1.1rem',
+                fontSize: '1.0rem',
                 fontWeight: 700,
                 background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
                 boxShadow: '0 8px 25px rgba(59, 130, 246, 0.3)',
@@ -696,63 +703,63 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                     fontWeight: 'bold',
                     fontSize: '0.95rem',
                     textAlign: 'center',
-                    py: 2,
+                    py: 1,
                     borderBottom: 'none'
                   }
                 }}
               >
                 <TableRow>
                   <TableCell sx={{ textAlign: 'center', direction: 'rtl' }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-                      <Box sx={{ fontSize: '1.2em', mb: 0.5 }}>📊</Box>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.2 }}>
+                      <Box sx={{ fontSize: '1.4em', mb: 0.2 }}>📊</Box>
                       <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'white' }}>
                         סטטוס
                       </Typography>
                     </Box>
                   </TableCell>
                   <TableCell sx={{ textAlign: 'center', direction: 'rtl' }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-                      <Box sx={{ fontSize: '1.2em', mb: 0.5 }}>👤</Box>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.2 }}>
+                      <Box sx={{ fontSize: '1.4em', mb: 0.2 }}>👤</Box>
                       <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'white' }}>
                         נרשם על ידי
                       </Typography>
                     </Box>
                   </TableCell>
                   <TableCell sx={{ textAlign: 'center', direction: 'rtl' }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-                      <Box sx={{ fontSize: '1.2em', mb: 0.5 }}>🎓</Box>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.2 }}>
+                      <Box sx={{ fontSize: '1.4em', mb: 0.2 }}>🎓</Box>
                       <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'white' }}>
                         תלמיד
                       </Typography>
                     </Box>
                   </TableCell>
                   <TableCell sx={{ textAlign: 'center', direction: 'rtl', width: '250px' }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-                      <Box sx={{ fontSize: '1.2em', mb: 0.5 }}>📋</Box>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.2 }}>
+                      <Box sx={{ fontSize: '1.4em', mb: 0.2 }}>📋</Box>
                       <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'white' }}>
                         משימות חסרות
                       </Typography>
                     </Box>
                   </TableCell>
                   <TableCell sx={{ textAlign: 'center', direction: 'rtl' }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-                      <Box sx={{ fontSize: '1.2em', mb: 0.5 }}>⚡</Box>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.2 }}>
+                      <Box sx={{ fontSize: '1.4em', mb: 0.2 }}>⚡</Box>
                       <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'white' }}>
                         עדיפות
                       </Typography>
                     </Box>
                   </TableCell>
                   <TableCell sx={{ textAlign: 'center', direction: 'rtl' }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-                      <Box sx={{ fontSize: '1.2em', mb: 0.5 }}>📅</Box>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.2 }}>
+                      <Box sx={{ fontSize: '1.4em', mb: 0.2 }}>📅</Box>
                       <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'white' }}>
                         תאריך עדכון
                       </Typography>
                     </Box>
                   </TableCell>
                   <TableCell sx={{ textAlign: 'center', direction: 'rtl' }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-                      <Box sx={{ fontSize: '1.2em', mb: 0.5 }}>🎯</Box>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.2 }}>
+                      <Box sx={{ fontSize: '1.4em', mb: 0.2 }}>🎯</Box>
                       <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'white' }}>
                         פעולות
                       </Typography>
@@ -778,7 +785,7 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                       borderBottom: '1px solid rgba(226, 232, 240, 0.8)'
                     }}
                   >
-                    <TableCell sx={{ textAlign: 'center', py: 1.5 }}>
+                    <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
                       <Box sx={{ 
                         display: 'flex', 
                         justifyContent: 'center', 
@@ -791,7 +798,7 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                             : `${student.incompleteTasks.length} משימות חסרות`
                         }>
                           <Box sx={{
-                            p: 1,
+                            p: 0.5,
                             borderRadius: '50%',
                             bgcolor: student.incompleteTasks.length === 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
                             display: 'flex',
@@ -803,7 +810,7 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                         </Tooltip>
                       </Box>
                     </TableCell>
-                    <TableCell sx={{ textAlign: 'center', py: 1.5 }}>
+                    <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                         {student.registrationNotes && student.registrationNotes.length > 0 && student.registrationNotes[0].authorName ? (
                           <>
@@ -832,18 +839,18 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                         )}
                       </Box>
                     </TableCell>
-                    <TableCell sx={{ textAlign: 'center', py: 1.5 }}>
+                    <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                         <Typography variant="body1" sx={{ 
                           fontWeight: 700,
                           color: '#1e293b',
                           textAlign: 'center',
-                          mb: 0.5
+                          mb: 0.1
                         }}>
                           {student.firstName} {student.lastName}
                         </Typography>
                         <Chip
-                          label={`ת.ז: ${student.id}`}
+                          label={`קוד תלמיד: ${student.id}`}
                           size="small"
                           sx={{
                             bgcolor: 'rgba(59, 130, 246, 0.1)',
@@ -855,8 +862,8 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                         />
                       </Box>
                     </TableCell>
-                    <TableCell sx={{ textAlign: 'center', py: 1.5, width: '250px' }}>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                    <TableCell sx={{ textAlign: 'center', py: 0.5, width: '250px' }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
                         <Badge 
                           badgeContent={student.incompleteTasks.length} 
                           color="error"
@@ -874,7 +881,7 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                           }} />
                         </Badge>
                         {student.incompleteTasks.length > 0 && (
-                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, alignItems: 'center' }}>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.3, alignItems: 'center' }}>
                             {student.incompleteTasks.slice(0, 2).map((task, i) => (
                               <Chip
                                 key={i}
@@ -886,7 +893,7 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                                   fontSize: '0.7rem',
                                   maxWidth: '120px',
                                   '& .MuiChip-label': {
-                                    px: 1
+                                    px: 0.5
                                   }
                                 }}
                               />
@@ -904,7 +911,7 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                         )}
                       </Box>
                     </TableCell>
-                    <TableCell sx={{ textAlign: 'center', py: 1.5 }}>
+                    <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
                       <Chip
                         label={student.priority}
                         size="medium"
@@ -920,7 +927,7 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                         }}
                       />
                     </TableCell>
-                    <TableCell sx={{ textAlign: 'center', py: 1.5 }}>
+                    <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                         <Typography variant="body2" sx={{ 
                           fontWeight: 600,
@@ -937,7 +944,7 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                         </Typography>
                       </Box>
                     </TableCell>
-                    <TableCell sx={{ textAlign: 'center', py: 1.5 }}>
+                    <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
                       <Button
                         size="small"
                         variant="contained"
@@ -945,8 +952,8 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                         onClick={() => handleViewDetails(student)}
                         sx={{ 
                           borderRadius: '12px',
-                          px: 2,
-                          py: 1,
+                          px: 1.5,
+                          py: 0.5,
                           bgcolor: '#3b82f6',
                           fontWeight: 600,
                           fontSize: '0.8rem',

@@ -5,12 +5,20 @@ import {
   updateStudentHealthFund,
   deleteStudentHealthFund
 } from './studentHealthFundApi';
+import { fetchUnreportedDates } from './fetchUnreportedDates';
+import { fetchReportedDates } from './fetchReportedDates';
 
 // Initial state
 const initialState = {
   items: [],
   loading: false,
   error: null,
+  unreportedDates: [],
+  unreportedDatesLoading: false,
+  unreportedDatesError: null,
+  reportedDates: [],
+  reportedDatesLoading: false,
+  reportedDatesError: null,
 };
 
 // CRUD thunks are now imported from studentHealthFundApi.js
@@ -45,6 +53,30 @@ const studentHealthFundSlice = createSlice({
       })
       .addCase(deleteStudentHealthFund.fulfilled, (state, action) => {
         state.items = state.items.filter(s => s.id !== action.payload);
+      })
+      .addCase(fetchUnreportedDates.pending, (state) => {
+        state.unreportedDatesLoading = true;
+        state.unreportedDatesError = null;
+      })
+      .addCase(fetchUnreportedDates.fulfilled, (state, action) => {
+        state.unreportedDatesLoading = false;
+        state.unreportedDates = action.payload;
+      })
+      .addCase(fetchUnreportedDates.rejected, (state, action) => {
+        state.unreportedDatesLoading = false;
+        state.unreportedDatesError = action.error.message;
+      })
+      .addCase(fetchReportedDates.pending, (state) => {
+        state.reportedDatesLoading = true;
+        state.reportedDatesError = null;
+      })
+      .addCase(fetchReportedDates.fulfilled, (state, action) => {
+        state.reportedDatesLoading = false;
+        state.reportedDates = action.payload;
+      })
+      .addCase(fetchReportedDates.rejected, (state, action) => {
+        state.reportedDatesLoading = false;
+        state.reportedDatesError = action.error.message;
       });
   },
 });
