@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
 import {
   Dialog,
   DialogTitle,
@@ -21,10 +20,9 @@ import {
 import * as XLSX from 'xlsx';
 import { fetchUnreportedDates } from '../store/studentHealthFund/fetchUnreportedDates';
 
-const ExcelExportDialog = ({ open, onClose, data, healthFundList }) => {
+const ExcelExportDialog = ({ open, onClose, data, healthFundList, dispatch }) => {
   const [selectedHealthFund, setSelectedHealthFund] = useState('');
   const [exporting, setExporting] = useState(false);
-  const dispatch = useDispatch();
 
   const healthFundOptions = [
     { id: 'leumit', name: 'לאומית' },
@@ -118,12 +116,27 @@ const ExcelExportDialog = ({ open, onClose, data, healthFundList }) => {
           console.error(`❌ שגיאה בהשגת תאריכים לתלמיד ${student.studentId}:`, error);
           unreportedDatesText = 'שגיאה בהשגת נתונים';
         }
+
+        // השגת הערות מהטבלה (לא ההערות הנפרדות של התלמיד)
+        let studentNotesText = '';
+        try {
+          // השתמש בהערות מהשדה notes של הרשומה בטבלה
+          if (student.notes && student.notes.trim() !== '') {
+            studentNotesText = student.notes.trim();
+          } else {
+            studentNotesText = 'אין הערות';
+          }
+        } catch (error) {
+          console.error(`❌ שגיאה בהשגת הערות לתלמיד ${student.studentId}:`, error);
+          studentNotesText = 'שגיאה בהשגת הערות';
+        }
         
         exportData.push({
           'שם הילד': student.studentName || '',
           'ת"ז / קוד התלמיד': student.studentId,
           'מס\' השיעורים שצריך לדווח': student.treatmentsUsed || 0,
-          'תאריכי הטיפולים הלא מדווחים': unreportedDatesText
+          'תאריכי הטיפולים הלא מדווחים': unreportedDatesText,
+          'הערות': studentNotesText
         });
       }
 
@@ -135,7 +148,8 @@ const ExcelExportDialog = ({ open, onClose, data, healthFundList }) => {
         { wch: 25 }, // שם הילד
         { wch: 18 }, // ת"ז / קוד התלמיד
         { wch: 20 }, // מס' השיעורים שצריך לדווח
-        { wch: 60 }  // תאריכי הטיפולים הלא מדווחים
+        { wch: 60 }, // תאריכי הטיפולים הלא מדווחים
+        { wch: 80 }  // הערות
       ];
       worksheet['!cols'] = columnWidths;
 
@@ -228,7 +242,7 @@ const ExcelExportDialog = ({ open, onClose, data, healthFundList }) => {
           mb: 3
         }}>
           <Typography variant="body2" sx={{ color: '#0c4a6e', fontWeight: 500 }}>
-            הקובץ יכלול: שם הילד, ת"ז/קוד התלמיד, מספר השיעורים שצריך לדווח ותאריכי הטיפולים הלא מדווחים
+            הקובץ יכלול: שם הילד, ת"ז/קוד התלמיד, מספר השיעורים שצריך לדווח, תאריכי הטיפולים הלא מדווחים והערות התלמיד
           </Typography>
         </Box>
 
@@ -320,7 +334,7 @@ const ExcelExportDialog = ({ open, onClose, data, healthFundList }) => {
             direction: 'ltr'
           }}
         >
-          {exporting ? 'מייצא...' : 'ייצא לאקסל'}
+          {exporting ? '...מייצא' : 'ייצא לאקסל'}
         </Button>
       </DialogActions>
     </Dialog>

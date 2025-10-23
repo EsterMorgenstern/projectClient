@@ -96,7 +96,8 @@ const attendanceSlice = createSlice({
             })
             .addCase(fetchStudentAttendanceSummary.fulfilled, (state, action) => {
                 state.loading = false;
-                state.attendanceSummary = action.payload;
+                // חילוץ הנתונים מה-result property של התגובה
+                state.attendanceSummary = action.payload?.result || action.payload || {};
             })
             .addCase(fetchStudentAttendanceSummary.rejected, (state, action) => {
                 state.loading = false;
@@ -188,7 +189,8 @@ const attendanceSlice = createSlice({
             })
             .addCase(fetchAttendanceHistory.fulfilled, (state, action) => {
                 state.loading = false;
-                state.attendanceData = action.payload;
+                // חילוץ המערך מה-result property של התגובה
+                state.attendanceData = action.payload?.result || action.payload || [];
             })
             .addCase(fetchAttendanceHistory.rejected, (state, action) => {
                 state.loading = false;

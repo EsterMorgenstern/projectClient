@@ -13,9 +13,16 @@ export const fetchAttendanceHistory = createAsyncThunk(
             // ה-URL הנכון בהתאם ל-Controller שלך
             const url = `${API_BASE_URL}/Attendance/student/${studentId}/history${params.toString() ? `?${params.toString()}` : ''}`;
             
-            console.log('Fetching attendance history from URL:', url);
+            console.log('📡 Fetching attendance history from URL:', url);
+            console.log('📋 Request parameters:', { studentId, selectedMonth, selectedYear, paramsString: params.toString() });
             const response = await axios.get(url);
-            console.log('Attendance history response:', response.data);
+            console.log('🔍 Attendance history raw response:', response.data);
+            console.log('🔍 Response structure:', {
+                hasResult: 'result' in response.data,
+                resultType: Array.isArray(response.data?.result) ? 'array' : typeof response.data?.result,
+                resultLength: Array.isArray(response.data?.result) ? response.data.result.length : 'N/A',
+                directDataType: Array.isArray(response.data) ? 'array' : typeof response.data
+            });
             return response.data;
         } catch (error) {
             console.error('fetchAttendanceHistory error:', {

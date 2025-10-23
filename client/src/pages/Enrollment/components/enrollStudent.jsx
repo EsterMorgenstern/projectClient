@@ -58,6 +58,7 @@ import {
   Check as CheckIcon,
   Diversity3 as SectorIcon,
   CalendarMonth as DayIcon,
+  CalendarToday as CalendarIcon,
   LocationOn,
   MoreVert as MoreVertIcon,
   Delete as DeleteIcon,
@@ -162,6 +163,7 @@ const instructors = useSelector(state => state.instructors.instructors || []);
   const [enrollDialogOpen, setEnrollDialogOpen] = useState(false);
   const [studentId, setStudentId] = useState('');
   const [enrollDate, setEnrollDate] = useState('');
+  const [groupStatus, setGroupStatus] = useState(true); // סטטוס קבוצה - פעיל/לא פעיל
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
   const [view, setView] = useState('courses'); // courses, branches, groups
 const [selectedInstructorId, setSelectedInstructorId] = useState('');
@@ -208,6 +210,14 @@ const [studentLessons, setStudentLessons] = useState(0);
   const [selectedGroupForStudents, setSelectedGroupForStudents] = useState(null);
   const [enhancedStudentsInGroup, setEnhancedStudentsInGroup] = useState([]);
   const [addStudentDialogOpen, setAddStudentDialogOpen] = useState(false);
+
+  // Student Group Search states
+  const [studentSearchDialogOpen, setStudentSearchDialogOpen] = useState(false);
+  const [searchStudentId, setSearchStudentId] = useState('');
+  const [studentGroups, setStudentGroups] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchResultDialogOpen, setSearchResultDialogOpen] = useState(false);
+  const [searchStudentName, setSearchStudentName] = useState('');
 
   // Form data states
   const [studentGroupData, setStudentGroupData] = useState({
@@ -386,13 +396,7 @@ useEffect(() => {
       'שבת': 6
     };
     const lessonDayOfWeek = dayOfWeekMap[selectedGroup.dayOfWeek];
-    const lessonsCount = calculateStudentLessons(
-      selectedGroup.startDate,
-      enrollDate,
-      lessonDayOfWeek,
-      selectedGroup.numOfLessons,
-      selectedGroup.lessonsCompleted
-    );
+    const lessonsCount = Math.max(selectedGroup.numOfLessons - selectedGroup.lessonsCompleted, 0);
     setStudentLessons(lessonsCount);
   } else {
     setStudentLessons(0);
@@ -624,6 +628,7 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
   const handleGroupSelect = (group) => {
     setSelectedGroup(group);
     setStudentGroupData({ ...studentGroupData, groupId: group.groupId });
+    setGroupStatus(true); // איפוס הסטטוס לפעיל כברירת מחדל
     if (group.maxStudents > 0) {
       setEnrollDialogOpen(true);
     } else {
@@ -838,7 +843,7 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
           studentId: studentData.id, // אותו טיפוס כמו בפונקציה הרגילה
           groupId: selectedGroup.groupId,
           enrollmentDate: studentData.enrollDate, 
-          isActive: true
+          isActive: studentData.groupStatus !== undefined ? studentData.groupStatus : groupStatus
         };
 if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
         console.log('🔍 Enrollment data to send:', entrollmentData);
@@ -953,7 +958,7 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
       studentId: studentId,
       groupId: groupId,
       enrollmentDate: enrollDate ? new Date(enrollDate).toISOString().split('T')[0] : '',
-      isActive: true
+      isActive: groupStatus
     };
 if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
     await dispatch(groupStudentAddThunk(entrollmentDate));
@@ -1179,6 +1184,66 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
 
   const handleCloseNotification = () => {
     setNotification({ ...notification, open: false });
+  };
+
+  // Student Group Search functionality
+  const handleStudentGroupSearch = async () => {
+    if (!searchStudentId.trim()) {
+      setNotification({
+        open: true,
+        message: 'אנא הכנס קוד תלמיד',
+        severity: 'warning'
+      });
+      return;
+    }
+
+    setSearchLoading(true);
+    try {
+      // First, try to get student details
+      let studentName = '';
+      try {
+        const studentResponse = await dispatch(getStudentById(parseInt(searchStudentId)));
+        if (studentResponse.payload) {
+          const student = studentResponse.payload;
+          studentName = `${student.firstName || ''} ${student.lastName || ''}`.trim();
+          setSearchStudentName(studentName);
+        }
+      } catch (studentError) {
+        console.log('Could not fetch student details:', studentError);
+        setSearchStudentName('');
+      }
+
+      // Then get the student's groups
+      const response = await dispatch(getgroupStudentByStudentId(parseInt(searchStudentId)));
+      
+      if (response.payload && response.payload.length > 0) {
+        setStudentGroups(response.payload);
+        setSearchResultDialogOpen(true);
+        setStudentSearchDialogOpen(false);
+      } else {
+        setNotification({
+          open: true,
+          message: 'לא נמצאו קבוצות עבור תלמיד זה',
+          severity: 'info'
+        });
+      }
+    } catch (error) {
+      console.error('שגיאה בחיפוש קבוצות תלמיד:', error);
+      setNotification({
+        open: true,
+        message: 'שגיאה בחיפוש קבוצות התלמיד',
+        severity: 'error'
+      });
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const handleOpenStudentSearch = () => {
+    setSearchStudentId('');
+    setStudentGroups([]);
+    setSearchStudentName('');
+    setStudentSearchDialogOpen(true);
   };
 
   const handleAddCourse = async () => {
@@ -1470,18 +1535,18 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
     }
   };
 // קומפוננטה לאייקון סטטוס
-function StatusIcon({ status }) {
-  if (status === 'פעיל') {
-    return <span role="img" aria-label="פעיל" style={{ fontSize: 13 }}>✅</span>;
-  }
-  if (status === 'ליד') {
-    return <span role="img" aria-label="ליד" style={{ fontSize: 13 }}>🤝</span>;
-  }
-  if (status === 'לא רלוונטי') {
-    return <span role="img" aria-label="לא רלוונטי" style={{ fontSize: 13 }}>🚫</span>;
-  }
-  return null;
-}
+// function StatusIcon({ status }) {
+//   if (status === 'פעיל') {
+//     return <span role="img" aria-label="פעיל" style={{ fontSize: 13 }}>✅</span>;
+//   }
+//   if (status === 'ליד') {
+//     return <span role="img" aria-label="ליד" style={{ fontSize: 13 }}>🤝</span>;
+//   }
+//   if (status === 'לא רלוונטי') {
+//     return <span role="img" aria-label="לא רלוונטי" style={{ fontSize: 13 }}>🚫</span>;
+//   }
+//   return null;
+// }
   const handleUpdateBranch = async () => {
     if (!editingItem || !editingItem.name || !editingItem.city) {
       setNotification({
@@ -1745,6 +1810,93 @@ function StatusIcon({ status }) {
     </motion.div>
   );
 
+  // Render Student Group Search Button
+  const renderStudentGroupSearchButton = () => (
+    <motion.div
+      className="student-search-section"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: 0.2 }}
+      style={{ marginTop: '15px' }}
+    >
+      <motion.button
+        className="student-search-trigger-main"
+        onClick={handleOpenStudentSearch}
+        disabled={loading}
+        whileHover={{ scale: 1.02, y: -2 }}
+        whileTap={{ scale: 0.98 }}
+        style={{
+          width: '100%',
+          maxWidth: '490px',
+          maxHeight: '100px',
+          margin: '0 auto',
+          padding: '15px 25px',
+          background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+          border: 'none',
+          borderRadius: '12px',
+          color: 'white',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          boxShadow: '0 6px 24px rgba(16, 185, 129, 0.25)',
+          position: 'relative',
+          overflow: 'hidden',
+          transition: 'all 0.3s ease'
+        }}
+      >
+        <div className="button-content" style={{ display: 'flex', alignItems: 'center', gap: '12px', zIndex: 2 }}>
+          <motion.div
+            className="button-icon"
+            animate={{
+              rotate: [0, 360],
+              scale: [1, 1.1, 1]
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              repeatDelay: 2
+            }}
+            style={{ fontSize: '22px' }}
+          >
+            🔍
+          </motion.div>
+          <div className="button-text" style={{ textAlign: 'right' }}>
+            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold' }}>חיפוש קבוצות לפי קוד תלמיד</h3>
+            <p style={{ margin: '3px 0 0', fontSize: '12px', opacity: 0.9 }}>מצא את כל הקבוצות בהן התלמיד רשום</p>
+          </div>
+          <motion.div
+            className="button-arrow"
+            animate={{ x: [0, -5, 0] }}
+            transition={{
+              duration: 1.5,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            style={{ fontSize: '18px' }}
+          >
+            →
+          </motion.div>
+        </div>
+        <div 
+          className="button-glow" 
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
+            borderRadius: '16px',
+            zIndex: 1
+          }}
+        ></div>
+      </motion.button>
+    </motion.div>
+  );
+
   // Render course cards
   const renderCourses = () => (
     <motion.div
@@ -1753,8 +1905,10 @@ function StatusIcon({ status }) {
       animate="visible"
       dir="rtl"
     >
+      
       {/* שורת כפתור הוספה */}
-      <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 2, mt: 4 }}>
+      
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -1888,7 +2042,7 @@ function StatusIcon({ status }) {
         dir="rtl"
       >
                
-        <Box sx={{ mb: 3, display: 'flex', direction: 'rtl', alignItems: 'center', flexWrap: 'wrap', gap: 2, justifyContent: 'flex-start' }}>
+        <Box sx={{ mb: 3, mt: 4, display: 'flex', direction: 'rtl', alignItems: 'center', flexWrap: 'wrap', gap: 2, justifyContent: 'flex-start' }}>
          <Button
             endIcon={<BackIcon style={{ transform: 'scaleX(-1)' }} />}
             onClick={handleBack}
@@ -2039,7 +2193,7 @@ function StatusIcon({ status }) {
       dir="rtl"
     >
      
-      <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+      <Box sx={{ mb: 3, mt: 4, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
         <Button
           endIcon={<BackIcon style={{ transform: 'scaleX(-1)' }} />}
           onClick={handleBack}
@@ -2446,6 +2600,9 @@ function StatusIcon({ status }) {
 
         {/* Smart Matching Button */}
         {renderSmartMatchingButton()}
+        
+        {/* Student Group Search Button */}
+        {renderStudentGroupSearchButton()}
 
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
@@ -2990,6 +3147,61 @@ function StatusIcon({ status }) {
   helperText="יש לבחור תאריך התחלה לחוג"
 />
 
+{/* בחירת סטטוס קבוצה */}
+<Box sx={{ mt: 2, mb: 2 }}>
+  <Typography variant="subtitle2" sx={{ mb: 1, color: '#374151', fontWeight: 'bold' }}>
+    סטטוס בקבוצה:
+  </Typography>
+  <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+    <Button
+      variant={groupStatus === true ? 'contained' : 'outlined'}
+      onClick={() => setGroupStatus(true)}
+      sx={{
+        borderRadius: '12px',
+        px: 3,
+        py: 1,
+        fontWeight: 'bold',
+        bgcolor: groupStatus === true ? '#10B981' : 'transparent',
+        borderColor: '#10B981',
+        color: groupStatus === true ? 'white' : '#10B981',
+        '&:hover': {
+          bgcolor: groupStatus === true ? '#059669' : 'rgba(16, 185, 129, 0.1)',
+          borderColor: '#10B981'
+        }
+      }}
+    >
+      ✅ פעיל
+    </Button>
+    <Button
+      variant={groupStatus === false ? 'contained' : 'outlined'}
+      onClick={() => setGroupStatus(false)}
+      sx={{
+        borderRadius: '12px',
+        px: 3,
+        py: 1,
+        fontWeight: 'bold',
+        bgcolor: groupStatus === false ? '#EF4444' : 'transparent',
+        borderColor: '#EF4444',
+        color: groupStatus === false ? 'white' : '#EF4444',
+        '&:hover': {
+          bgcolor: groupStatus === false ? '#DC2626' : 'rgba(239, 68, 68, 0.1)',
+          borderColor: '#EF4444'
+        }
+      }}
+    >
+      ❌ לא פעיל
+    </Button>
+  </Box>
+  <Typography variant="caption" sx={{ 
+    display: 'block', 
+    textAlign: 'center', 
+    mt: 1, 
+    color: '#6B7280' 
+  }}>
+    {groupStatus ? 'התלמיד יהיה פעיל בקבוצה ותירשם נוכחות' : 'התלמיד יהיה רשום אך לא פעיל בקבוצה'}
+  </Typography>
+</Box>
+
 {/* חישוב מספר השיעורים לתלמיד ותאריכים עתידיים */}
 {(() => {
   const dayOfWeekMap = {
@@ -3056,32 +3268,14 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
 
 
 
-  const result = calculateStudentLessons(
-    groupStartDate,
-    enrollDate,
-    lessonDayOfWeek,
-    numOfLessons,
-    lessonsCompleted
-  );
+  // חישוב פשוט: מספר שיעורים כללי פחות שיעורים שהיו
+  const studentLessonsCount = Math.max(numOfLessons - lessonsCompleted, 0);
 
   return (
     <Box sx={{ mt: 2, bgcolor: '#ECFDF5', p: 2, borderRadius: 2 }}>
       <Typography variant="body2" sx={{ color: '#10b981', fontWeight: 'bold' }}>
-        מספר שיעורים לתלמיד: {result.count}
+        מספר שיעורים לתלמיד: {studentLessonsCount}
       </Typography>
-
-      {result.dates.length > 0 && (
-        <>
-          <Typography variant="body2" sx={{ mt: 1, fontWeight: 'bold' }}>
-            5 השיעורים הראשונים:
-          </Typography>
-          {result.dates.slice(0, 5).map((d, i) => (
-            <Typography key={i} variant="body2">
-              {d.toLocaleDateString('he-IL')}
-            </Typography>
-          ))}
-        </>
-      )}
     </Box>
   );
 })()}
@@ -4470,10 +4664,10 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
     direction: 'rtl'
   }}
 >
-  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+  {/* <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
     <StatusIcon status={student.student?.status} />
     סטטוס: {student.student?.status}
-  </span>
+  </span> */}
 
 
 </Typography>
@@ -4550,6 +4744,13 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
       submitButtonText=" הוסף ושבץ מיידית"
       keepOpenAfterSubmit={false}
       selectedGroup={selectedGroup}
+      groupStatus={groupStatus}
+      onGroupStatusChange={setGroupStatus}
+      lessonInfo={{
+        totalLessons: selectedGroup?.numOfLessons || 0,
+        completedLessons: selectedGroup?.lessonsCompleted || 0,
+        studentLessons: Math.max((selectedGroup?.numOfLessons || 0) - (selectedGroup?.lessonsCompleted || 0), 0)
+      }}
     />
 
     {/* דיאלוג שיבוץ תלמיד קיים */}
@@ -4614,19 +4815,13 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
                 }
                 return lessons;
               }
-              const lessonsForStudent = (groupStartDate && enrollDateCalc && lessonDayOfWeek !== undefined && numOfLessons)
-                ? getStudentLessonDates(groupStartDate, enrollDateCalc, lessonDayOfWeek, numOfLessons)
-                : [];
+              // חישוב פשוט: מספר שיעורים כללי פחות שיעורים שהיו
+              const studentLessonsCount = Math.max(numOfLessons - lessonsCompleted, 0);
               return (
                   <Box sx={{ mt: 2, bgcolor: '#ECFDF5', p: 2, borderRadius: 2 }}>
                     <Typography variant="body2" sx={{ color: '#10b981', fontWeight: 'bold' }}>
-                      מספר שיעורים לתלמיד: {lessonsForStudent.length}
+                      מספר שיעורים לתלמיד: {studentLessonsCount}
                     </Typography>
-                    {lessonsForStudent.length > 0 && (
-                      <Typography variant="body2" sx={{ color: '#374151', mt: 1 }}>
-                        תאריכי שיעורים ראשונים: {lessonsForStudent.slice(0,3).map(d => d.toLocaleDateString('he-IL')).join(', ')}
-                      </Typography>
-                    )}
                   </Box>
                 );
             })()}
@@ -4826,6 +5021,319 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
         }
       }}
     />
+
+    {/* Student Group Search Dialog */}
+    <Dialog
+      open={studentSearchDialogOpen}
+      onClose={() => setStudentSearchDialogOpen(false)}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: 3,
+          background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+        }
+      }}
+    >
+      <DialogTitle sx={{ 
+        textAlign: 'center', 
+        fontWeight: 'bold', 
+        color: '#1e40af',
+        borderBottom: '1px solid #e2e8f0',
+        pb: 2
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+          <span style={{ fontSize: '28px' }}>🔍</span>
+          חיפוש קבוצות תלמיד
+        </Box>
+      </DialogTitle>
+      
+      <DialogContent sx={{ p: 3, mt: 2 }}>
+        <Typography variant="body1" sx={{ mb: 3, textAlign: 'center', color: '#64748b' }}>
+          הכנס קוד תלמיד כדי למצוא את כל הקבוצות בהן הוא רשום
+        </Typography>
+        
+        <TextField
+          fullWidth
+          label="קוד תלמיד"
+          value={searchStudentId}
+          onChange={(e) => setSearchStudentId(e.target.value)}
+          type="number"
+          variant="outlined"
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2,
+              fontSize: '18px',
+              textAlign: 'center',
+              '& fieldset': {
+                borderColor: '#cbd5e1',
+                borderWidth: 2
+              },
+              '&:hover fieldset': {
+                borderColor: '#10b981'
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: '#10b981',
+                borderWidth: 2
+              }
+            },
+            '& .MuiInputLabel-root': {
+             
+             
+              '&.Mui-focused': {
+                color: '#10b981'
+              }
+            }
+          }}
+          placeholder="...הכנס מספר תלמיד"
+          onKeyPress={(e) => {
+            if (e.key === 'Enter') {
+              handleStudentGroupSearch();
+            }
+          }}
+        />
+      </DialogContent>
+      
+      <DialogActions sx={{ p: 3, gap: 2 }}>
+        <Button
+          onClick={() => setStudentSearchDialogOpen(false)}
+          variant="outlined"
+          sx={{
+            borderRadius: 2,
+            px: 3,
+            borderColor: '#cbd5e1',
+            color: '#64748b',
+            '&:hover': {
+              borderColor: '#94a3b8',
+              backgroundColor: '#f8fafc'
+            }
+          }}
+        >
+          ביטול
+        </Button>
+        <Button
+          onClick={handleStudentGroupSearch}
+          variant="contained"
+          disabled={searchLoading || !searchStudentId.trim()}
+          sx={{
+            borderRadius: 2,
+            px: 4,
+            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+            '&:hover': {
+              background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+            },
+            '&:disabled': {
+              background: '#cbd5e1',
+              color: '#94a3b8'
+            }
+          }}
+        >
+          {searchLoading ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CircularProgress size={20} color="inherit" />
+             ...מחפש
+            </Box>
+          ) : (
+            'חפש קבוצות'
+          )}
+        </Button>
+      </DialogActions>
+    </Dialog>
+
+    {/* Student Groups Results Dialog */}
+    <Dialog
+      open={searchResultDialogOpen}
+      onClose={() => setSearchResultDialogOpen(false)}
+      maxWidth="md"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: 3,
+          background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+          maxHeight: '80vh'
+        }
+      }}
+    >
+      <DialogTitle sx={{ 
+        textAlign: 'center', 
+        fontWeight: 'bold', 
+        color: '#1e40af',
+        borderBottom: '1px solid #e2e8f0',
+        pb: 2
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+          <span style={{ fontSize: '28px' }}>📚</span>
+          קבוצות התלמיד {searchStudentName && `${searchStudentName} `}
+        </Box>
+      </DialogTitle>
+      
+      <DialogContent sx={{ p: 3 }}>
+        {studentGroups.length > 0 ? (
+          <Grid container spacing={3} justifyContent="center">
+            {studentGroups.map((groupStudent, index) => (
+              <Grid item xs={12} sm={6} md={4} key={index}>
+                <Paper
+                  elevation={3}
+                  sx={{
+                    p: 3,
+                    borderRadius: 3,
+                    height: '100%',
+                    width: 320,
+                    minWidth: 320,
+                    maxWidth: 320,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    background: groupStudent.isActive 
+                      ? 'linear-gradient(135deg, #ffffff 0%, #f0fff4 100%)'
+                      : 'linear-gradient(135deg, #ffffff 0%, #fff0f0 100%)',
+                    transition: 'all 0.3s ease',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    direction: 'rtl',
+                    textAlign: 'right',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                    }
+                  }}
+                >
+                  {!groupStudent.isActive && (
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        top: 10,
+                        right: 10,
+                        bgcolor: 'error.main',
+                        color: 'white',
+                        px: 1,
+                        py: 0.5,
+                        borderRadius: 1,
+                        fontSize: '0.75rem',
+                        fontWeight: 'bold',
+                        zIndex: 1
+                      }}
+                    >
+                      לא פעיל
+                    </Box>
+                  )}
+                  
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, justifyContent: 'flex-start' }}>
+                    <GroupIcon sx={{ fontSize: 40, color: '#6366F1', ml: 1 }} />
+                    <Typography variant="h6" fontWeight="bold" color="#1E3A8A">
+                      <span style={{wordBreak: 'break-word', whiteSpace: 'pre-line'}}>
+                        קבוצה {groupStudent.groupName || 'לא זמין'}
+                      </span>
+                    </Typography>
+                  </Box>
+                  
+                  <Divider sx={{ width: '100%', mb: 2 }} />
+                  
+                  {groupStudent.dayOfWeek && groupStudent.hour && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'flex-start' }}>
+                      <DayIcon fontSize="small" sx={{ color: '#6366F1', ml: 1 }} />
+                      <Typography variant="body2">
+                        {groupStudent.hour} {groupStudent.dayOfWeek}
+                      </Typography>
+                    </Box>
+                  )}
+
+                  {groupStudent.ageRange && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'flex-start' }}>
+                      <StudentIcon fontSize="small" sx={{ color: '#6366F1', ml: 1 }} />
+                      <Typography variant="body2">
+                        גילאים: {groupStudent.ageRange}
+                      </Typography>
+                    </Box>
+                  )}
+                  
+                  {groupStudent.sector && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'flex-start' }}>
+                      <SectorIcon fontSize="small" sx={{ color: '#6366F1', ml: 1 }} />
+                      <Typography variant="body2">
+                        מגזר: {groupStudent.sector || 'כללי'}
+                      </Typography>
+                    </Box>
+                  )}
+
+                  {groupStudent.courseName && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'flex-start' }}>
+                      <CourseIcon fontSize="small" sx={{ color: '#6366F1', ml: 1 }} />
+                      <Typography variant="body2">
+                        חוג: {groupStudent.courseName}
+                      </Typography>
+                    </Box>
+                  )}
+                  
+                  {groupStudent.branchName && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'flex-start' }}>
+                      <BranchIcon fontSize="small" sx={{ color: '#6366F1', ml: 1 }} />
+                      <Typography variant="body2">
+                        סניף: {groupStudent.branchName}
+                      </Typography>
+                    </Box>
+                  )}
+
+                  <Box sx={{ mt: 'auto', pt: 2, width: '100%' }}>
+                    {/* שורה ראשונה: תאריך רישום */}
+                    <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2, direction:'ltr'}}>
+                      <Chip
+                        icon={<CalendarIcon />}
+                        label={`רישום: ${groupStudent.entrollmentDate ? new Date(groupStudent.entrollmentDate).toLocaleDateString('he-IL') : 'לא זמין'}`}
+                        color="primary"
+                        variant="outlined"
+                        size="small"
+                      />
+                    </Box>
+                    
+                    {/* שורה שנייה: סטטוס */}
+                    <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2, direction:'ltr'}}>
+                      <Chip
+                        icon={groupStudent.isActive ? <AvailableIcon /> : <FullIcon />}
+                        label={groupStudent.isActive ? 'פעיל' : 'לא פעיל'}
+                        color={groupStudent.isActive ? "success" : "error"}
+                        variant="filled"
+                        size="small"
+                        sx={{
+                          fontWeight: 'bold'
+                        }}
+                      />
+                    </Box>
+                  </Box>
+                </Paper>
+              </Grid>
+            ))}
+          </Grid>
+        ) : (
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Typography variant="h6" color="#64748b">
+              לא נמצאו קבוצות עבור תלמיד זה
+            </Typography>
+          </Box>
+        )}
+      </DialogContent>
+      
+      <DialogActions sx={{ p: 3 }}>
+        <Button
+          onClick={() => {
+            setSearchResultDialogOpen(false);
+            setSearchStudentId('');
+            setStudentGroups([]);
+            setSearchStudentName('');
+          }}
+          variant="contained"
+          sx={{
+            borderRadius: 2,
+            px: 4,
+            background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+            '&:hover': {
+              background: 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)',
+            }
+          }}
+        >
+          סגור
+        </Button>
+      </DialogActions>
+    </Dialog>
    
     
     </Container>

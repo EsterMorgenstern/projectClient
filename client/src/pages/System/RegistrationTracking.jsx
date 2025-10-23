@@ -31,6 +31,7 @@ import {
   Badge,
   CircularProgress,
   Alert,
+  TablePagination,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -69,6 +70,10 @@ const RegistrationTracking = () => {
   const [editNotesMode, setEditNotesMode] = useState(false);
   const [editedTasks, setEditedTasks] = useState({});
   const [alert, setAlert] = useState({ open: false, message: '', severity: 'success' });
+  
+  // Pagination states
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   // Redux selectors
   const registrationTrackingNotes = useSelector(selectRegistrationTrackingNotes);
@@ -188,6 +193,27 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
       (filterStatus === 'completed' && student.incompleteTasks.length === 0);
     return matchesSearch && matchesFilter;
   });
+
+  // Pagination handlers
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  // Paginated data
+  const paginatedStudents = React.useMemo(() => {
+    const startIndex = page * rowsPerPage;
+    return filteredStudents.slice(startIndex, startIndex + rowsPerPage);
+  }, [filteredStudents, page, rowsPerPage]);
+
+  // Reset page when search changes
+  React.useEffect(() => {
+    setPage(0);
+  }, [searchTerm]);
 
   const handleViewDetails = async (student) => {
     setSelectedStudent(student);
@@ -683,6 +709,40 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
           </Box>
         </Box>
 
+        {/* מונה תלמידים */}
+      <Box sx={{ 
+      mb: 2, 
+      p: 2, 
+      bgcolor: '#e1eefbff', 
+      borderRadius: 2, 
+      border: '1px solid #d7e4f6ff',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      direction: 'rtl'
+    }}>
+      <Typography variant="h6" sx={{ 
+        color: '#1e40af', 
+        fontWeight: 'bold',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1
+      }}>
+        📊
+        סה"כ תלמידים בטבלה: {filteredStudents.length}
+      </Typography>
+      
+      <Typography variant="body2" sx={{ 
+        color: '#64748b',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1
+      }}>
+        <InfoIcon sx={{ fontSize: 16 }} />
+        מציג {paginatedStudents.length} מתוך {filteredStudents.length} תלמידים
+      </Typography>
+    </Box>
+
         {/* טבלה מעוצבת */}
         <Paper 
           sx={{ 
@@ -768,7 +828,7 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                 </TableRow>
               </TableHead>
               <TableBody>
-                {filteredStudents.map((student, index) => (
+                {paginatedStudents.map((student, index) => (
                   <TableRow 
                     key={student.id || index} 
                     sx={{ 
@@ -974,6 +1034,44 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
               </TableBody>
             </Table>
           </TableContainer>
+          
+          {/* Pagination */}
+          {filteredStudents.length > 0 && (
+            <TablePagination
+              component="div"
+              count={filteredStudents.length}
+              page={page}
+              onPageChange={handleChangePage}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              rowsPerPageOptions={[5, 10, 25, 50, 100]}
+              labelRowsPerPage="שורות בעמוד:"
+              labelDisplayedRows={({ from, to, count }) => 
+                `${from}-${to} מתוך ${count !== -1 ? count : `יותר מ-${to}`}`
+              }
+              sx={{
+                direction: 'rtl',
+                '& .MuiTablePagination-toolbar': {
+                  direction: 'rtl',
+                  paddingLeft: 2,
+                  paddingRight: 2
+                },
+                '& .MuiTablePagination-selectLabel': {
+                  margin: 0
+                },
+                '& .MuiTablePagination-displayedRows': {
+                  margin: 0
+                },
+                '& .MuiTablePagination-select': {
+                  textAlign: 'right'
+                },
+                '& .MuiTablePagination-actions': {
+                  marginLeft: 0,
+                  marginRight: 20
+                }
+              }}
+            />
+          )}
           
           {filteredStudents.length === 0 && (
             <Box sx={{ 

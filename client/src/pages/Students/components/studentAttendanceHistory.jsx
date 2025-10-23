@@ -47,6 +47,12 @@ import { motion } from 'framer-motion';
 import { deleteAttendance } from '../../../store/attendance/attendanceDeleteThunk';
 
 const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) => {
+  console.log('👤 StudentAttendanceHistory rendered with:', { 
+    open, 
+    embedded, 
+    student: student ? { id: student.id, name: `${student.firstName} ${student.lastName}` } : null 
+  });
+  
   const dispatch = useDispatch();
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedAttendanceId, setSelectedAttendanceId] = useState(null);
@@ -54,6 +60,16 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
   const attendanceData = useSelector((state) => state.attendances.attendanceData);
   const attendanceSummary = useSelector((state) => state.attendances.attendanceSummary);
   const loading = useSelector((state) => state.attendances.loading);
+
+  // הוסף לוגים לבדיקת מצב Redux
+  console.log('🔍 Redux state:', {
+    attendanceDataType: typeof attendanceData,
+    attendanceDataLength: Array.isArray(attendanceData) ? attendanceData.length : 'Not array',
+    attendanceData: attendanceData,
+    attendanceDataKeys: typeof attendanceData === 'object' && attendanceData ? Object.keys(attendanceData) : 'N/A',
+    attendanceSummary,
+    loading
+  });
 
   const [filteredData, setFilteredData] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState('');
@@ -63,25 +79,42 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
   // פונקציה לטעינת נתוני נוכחות
   const fetchAttendanceHistoryData = async () => {
     if (!student?.id) {
-      console.log('No student ID available');
+      console.log('❌ No student ID available');
       return;
     }
 
-    console.log('Fetching attendance history for:', {
+    console.log('🔄 Fetching attendance history for:', {
       studentId: student.id,
-      selectedMonth,
-      selectedYear
+      selectedMonth: selectedMonth || 'כל החודשים',
+      selectedYear,
+      actualParams: { studentId: student.id, selectedMonth, selectedYear }
     });
 
     try {
-      const result = await dispatch(fetchAttendanceHistory({
+      // בואו ננסה גם בלי פרמטרים - אולי השרת מחזיר הכל ברירת מחדל
+      const params = {
         studentId: student.id,
-        selectedMonth,
-        selectedYear
-      })).unwrap();
-      console.log('Attendance history result:', result);
+        selectedMonth: selectedMonth || undefined, // undefined במקום null
+        selectedYear: selectedYear
+      };
+      
+      console.log('🚀 About to dispatch with params:', params);
+      
+      const result = await dispatch(fetchAttendanceHistory(params)).unwrap();
+      console.log('✅ Attendance history result:', result);
+      console.log('📊 Data received:', Array.isArray(result) ? `${result.length} records` : typeof result);
+      
+      // אם אין נתונים, בואו ננסה בלי פילטרים
+      if (Array.isArray(result) && result.length === 0 && (selectedMonth || selectedYear !== new Date().getFullYear())) {
+        console.log('🔄 No data with filters, trying without filters...');
+        const resultNoFilters = await dispatch(fetchAttendanceHistory({
+          studentId: student.id
+        })).unwrap();
+        console.log('🔄 Result without filters:', resultNoFilters);
+      }
     } catch (error) {
-      console.error('Error fetching attendance history:', error);
+      console.error('❌ Error fetching attendance history:', error);
+      console.error('❌ Error details:', error.message || error);
     }
   };
 
@@ -104,36 +137,70 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
 
   // פונקציה לטעינת סיכום נוכחות
   const fetchAttendanceSummaryData = async () => {
-    if (!student?.id) return;
+    if (!student?.id) {
+      console.log('❌ No student ID for summary');
+      return;
+    }
+
+    console.log('📊 Fetching student attendance summary:', {
+      studentId: student.id,
+      month: selectedMonth || 'כל החודשים',
+      year: selectedYear
+    });
 
     try {
-      await dispatch(fetchStudentAttendanceSummary({
+      const result = await dispatch(fetchStudentAttendanceSummary({
         studentId: student.id,
-        month: selectedMonth,
+        month: selectedMonth || null,
         year: selectedYear
       })).unwrap();
+      console.log('✅ Student attendance summary fetched:', result);
     } catch (error) {
-      console.error('Error fetching attendance summary:', error);
+      console.error('❌ Error fetching attendance summary:', error);
+      console.error('❌ Summary error details:', error.message || error);
     }
   };
 
   useEffect(() => {
+    console.log('🔄 useEffect triggered:', {
+      hasStudentId: !!student?.id,
+      studentId: student?.id,
+      open,
+      embedded,
+      selectedMonth,
+      selectedYear,
+      shouldFetch: !!(student?.id && (open || embedded))
+    });
+    
     if (student?.id && (open || embedded)) {
+      console.log('✅ Conditions met, fetching data...');
       fetchAttendanceHistoryData();
       fetchAttendanceSummaryData();
+    } else {
+      console.log('❌ Conditions not met for fetching data');
     }
   }, [student, open, embedded, selectedMonth, selectedYear]);
 
   // סינון לפי קורס
   useEffect(() => {
+    console.log('🔄 Filtering data:', {
+      attendanceDataType: typeof attendanceData,
+      isArray: Array.isArray(attendanceData),
+      dataLength: Array.isArray(attendanceData) ? attendanceData.length : 'N/A',
+      selectedCourse,
+      rawData: attendanceData
+    });
+    
     let filtered = Array.isArray(attendanceData) ? attendanceData : [];
 
     if (selectedCourse) {
       filtered = filtered.filter(record =>
         record.courseName === selectedCourse
       );
+      console.log('🔍 Filtered by course:', { selectedCourse, filteredCount: filtered.length });
     }
 
+    console.log('📊 Final filtered data:', { count: filtered.length, data: filtered });
     setFilteredData(filtered);
   }, [selectedCourse, attendanceData]);
 
@@ -154,6 +221,13 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
   const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
 
   const handleRefreshData = () => {
+    console.log('🔄 Manual refresh triggered');
+    console.log('🔄 Current state:', { 
+      studentId: student?.id, 
+      selectedMonth, 
+      selectedYear, 
+      attendanceDataLength: Array.isArray(attendanceData) ? attendanceData.length : 'Not array' 
+    });
     fetchAttendanceHistoryData();
     fetchAttendanceSummaryData();
   };

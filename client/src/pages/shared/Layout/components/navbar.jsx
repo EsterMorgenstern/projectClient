@@ -751,7 +751,7 @@ const getUserDisplayName = () => {
   );
 };
   // כפתור ניווט מעוצב
- const NavButton = ({ item }) => (
+ const NavButton = ({ item, index }) => (
   <motion.div
     whileHover={{ scale: 1.02 }}
     whileTap={{ scale: 0.98 }}
@@ -781,80 +781,71 @@ const getUserDisplayName = () => {
     >
       <Button
         onClick={item.isMore ? handleMoreMenuOpen : () => handleNavigate(item.path)}
-        startIcon={item.isMore ? <ExpandMore /> : item.icon}
+        startIcon={item.isMore ? <ExpandMore sx={{ fontSize: '18px !important' }} /> : item.icon}
         sx={{
           color: (item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path) ? '#1E3A8A' : '#FFFFFF',
           background: (item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path)
-            ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%)'
-            : 'rgba(255, 255, 255, 0.1)',
-          borderRadius: 3,
-          px: item.isMore ? 1 : { xs: 1.5, sm: 2.5, md: 3.5, lg: 4.5 },
-          py: 1.2,
-          mx: 0.5,
-          minWidth: item.isMore ? 53 : { xs: 40, sm: 80, md: 60, lg: 99 },
-          maxWidth: item.isMore ? 59 : { xs: 80, sm: 100, md: 90, lg: 97 },
-          flexGrow: item.isMore ? 0 : 1,
-          fontSize: { xs: '0.85rem', sm: '0.9rem', md: '0.95rem' },
-          fontWeight: ((item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path)) ? 700 : 600,
+            ? 'rgba(255, 255, 255, 0.95)'
+            : item.isMore 
+              ? 'rgba(255, 255, 255, 0.15)'
+              : 'rgba(255, 255, 255, 0.1)',
+          borderRadius: 2,
+          px: { xs: 0.5, sm: 0.8, md: 1.2, lg: 1.5 },
+          py: { xs: 1, sm: 1.1, md: 1.2 },
+          mx: 0,
+          minWidth: item.isMore ? { xs: '40px', sm: '50px', md: '60px' } : { xs: '45px', sm: '65px', md: '80px', lg: '100px' },
+          maxWidth: item.isMore ? { xs: '40px', sm: '50px', md: '60px' } : { xs: '70px', sm: '90px', md: '110px', lg: '130px' },
+          flex: '1 1 0',
+          width: 'auto',
+          fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.9rem', lg: '1rem' },
+          fontWeight: ((item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path)) ? 600 : 500,
           textTransform: 'none',
-          backdropFilter: 'blur(20px)',
-          border: ((item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path))
-            ? '2px solid rgba(255, 255, 255, 0.8)'
-            : '2px solid rgba(255, 255, 255, 0.2)',
-          boxShadow: ((item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path))
-            ? `0 10px 30px ${item.shadowColor}`
-            : '0 5px 15px rgba(0, 0, 0, 0.1)',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          position: 'relative',
-          overflow: 'hidden',
+          backdropFilter: 'blur(10px)',
+          border: item.isMore 
+            ? '1px solid rgba(255, 255, 255, 0.3)'
+            : '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
+          transition: 'all 0.2s ease',
           whiteSpace: 'nowrap',
+          overflow: 'hidden',
           textOverflow: 'ellipsis',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: '-100%',
-            width: '100%',
-            height: '100%',
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
-            transition: 'left 0.5s'
-          },
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
           '&:hover': {
             background: ((item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path))
-              ? 'linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.95) 100%)'
-              : item.gradient,
-            color: ((item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path)) ? '#1E3A8A' : '#FFFFFF',
-            transform: 'translateY(-3px)',
-            boxShadow: `0 15px 40px ${item.shadowColor}`,
-            border: '2px solid rgba(255, 255, 255, 0.6)',
-            '&::before': {
-              left: '100%'
-            }
+              ? 'rgba(255, 255, 255, 1)'
+              : item.gradient || 'rgba(255, 255, 255, 0.2)',
+            color: '#FFFFFF',
+            transform: 'translateY(-2px)',
+            boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
+            border: '1px solid rgba(255, 255, 255, 0.4)'
           },
           '& .MuiButton-startIcon': {
-            marginLeft: 0.2,
-            marginRight: 0,
-            fontSize: '1.2rem',
-            ...(!((item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path)) && {
-              '& svg': {
-                color: item.color,
-                fontSize: '20px',
-                transition: 'all 0.3s ease'
-              }
-            }),
-            ...(((item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path)) && {
-              '& svg': {
-                fontSize: '20px'
-              }
-            })
+            marginLeft: 0,
+            marginRight: item.isMore ? { xs: 0, sm: 0.3, md: 0.5 } : { xs: 0.3, sm: 0.5, md: 0.7 },
+            '& svg': {
+              fontSize: { xs: '16px', sm: '18px', md: '20px', lg: '22px' },
+              color: ((item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path)) ? 'inherit' : item.color,
+              transition: 'color 0.2s ease',
+              filter: ((item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path)) ? 'none' : `drop-shadow(0 0 4px ${item.color}40)`
+            }
           },
           '&:hover .MuiButton-startIcon svg': {
-            color: '#FFFFFF !important',
-            filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.5))'
+            color: '#FFFFFF !important'
           }
         }}
       >
-        {item.title}
+        {item.isMore ? (
+          <Box sx={{ 
+            display: { xs: 'none', sm: 'block', md: 'block' },
+            fontSize: { sm: '0.75rem', md: '0.85rem', lg: '0.95rem' },
+            fontWeight: 600
+          }}>
+            {item.title}
+          </Box>
+        ) : item.title}
       </Button>
     </Tooltip>
   </motion.div>
@@ -1155,31 +1146,41 @@ const getUserDisplayName = () => {
           }
         }}
       >
-        <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 2, md: 3 }, position: 'relative', zIndex: 1 
- }}>
+        <Toolbar sx={{ 
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          px: { xs: 0.3, md: 0.8 }, 
+          minHeight: '64px !important',
+          width: '100%'
+        }}>
           {/* כפתור משתמש - מימין */}
-          {renderUserButton()}
+          <Box sx={{ flexShrink: 0, minWidth: { xs: '70px', sm: '80px', md: '90px' }, display: 'flex', justifyContent: 'flex-end' }}>
+            {renderUserButton()}
+          </Box>
 
           {/* תפריט ניווט - במרכז */}
           {!isMobile && (
             <Box sx={{
               display: 'flex',
               alignItems: 'center',
-              gap: 0,
-              flexWrap: 'nowrap',
-              overflowX: 'auto',
-              width: '100%',
+              justifyContent: 'space-evenly',
+              flex: 1,
+              gap: { xs: 0.2, sm: 0.4, md: 0.6 },
+              px: { xs: 0.5, sm: 1, md: 1.5 },
               minHeight: 64,
-              '::-webkit-scrollbar': { height: 0 },
+              width: '100%',
+              maxWidth: 'none',
+              overflow: 'hidden',
             }}>
-              {navigationItems.map((item) => (
-                <NavButton key={item.title} item={item} />
+              {navigationItems.map((item, index) => (
+                <NavButton key={item.title} item={item} index={index} />
               ))}
             </Box>
           )}
 
           {/* לוגו ושם המערכת - משמאל */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3, flexShrink: 0, minWidth: { xs: '70px', sm: '80px', md: '90px' } }}>
             <motion.div
               whileHover={{ rotate: 360 }}
               transition={{ duration: 0.6 }}
@@ -1188,29 +1189,31 @@ const getUserDisplayName = () => {
             </motion.div>
             
             <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-              <Box sx={{ minWidth: 138, maxWidth: 260 }}>
+              <Box sx={{ maxWidth: { sm: '120px', md: '150px', lg: '180px' } }}>
                 <Typography variant="h6" sx={{ 
                   fontWeight: 'bold',
-                  fontSize: '1.1rem',
+                  fontSize: { sm: '0.9rem', md: '1rem', lg: '1.1rem' },
                   color: 'white',
                   textShadow: '0 2px 10px rgba(0,0,0,0.3)',
                   background: 'linear-gradient(45deg, #ffffff 0%, rgba(255,255,255,0.8) 100%)',
                   backgroundClip: 'text',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  maxWidth: 250,
-                  whiteSpace: 'normal'
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
                 }}>
                   מערכת ניהול חוגים
                 </Typography>
                 <Typography variant="caption" sx={{ 
                   opacity: 0.9,
-                  fontSize: '0.75rem',
+                  fontSize: { sm: '0.7rem', md: '0.75rem' },
                   color: 'white',
                   display: 'block',
                   textAlign: 'center',
-                  maxWidth: 250,
-                  whiteSpace: 'normal'
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
                 }}>
                   ניהול חכם ויעיל
                 </Typography>
@@ -1219,14 +1222,14 @@ const getUserDisplayName = () => {
 
              <Avatar sx={{
                 background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 100%)',
-                border: '3px solid rgba(255,255,255,0.4)',
+                border: '2px solid rgba(255,255,255,0.4)',
                 backdropFilter: 'blur(20px)',
                 boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
-                width: 50,
-                height: 50,
+                width: { xs: 40, sm: 45, md: 50 },
+                height: { xs: 40, sm: 45, md: 50 },
                 cursor: 'pointer'
               }}>
-                <School sx={{ fontSize: 28, color: 'white' }} />
+                <School sx={{ fontSize: { xs: 22, sm: 25, md: 28 }, color: 'white' }} />
               </Avatar>
           </Box>
 

@@ -7,6 +7,7 @@ import {
 } from './studentHealthFundApi';
 import { fetchUnreportedDates } from './fetchUnreportedDates';
 import { fetchReportedDates } from './fetchReportedDates';
+import { reportUnreportedDate } from './reportUnreportedDate';
 
 // Initial state
 const initialState = {
@@ -77,6 +78,23 @@ const studentHealthFundSlice = createSlice({
       .addCase(fetchReportedDates.rejected, (state, action) => {
         state.reportedDatesLoading = false;
         state.reportedDatesError = action.error.message;
+      })
+      .addCase(reportUnreportedDate.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(reportUnreportedDate.fulfilled, (state, action) => {
+        state.loading = false;
+        // עדכן את הרשימות - הסר תאריך מלא דווחו והוסף לדווחו
+        const { date } = action.payload;
+        state.unreportedDates = state.unreportedDates.filter(d => d !== date);
+        if (!state.reportedDates.includes(date)) {
+          state.reportedDates.push(date);
+        }
+      })
+      .addCase(reportUnreportedDate.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || action.error.message;
       });
   },
 });

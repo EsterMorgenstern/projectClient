@@ -42,7 +42,10 @@ const AddStudentDialog = ({
   submitButtonText = "הוסף תלמיד",
   showSuccessMessage = true,
   keepOpenAfterSubmit = false,
-  selectedGroup = null // הוספת prop חדש
+  selectedGroup = null, // הוספת prop חדש
+  lessonInfo = null, // מידע על שיעורים מחושב מראש
+  groupStatus = true, // סטטוס בקבוצה (פעיל/לא פעיל)
+  onGroupStatusChange = null // פונקציה לשינוי סטטוס קבוצה
 }) => {
   // Debug: show selectedGroup prop
   console.log('AddStudentDialog selectedGroup:', selectedGroup);
@@ -78,6 +81,7 @@ const AddStudentDialog = ({
   const [savedStudentData, setSavedStudentData] = useState(null);
 
   const [enrollDate, setEnrollDate] = useState('');
+  const [localGroupStatus, setLocalGroupStatus] = useState(groupStatus);
   // הסרנו שדות תאריך סיום ויום שיעור - הכל מחושב מנתוני הקבוצה
 
   // מצב הצ'קליסט למעקב אחר משימות הרישום
@@ -187,6 +191,7 @@ const AddStudentDialog = ({
     });
     setStudentNote('');
     setSavedStudentData(null);
+    setLocalGroupStatus(groupStatus);
     
     // איפוס הצ'קליסט
     setRegistrationChecklist({
@@ -496,7 +501,7 @@ const AddStudentDialog = ({
     
     if (onSuccess) {
       console.log('📤 Sending student data to callback:', studentData);
-        onSuccess({ ...studentData, enrollDate }, 'התלמיד נוסף בהצלחה!', 'success');
+        onSuccess({ ...studentData, enrollDate, groupStatus: localGroupStatus }, 'התלמיד נוסף בהצלחה!', 'success');
 
     }
   };
@@ -540,73 +545,25 @@ React.useEffect(() => {
   }
 }, [open, enrollDate]);
 
-  // חישוב שיעורים לתלמיד לפי נתוני הקבוצה בלבד
-const numOfLessons = selectedGroup?.numOfLessons || 0;
-const groupStartDate = selectedGroup?.startDate || '';
-// המרת יום השבוע ממחרוזת למספר
-const dayOfWeekMap = {
-  'ראשון': 0,
-  'שני': 1,
-  'שלישי': 2,
-  'רביעי': 3,
-  'חמישי': 4,
-  'שישי': 5,
-  'שבת': 6
-};
-function calculateStudentLessons(groupStartDate, enrollDate, lessonDayOfWeek, numOfLessons) {
-  if (!groupStartDate || !enrollDate || lessonDayOfWeek === undefined || !numOfLessons) return 0;
-  let start = new Date(groupStartDate);
-  let enroll = new Date(enrollDate);
-  let lessons = [];
-  let count = 0;
-  // מצא את השיעור הראשון ביום השבוע הנכון
-  while (start.getDay() !== lessonDayOfWeek) {
-    start.setDate(start.getDate() + 1);
-  }
-  // עבור כל שיעור, בדוק אם הוא אחרי תאריך ההרשמה
-  while (count < numOfLessons) {
-    if (start >= enroll) {
-      lessons.push(new Date(start));
-    }
-    start.setDate(start.getDate() + 7);
-    count++;
-  }
-  return lessons.length;
-}
-let lessonDayOfWeek = selectedGroup?.dayOfWeek;
-if (typeof lessonDayOfWeek === 'string') {
-  lessonDayOfWeek = dayOfWeekMap[lessonDayOfWeek];
-}
-const lessonsForStudent = (groupStartDate && enrollDate && lessonDayOfWeek !== undefined && numOfLessons)
-  ? getStudentLessonDates(groupStartDate, enrollDate, lessonDayOfWeek, numOfLessons)
-  : [];
-  const lessonsForStudentCount = (groupStartDate && enrollDate && lessonDayOfWeek !== undefined && numOfLessons)
-  ? calculateStudentLessons(groupStartDate, enrollDate, lessonDayOfWeek, numOfLessons)
-  : 0;
+  // עדכון הסטטוס המקומי כאשר ה-props משתנה
+  React.useEffect(() => {
+    setLocalGroupStatus(groupStatus);
+  }, [groupStatus]);
 
-// הצגת מידע החישוב בקונסול כאשר הדיאלוג נפתח ויש ערכים תקינים
+  // חישוב שיעורים פשוט - קבל מה-lessonInfo prop או חשב פשוט
+  const lessonsForStudentCount = lessonInfo?.studentLessons || 
+    Math.max((selectedGroup?.numOfLessons || 0) - (selectedGroup?.lessonsCompleted || 0), 0);
+
+// הצגת מידע החישוב בקונסול כאשר הדיאלוג נפתח
 useEffect(() => {
-  // Debug: show all values
-  console.log('Lesson calculation debug:', {
-    open,
-    enrollDate,
-    groupStartDate,
-    lessonDayOfWeek,
-    numOfLessons,
-    lessonsForStudent
-  });
-  if (
-    open &&
-    enrollDate && enrollDate !== '' &&
-    groupStartDate && groupStartDate !== '' &&
-    lessonDayOfWeek !== undefined &&
-    numOfLessons > 0
-  ) {
-    const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
-    const details = `חישוב מספר שיעורים:\nתאריך התחלה קבוצה: ${groupStartDate}\nתאריך הרשמת תלמיד: ${enrollDate}\nיום שיעור: ${dayNames[lessonDayOfWeek]}\nמספר שיעורים בקבוצה: ${numOfLessons}\n\nמספר שיעורים לתלמיד: ${lessonsForStudentCount}`;
-    console.log(details);
+  if (open && lessonInfo) {
+    console.log('Lesson calculation debug:', {
+      totalLessons: lessonInfo.totalLessons,
+      completedLessons: lessonInfo.completedLessons,
+      studentLessons: lessonInfo.studentLessons
+    });
   }
-}, [open, enrollDate, groupStartDate, lessonDayOfWeek, numOfLessons, lessonsForStudent]);
+}, [open, lessonInfo]);
 
   return (
     <Dialog
@@ -812,12 +769,77 @@ useEffect(() => {
   helperText={!enrollDate ? 'שדה חובה: יש לבחור תאריך התחלה' : 'יש לבחור תאריך התחלה לתלמיד'}
 />
           {/* שדות תאריך סיום ויום שיעור הוסרו - הכל מחושב מנתוני הקבוצה */}
-  <Box sx={{ mt: 2, bgcolor: '#ECFDF5', p: 2, borderRadius: 2 }}>
+  <Box sx={{ mt: 2, bgcolor: '#ECFDF5', py: 1, px: 2, borderRadius: 2 }}>
                   <Typography variant="body2" sx={{ color: '#10b981', fontWeight: 'bold' }}>
                     מספר שיעורים לתלמיד: {lessonsForStudentCount}
                   </Typography>
                   {/* לא להציג תאריכים ראשונים */}
                 </Box>
+
+          {/* בחירת סטטוס קבוצה - רק אם יש קבוצה נבחרת */}
+          {selectedGroup && (
+            <Grid item xs={12}>
+              <Box sx={{ mt: 2, mb: 2, p: 2, bgcolor: '#F8FAFC', borderRadius: 2, border: '1px solid #E2E8F0' }}>
+                <Typography variant="subtitle2" sx={{ mb: 2, color: '#374151', fontWeight: 'bold', textAlign: 'center' }}>
+                  סטטוס בקבוצה "{selectedGroup.groupName}":
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+                  <Button
+                    variant={localGroupStatus === true ? 'contained' : 'outlined'}
+                    onClick={() => {
+                      setLocalGroupStatus(true);
+                      if (onGroupStatusChange) onGroupStatusChange(true);
+                    }}
+                    sx={{
+                      borderRadius: '12px',
+                      px: 3,
+                      py: 1,
+                      fontWeight: 'bold',
+                      bgcolor: localGroupStatus === true ? '#10B981' : 'transparent',
+                      borderColor: '#10B981',
+                      color: localGroupStatus === true ? 'white' : '#10B981',
+                      '&:hover': {
+                        bgcolor: localGroupStatus === true ? '#059669' : 'rgba(16, 185, 129, 0.1)',
+                        borderColor: '#10B981'
+                      }
+                    }}
+                  >
+                    ✅ פעיל
+                  </Button>
+                  <Button
+                    variant={localGroupStatus === false ? 'contained' : 'outlined'}
+                    onClick={() => {
+                      setLocalGroupStatus(false);
+                      if (onGroupStatusChange) onGroupStatusChange(false);
+                    }}
+                    sx={{
+                      borderRadius: '12px',
+                      px: 3,
+                      py: 1,
+                      fontWeight: 'bold',
+                      bgcolor: localGroupStatus === false ? '#EF4444' : 'transparent',
+                      borderColor: '#EF4444',
+                      color: localGroupStatus === false ? 'white' : '#EF4444',
+                      '&:hover': {
+                        bgcolor: localGroupStatus === false ? '#DC2626' : 'rgba(239, 68, 68, 0.1)',
+                        borderColor: '#EF4444'
+                      }
+                    }}
+                  >
+                    ❌ לא פעיל
+                  </Button>
+                </Box>
+                <Typography variant="caption" sx={{ 
+                  display: 'block', 
+                  textAlign: 'center', 
+                  mt: 1, 
+                  color: '#6B7280' 
+                }}>
+                  {localGroupStatus ? 'התלמיד יהיה פעיל בקבוצה ותירשם נוכחות' : 'התלמיד יהיה רשום אך לא פעיל בקבוצה'}
+                </Typography>
+              </Box>
+            </Grid>
+          )}
 
           <Divider sx={{ width: '100%', my: 2 }} />
           
@@ -1074,7 +1096,7 @@ useEffect(() => {
             <Typography variant="body2" sx={{ color: '#374151', mt: 1 }}>
               ביום: {selectedGroup?.dayOfWeek}
               <br />
-              תאריך התחלה של הקבוצה: {groupStartDate ? new Date(groupStartDate).toLocaleDateString('he-IL') : ''}
+              תאריך התחלה של הקבוצה: {selectedGroup?.startDate ? new Date(selectedGroup.startDate).toLocaleDateString('he-IL') : ''}
             </Typography>
           )}
         </Grid>
