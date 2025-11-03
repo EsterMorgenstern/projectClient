@@ -5,6 +5,7 @@ import { deleteStudentNote } from './studentNoteDeleteThunk';
 import { updateStudentNote } from './studentNoteUpdateThunk';
 import { getNotesByUserId } from './studentNotesGetByUserId';
 import { getStudentNotesByRegistrationTracking } from './studentNotesGetByRegistrationTracking';
+import { getPaymentNotes } from './getPaymentNotes';
 
 const studentNotesSlice = createSlice({
   name: 'studentNotes',
@@ -12,8 +13,10 @@ const studentNotesSlice = createSlice({
     studentNotes: [],
     notesByUser:[],
     registrationTrackingNotes: [],
+    paymentNotes: [],
     allNotes: [],
     loading: false,
+    paymentNotesLoading: false,
     error: null,
     selectedNote: null,
   },
@@ -72,6 +75,20 @@ const studentNotesSlice = createSlice({
         state.loading = false;
         state.error = action.payload || 'Failed to fetch registration tracking notes';
       })
+
+      // Get payment notes
+      .addCase(getPaymentNotes.pending, (state) => {
+        state.paymentNotesLoading = true;
+        state.error = null;
+      })
+      .addCase(getPaymentNotes.fulfilled, (state, action) => {
+        state.paymentNotesLoading = false;
+        state.paymentNotes = action.payload;
+      })
+      .addCase(getPaymentNotes.rejected, (state, action) => {
+        state.paymentNotesLoading = false;
+        state.error = action.payload || 'Failed to fetch payment notes';
+      })
       
       // Add student note
         .addCase(addStudentNote.pending, (state) => {
@@ -126,7 +143,9 @@ export const { clearNotes, setSelectedNote, clearError } = studentNotesSlice.act
 export const selectStudentNotes = (state) => state.studentNotes.studentNotes;
 export const selectNotesByUser = (state) => state.studentNotes.notesByUser;
 export const selectRegistrationTrackingNotes = (state) => state.studentNotes.registrationTrackingNotes;
+export const selectPaymentNotes = (state) => state.studentNotes.paymentNotes;
 export const selectStudentNotesLoading = (state) => state.studentNotes.loading;
+export const selectPaymentNotesLoading = (state) => state.studentNotes.paymentNotesLoading;
 export const selectStudentNotesError = (state) => state.studentNotes.error;
 export const selectSelectedNote = (state) => state.studentNotes.selectedNote;
 

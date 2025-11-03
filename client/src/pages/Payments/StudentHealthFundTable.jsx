@@ -22,6 +22,8 @@ import { addStudentNote } from '../../store/studentNotes/studentNoteAddThunk';
 import { deleteStudentNote } from '../../store/studentNotes/studentNoteDeleteThunk';
 import { checkUserPermission } from '../../utils/permissions';
 import { fetchHealthFunds } from '../../store/healthFund/fetchHealthFunds';
+import { getPaymentNotes, extractStudentIdsByAutomaticBillingNotes } from '../../store/studentNotes/getPaymentNotes';
+import { selectPaymentNotes, selectPaymentNotesLoading } from '../../store/studentNotes/studentNoteSlice';
 
 // Styled table container inspired by instructorsTable and Home
 
@@ -92,7 +94,8 @@ const StudentHealthFundTable = () => {
     minTreatments: '',
     maxTreatments: '',
     city: '',
-    hasNotes: 'all' // 'all', 'yes', 'no' - הוספת מסנן הערות
+    hasNotes: 'all', // 'all', 'yes', 'no' - הוספת מסנן הערות
+    billingNotesFilter: [] // רשימה של סוגי הערות גביה אוטומטיות
   });
 
   // State למיון
@@ -240,6 +243,10 @@ const StudentHealthFundTable = () => {
   const error = studentHealthFundState.error;
   // קופות החולים מהסטייט
   const healthFundList = useSelector(state => (state.healthFunds && state.healthFunds.items) ? state.healthFunds.items : []);
+  
+  // הערות גביה מהסטייט
+  const paymentNotes = useSelector(selectPaymentNotes);
+  const paymentNotesLoading = useSelector(selectPaymentNotesLoading);
 
   // פילטור הנתונים לפי החיפוש והמסננים המתקדמים
   const filteredHealthFunds = useMemo(() => {
@@ -378,6 +385,56 @@ const StudentHealthFundTable = () => {
       });
     }
 
+    // סינון לפי הערות גביה אוטומטיות
+    if (advancedFilters.billingNotesFilter && advancedFilters.billingNotesFilter.length > 0) {
+
+      
+      // וודא שהנתונים זמינים לפני שנקרא לפונקציה
+      if (!Array.isArray(paymentNotes)) {
+        console.log('🔍 Payment notes not available, ignoring billing filter');
+        // אם אין נתונים כלל, נתעלם מהפילטר ונמשיך עם התוצאות הקיימות
+      } else if (paymentNotesLoading) {
+        console.log('🔍 Payment notes still loading, ignoring billing filter for now');
+        // אם הנתונים עדיין נטענים, נתעלם מהפילטר זמנית
+      } else {
+        const filteredStudentIds = extractStudentIdsByAutomaticBillingNotes(paymentNotes, advancedFilters.billingNotesFilter);
+      
+
+      
+      if (filteredStudentIds.length > 0) {
+
+        // בדיקת התאמה בין תלמידים עם הערות גביה לתלמידים בטבלת קופות החולים
+        const tableStudentIds = filtered.map(row => row.studentId);
+        const foundInTable = filteredStudentIds.filter(id => tableStudentIds.includes(id));
+        const missingFromTable = filteredStudentIds.filter(id => !tableStudentIds.includes(id));
+        
+        filtered = filtered.filter(row => {
+          // נבדוק התאמה גם כמספר וגם כמחרוزת
+          const rowStudentId = row.studentId;
+          const match = filteredStudentIds.some(filteredId => 
+            filteredId == rowStudentId || // רק השוואה רגילה (לא חדה)
+            String(filteredId) === String(rowStudentId)
+          );
+          
+          return match;
+        });
+        
+        // הצגת הודעת מידע למשתמש אם יש תלמידים עם הערות גביה שלא קיימים בטבלת קופות החולים
+        if (missingFromTable.length > 0) {
+          setSnackbar({
+            open: true,
+            message: `נמצאו ${filteredStudentIds.length} תלמידים עם הערות גביה, אך רק ${foundInTable.length} מהם רשומים בטבלת קופות החולים`,
+            severity: 'info'
+          });
+        }
+        } else {
+          // אם לא נמצאו תלמידים עם הערות הגביה הנבחרות, מציגים רשימה ריקה
+
+          filtered = [];
+        }
+      }
+    }
+
     // מיון התוצאות
     if (sortConfig.key) {
       filtered.sort((a, b) => {
@@ -421,7 +478,7 @@ const StudentHealthFundTable = () => {
     }
 
     return filtered;
-  }, [healthFunds, searchTerm, advancedFilters, healthFundList, sortConfig]);
+  }, [healthFunds, searchTerm, advancedFilters, healthFundList, sortConfig, paymentNotes]);
 
   // פונקציה לניקוי החיפוש
   const handleClearSearch = () => {
@@ -438,7 +495,8 @@ const StudentHealthFundTable = () => {
       minTreatments: '',
       maxTreatments: '',
       city: '',
-      hasNotes: 'all' // הוספת איפוס מסנן הערות
+      hasNotes: 'all', // הוספת איפוס מסנן הערות
+      billingNotesFilter: []
     });
     setPage(0);
   };
@@ -460,9 +518,12 @@ const StudentHealthFundTable = () => {
   };
 
   // בדיקה אם יש מסננים מתקדמים פעילים
-  const hasActiveAdvancedFilters = Object.values(advancedFilters).some(value => 
-    value && value !== 'all'
-  );
+  const hasActiveAdvancedFilters = Object.entries(advancedFilters).some(([key, value]) => {
+    if (key === 'billingNotesFilter') {
+      return Array.isArray(value) && value.length > 0;
+    }
+    return value && value !== 'all';
+  });
 
   // פונקציות pagination
   const handleChangePage = (event, newPage) => {
@@ -682,6 +743,8 @@ const StudentHealthFundTable = () => {
     dispatch(fetchStudentHealthFunds());
     // טען גם את רשימת קופות החולים עבור הדיאלוג
     dispatch(fetchHealthFunds());
+    // טען את הערות הגביה עבור הפילטרים
+    dispatch(getPaymentNotes());
   }, [dispatch]);
 
   // איפוס עמוד כאשר החיפוש משתנה
@@ -1472,6 +1535,125 @@ const StudentHealthFundTable = () => {
             </TextField>
           </Grid>
 
+          {/* פילטר הערות גביה אוטומטיות */}
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth>
+              <InputLabel>הערות גביה אוטומטיות</InputLabel>
+              <Select
+                multiple
+                value={advancedFilters.billingNotesFilter}
+                onChange={(e) => handleAdvancedFilterChange('billingNotesFilter', e.target.value)}
+                label="הערות גביה אוטומטיות"
+                renderValue={(selected) => 
+                  selected.length === 0 ? 'בחר הערות גביה...' : `${selected.length} הערות נבחרו`
+                }
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    direction: 'rtl',
+                    minHeight: '56px'
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.9rem',
+                    fontWeight: '500',
+                    left: '14px',
+                    right: 'auto',
+                    transformOrigin: 'top left'
+                  },
+                  '& .MuiInputLabel-shrink': {
+                    transform: 'translate(-6px, -9px) scale(0.75)'
+                  }
+                }}
+                MenuProps={{
+                  PaperProps: {
+                    sx: {
+                      maxHeight: 300,
+                      '& .MuiMenuItem-root': {
+                        whiteSpace: 'normal',
+                        wordBreak: 'break-word',
+                        padding: '8px 16px',
+                        lineHeight: '1.3'
+                      }
+                    }
+                  }
+                }}
+              >
+                <MenuItem value="noReferralSent">
+                  <Checkbox 
+                    checked={advancedFilters.billingNotesFilter.indexOf('noReferralSent') > -1} 
+                    size="small"
+                  />
+                  <ListItemText 
+                    primary="🚫 לא שלחו הפניה" 
+                    secondary="עדיין לא נשלחה הפניה לקופת החולים"
+                  />
+                </MenuItem>
+                <MenuItem value="noEligibility">
+                  <Checkbox 
+                    checked={advancedFilters.billingNotesFilter.indexOf('noEligibility') > -1} 
+                    size="small"
+                  />
+                  <ListItemText 
+                    primary="❌ אין זכאות לטיפולים" 
+                    secondary="התלמיד אינו זכאי לטיפולים דרך קופת החולים"
+                  />
+                </MenuItem>
+                <MenuItem value="insufficientTreatments">
+                  <Checkbox 
+                    checked={advancedFilters.billingNotesFilter.indexOf('insufficientTreatments') > -1} 
+                    size="small"
+                  />
+                  <ListItemText 
+                    primary="📊 מס' הטיפולים בהתחייבות לא מספיק" 
+                    secondary="יש לשלוח התחייבות חדשה עם מספר טיפולים נוסף"
+                  />
+                </MenuItem>
+                <MenuItem value="treatmentsFinished">
+                  <Checkbox 
+                    checked={advancedFilters.billingNotesFilter.indexOf('treatmentsFinished') > -1} 
+                    size="small"
+                  />
+                  <ListItemText 
+                    primary="🔚 נגמרו הטיפולים" 
+                    secondary="התלמיד סיים את כל הטיפולים הזמינים לו"
+                  />
+                </MenuItem>
+                <MenuItem value="authorizationCancelled">
+                  <Checkbox 
+                    checked={advancedFilters.billingNotesFilter.indexOf('authorizationCancelled') > -1} 
+                    size="small"
+                  />
+                  <ListItemText 
+                    primary="🚨 הו״ק בוטלה" 
+                    secondary="ההרשאה/אישור מקופת החולים בוטל"
+                  />
+                </MenuItem>
+              </Select>
+            </FormControl>
+            {paymentNotesLoading && (
+              <Box sx={{ display: 'flex', alignItems: 'center', mt: 1, gap: 1 }}>
+                <CircularProgress size={16} />
+                <Typography variant="caption" color="text.secondary">
+                  טוען הערות גביה...
+                </Typography>
+              </Box>
+            )}
+            {advancedFilters.billingNotesFilter && advancedFilters.billingNotesFilter.length > 0 && paymentNotesLoading && (
+              <Typography variant="caption" color="warning.main" sx={{ mt: 1, display: 'block' }}>
+                ⏳ הפילטר יופעל לאחר טעינת הערות הגביה...
+              </Typography>
+            )}
+            {!paymentNotesLoading && paymentNotes && paymentNotes.length > 0 && (
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                נמצאו {paymentNotes.length} הערות גביה במערכת
+              </Typography>
+            )}
+            {!paymentNotesLoading && (!paymentNotes || paymentNotes.length === 0) && (
+              <Typography variant="caption" color="warning.main" sx={{ mt: 1, display: 'block' }}>
+                ⚠️ אין הערות גביה במערכת - הפילטר לא יפעל
+              </Typography>
+            )}
+          </Grid>
+
           <Grid item xs={6} sm={4} md={3}>
             <TextField
               select
@@ -1685,13 +1867,27 @@ const StudentHealthFundTable = () => {
         
         {/* הצגת מסננים פעילים */}
         {hasActiveAdvancedFilters && (
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <Box sx={{ 
+            display: 'flex', 
+            gap: 1, 
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            mb: 1
+          }}>
             {advancedFilters.healthFundId && (
               <Chip 
                 label={`קופה: ${healthFundList.find(f => String(f.healthFundId) === String(advancedFilters.healthFundId))?.name || advancedFilters.healthFundId}`}
                 size="small"
                 color="secondary"
                 onDelete={() => handleAdvancedFilterChange('healthFundId', '')}
+                sx={{
+                  maxWidth: '200px',
+                  '& .MuiChip-label': {
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }
+                }}
               />
             )}
             {advancedFilters.city && (
@@ -1700,6 +1896,14 @@ const StudentHealthFundTable = () => {
                 size="small"
                 color="secondary"
                 onDelete={() => handleAdvancedFilterChange('city', '')}
+                sx={{
+                  maxWidth: '150px',
+                  '& .MuiChip-label': {
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }
+                }}
               />
             )}
             {advancedFilters.hasReferralFile !== 'all' && (
@@ -1742,6 +1946,40 @@ const StudentHealthFundTable = () => {
                 onDelete={() => handleAdvancedFilterChange('hasNotes', 'all')}
               />
             )}
+            {advancedFilters.billingNotesFilter && advancedFilters.billingNotesFilter.length > 0 && (
+              <Chip 
+                label={`הערות גביה: ${advancedFilters.billingNotesFilter.length} נבחרו`}
+                size="small"
+                color="warning"
+                onDelete={() => handleAdvancedFilterChange('billingNotesFilter', [])}
+                sx={{
+                  maxWidth: '200px',
+                  '& .MuiChip-label': {
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    maxWidth: '160px'
+                  }
+                }}
+              />
+            )}
+            {advancedFilters.billingNotesFilter && advancedFilters.billingNotesFilter.length > 0 && Array.isArray(paymentNotes) && !paymentNotesLoading && (
+              <Chip 
+                label={`מסנן לפי ${extractStudentIdsByAutomaticBillingNotes(paymentNotes, advancedFilters.billingNotesFilter).length} תלמידים`}
+                size="small"
+                color="info"
+                variant="outlined"
+                sx={{
+                  maxWidth: '180px',
+                  '& .MuiChip-label': {
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    maxWidth: '140px'
+                  }
+                }}
+              />
+            )}
           </Box>
         )}
         
@@ -1767,6 +2005,15 @@ const StudentHealthFundTable = () => {
             size="small"
             color="info"
             onDelete={() => setSortConfig({ key: null, direction: 'asc' })}
+            sx={{
+              maxWidth: '250px',
+              '& .MuiChip-label': {
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                maxWidth: '200px'
+              }
+            }}
           />
         )}
       </Box>
@@ -2168,6 +2415,8 @@ const StudentHealthFundTable = () => {
         onClose={handleCloseFundDialog}
         maxWidth="sm"
         fullWidth
+        disableEnforceFocus={false}
+        disableAutoFocus={false}
         PaperProps={{
           sx: {
             borderRadius: '16px',
@@ -2306,6 +2555,8 @@ const StudentHealthFundTable = () => {
         onClose={handleCloseEditDialog}
         maxWidth="sm"
         fullWidth
+        disableEnforceFocus={false}
+        disableAutoFocus={false}
         PaperProps={{ sx: { borderRadius: '16px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', direction: 'rtl' } }}
       >
         <DialogTitle sx={{ bgcolor: '#2563EB', color: 'white', fontWeight: 'bold', borderRadius: '16px 16px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', direction: 'rtl' }}>
@@ -2381,6 +2632,8 @@ const StudentHealthFundTable = () => {
         onClose={handleCloseDeleteDialog}
         maxWidth="xs"
         fullWidth
+        disableEnforceFocus={false}
+        disableAutoFocus={false}
         PaperProps={{
           sx: {
             borderRadius: '16px',
@@ -2433,6 +2686,8 @@ const StudentHealthFundTable = () => {
         onClose={handleCloseAddDialog}
         maxWidth="sm"
         fullWidth
+        disableEnforceFocus={false}
+        disableAutoFocus={false}
         PaperComponent={DraggablePaper}
         PaperProps={{ sx: { borderRadius: '16px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', direction: 'rtl' } }}
       >
@@ -2701,6 +2956,8 @@ const StudentHealthFundTable = () => {
         onClose={handleCloseUnreportedDatesDialog}
         maxWidth="sm"
         fullWidth
+        disableEnforceFocus={false}
+        disableAutoFocus={false}
         PaperProps={{
           sx: {
             borderRadius: '16px',
@@ -2937,6 +3194,8 @@ const StudentHealthFundTable = () => {
         onClose={handleCloseReportedDatesDialog}
         maxWidth="sm"
         fullWidth
+        disableEnforceFocus={false}
+        disableAutoFocus={false}
         PaperProps={{
           sx: {
             borderRadius: '16px',

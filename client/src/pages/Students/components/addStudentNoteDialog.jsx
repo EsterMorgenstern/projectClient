@@ -146,6 +146,35 @@ const AddStudentNoteDialog = ({
       '📋 הוסבר על התחייבות/הפניה'
     ];
 
+    // הערות גביה אוטומטיות
+    const billingNoteOptions = [
+      {
+        key: 'noReferralSent',
+        label: '🚫 לא שלחו הפניה',
+        description: 'עדיין לא נשלחה הפניה לקופת החולים'
+      },
+      {
+        key: 'noEligibility', 
+        label: '❌ אין זכאות לטיפולים',
+        description: 'התלמיד אינו זכאי לטיפולים דרך קופת החולים'
+      },
+      {
+        key: 'insufficientTreatments',
+        label: '📊 מס\' הטיפולים בהתחייבות לא מספיק',
+        description: 'יש לשלוח התחייבות חדשה עם מספר טיפולים נוסף'
+      },
+      {
+        key: 'treatmentsFinished',
+        label: '🔚 נגמרו הטיפולים',
+        description: 'התלמיד סיים את כל הטיפולים הזמינים לו'
+      },
+      {
+        key: 'authorizationCancelled',
+        label: '🚨 הו"ק בוטלה',
+        description: 'ההרשאה/אישור מקופת החולים בוטל'
+      }
+    ];
+
     // בדוק אם יש כבר הערת "מעקב רישום" לתלמיד
     const hasRegistrationTrackingNote = useMemo(() => {
       if (!studentNotes || !Array.isArray(studentNotes)) return false;
@@ -160,11 +189,38 @@ const AddStudentNoteDialog = ({
       }, {})
     );
 
+    // ערכי ברירת מחדל לבחירת הערות גביה
+    const [billingNoteSelection, setBillingNoteSelection] = useState(
+      billingNoteOptions.reduce((acc, option) => {
+        acc[option.key] = false;
+        return acc;
+      }, {})
+    );
+
+    // הערות נוספות להערות גביה
+    const [billingAdditionalNotes, setBillingAdditionalNotes] = useState({});
+
     // עדכן סטטוס משימה
     const handleTaskToggle = (task) => {
       setRegistrationTaskStatus(prev => ({
         ...prev,
         [task]: !prev[task]
+      }));
+    };
+
+    // עדכן בחירת הערת גביה
+    const handleBillingNoteToggle = (key) => {
+      setBillingNoteSelection(prev => ({
+        ...prev,
+        [key]: !prev[key]
+      }));
+    };
+
+    // עדכן הערה נוספת להערת גביה
+    const handleBillingAdditionalNoteChange = (key, value) => {
+      setBillingAdditionalNotes(prev => ({
+        ...prev,
+        [key]: value
       }));
     };
 
@@ -184,6 +240,30 @@ const AddStudentNoteDialog = ({
                 setFormData(prev => ({ ...prev, noteContent }));
             }
     }, [formData.noteType, registrationTaskStatus]);
+
+    // עדכן noteContent אוטומטית אם "הערת גביה" נבחרה
+    useEffect(() => {
+        if (formData.noteType === 'הערת גביה') {
+            let noteContent = '';
+            const selectedOptions = [];
+            
+            // עבור על כל האופציות שנבחרו
+            billingNoteOptions.forEach(option => {
+                if (billingNoteSelection[option.key]) {
+                    selectedOptions.push(option);
+                    const additionalNote = billingAdditionalNotes[option.key] || '';
+                    noteContent += `${option.label}${additionalNote ? ` - ${additionalNote}` : ''}\n`;
+                }
+            });
+
+            // אם לא נבחרו אופציות, הראה הודעה או השאר ריק
+            if (selectedOptions.length === 0) {
+                noteContent = ''; // השאר ריק כדי שהמשתמש יוכל להזין ידנית
+            }
+
+            setFormData(prev => ({ ...prev, noteContent }));
+        }
+    }, [formData.noteType, billingNoteSelection, billingAdditionalNotes]);
 
     const noteTypes = [
         { value: 'כללי', label: 'כללי', color: '#3b82f6', icon: InfoIcon },
@@ -370,7 +450,7 @@ const AddStudentNoteDialog = ({
                 <DialogContent sx={{ 
                     p: 2,
                     bgcolor: '#f8fafc',
-                    maxHeight: '60vh',
+                    maxHeight: '50vh',
                     overflowY: 'auto',
                     '&::-webkit-scrollbar': {
                         width: '8px'
@@ -760,11 +840,84 @@ const AddStudentNoteDialog = ({
                             </Card>
                           </Grid>
                         )}
+
+                        {/* אם נבחר "הערת גביה" הצג אופציות הערות גביה */}
+                        {formData.noteType === 'הערת גביה' && (
+                          <Grid item xs={12}>
+                            <Card sx={{ 
+                              borderRadius: '8px', 
+                              border: '1px solid #e2e8f0', 
+                              bgcolor: '#f0fdf4', 
+                              mb: 2, 
+                              maxWidth: '600px', 
+                              margin: '0 auto', 
+                              overflow: 'auto' 
+                            }}>
+                              <CardContent>
+                                <Typography variant="body2" sx={{ mb: 2, fontWeight: 'bold', color: '#059669' }}>
+                                  💰 בחר הערות גביה רלוונטיות
+                                </Typography>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                  {billingNoteOptions.map((option) => (
+                                    <Box key={option.key} sx={{ 
+                                      border: '1px solid #d1d5db',
+                                      borderRadius: '8px',
+                                      p: 1.5,
+                                      bgcolor: billingNoteSelection[option.key] ? '#dcfce7' : 'white'
+                                    }}>
+                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                        <Button
+                                          variant={billingNoteSelection[option.key] ? 'contained' : 'outlined'}
+                                          color={billingNoteSelection[option.key] ? 'success' : 'primary'}
+                                          size="small"
+                                          onClick={() => handleBillingNoteToggle(option.key)}
+                                          sx={{ minWidth: 36, borderRadius: 2, px: 1 }}
+                                        >
+                                          {billingNoteSelection[option.key] ? '✔️' : '➕'}
+                                        </Button>
+                                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                          {option.label}
+                                        </Typography>
+                                      </Box>
+                                      <Typography variant="caption" sx={{ color: '#6b7280', display: 'block', mb: 1 }}>
+                                        {option.description}
+                                      </Typography>
+                                      {billingNoteSelection[option.key] && (
+                                        <TextField
+                                          fullWidth
+                                          size="small"
+                                          placeholder="הערה נוספת (אופציונלי)"
+                                          value={billingAdditionalNotes[option.key] || ''}
+                                          onChange={(e) => handleBillingAdditionalNoteChange(option.key, e.target.value)}
+                                          sx={{
+                                            '& .MuiOutlinedInput-root': {
+                                              borderRadius: '6px',
+                                              bgcolor: 'white'
+                                            }
+                                          }}
+                                        />
+                                      )}
+                                    </Box>
+                                  ))}
+                                </Box>
+                              </CardContent>
+                            </Card>
+                          </Grid>
+                        )}
                     </Grid>
                 </DialogContent>
 
                 {/* Actions */}
-                <DialogActions sx={{ p: 3, gap: 2, flexDirection: 'column' }}>
+                <DialogActions sx={{ 
+                    p: 3, 
+                    gap: 2, 
+                    flexDirection: 'column',
+                    bgcolor: 'white',
+                    borderTop: '1px solid #e2e8f0',
+                    position: 'sticky',
+                    bottom: 0,
+                    zIndex: 1
+                }}>
                     {!currentUser && (
                         <Typography variant="caption" sx={{ 
                             color: '#64748b',
