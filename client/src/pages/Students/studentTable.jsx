@@ -347,7 +347,8 @@ export default function StudentsTable() {
       { key: 'lastName', label: 'שם משפחה' },
       { key: 'phone', label: 'טלפון' },
       { key: 'age', label: 'גיל' },
-      { key: 'city', label: 'עיר' }
+      { key: 'city', label: 'עיר' },
+      { key: 'healthFund', label: 'קופת חולים' }
     ];
     const missing = requiredFields.filter(f => !newStudent[f.key] || newStudent[f.key].toString().trim() === '' || (f.key === 'age' && (newStudent.age === 0 || isNaN(newStudent.age))));
     if (missing.length > 0) {
@@ -960,10 +961,12 @@ export default function StudentsTable() {
             <TextField
               fullWidth
               select
-              label="🏥 קופת חולים"
+              label="🏥 קופת חולים "
               value={newStudent.healthFund}
               onChange={(e) => setnewStudent({ ...newStudent, healthFund: e.target.value })}
               className="dialog-field"
+              required
+             
             >
               {healthFundOptions.map((option) => (
                 <MenuItem key={option.value} value={option.value}>
@@ -1018,7 +1021,12 @@ export default function StudentsTable() {
             <Button onClick={() => setOpen(false)} className="dialog-button secondary">
               ❌ ביטול
             </Button>
-            <Button onClick={handleAdd} className="dialog-button primary">
+            <Button 
+              onClick={handleAdd} 
+              className="dialog-button primary"
+              disabled={!newStudent.id || !newStudent.firstName || !newStudent.lastName || 
+                       !newStudent.phone || !newStudent.age || !newStudent.city || !newStudent.healthFund}
+            >
               ✅ הוסף תלמיד
             </Button>
           </DialogActions>

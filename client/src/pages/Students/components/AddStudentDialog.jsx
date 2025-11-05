@@ -324,7 +324,7 @@ const AddStudentDialog = ({
   };
 
   const validateForm = () => {
-  const required = ['id', 'firstName', 'lastName', 'phone', 'age', 'city'];
+  const required = ['id', 'firstName', 'lastName', 'phone', 'age', 'city', 'healthFund'];
   // דרוש גם תאריך התחלה
   const isStudentFieldsValid = required.every(field => newStudent[field] && newStudent[field].toString().trim() !== '');
   const isEnrollDateValid = enrollDate && enrollDate.trim() !== '';
@@ -725,7 +725,23 @@ useEffect(() => {
               </Select>
             </FormControl>
           </Grid>
-
+ <Grid item xs={12} sm={6}>
+            <FormControl fullWidth variant="outlined" required>
+              <InputLabel>🏥 קופת חולים *</InputLabel>
+              <Select
+                value={newStudent.healthFund}
+                onChange={(e) => handleInputChange('healthFund', e.target.value)}
+                label="🏥 קופת חולים *"
+                required
+                             >
+                {healthFundOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
           <Grid item xs={12} sm={6}>
             <TextField
               label="🏙️ עיר"
@@ -860,22 +876,7 @@ useEffect(() => {
             />
           </Grid>
 
-          <Grid item xs={12} sm={6}>
-            <FormControl fullWidth variant="outlined">
-              <InputLabel>🏥 קופת חולים</InputLabel>
-              <Select
-                value={newStudent.healthFund}
-                onChange={(e) => handleInputChange('healthFund', e.target.value)}
-                label="🏥 קופת חולים"
-              >
-                {healthFundOptions.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
+         
 
           <Grid item xs={12} sm={6}>
             <FormControl fullWidth variant="outlined">

@@ -45,6 +45,7 @@ const StudentCoursesDialog = ({
   onClose,
   student,
   studentCourses = [],
+  loadingCourses = false,
   showAddButton = true,
   title = null,
   subtitle = null,
@@ -76,15 +77,15 @@ const StudentCoursesDialog = ({
   const [deleteCourseConfirmOpen, setDeleteCourseConfirmOpen] = useState(false);
   const [courseToDelete, setCourseToDelete] = useState(null);
   const [deletingCourse, setDeletingCourse] = useState(false);
-const [groupDialogOpen, setGroupDialogOpen] = useState(false);
-const [selectedGroupId, setSelectedGroupId] = useState(null);
+  const [groupDialogOpen, setGroupDialogOpen] = useState(false);
+  const [selectedGroupId, setSelectedGroupId] = useState(null);
 
   // כל ה-useSelector hooks
   const studentNotes = useSelector((state) => state.studentNotes.studentNotes);
   const notesLoading = useSelector((state) => state.studentNotes.loading);
   const groupStudentById = useSelector((state) => state.groupStudents.groupStudentById);
   const groupStudentLoading = useSelector((state) => state.groupStudents.loading);
-   const groupWithStudents = useSelector((state) => state.groups.groupWithStudents);
+  const groupWithStudents = useSelector((state) => state.groups.groupWithStudents);
 
   // כל ה-useEffect hooks בסוף
   useEffect(() => {
@@ -125,8 +126,8 @@ const [selectedGroupId, setSelectedGroupId] = useState(null);
       return;
     }
     try {
-  if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
-  const result = await dispatch(addStudentNote(noteData));
+      if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+      const result = await dispatch(addStudentNote(noteData));
       if (result.type === 'studentNotes/add/fulfilled') {
         await dispatch(getNotesByStudentId(student.id));
       } else {
@@ -404,35 +405,35 @@ const [selectedGroupId, setSelectedGroupId] = useState(null);
             );
           })}
         </AnimatePresence>
-    <Menu
-  anchorEl={menuAnchor}
-  open={Boolean(menuAnchor)}
-  onClose={handleMenuClose}
-  sx={{ direction: 'rtl' }}
->
-  <MenuItem onClick={() => handleEditNote(studentNotes.find(n => n.noteId === menuNoteId))}>
-    <EditIcon fontSize="small" sx={{ ml: 1 }} />
-    ערוך הערה
-  </MenuItem>
-  <MenuItem
-    onClick={() => handleDeleteConfirm(studentNotes.find(n => n.noteId === menuNoteId))}
-    sx={{
-      color: '#dc2626',
-      '&:hover': {
-        backgroundColor: 'rgba(220, 38, 38, 0.1)'
-      }
-    }}
-  >
-    <DeleteIcon fontSize="small" sx={{ ml: 1 }} />
-    מחק הערה
-  </MenuItem>
-</Menu>
+        <Menu
+          anchorEl={menuAnchor}
+          open={Boolean(menuAnchor)}
+          onClose={handleMenuClose}
+          sx={{ direction: 'rtl' }}
+        >
+          <MenuItem onClick={() => handleEditNote(studentNotes.find(n => n.noteId === menuNoteId))}>
+            <EditIcon fontSize="small" sx={{ ml: 1 }} />
+            ערוך הערה
+          </MenuItem>
+          <MenuItem
+            onClick={() => handleDeleteConfirm(studentNotes.find(n => n.noteId === menuNoteId))}
+            sx={{
+              color: '#dc2626',
+              '&:hover': {
+                backgroundColor: 'rgba(220, 38, 38, 0.1)'
+              }
+            }}
+          >
+            <DeleteIcon fontSize="small" sx={{ ml: 1 }} />
+            מחק הערה
+          </MenuItem>
+        </Menu>
       </Box>
-      
+
     );
   };
 
- return (
+  return (
     <AnimatePresence>
       {open && (
         <Dialog
@@ -659,342 +660,361 @@ const [selectedGroupId, setSelectedGroupId] = useState(null);
                         background: 'white',
                         border: '1px solid rgba(0,0,0,0.08)'
                       }}>
-                        <TableContainer sx={{ maxHeight: '350px' }}>
-                          <Table stickyHeader size="medium">
-                            <TableHead>
-                              <TableRow>
-                                <TableCell
-                                  align="right"
-                                  sx={{
-                                    fontWeight: 'bold',
-                                    fontSize: '1rem',
-                                    background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-                                    py: 2,
-                                    textAlign: 'right',
-                                    direction: 'rtl',
-                                    borderBottom: '2px solid #10b981'
-                                  }}
-                                >
-                                  <Box sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'flex-start',
-                                    gap: 1,
-                                    direction: 'rtl'
-                                  }}>
-                                    <CourseIcon sx={{ color: '#10b981', fontSize: 18 }} />
-                                    <Typography sx={{ fontWeight: 'bold' }}>שם החוג</Typography>
-                                  </Box>
-                                </TableCell>
-                                <TableCell
-                                  align="right"
-                                  sx={{
-                                    fontWeight: 'bold',
-                                    fontSize: '1rem',
-                                    background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-                                    py: 2,
-                                    textAlign: 'right',
-                                    direction: 'rtl',
-                                    borderBottom: '2px solid #10b981'
-                                  }}
-                                >
-                                  <Box sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'flex-start',
-                                    gap: 1,
-                                    direction: 'rtl'
-                                  }}>
-                                    <GroupIcon sx={{ color: '#10b981', fontSize: 18 }} />
-                                    <Typography sx={{ fontWeight: 'bold' }}>קבוצה</Typography>
-                                  </Box>
-                                </TableCell>
-                                <TableCell
-                                  align="right"
-                                  sx={{
-                                    fontWeight: 'bold',
-                                    fontSize: '1rem',
-                                    background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-                                    py: 2,
-                                    textAlign: 'right',
-                                    direction: 'rtl',
-                                    borderBottom: '2px solid #10b981'
-                                  }}
-                                >
-                                  <Box sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'flex-start',
-                                    gap: 1,
-                                    direction: 'rtl'
-                                  }}>
-                                    <LocationIcon sx={{ color: '#10b981', fontSize: 18 }} />
-                                    <Typography sx={{ fontWeight: 'bold' }}>סניף</Typography>
-                                  </Box>
-                                </TableCell>
-                                <TableCell
-                                  align="right"
-                                  sx={{
-                                    fontWeight: 'bold',
-                                    fontSize: '1rem',
-                                    background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-                                    py: 2,
-                                    textAlign: 'right',
-                                    direction: 'rtl',
-                                    borderBottom: '2px solid #10b981'
-                                  }}
-                                >
-                                  <Box sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'flex-start',
-                                    gap: 1,
-                                    direction: 'rtl'
-                                  }}>
-                                    <PersonIcon sx={{ color: '#10b981', fontSize: 18 }} />
-                                    <Typography sx={{ fontWeight: 'bold' }}>מדריך</Typography>
-                                  </Box>
-                                </TableCell>
-                                <TableCell
-                                  align="right"
-                                  sx={{
-                                    fontWeight: 'bold',
-                                    fontSize: '1rem',
-                                    background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-                                    py: 2,
-                                    textAlign: 'right',
-                                    direction: 'rtl',
-                                    borderBottom: '2px solid #10b981'
-                                  }}
-                                >
-                                  <Box sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'flex-start',
-                                    gap: 1,
-                                    direction: 'rtl'
-                                  }}>
-                                    <ScheduleIcon sx={{ color: '#10b981', fontSize: 18 }} />
-                                    <Typography sx={{ fontWeight: 'bold' }}>יום ושעה</Typography>
-                                  </Box>
-                                </TableCell>
-                                <TableCell
-                                  align="right"
-                                  sx={{
-                                    fontWeight: 'bold',
-                                    fontSize: '1rem',
-                                    background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-                                    py: 2,
-                                    textAlign: 'right',
-                                    direction: 'rtl',
-                                    borderBottom: '2px solid #10b981'
-                                  }}
-                                >
-                                  <Box sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'flex-start',
-                                    gap: 1,
-                                    direction: 'rtl'
-                                  }}>
-                                    <CalendarIcon sx={{ color: '#10b981', fontSize: 18 }} />
-                                    <Typography sx={{ fontWeight: 'bold' }}>תאריך התחלה</Typography>
-                                  </Box>
-                                </TableCell>
-                                <TableCell
-                                  align="right"
-                                  sx={{
-                                    fontWeight: 'bold',
-                                    fontSize: '1rem',
-                                    background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-                                    py: 2,
-                                    textAlign: 'right',
-                                    direction: 'rtl',
-                                    borderBottom: '2px solid #10b981'
-                                  }}
-                                >
-                                  <Box sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'flex-start',
-                                    gap: 1,
-                                    direction: 'rtl'
-                                  }}>
-                                    <AssignmentIcon sx={{ color: '#10b981', fontSize: 18 }} />
-                                    <Typography sx={{ fontWeight: 'bold' }}>סטטוס</Typography>
-                                  </Box>
-                                </TableCell>
-                                <TableCell
-                                  align="center"
-                                  sx={{
-                                    fontWeight: 'bold',
-                                    fontSize: '1rem',
-                                    background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-                                    py: 2,
-                                    textAlign: 'center',
-                                    borderBottom: '2px solid #10b981',
-                                    width: '80px'
-                                  }}
-                                >
-                                  <Typography sx={{ fontWeight: 'bold' }}>פעולות</Typography>
-                                </TableCell>
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              <AnimatePresence>
-                                {localStudentCourses.map((course, index) => (
-                                  <TableRow
-                                    key={course.groupStudentId || index}
-                                    component={motion.tr}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -20 }}
-                                    transition={{ delay: index * 0.05 }}
+                        {loadingCourses ? (
+                          <Box sx={{
+                            p: 4,
+                            textAlign: 'center',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: 2
+                          }}>
+                            <RefreshCwIcon className="animate-spin" size={32} style={{ color: '#10b981' }} />
+                            <Typography variant="h6" sx={{ color: '#64748b' }}>
+                              טוען חוגים...
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: '#94a3b8' }}>
+                              נא להמתין בזמן שאנו טוענים את נתוני החוגים של התלמיד
+                            </Typography>
+                          </Box>
+                        ) : (
+                          <TableContainer sx={{ maxHeight: '350px' }}>
+                            <Table stickyHeader size="medium">
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell
+                                    align="right"
                                     sx={{
-                                      '&:nth-of-type(even)': { backgroundColor: 'rgba(16, 185, 129, 0.03)' },
-                                      '&:hover': {
-                                        backgroundColor: 'rgba(16, 185, 129, 0.08)',
-                                        transform: 'translateY(-1px)',
-                                        boxShadow: '0 4px 12px rgba(16, 185, 129, 0.15)'
-                                      },
-                                      transition: 'all 0.2s ease'
+                                      fontWeight: 'bold',
+                                      fontSize: '1rem',
+                                      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                                      py: 2,
+                                      textAlign: 'right',
+                                      direction: 'rtl',
+                                      borderBottom: '2px solid #10b981'
                                     }}
                                   >
-                                    <TableCell align="right" sx={{ py: 2 }}>
-                                      <Typography sx={{
-                                        fontWeight: 'medium',
-                                        fontSize: '1rem',
-                                        color: '#1e293b'
-                                      }}>
-                                        {course.courseName}
-                                      </Typography>
-                                    </TableCell>
-
-                                    <TableCell align="right" sx={{ py: 2 }}>
-                                      <Chip
-                                        label={course.groupName}
-                                        size="small"
-                                        sx={{
-                                          background: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)',
-                                          color: 'white',
+                                    <Box sx={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'flex-start',
+                                      gap: 1,
+                                      direction: 'rtl'
+                                    }}>
+                                      <CourseIcon sx={{ color: '#10b981', fontSize: 18 }} />
+                                      <Typography sx={{ fontWeight: 'bold' }}>שם החוג</Typography>
+                                    </Box>
+                                  </TableCell>
+                                  <TableCell
+                                    align="right"
+                                    sx={{
+                                      fontWeight: 'bold',
+                                      fontSize: '1rem',
+                                      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                                      py: 2,
+                                      textAlign: 'right',
+                                      direction: 'rtl',
+                                      borderBottom: '2px solid #10b981'
+                                    }}
+                                  >
+                                    <Box sx={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'flex-start',
+                                      gap: 1,
+                                      direction: 'rtl'
+                                    }}>
+                                      <GroupIcon sx={{ color: '#10b981', fontSize: 18 }} />
+                                      <Typography sx={{ fontWeight: 'bold' }}>קבוצה</Typography>
+                                    </Box>
+                                  </TableCell>
+                                  <TableCell
+                                    align="right"
+                                    sx={{
+                                      fontWeight: 'bold',
+                                      fontSize: '1rem',
+                                      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                                      py: 2,
+                                      textAlign: 'right',
+                                      direction: 'rtl',
+                                      borderBottom: '2px solid #10b981'
+                                    }}
+                                  >
+                                    <Box sx={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'flex-start',
+                                      gap: 1,
+                                      direction: 'rtl'
+                                    }}>
+                                      <LocationIcon sx={{ color: '#10b981', fontSize: 18 }} />
+                                      <Typography sx={{ fontWeight: 'bold' }}>סניף</Typography>
+                                    </Box>
+                                  </TableCell>
+                                  <TableCell
+                                    align="right"
+                                    sx={{
+                                      fontWeight: 'bold',
+                                      fontSize: '1rem',
+                                      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                                      py: 2,
+                                      textAlign: 'right',
+                                      direction: 'rtl',
+                                      borderBottom: '2px solid #10b981'
+                                    }}
+                                  >
+                                    <Box sx={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'flex-start',
+                                      gap: 1,
+                                      direction: 'rtl'
+                                    }}>
+                                      <PersonIcon sx={{ color: '#10b981', fontSize: 18 }} />
+                                      <Typography sx={{ fontWeight: 'bold' }}>מדריך</Typography>
+                                    </Box>
+                                  </TableCell>
+                                  <TableCell
+                                    align="right"
+                                    sx={{
+                                      fontWeight: 'bold',
+                                      fontSize: '1rem',
+                                      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                                      py: 2,
+                                      textAlign: 'right',
+                                      direction: 'rtl',
+                                      borderBottom: '2px solid #10b981'
+                                    }}
+                                  >
+                                    <Box sx={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'flex-start',
+                                      gap: 1,
+                                      direction: 'rtl'
+                                    }}>
+                                      <ScheduleIcon sx={{ color: '#10b981', fontSize: 18 }} />
+                                      <Typography sx={{ fontWeight: 'bold' }}>יום ושעה</Typography>
+                                    </Box>
+                                  </TableCell>
+                                  <TableCell
+                                    align="right"
+                                    sx={{
+                                      fontWeight: 'bold',
+                                      fontSize: '1rem',
+                                      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                                      py: 2,
+                                      textAlign: 'right',
+                                      direction: 'rtl',
+                                      borderBottom: '2px solid #10b981'
+                                    }}
+                                  >
+                                    <Box sx={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'flex-start',
+                                      gap: 1,
+                                      direction: 'rtl'
+                                    }}>
+                                      <CalendarIcon sx={{ color: '#10b981', fontSize: 18 }} />
+                                      <Typography sx={{ fontWeight: 'bold' }}>תאריך התחלה</Typography>
+                                    </Box>
+                                  </TableCell>
+                                  <TableCell
+                                    align="right"
+                                    sx={{
+                                      fontWeight: 'bold',
+                                      fontSize: '1rem',
+                                      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                                      py: 2,
+                                      textAlign: 'right',
+                                      direction: 'rtl',
+                                      borderBottom: '2px solid #10b981'
+                                    }}
+                                  >
+                                    <Box sx={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'flex-start',
+                                      gap: 1,
+                                      direction: 'rtl'
+                                    }}>
+                                      <AssignmentIcon sx={{ color: '#10b981', fontSize: 18 }} />
+                                      <Typography sx={{ fontWeight: 'bold' }}>סטטוס</Typography>
+                                    </Box>
+                                  </TableCell>
+                                  <TableCell
+                                    align="center"
+                                    sx={{
+                                      fontWeight: 'bold',
+                                      fontSize: '1rem',
+                                      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                                      py: 2,
+                                      textAlign: 'center',
+                                      borderBottom: '2px solid #10b981',
+                                      width: '80px'
+                                    }}
+                                  >
+                                    <Typography sx={{ fontWeight: 'bold' }}>פעולות</Typography>
+                                  </TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                <AnimatePresence>
+                                  {localStudentCourses.map((course, index) => (
+                                    <TableRow
+                                      key={course.groupStudentId || index}
+                                      component={motion.tr}
+                                      initial={{ opacity: 0, y: 20 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      exit={{ opacity: 0, y: -20 }}
+                                      transition={{ delay: index * 0.05 }}
+                                      sx={{
+                                        '&:nth-of-type(even)': { backgroundColor: 'rgba(16, 185, 129, 0.03)' },
+                                        '&:hover': {
+                                          backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                                          transform: 'translateY(-1px)',
+                                          boxShadow: '0 4px 12px rgba(16, 185, 129, 0.15)'
+                                        },
+                                        transition: 'all 0.2s ease'
+                                      }}
+                                    >
+                                      <TableCell align="right" sx={{ py: 2 }}>
+                                        <Typography sx={{
                                           fontWeight: 'medium',
+                                          fontSize: '1rem',
+                                          color: '#1e293b'
+                                        }}>
+                                          {course.courseName}
+                                        </Typography>
+                                      </TableCell>
+
+                                      <TableCell align="right" sx={{ py: 2 }}>
+                                        <Chip
+                                          label={course.groupName}
+                                          size="small"
+                                          sx={{
+                                            background: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)',
+                                            color: 'white',
+                                            fontWeight: 'medium',
+                                            borderRadius: '12px',
+                                            fontSize: '0.875rem'
+                                          }}
+                                        />
+                                      </TableCell>
+
+                                      <TableCell align="right" sx={{ py: 2 }}>
+                                        <Typography sx={{ fontSize: '1rem' }}>
+                                          {course.branchName}
+                                        </Typography>
+                                      </TableCell>
+
+                                      <TableCell align="right" sx={{ py: 2 }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 1 }}>
+                                          <Avatar sx={{
+                                            width: 32,
+                                            height: 32,
+                                            background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                                            color: 'white',
+                                            fontSize: '0.875rem',
+                                            fontWeight: 'bold'
+                                          }}>
+                                            {course.instructorName?.charAt(0)}
+                                          </Avatar>
+                                          <Typography sx={{ fontSize: '0.9rem' }}>
+                                            {course.instructorName}
+                                          </Typography>
+                                        </Box>
+                                      </TableCell>
+
+                                      <TableCell align="right" sx={{ py: 2 }}>
+                                        <Box sx={{
+                                          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
                                           borderRadius: '12px',
-                                          fontSize: '0.875rem'
-                                        }}
-                                      />
-                                    </TableCell>
-
-                                    <TableCell align="right" sx={{ py: 2 }}>
-                                      <Typography sx={{ fontSize: '1rem' }}>
-                                        {course.branchName}
-                                      </Typography>
-                                    </TableCell>
-
-                                    <TableCell align="right" sx={{ py: 2 }}>
-                                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 1 }}>
-                                        <Avatar sx={{
-                                          width: 32,
-                                          height: 32,
-                                          background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                                          color: 'white',
-                                          fontSize: '0.875rem',
-                                          fontWeight: 'bold'
+                                          p: 1.5,
+                                          textAlign: 'center',
+                                          color: 'white'
                                         }}>
-                                          {course.instructorName?.charAt(0)}
-                                        </Avatar>
-                                        <Typography sx={{ fontSize: '0.9rem' }}>
-                                          {course.instructorName}
-                                        </Typography>
-                                      </Box>
-                                    </TableCell>
+                                          <Typography sx={{
+                                            fontWeight: 'bold',
+                                            fontSize: '0.8rem'
+                                          }}>
+                                            {course.dayOfWeek}
+                                          </Typography>
+                                          <Typography sx={{
+                                            fontSize: '0.75rem',
+                                            opacity: 0.9
+                                          }}>
+                                            {course.hour}
+                                          </Typography>
+                                        </Box>
+                                      </TableCell>
 
-                                    <TableCell align="right" sx={{ py: 2 }}>
-                                      <Box sx={{
-                                        background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                                        borderRadius: '12px',
-                                        p: 1.5,
-                                        textAlign: 'center',
-                                        color: 'white'
-                                      }}>
+                                      <TableCell align="center" sx={{ py: 2 }}>
                                         <Typography sx={{
-                                          fontWeight: 'bold',
-                                          fontSize: '0.8rem'
+                                          fontSize: '0.85rem',
                                         }}>
-                                          {course.dayOfWeek}
+                                          {course.enrollmentDate}
                                         </Typography>
-                                        <Typography sx={{
-                                          fontSize: '0.75rem',
-                                          opacity: 0.9
-                                        }}>
-                                          {course.hour}
-                                        </Typography>
-                                      </Box>
-                                    </TableCell>
+                                      </TableCell>
 
-                                    <TableCell align="center" sx={{ py: 2 }}>
-                                      <Typography sx={{
-                                        fontSize: '0.85rem',
-                                      }}>
-                                        {course.enrollmentDate}
-                                      </Typography>
-                                    </TableCell>
+                                      <TableCell align="right" sx={{ py: 2 }}>
+                                        <Chip
+                                          icon={course.isActive === true ? <CheckIcon sx={{ fontSize: 18 }} /> : <CloseIcon sx={{ fontSize: 18 }} />}
+                                          label={course.isActive ? 'פעיל' : 'לא פעיל'}
+                                          color={course.isActive === true ? "success" : "error"}
+                                          variant="outlined"
+                                          size="medium"
+                                          sx={{ fontSize: '0.875rem' }}
+                                        />
+                                      </TableCell>
 
-                                    <TableCell align="right" sx={{ py: 2 }}>
-                                      <Chip
-                                        icon={course.isActive === true ? <CheckIcon sx={{ fontSize: 18 }} /> : <CloseIcon sx={{ fontSize: 18 }} />}
-                                        label={course.isActive ? 'פעיל' : 'לא פעיל'}
-                                        color={course.isActive === true ? "success" : "error"}
-                                        variant="outlined"
-                                        size="medium"
-                                        sx={{ fontSize: '0.875rem' }}
-                                      />
-                                    </TableCell>
-
-                                    <TableCell align="center" sx={{ py: 2 }}>
-                                      <IconButton
-                                        onClick={(e) => handleCourseMenuOpen(e, course)}
-                                        size="small"
-                                        disabled={deletingCourse}
-                                        sx={{
-                                          color: '#6b7280',
-                                          '&:hover': {
-                                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                                            color: '#dc2626'
-                                          },
-                                          '&:disabled': {
-                                            opacity: 0.5
-                                          },
-                                          transition: 'all 0.2s ease'
-                                        }}
-                                      >
-                                        <MoreVertIcon />
-                                      </IconButton>
-                                     <IconButton
-  onClick={() => {
-    setSelectedGroupId(course.groupId);
-    setGroupDialogOpen(true);
-    dispatch(getGroupWithStudentsById(course.groupId));
-  }}
-  size="small"
-  sx={{
-    color: '#10b981',
-    '&:hover': {
-      backgroundColor: 'rgba(16, 185, 129, 0.1)',
-      color: '#059669'
-    },
-    transition: 'all 0.2s ease'
-  }}
-  title="מעבר לקבוצה"
->
-  <GroupIcon />
-</IconButton>
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
-                              </AnimatePresence>
-                            </TableBody>
-                          </Table>
-                        </TableContainer>
+                                      <TableCell align="center" sx={{ py: 2 }}>
+                                        <IconButton
+                                          onClick={(e) => handleCourseMenuOpen(e, course)}
+                                          size="small"
+                                          disabled={deletingCourse}
+                                          sx={{
+                                            color: '#6b7280',
+                                            '&:hover': {
+                                              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                              color: '#dc2626'
+                                            },
+                                            '&:disabled': {
+                                              opacity: 0.5
+                                            },
+                                            transition: 'all 0.2s ease'
+                                          }}
+                                        >
+                                          <MoreVertIcon />
+                                        </IconButton>
+                                        <IconButton
+                                          onClick={() => {
+                                            setSelectedGroupId(course.groupId);
+                                            setGroupDialogOpen(true);
+                                            dispatch(getGroupWithStudentsById(course.groupId));
+                                          }}
+                                          size="small"
+                                          sx={{
+                                            color: '#10b981',
+                                            '&:hover': {
+                                              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                              color: '#059669'
+                                            },
+                                            transition: 'all 0.2s ease'
+                                          }}
+                                          title="מעבר לקבוצה"
+                                        >
+                                          <GroupIcon />
+                                        </IconButton>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </AnimatePresence>
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
+                        )}
                       </Card>
                     </Box>
                   ) : (
@@ -1375,7 +1395,7 @@ const [selectedGroupId, setSelectedGroupId] = useState(null);
             </MenuItem>
             <MenuItem
               onClick={() => handleDeleteCourseConfirm(selectedCourse)}
-              sx={{ 
+              sx={{
                 color: '#dc2626',
                 '&:hover': {
                   backgroundColor: 'rgba(220, 38, 38, 0.1)'
@@ -1410,7 +1430,7 @@ const [selectedGroupId, setSelectedGroupId] = useState(null);
                     <Typography variant="subtitle2">תאריך התחלה</Typography>
                     <input
                       type="date"
-                      value={editingCourse.enrollmentDate ? editingCourse.enrollmentDate.slice(0,10) : ''}
+                      value={editingCourse.enrollmentDate ? editingCourse.enrollmentDate.slice(0, 10) : ''}
                       onChange={e => setEditingCourse({ ...editingCourse, enrollmentDate: e.target.value })}
                       style={{ fontSize: '1rem', padding: '8px', borderRadius: '8px', border: '1px solid #e5e7eb', marginTop: '8px' }}
                     />
@@ -1430,11 +1450,11 @@ const [selectedGroupId, setSelectedGroupId] = useState(null);
               </DialogActions>
             </Dialog>
           )}
-<GroupDialog
-  open={groupDialogOpen}
-  onClose={() => setGroupDialogOpen(false)}
-  group={groupWithStudents}
-/>
+          <GroupDialog
+            open={groupDialogOpen}
+            onClose={() => setGroupDialogOpen(false)}
+            group={groupWithStudents}
+          />
         </Dialog>
       )}
     </AnimatePresence>

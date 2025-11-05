@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { checkUserPermission } from '../../utils/permissions';
+import StudentCoursesDialog from '../Students/components/studentCoursesDialog';
 import {
   Box,
   Typography,
@@ -47,6 +48,7 @@ import { getStudentNotesByRegistrationTracking } from '../../store/studentNotes/
 import { selectRegistrationTrackingNotes, selectStudentNotesLoading } from '../../store/studentNotes/studentNoteSlice';
 import { fetchStudents } from '../../store/student/studentGetAllThunk';
 import { updateStudentNote } from '../../store/studentNotes/studentNoteUpdateThunk';
+import { getgroupStudentByStudentId } from '../../store/groupStudent/groupStudentGetByStudentIdThunk';
 
 const RegistrationTracking = () => {
   const dispatch = useDispatch();
@@ -70,6 +72,12 @@ const RegistrationTracking = () => {
   const [editNotesMode, setEditNotesMode] = useState(false);
   const [editedTasks, setEditedTasks] = useState({});
   const [alert, setAlert] = useState({ open: false, message: '', severity: 'success' });
+  
+  // Student details dialog states
+  const [studentDetailsDialogOpen, setStudentDetailsDialogOpen] = useState(false);
+  const [selectedStudentForDetails, setSelectedStudentForDetails] = useState(null);
+  const [studentCourses, setStudentCourses] = useState([]);
+  const [loadingStudentCourses, setLoadingStudentCourses] = useState(false);
   
   // Pagination states
   const [page, setPage] = useState(0);
@@ -293,6 +301,59 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
     setEditNotesMode(false);
     setSelectedStudent(null);
     setEditedTasks({});
+  };
+
+  const handleOpenStudentDetails = async (student) => {
+    try {
+      // נצטרך לוודא שהתלמיד מכיל את כל הנתונים הנחוצים
+      const fullStudentData = studentsData[student.id] || student;
+      
+      // נוסיף נתונים חסרים אם לא קיימים
+      const studentForDialog = {
+        ...fullStudentData,
+        firstName: fullStudentData.firstName || student.firstName,
+        lastName: fullStudentData.lastName || student.lastName,
+        id: fullStudentData.id || student.id,
+        email: fullStudentData.email || student.email || '',
+        phone: fullStudentData.phone || student.phone || '',
+        city: fullStudentData.city || student.city || '',
+        age: fullStudentData.age || student.age || '',
+      };
+      
+      setSelectedStudentForDetails(studentForDialog);
+      
+      // פתיחת הדיאלוג מיד - ללא המתנה לטעינת הקורסים
+      setStudentDetailsDialogOpen(true);
+      
+      // איפוס קורסים קודמים ותחילת טעינה חדשה ברקע
+      setStudentCourses([]);
+      setLoadingStudentCourses(true);
+      
+      // טעינת קורסי התלמיד ברקע
+      try {
+        const coursesResult = await dispatch(getgroupStudentByStudentId(student.id));
+        if (coursesResult.payload) {
+          setStudentCourses(Array.isArray(coursesResult.payload) ? coursesResult.payload : []);
+        } else {
+          setStudentCourses([]);
+        }
+      } catch (coursesError) {
+        console.error('שגיאה בטעינת קורסי התלמיד:', coursesError);
+        setStudentCourses([]);
+      } finally {
+        setLoadingStudentCourses(false);
+      }
+      
+    } catch (error) {
+      console.error('שגיאה בפתיחת פרטי התלמיד:', error);
+    }
+  };
+
+  const handleCloseStudentDetails = () => {
+    setStudentDetailsDialogOpen(false);
+    setSelectedStudentForDetails(null);
+    setStudentCourses([]);
+    setLoadingStudentCourses(false);
   };
 
   const getPriorityColor = (priority) => {
@@ -901,14 +962,42 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                     </TableCell>
                     <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <Typography variant="body1" sx={{ 
-                          fontWeight: 700,
-                          color: '#1e293b',
-                          textAlign: 'center',
-                          mb: 0.1
-                        }}>
-                          {student.firstName} {student.lastName}
-                        </Typography>
+                        <Tooltip 
+                          title="👆 לחץ כאן לצפייה בפרטי התלמיד המלאים" 
+                          placement="top"
+                          arrow
+                          sx={{
+                            '& .MuiTooltip-tooltip': {
+                              bgcolor: '#3b82f6',
+                              color: 'white',
+                              fontSize: '0.8rem',
+                              fontWeight: 500,
+                              borderRadius: '8px',
+                              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                            },
+                            '& .MuiTooltip-arrow': {
+                              color: '#3b82f6'
+                            }
+                          }}
+                        >
+                          <Typography 
+                            variant="body1" 
+                            onClick={() => handleOpenStudentDetails(student)}
+                            sx={{ 
+                              fontWeight: 700,
+                              color: '#1e293b',
+                              textAlign: 'center',
+                              mb: 0.1,
+                              cursor: 'pointer',
+                              '&:hover': {
+                                color: '#3b82f6',
+                                textDecoration: 'underline'
+                              }
+                            }}
+                          >
+                            {student.firstName} {student.lastName}
+                          </Typography>
+                        </Tooltip>
                         <Chip
                           label={`קוד תלמיד: ${student.id}`}
                           size="small"
@@ -1256,6 +1345,20 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* Student Details Dialog */}
+        {selectedStudentForDetails && (
+          <StudentCoursesDialog
+            open={studentDetailsDialogOpen}
+            onClose={handleCloseStudentDetails}
+            student={selectedStudentForDetails}
+            studentCourses={studentCourses}
+            loadingCourses={loadingStudentCourses}
+            showAddButton={false}
+            title={`פרטי התלמיד: ${selectedStudentForDetails.firstName} ${selectedStudentForDetails.lastName}`}
+            subtitle={`ת"ז: ${selectedStudentForDetails.id}${selectedStudentForDetails.email ? ` | 📧 ${selectedStudentForDetails.email}` : ''}`}
+          />
+        )}
 
         {/* Alert for notifications */}
         {alert.open && (
