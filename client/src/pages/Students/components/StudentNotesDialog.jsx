@@ -4,6 +4,7 @@ import {
   Button, Box, Typography, List, ListItem, ListItemAvatar, Avatar, ListItemText, Chip, IconButton, Dialog as MuiDialog
 } from '@mui/material';
 import { Info as InfoIcon, CheckCircle as CheckCircleIcon, Error as ErrorIcon, Warning as WarningIcon, Assignment as AssignmentIcon, AttachMoney as AttachMoneyIcon, Notes as NotesIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import DraggablePaper, { DragHandle } from '../../../components/DraggablePaper';
 
 const noteTypeIcons = {
   'כללי': <InfoIcon sx={{ color: '#3b82f6' }} />,
@@ -52,6 +53,7 @@ const StudentNotesDialog = ({ open, onClose, notes = [], student, onAddNote, onE
       onClose={onClose}
       maxWidth="md"
       fullWidth
+      PaperComponent={DraggablePaper}
       sx={{
         direction: 'rtl',
         '& .MuiDialog-paper': {
@@ -64,6 +66,7 @@ const StudentNotesDialog = ({ open, onClose, notes = [], student, onAddNote, onE
       }}
     >
       <DialogTitle
+        className="drag-handle"
         sx={{
           background: 'linear-gradient(135deg, #22c55e 0%, #059669 100%)',
           color: 'white',
@@ -74,6 +77,7 @@ const StudentNotesDialog = ({ open, onClose, notes = [], student, onAddNote, onE
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <DragHandle />
           <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', width: 40, height: 40 }}>
             <NotesIcon sx={{ fontSize: 24 }} />
           </Avatar>

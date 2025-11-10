@@ -94,6 +94,7 @@ import { addStudentNote } from '../../../store/studentNotes/studentNoteAddThunk'
 import SmartMatchingSystem from './smartMatchingSystem';
 import EnrollmentSuccess from './enrollmentSuccess';
 import { checkUserPermission } from'../../../utils/permissions';
+import StudentSearchDialog from '../../../components/StudentSearchDialog';
 
 import './style/enrollStudent.css';
 import { fetchInstructors } from '../../../store/instructor/instructorGetAllThunk';
@@ -1240,9 +1241,6 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
   };
 
   const handleOpenStudentSearch = () => {
-    setSearchStudentId('');
-    setStudentGroups([]);
-    setSearchStudentName('');
     setStudentSearchDialogOpen(true);
   };
 
@@ -1761,140 +1759,238 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
 
   // Render Smart Matching Button
   const renderSmartMatchingButton = () => (
-    <motion.div
-      className="smart-matching-section"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
-    >
-      <motion.button
-        className="smart-matching-trigger-main"
-                onClick={() => setAlgorithmDialogOpen(true)}
+    <Box sx={{ 
+      display: 'flex', 
+      justifyContent: 'center', 
+      mb: 3,
+      mt: 2
+    }}>
+      <Button
+        onClick={() => setAlgorithmDialogOpen(true)}
         disabled={loading}
-        whileHover={{ scale: 1.02, y: -2 }}
-        whileTap={{ scale: 0.98 }}
-      >
-        <div className="button-content">
-          <motion.div
-            className="button-icon"
-            animate={{
-              rotate: [0, 10, -10, 0],
-              scale: [1, 1.1, 1]
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              repeatDelay: 3
-            }}
-          >
+        variant="contained"
+        size="large"
+        sx={{
+          borderRadius: '20px',
+          px: 4,
+          py: 2.5,
+          fontSize: '1rem',
+          fontWeight: 600,
+          color: '#1e3a8a',
+          background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+          border: '2px solid #bfdbfe',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+          minHeight: '68px',
+          minWidth: '420px',
+          maxWidth: '520px',
+          textTransform: 'none',
+          position: 'relative',
+          overflow: 'hidden',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          backdropFilter: 'blur(10px)',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: '-100%',
+            width: '100%',
+            height: '100%',
+            background: 'linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent)',
+            transition: 'left 0.8s ease-in-out'
+          },
+          '&:hover': {
+            background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
+            border: '2px solid #3b82f6',
+            boxShadow: '0 8px 25px rgba(59, 130, 246, 0.15)',
+            transform: 'translateY(-1px)',
+            color: '#1d4ed8',
+            '&::before': {
+              left: '100%'
+            }
+          },
+          '&:active': {
+            transform: 'translateY(0px)',
+            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.2)'
+          },
+          '&:disabled': {
+            opacity: 0.5,
+            transform: 'none',
+            background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
+            color: '#94a3b8'
+          }
+        }}
+        startIcon={
+          <Box sx={{ 
+            fontSize: '22px',
+            filter: 'grayscale(0.2)',
+            animation: loading ? 'none' : 'gentlePulse 3s infinite',
+            '@keyframes gentlePulse': {
+              '0%, 100%': { transform: 'scale(1)', opacity: 1 },
+              '50%': { transform: 'scale(1.05)', opacity: 0.8 }
+            }
+          }}>
             🎯
-          </motion.div>
-          <div className="button-text">
-            <h3>מערכת התאמה חכמה</h3>
-            <p>אלגוריתם מתקדם למציאת החוג המושלם לכל תלמיד</p>
-          </div>
-          <motion.div
-            className="button-arrow"
-            animate={{ x: [0, 5, 0] }}
-            transition={{
-              duration: 1.5,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-          >
+          </Box>
+        }
+        endIcon={
+          <Box sx={{ 
+            fontSize: '18px',
+            opacity: 0.7,
+            animation: loading ? 'none' : 'gentleSlide 2s infinite ease-in-out',
+            '@keyframes gentleSlide': {
+              '0%, 100%': { transform: 'translateX(0px)', opacity: 0.7 },
+              '50%': { transform: 'translateX(-2px)', opacity: 1 }
+            }
+          }}>
             ←
-          </motion.div>
-        </div>
-        <div className="button-glow"></div>
-      </motion.button>
-    </motion.div>
+          </Box>
+        }
+      >
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center',
+          textAlign: 'center'
+        }}>
+          <Typography variant="h6" sx={{ 
+            fontWeight: 600, 
+            fontSize: '1.1rem',
+            lineHeight: 1.3,
+            mb: 0.3,
+            letterSpacing: '0.02em'
+          }}>
+            מערכת התאמה חכמה
+          </Typography>
+          <Typography variant="body2" sx={{ 
+            fontSize: '0.85rem',
+            opacity: 0.75,
+            lineHeight: 1.4,
+            fontWeight: 400
+          }}>
+            אלגוריתם מתקדם למציאת החוג המושלם לכל תלמיד
+          </Typography>
+        </Box>
+      </Button>
+    </Box>
   );
 
   // Render Student Group Search Button
   const renderStudentGroupSearchButton = () => (
-    <motion.div
-      className="student-search-section"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: 0.2 }}
-      style={{ marginTop: '15px' }}
-    >
-      <motion.button
-        className="student-search-trigger-main"
+    <Box sx={{ 
+      display: 'flex', 
+      justifyContent: 'center', 
+      mb: 3
+    }}>
+      <Button
         onClick={handleOpenStudentSearch}
         disabled={loading}
-        whileHover={{ scale: 1.02, y: -2 }}
-        whileTap={{ scale: 0.98 }}
-        style={{
-          width: '100%',
-          maxWidth: '490px',
-          maxHeight: '100px',
-          margin: '0 auto',
-          padding: '15px 25px',
-          background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-          border: 'none',
-          borderRadius: '12px',
-          color: 'white',
-          fontSize: '14px',
-          fontWeight: 'bold',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          boxShadow: '0 6px 24px rgba(16, 185, 129, 0.25)',
+        variant="contained"
+        size="large"
+        sx={{
+          borderRadius: '20px',
+          px: 4,
+          py: 2.5,
+          fontSize: '1rem',
+          fontWeight: 600,
+          color: '#1e40af',
+          background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+          border: '2px solid #bae6fd',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.06)',
+          minHeight: '68px',
+          minWidth: '420px',
+          maxWidth: '520px',
+          textTransform: 'none',
           position: 'relative',
           overflow: 'hidden',
-          transition: 'all 0.3s ease'
-        }}
-      >
-        <div className="button-content" style={{ display: 'flex', alignItems: 'center', gap: '12px', zIndex: 2 }}>
-          <motion.div
-            className="button-icon"
-            animate={{
-              rotate: [0, 360],
-              scale: [1, 1.1, 1]
-            }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              repeatDelay: 2
-            }}
-            style={{ fontSize: '22px' }}
-          >
-            🔍
-          </motion.div>
-          <div className="button-text" style={{ textAlign: 'right' }}>
-            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold' }}>חיפוש קבוצות לפי קוד תלמיד</h3>
-            <p style={{ margin: '3px 0 0', fontSize: '12px', opacity: 0.9 }}>מצא את כל הקבוצות בהן התלמיד רשום</p>
-          </div>
-          <motion.div
-            className="button-arrow"
-            animate={{ x: [0, -5, 0] }}
-            transition={{
-              duration: 1.5,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            style={{ fontSize: '18px' }}
-          >
-            →
-          </motion.div>
-        </div>
-        <div 
-          className="button-glow" 
-          style={{
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          backdropFilter: 'blur(10px)',
+          '&::before': {
+            content: '""',
             position: 'absolute',
             top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-            borderRadius: '16px',
-            zIndex: 1
-          }}
-        ></div>
-      </motion.button>
-    </motion.div>
+            left: '-100%',
+            width: '100%',
+            height: '100%',
+            background: 'linear-gradient(90deg, transparent, rgba(14, 165, 233, 0.08), transparent)',
+            transition: 'left 0.8s ease-in-out'
+          },
+          '&:hover': {
+            background: 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)',
+            border: '2px solid #0ea5e9',
+            boxShadow: '0 8px 25px rgba(14, 165, 233, 0.12)',
+            transform: 'translateY(-1px)',
+            color: '#0369a1',
+            '&::before': {
+              left: '100%'
+            }
+          },
+          '&:active': {
+            transform: 'translateY(0px)',
+            boxShadow: '0 4px 12px rgba(14, 165, 233, 0.15)'
+          },
+          '&:disabled': {
+            opacity: 0.5,
+            transform: 'none',
+            background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+            color: '#94a3b8'
+          }
+        }}
+        startIcon={
+          <Box sx={{ 
+            fontSize: '22px',
+            filter: 'grayscale(0.1)',
+            animation: loading ? 'none' : 'gentleRotate 4s linear infinite',
+            '@keyframes gentleRotate': {
+              '0%': { transform: 'rotate(0deg)' },
+              '25%': { transform: 'rotate(90deg)' },
+              '50%': { transform: 'rotate(180deg)' },
+              '75%': { transform: 'rotate(270deg)' },
+              '100%': { transform: 'rotate(360deg)' }
+            }
+          }}>
+            🔍
+          </Box>
+        }
+        endIcon={
+          <Box sx={{ 
+            fontSize: '18px',
+            opacity: 0.7,
+            animation: loading ? 'none' : 'gentleSlideRight 2s infinite ease-in-out',
+            '@keyframes gentleSlideRight': {
+              '0%, 100%': { transform: 'translateX(0px)', opacity: 0.7 },
+              '50%': { transform: 'translateX(2px)', opacity: 1 }
+            }
+          }}>
+            →
+          </Box>
+        }
+      >
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center',
+          textAlign: 'center'
+        }}>
+          <Typography variant="h6" sx={{ 
+            fontWeight: 600, 
+            fontSize: '1.1rem',
+            lineHeight: 1.3,
+            mb: 0.3,
+            letterSpacing: '0.02em'
+          }}>
+            חיפוש קבוצות לפי קוד תלמיד
+          </Typography>
+          <Typography variant="body2" sx={{ 
+            fontSize: '0.85rem',
+            opacity: 0.75,
+            lineHeight: 1.4,
+            fontWeight: 400
+          }}>
+            מצא את כל הקבוצות בהן התלמיד רשום
+          </Typography>
+        </Box>
+      </Button>
+    </Box>
   );
 
   // Render course cards
@@ -2254,23 +2350,56 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
           variant="contained"
           onClick={handleExportGroupsExcel}
           sx={{
-            background: 'linear-gradient(90deg, #10b981 0%, #3B82F6 100%)',
-            color: 'white',
-            borderRadius: '16px',
+            background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+            color: '#374151',
+            border: '2px solid #e5e7eb',
+            borderRadius: '18px',
             px: 4,
-            py: 1.5,
-            fontWeight: 'bold',
-            fontSize: '1.15rem',
-            boxShadow: '0 6px 24px rgba(59,130,246,0.12)',
-            minWidth: 220,
-            transition: 'all 0.3s',
+            py: 2,
+            fontWeight: 600,
+            fontSize: '1rem',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+            minWidth: 260,
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            textTransform: 'none',
+            backdropFilter: 'blur(10px)',
+            position: 'relative',
+            overflow: 'hidden',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: '-100%',
+              width: '100%',
+              height: '100%',
+              background: 'linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.05), transparent)',
+              transition: 'left 0.6s ease-in-out'
+            },
             '&:hover': {
-              background: 'linear-gradient(90deg, #059669 0%, #2563eb 100%)',
-              boxShadow: '0 10px 32px rgba(59,130,246,0.18)',
+              background: 'linear-gradient(135deg, #dbeafe 0%, #e0f2fe 100%)',
+              border: '2px solid #3b82f6',
+              color: '#1e40af',
+              boxShadow: '0 8px 25px rgba(59, 130, 246, 0.15)',
+              transform: 'translateY(-1px)',
+              '&::before': {
+                left: '100%'
+              }
+            },
+            '&:active': {
+              transform: 'translateY(0px)',
+              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.2)'
             }
           }}
         >
-          <span style={{fontWeight:'bold'}}>יצוא קבוצות + תלמידים לאקסל</span>
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 1.5,
+            letterSpacing: '0.01em'
+          }}>
+            <Box sx={{ fontSize: '18px', opacity: 0.8 }}>📊</Box>
+            <span>יצוא קבוצות + תלמידים לאקסל</span>
+          </Box>
         </Button>
       </Box>
       </Box>
@@ -2545,49 +2674,103 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
             <Paper
               elevation={1}
               sx={{
-                bgcolor: 'rgba(16, 185, 129, 0.1)',
-                border: '1px solid rgba(16, 185, 129, 0.2)',
+                background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                border: '2px solid #e2e8f0',
                 borderRadius: 3,
                 p: 2,
-                mb: 4,
+                mb: 3,
                 textAlign: 'center',
-                maxWidth: '600px',
-                mx: 'auto'
+                maxWidth: '480px',
+                mx: 'auto',
+                position: 'relative',
+                overflow: 'hidden',
+                backdropFilter: 'blur(10px)',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: '2px',
+                  background: 'linear-gradient(90deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%)',
+                  borderRadius: '12px 12px 0 0'
+                }
               }}
             >
               <Typography
                 variant="body2"
                 sx={{
-                  color: '#059669',
+                  color: '#475569',
                   fontWeight: '500',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 1,
-                  fontSize: { xs: '0.875rem', md: '1rem' }
+                  fontSize: { xs: '0.8rem', md: '0.875rem' },
+                  lineHeight: 1.4,
+                  letterSpacing: '0.01em'
                 }}
               >
-                <InfoIcon sx={{ fontSize: 20 }} />
-                💾 הנתונים נשמרים אוטומטית - תוכל לעבור ללשוניות אחרות ולחזור בכל עת
+                <Box sx={{ 
+                  fontSize: '16px',
+                  filter: 'grayscale(0.3)',
+                  animation: 'gentlePulse 3s infinite',
+                  '@keyframes gentlePulse': {
+                    '0%, 100%': { opacity: 1, transform: 'scale(1)' },
+                    '50%': { opacity: 0.8, transform: 'scale(1.05)' }
+                  }
+                }}>
+                  💾
+                </Box>
+                הנתונים נשמרים אוטומטית - תוכל לעבור ללשוניות אחרות ולחזור בכל עת
               </Typography>
               
               {/* כפתור ניקוי נתונים */}
-              <Box sx={{ mt: 2 }}>
+              <Box sx={{ mt: 1.5 }}>
                 <Button
                   onClick={resetForm}
-                  variant="outlined"
+                  variant="contained"
                   size="small"
                   startIcon={<DeleteSweep />}
                   sx={{
-                    borderRadius: 2,
-                    px: 2,
-                    py: 0.5,
-                    fontSize: '0.75rem',
-                    color: '#f59e0b',
-                    borderColor: '#f59e0b',
+                    borderRadius: '16px',
+                    px: 3,
+                    py: 1.5,
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    color: '#475569',
+                    background: 'linear-gradient(135deg, #fef7ff 0%, #f1f5f9 100%)',
+                    border: '2px solid #e2e8f0',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.06)',
+                    minHeight: '40px',
+                    textTransform: 'none',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    backdropFilter: 'blur(10px)',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: '-100%',
+                      width: '100%',
+                      height: '100%',
+                      background: 'linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.05), transparent)',
+                      transition: 'left 0.6s ease-in-out'
+                    },
                     '&:hover': {
-                      bgcolor: 'rgba(245, 158, 11, 0.05)',
-                      borderColor: '#d97706'
+                      background: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
+                      border: '2px solid #fca5a5',
+                      color: '#dc2626',
+                      boxShadow: '0 8px 25px rgba(239, 68, 68, 0.12)',
+                      transform: 'translateY(-1px)',
+                      '&::before': {
+                        left: '100%'
+                      }
+                    },
+                    '&:active': {
+                      transform: 'translateY(0px)',
+                      boxShadow: '0 4px 12px rgba(239, 68, 68, 0.15)'
                     }
                   }}
                 >
@@ -5334,7 +5517,11 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
         </Button>
       </DialogActions>
     </Dialog>
-   
+    {/* Student Search Dialog - New Component with ID and Name search */}
+    <StudentSearchDialog
+      open={studentSearchDialogOpen}
+      onClose={() => setStudentSearchDialogOpen(false)}
+    />
     
     </Container>
   );

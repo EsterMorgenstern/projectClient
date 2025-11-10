@@ -24,6 +24,7 @@ import {
   Description as TermsIcon,
   Note as NoteIcon
 } from '@mui/icons-material';
+import DraggablePaper, { DragHandle } from '../../../components/DraggablePaper';
 import { useDispatch } from 'react-redux';
 import { useSelector } from 'react-redux';
 import { addStudent } from '../../../store/student/studentAddThunk';
@@ -571,6 +572,7 @@ useEffect(() => {
       onClose={handleClose}
       maxWidth="md"
       fullWidth
+      PaperComponent={DraggablePaper}
       PaperProps={{
         sx: {
           borderRadius: '16px',
@@ -580,6 +582,7 @@ useEffect(() => {
       }}
     >
       <DialogTitle
+        className="drag-handle"
         sx={{
           bgcolor: '#3B82F6',
           color: 'white',
@@ -592,6 +595,7 @@ useEffect(() => {
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <DragHandle />
           <PersonAddIcon />
           <Typography variant="h6" component="span">
             {title}

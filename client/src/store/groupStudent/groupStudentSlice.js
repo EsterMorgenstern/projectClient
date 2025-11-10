@@ -1,5 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { getgroupStudentByStudentId } from './groupStudentGetByStudentIdThunk';
+import { getGroupStudentByStudentName } from './groupStudentGetByStudentNameThunk';
 import { groupStudentAddThunk } from './groupStudentAddThunk';
 import { deleteGroupStudent } from './groupStudentDeleteThunk';
 import { updateGroupStudent } from './groupStudentUpdateThunk';
@@ -11,6 +12,7 @@ const groupStudentSlice = createSlice({
     loading: false,
     error: null,
     groupStudentById: [],
+    groupStudentByName: [],
   },
   reducers: {
     // הוספת reducer לעדכון מקומי
@@ -58,6 +60,20 @@ const groupStudentSlice = createSlice({
       .addCase(getgroupStudentByStudentId.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to fetch student courses';
+      })
+
+      // getGroupStudentByStudentName
+      .addCase(getGroupStudentByStudentName.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getGroupStudentByStudentName.fulfilled, (state, action) => {
+        state.loading = false;
+        state.groupStudentByName = action.payload;
+      })
+      .addCase(getGroupStudentByStudentName.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to fetch student by name';
       }) 
 
       // deleteGroupStudent

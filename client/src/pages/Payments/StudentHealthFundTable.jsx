@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, Typography, Box, Skeleton, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Grid, IconButton, Tooltip, Divider, MenuItem, ListItemIcon, ListItemText, FormControlLabel, Checkbox, InputAdornment, Select, FormControl, InputLabel, CircularProgress, TablePagination, Snackbar, Alert } from '@mui/material';
 import { motion } from 'framer-motion';
-import { AddCircle, Person, LocalHospital, CalendarMonth, Healing, AssignmentTurnedIn, Description, Note, Save, Close, Face, LocationCity, Groups, Event, Check as CheckIcon, AttachMoney as AttachMoneyIcon, Info as InfoIcon, FileDownload, Search as SearchIcon, Clear as ClearIcon, ArrowUpward, ArrowDownward, Sort } from '@mui/icons-material';
+import { AddCircle, Person, LocalHospital, CalendarMonth, Healing, AssignmentTurnedIn, Description, Note, Save, Close, Face, LocationCity, Groups, Event, Check as CheckIcon, AttachMoney as AttachMoneyIcon, Info as InfoIcon, FileDownload, Search as SearchIcon, Clear as ClearIcon, ArrowUpward, ArrowDownward, Sort, DragIndicator as DragIndicatorIcon } from '@mui/icons-material';
 import ExcelExportDialog from '../../components/ExcelExportDialog';
 import NotesIcon from '@mui/icons-material/Notes';
 import StudentNotesDialog from '../Students/components/StudentNotesDialog';
@@ -24,69 +24,30 @@ import { checkUserPermission } from '../../utils/permissions';
 import { fetchHealthFunds } from '../../store/healthFund/fetchHealthFunds';
 import { getPaymentNotes, extractStudentIdsByAutomaticBillingNotes } from '../../store/studentNotes/getPaymentNotes';
 import { selectPaymentNotes, selectPaymentNotesLoading } from '../../store/studentNotes/studentNoteSlice';
+import DraggablePaper, { DragHandle } from '../../components/DraggablePaper';
 
 // Styled table container inspired by instructorsTable and Home
 
-// Simple Draggable Paper Component
-const DraggablePaper = React.forwardRef((props, ref) => {
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const paperRef = useRef();
-
-  const handleMouseDown = (e) => {
-    if (e.target.id === 'draggable-dialog-title' || e.target.closest('#draggable-dialog-title')) {
-      setIsDragging(true);
-      setDragStart({
-        x: e.clientX - position.x,
-        y: e.clientY - position.y
-      });
-      e.preventDefault();
-    }
-  };
-
-  const handleMouseMove = (e) => {
-    if (isDragging) {
-      setPosition({
-        x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y
-      });
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  useEffect(() => {
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [isDragging, dragStart]);
-
-  return (
-    <Paper 
-      {...props} 
-      ref={paperRef}
-      onMouseDown={handleMouseDown}
-      sx={{
-        ...props.sx,
-        transform: `translate(${position.x}px, ${position.y}px)`,
-        cursor: isDragging ? 'grabbing' : 'default'
-      }}
-    />
-  );
-});
-
 const StudentHealthFundTable = () => {
-  // State לחיפוש
+  // State לחיפוש עם debouncing
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+
+  // Debounce search term לביצועים טובים יותר
+  useEffect(() => {
+    if (searchTerm !== debouncedSearchTerm) {
+      setIsSearching(true);
+    }
+    
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setIsSearching(false);
+    }, 300); // 300ms delay
+
+    return () => clearTimeout(timer);
+  }, [searchTerm, debouncedSearchTerm]);
   const [advancedFilters, setAdvancedFilters] = useState({
     healthFundId: '',
     hasReferralFile: 'all', // 'all', 'yes', 'no'
@@ -248,50 +209,48 @@ const StudentHealthFundTable = () => {
   const paymentNotes = useSelector(selectPaymentNotes);
   const paymentNotesLoading = useSelector(selectPaymentNotesLoading);
 
+  // יצירת מפה של קופות חולים לביצועים טובים יותר
+  const healthFundMap = useMemo(() => {
+    const map = new Map();
+    healthFundList.forEach(fund => {
+      map.set(Number(fund.healthFundId), fund);
+    });
+    return map;
+  }, [healthFundList]);
+
   // פילטור הנתונים לפי החיפוש והמסננים המתקדמים
   const filteredHealthFunds = useMemo(() => {
+    if (!healthFunds.length) return [];
+    
     let filtered = [...healthFunds];
 
-    // סינון לפי חיפוש טקסט רגיל
-    if (searchTerm.trim()) {
-      const searchLower = searchTerm.toLowerCase().trim();
+    // סינון לפי חיפוש טקסט רגיל - מטוב יותר לביצועים
+    if (debouncedSearchTerm.trim()) {
+      const searchLower = debouncedSearchTerm.toLowerCase().trim();
       
       filtered = filtered.filter(row => {
-        // חיפוש בקוד תלמיד
-        if (row.studentId && String(row.studentId).toLowerCase().includes(searchLower)) {
-          return true;
-        }
+        // יצירת מחרוזת חיפוש אחת לכל השדות
+        const searchableText = [
+          row.studentId,
+          row.studentName,
+          row.age,
+          row.city,
+          row.groupName,
+          row.treatmentsUsed,
+          row.reportedTreatments,
+          row.commitmentTreatments,
+          row.registeredTreatments,
+          row.notes
+        ].filter(Boolean).join(' ').toLowerCase();
         
-        // חיפוש בשם תלמיד
-        if (row.studentName && row.studentName.toLowerCase().includes(searchLower)) {
-          return true;
-        }
-        
-        // חיפוש בגיל
-        if (row.age && String(row.age).toLowerCase().includes(searchLower)) {
-          return true;
-        }
-        
-        // חיפוש בעיר
-        if (row.city && row.city.toLowerCase().includes(searchLower)) {
-          return true;
-        }
-        
-        // חיפוש בשם קבוצה
-        if (row.groupName && row.groupName.toLowerCase().includes(searchLower)) {
-          return true;
-        }
-        
-        // חיפוש בקופת חולים
-        const fund = healthFundList.find(f => Number(f.healthFundId) === Number(row.healthFundId));
+        // חיפוש בקופת חולים - שימוש במפה לביצועים טובים
+        const fund = healthFundMap.get(Number(row.healthFundId));
         if (fund) {
-          if (fund.name && fund.name.toLowerCase().includes(searchLower)) {
-            return true;
-          }
-          if (fund.fundType && fund.fundType.toLowerCase().includes(searchLower)) {
-            return true;
-          }
+          const fundText = [fund.name, fund.fundType].filter(Boolean).join(' ').toLowerCase();
+          return searchableText.includes(searchLower) || fundText.includes(searchLower);
         }
+        
+        return searchableText.includes(searchLower);
         
       // חיפוש במספרי טיפולים
       if (row.treatmentsUsed && String(row.treatmentsUsed).includes(searchLower)) {
@@ -453,10 +412,10 @@ const StudentHealthFundTable = () => {
           bValue = Number(bValue) || 0;
         }
 
-        // טיפול מיוחד לקופת חולים
+        // טיפול מיוחד לקופת חולים - שימוש במפה לביצועים טובים
         if (sortConfig.key === 'healthFundName') {
-          const fundA = healthFundList.find(f => Number(f.healthFundId) === Number(a.healthFundId));
-          const fundB = healthFundList.find(f => Number(f.healthFundId) === Number(b.healthFundId));
+          const fundA = healthFundMap.get(Number(a.healthFundId));
+          const fundB = healthFundMap.get(Number(b.healthFundId));
           aValue = fundA?.name || '';
           bValue = fundB?.name || '';
         }
@@ -478,7 +437,7 @@ const StudentHealthFundTable = () => {
     }
 
     return filtered;
-  }, [healthFunds, searchTerm, advancedFilters, healthFundList, sortConfig, paymentNotes]);
+  }, [healthFunds, debouncedSearchTerm, advancedFilters, healthFundMap, sortConfig, paymentNotes, paymentNotesLoading]);
 
   // פונקציה לניקוי החיפוש
   const handleClearSearch = () => {
@@ -740,17 +699,25 @@ const StudentHealthFundTable = () => {
   const [additionalNotes, setAdditionalNotes] = useState({});
 
   useEffect(() => {
-    dispatch(fetchStudentHealthFunds());
-    // טען גם את רשימת קופות החולים עבור הדיאלוג
-    dispatch(fetchHealthFunds());
-    // טען את הערות הגביה עבור הפילטרים
-    dispatch(getPaymentNotes());
+    // טעינה מקבילה של כל הנתונים לביצועים טובים יותר
+    Promise.all([
+      dispatch(fetchStudentHealthFunds()),
+      dispatch(fetchHealthFunds()),
+      dispatch(getPaymentNotes())
+    ]).catch(error => {
+      console.error('שגיאה בטעינת נתונים:', error);
+      setNotification({
+        open: true,
+        message: 'שגיאה בטעינת נתונים. אנא נסה לרענן את הדף.',
+        severity: 'error'
+      });
+    });
   }, [dispatch]);
 
   // איפוס עמוד כאשר החיפוש משתנה
   useEffect(() => {
     setPage(0);
-  }, [searchTerm]);
+  }, [debouncedSearchTerm]);
 
   const handleOpenAddDialog = () => {
     // Set current date as default for startDate
@@ -2417,6 +2384,7 @@ const StudentHealthFundTable = () => {
         fullWidth
         disableEnforceFocus={false}
         disableAutoFocus={false}
+        PaperComponent={DraggablePaper}
         PaperProps={{
           sx: {
             borderRadius: '16px',
@@ -2427,20 +2395,28 @@ const StudentHealthFundTable = () => {
           }
         }}
       >
-        <DialogTitle sx={{
-          bgcolor: 'linear-gradient(90deg, #2563EB 0%, #43E97B 100%)',
-          color: 'white',
-          fontWeight: 'bold',
-          borderRadius: '16px 16px 0 0',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          direction: 'rtl',
-          minHeight: 60,
-          boxShadow: '0 2px 8px rgba(37,99,235,0.10)',
-          background: 'linear-gradient(90deg, #2563EB 0%, #43E97B 100%)',
-        }}>
+        <DialogTitle 
+          className="drag-handle"
+          sx={{
+            bgcolor: 'linear-gradient(90deg, #2563EB 0%, #43E97B 100%)',
+            color: 'white',
+            fontWeight: 'bold',
+            borderRadius: '16px 16px 0 0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            direction: 'rtl',
+            minHeight: 60,
+            boxShadow: '0 2px 8px rgba(37,99,235,0.10)',
+            background: 'linear-gradient(90deg, #2563EB 0%, #43E97B 100%)',
+            cursor: 'move',
+            '&:hover': {
+              background: 'linear-gradient(90deg, #1d4ed8 0%, #38F9D7 100%)'
+            }
+          }}
+        >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <DragIndicatorIcon sx={{ opacity: 0.8, fontSize: 20 }} />
             <LocalHospital sx={{ fontSize: 32, color: 'white' }} />
             <Typography variant="h5" component="span" sx={{ color: 'white', fontWeight: 'bold', ml: 1 }}>פרטי קופה</Typography>
           </Box>
@@ -2557,10 +2533,28 @@ const StudentHealthFundTable = () => {
         fullWidth
         disableEnforceFocus={false}
         disableAutoFocus={false}
+        PaperComponent={DraggablePaper}
         PaperProps={{ sx: { borderRadius: '16px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', direction: 'rtl' } }}
       >
-        <DialogTitle sx={{ bgcolor: '#2563EB', color: 'white', fontWeight: 'bold', borderRadius: '16px 16px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', direction: 'rtl' }}>
+        <DialogTitle 
+          className="drag-handle"
+          sx={{ 
+            bgcolor: '#2563EB', 
+            color: 'white', 
+            fontWeight: 'bold', 
+            borderRadius: '16px 16px 0 0', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between', 
+            direction: 'rtl',
+            cursor: 'move',
+            '&:hover': {
+              bgcolor: '#1d4ed8'
+            }
+          }}
+        >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <DragIndicatorIcon sx={{ opacity: 0.8, fontSize: 20 }} />
             <EditIcon />
             <Typography variant="h6" component="span">עדכון סטודנט-קופה</Typography>
           </Box>
@@ -2634,6 +2628,7 @@ const StudentHealthFundTable = () => {
         fullWidth
         disableEnforceFocus={false}
         disableAutoFocus={false}
+        PaperComponent={DraggablePaper}
         PaperProps={{
           sx: {
             borderRadius: '16px',
@@ -2644,16 +2639,28 @@ const StudentHealthFundTable = () => {
           }
         }}
       >
-        <DialogTitle sx={{
-          bgcolor: 'linear-gradient(90deg, #ffdde1 0%, #ee9ca7 100%)',
-          color: '#b71c1c',
-          fontWeight: 'bold',
-          borderRadius: '16px 16px 0 0',
-          direction: 'rtl',
-          textAlign: 'center',
-          fontSize: '1.2rem',
-          boxShadow: '0 2px 8px rgba(237,66,69,0.10)'
-        }}>
+        <DialogTitle 
+          className="drag-handle"
+          sx={{
+            bgcolor: 'linear-gradient(90deg, #ffdde1 0%, #ee9ca7 100%)',
+            color: '#b71c1c',
+            fontWeight: 'bold',
+            borderRadius: '16px 16px 0 0',
+            direction: 'rtl',
+            textAlign: 'center',
+            fontSize: '1.2rem',
+            boxShadow: '0 2px 8px rgba(237,66,69,0.10)',
+            cursor: 'move',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 1,
+            '&:hover': {
+              bgcolor: 'linear-gradient(90deg, #ffcdd2 0%, #e57373 100%)'
+            }
+          }}
+        >
+          <DragIndicatorIcon sx={{ opacity: 0.8, fontSize: 20, color: '#b71c1c' }} />
           האם אתה בטוח שברצונך למחוק?
         </DialogTitle>
         <DialogContent sx={{
@@ -2692,7 +2699,7 @@ const StudentHealthFundTable = () => {
         PaperProps={{ sx: { borderRadius: '16px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', direction: 'rtl' } }}
       >
         <DialogTitle 
-          id="draggable-dialog-title"
+          className="drag-handle"
           sx={{ 
             bgcolor: '#2563EB', 
             color: 'white', 
@@ -2709,9 +2716,9 @@ const StudentHealthFundTable = () => {
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <DragIndicatorIcon sx={{ opacity: 0.8, fontSize: 20 }} />
             <AddCircle />
             <Typography variant="h6" component="span">הוספת סטודנט-קופה</Typography>
-            <Typography variant="body2" component="span" sx={{ opacity: 0.8, mr: 2 }}>📌 ניתן לגרור</Typography>
           </Box>
           <IconButton onClick={handleCloseAddDialog} sx={{ color: 'white' }} size="small"><Close /></IconButton>
         </DialogTitle>
@@ -2958,6 +2965,7 @@ const StudentHealthFundTable = () => {
         fullWidth
         disableEnforceFocus={false}
         disableAutoFocus={false}
+        PaperComponent={DraggablePaper}
         PaperProps={{
           sx: {
             borderRadius: '16px',
@@ -2968,20 +2976,28 @@ const StudentHealthFundTable = () => {
           }
         }}
       >
-        <DialogTitle sx={{
-          bgcolor: 'linear-gradient(90deg, #2563EB 0%, #43E97B 100%)',
-          color: 'white',
-          fontWeight: 'bold',
-          borderRadius: '16px 16px 0 0',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          direction: 'rtl',
-          minHeight: 60,
-          boxShadow: '0 2px 8px rgba(37,99,235,0.10)',
-          background: 'linear-gradient(90deg, #2563EB 0%, #43E97B 100%)',
-        }}>
+        <DialogTitle 
+          className="drag-handle"
+          sx={{
+            bgcolor: 'linear-gradient(90deg, #2563EB 0%, #43E97B 100%)',
+            color: 'white',
+            fontWeight: 'bold',
+            borderRadius: '16px 16px 0 0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            direction: 'rtl',
+            minHeight: 60,
+            boxShadow: '0 2px 8px rgba(37,99,235,0.10)',
+            background: 'linear-gradient(90deg, #2563EB 0%, #43E97B 100%)',
+            cursor: 'move',
+            '&:hover': {
+              background: 'linear-gradient(90deg, #1d4ed8 0%, #38F9D7 100%)'
+            }
+          }}
+        >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <DragIndicatorIcon sx={{ opacity: 0.8, fontSize: 20 }} />
             <CalendarMonth sx={{ fontSize: 32, color: 'white' }} />
             <Typography variant="h5" component="span" sx={{ color: 'white', fontWeight: 'bold', ml: 1 }}>
               תאריכי טיפולים לא מדווחים
@@ -3196,6 +3212,7 @@ const StudentHealthFundTable = () => {
         fullWidth
         disableEnforceFocus={false}
         disableAutoFocus={false}
+        PaperComponent={DraggablePaper}
         PaperProps={{
           sx: {
             borderRadius: '16px',
@@ -3206,20 +3223,28 @@ const StudentHealthFundTable = () => {
           }
         }}
       >
-        <DialogTitle sx={{
-          bgcolor: 'linear-gradient(90deg, #10b981 0%, #3b82f6 100%)',
-          color: 'white',
-          fontWeight: 'bold',
-          borderRadius: '16px 16px 0 0',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          direction: 'rtl',
-          minHeight: 60,
-          boxShadow: '0 2px 8px rgba(16,185,129,0.10)',
-          background: 'linear-gradient(90deg, #10b981 0%, #3b82f6 100%)',
-        }}>
+        <DialogTitle 
+          className="drag-handle"
+          sx={{
+            bgcolor: 'linear-gradient(90deg, #10b981 0%, #3b82f6 100%)',
+            color: 'white',
+            fontWeight: 'bold',
+            borderRadius: '16px 16px 0 0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            direction: 'rtl',
+            minHeight: 60,
+            boxShadow: '0 2px 8px rgba(16,185,129,0.10)',
+            background: 'linear-gradient(90deg, #10b981 0%, #3b82f6 100%)',
+            cursor: 'move',
+            '&:hover': {
+              background: 'linear-gradient(90deg, #059669 0%, #2563eb 100%)'
+            }
+          }}
+        >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <DragIndicatorIcon sx={{ opacity: 0.8, fontSize: 20 }} />
             <CheckIcon sx={{ fontSize: 32, color: 'white' }} />
             <Typography variant="h5" component="span" sx={{ color: 'white', fontWeight: 'bold', ml: 1 }}>
               תאריכי טיפולים שדווחו

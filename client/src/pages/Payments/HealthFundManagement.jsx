@@ -9,6 +9,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { AddCircle, LocalHospital, AssignmentTurnedIn, Healing, Description, Note, Person, Save, Close } from '@mui/icons-material';
 import { Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Grid, IconButton } from '@mui/material';
+import DraggablePaper, { DragHandle } from '../../components/DraggablePaper';
 import {
   TableContainer,
   Paper,
@@ -275,10 +276,28 @@ const HealthFundManagement = () => {
         onClose={handleCloseEditDialog}
         maxWidth="sm"
         fullWidth
+        PaperComponent={DraggablePaper}
         PaperProps={{ sx: { borderRadius: '16px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', direction: 'rtl' } }}
       >
-        <DialogTitle sx={{ bgcolor: '#43E97B', color: 'white', fontWeight: 'bold', borderRadius: '16px 16px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', direction: 'rtl' }}>
+        <DialogTitle 
+          className="drag-handle"
+          sx={{ 
+            bgcolor: '#43E97B', 
+            color: 'white', 
+            fontWeight: 'bold', 
+            borderRadius: '16px 16px 0 0', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between', 
+            direction: 'rtl',
+            cursor: 'move',
+            '&:hover': {
+              bgcolor: '#38F9D7'
+            }
+          }}
+        >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <DragHandle />
             <EditIcon />
             <Typography variant="h6" component="span">עדכון קופה</Typography>
           </Box>
@@ -340,9 +359,27 @@ const HealthFundManagement = () => {
         onClose={handleCloseDeleteDialog}
         maxWidth="xs"
         fullWidth
+        PaperComponent={DraggablePaper}
         PaperProps={{ sx: { borderRadius: '16px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', direction: 'rtl' } }}
       >
-        <DialogTitle sx={{ bgcolor: '#d32f2f', color: 'white', fontWeight: 'bold', borderRadius: '16px 16px 0 0', direction: 'rtl' }}>
+        <DialogTitle 
+          className="drag-handle"
+          sx={{ 
+            bgcolor: '#d32f2f', 
+            color: 'white', 
+            fontWeight: 'bold', 
+            borderRadius: '16px 16px 0 0', 
+            direction: 'rtl',
+            cursor: 'move',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            '&:hover': {
+              bgcolor: '#c62828'
+            }
+          }}
+        >
+          <DragHandle />
           האם אתה בטוח שברצונך למחוק?
         </DialogTitle>
         <DialogActions sx={{ p: 2, gap: 1, direction: 'rtl' }}>
@@ -360,6 +397,7 @@ const HealthFundManagement = () => {
         onClose={handleCloseAddDialog}
         maxWidth="sm"
         fullWidth
+        PaperComponent={DraggablePaper}
         PaperProps={{
           sx: {
             borderRadius: '16px',
@@ -368,8 +406,25 @@ const HealthFundManagement = () => {
           }
         }}
       >
-        <DialogTitle sx={{ bgcolor: '#43E97B', color: 'white', fontWeight: 'bold', borderRadius: '16px 16px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', direction: 'rtl' }}>
+        <DialogTitle 
+          className="drag-handle"
+          sx={{ 
+            bgcolor: '#43E97B', 
+            color: 'white', 
+            fontWeight: 'bold', 
+            borderRadius: '16px 16px 0 0', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between', 
+            direction: 'rtl',
+            cursor: 'move',
+            '&:hover': {
+              bgcolor: '#38F9D7'
+            }
+          }}
+        >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <DragHandle />
             <AddCircle />
             <Typography variant="h6" component="span">הוספת קופה</Typography>
           </Box>
