@@ -103,12 +103,39 @@ const EnrollStudent = () => {
 
   // כפתור יצוא לאקסל
   const handleExportGroupsExcel = async () => {
-  if (!selectedGroup) {
-    setNotification({ open: true, message: 'לא נבחרה קבוצה לייצוא', severity: 'error' });
-    return;
-  }
-  await exportGroupStudentsToExcel(selectedGroup.groupId, selectedGroup.groupName, dispatch);
-};
+    try {
+      if (!selectedBranch) {
+        setNotification({ 
+          open: true, 
+          message: 'לא נבחר סניף לייצוא הקבוצות', 
+          severity: 'error' 
+        });
+        return;
+      }
+
+      setNotification({ 
+        open: true, 
+        message: 'מתחיל ייצוא קבוצות לאקסל...', 
+        severity: 'info' 
+      });
+
+      // ייצוא כל הקבוצות עם הנתונים
+      await exportGroupsToExcelWithData();
+      
+      setNotification({ 
+        open: true, 
+        message: 'הקבוצות יוצאו בהצלחה לאקסל!', 
+        severity: 'success' 
+      });
+    } catch (error) {
+      console.error('שגיאה בייצוא קבוצות:', error);
+      setNotification({ 
+        open: true, 
+        message: 'שגיאה בייצוא קבוצות לאקסל', 
+        severity: 'error' 
+      });
+    }
+  };
   const dispatch = useDispatch();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -1978,7 +2005,7 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
             mb: 0.3,
             letterSpacing: '0.02em'
           }}>
-            חיפוש קבוצות לפי קוד תלמיד
+            חיפוש קבוצות לפי קוד או שם תלמיד
           </Typography>
           <Typography variant="body2" sx={{ 
             fontSize: '0.85rem',

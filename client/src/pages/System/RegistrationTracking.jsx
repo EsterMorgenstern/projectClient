@@ -42,6 +42,8 @@ import {
   Info as InfoIcon,
   Edit as EditIcon,
   Refresh as RefreshIcon,
+  KeyboardArrowUp as ArrowUpIcon,
+  KeyboardArrowDown as ArrowDownIcon,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getStudentNotesByRegistrationTracking } from '../../store/studentNotes/studentNotesGetByRegistrationTracking';
@@ -82,6 +84,10 @@ const RegistrationTracking = () => {
   // Pagination states
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  
+  // Sorting states
+  const [sortField, setSortField] = useState('');
+  const [sortDirection, setSortDirection] = useState('asc');
 
   // Redux selectors
   const registrationTrackingNotes = useSelector(selectRegistrationTrackingNotes);
@@ -168,39 +174,103 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
     return Array.from(studentNotesMap.values());
   }, [registrationTrackingNotes, studentsData]);
 
-  const filteredStudents = studentsWithRegistrationNotes.filter(student => {
-    // חיפוש חכם לפי שם תלמיד, נרשם על ידי, וקוד תלמיד
-    const term = searchTerm.trim().toLowerCase();
-    let matchesSearch = false;
-    if (!term) {
-      matchesSearch = true;
+  // Sorting function
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
-      // שם פרטי/משפחה
-      if (student.firstName?.toLowerCase().includes(term) || student.lastName?.toLowerCase().includes(term)) {
-        matchesSearch = true;
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  // Sort data function
+  const sortData = (data, field, direction) => {
+    if (!field) return data;
+    
+    return [...data].sort((a, b) => {
+      let aValue, bValue;
+      
+      switch (field) {
+        case 'studentName':
+          aValue = `${a.firstName} ${a.lastName}`.toLowerCase();
+          bValue = `${b.firstName} ${b.lastName}`.toLowerCase();
+          break;
+        case 'authorName':
+          aValue = (a.registrationNotes?.[0]?.authorName || 'לא ידוע').toLowerCase();
+          bValue = (b.registrationNotes?.[0]?.authorName || 'לא ידוע').toLowerCase();
+          break;
+        case 'status':
+          aValue = a.incompleteTasks.length;
+          bValue = b.incompleteTasks.length;
+          break;
+        case 'priority':
+          const priorityOrder = { 'גבוהה': 3, 'בינוני': 2, 'נמוכה': 1 };
+          aValue = priorityOrder[a.priority] || 0;
+          bValue = priorityOrder[b.priority] || 0;
+          break;
+        case 'updateDate':
+          aValue = a.lastNoteDate ? new Date(a.lastNoteDate) : new Date(0);
+          bValue = b.lastNoteDate ? new Date(b.lastNoteDate) : new Date(0);
+          break;
+        case 'incompleteTasks':
+          aValue = a.incompleteTasks.length;
+          bValue = b.incompleteTasks.length;
+          break;
+        case 'studentId':
+          aValue = parseInt(a.id) || 0;
+          bValue = parseInt(b.id) || 0;
+          break;
+        default:
+          return 0;
       }
-      // קוד תלמיד
-      if (student.id?.toString().includes(term)) {
-        matchesSearch = true;
+      
+      if (direction === 'asc') {
+        return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+      } else {
+        return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
       }
-      // נרשם על ידי
-      if (student.registrationNotes && student.registrationNotes.length > 0) {
-        const authorName = student.registrationNotes[0].authorName?.toLowerCase() || '';
-        if (authorName.includes(term)) {
+    });
+  };
+
+  const filteredStudents = React.useMemo(() => {
+    let filtered = studentsWithRegistrationNotes.filter(student => {
+      // חיפוש חכם לפי שם תלמיד, נרשם על ידי, וקוד תלמיד
+      const term = searchTerm.trim().toLowerCase();
+      let matchesSearch = false;
+      if (!term) {
+        matchesSearch = true;
+      } else {
+        // שם פרטי/משפחה
+        if (student.firstName?.toLowerCase().includes(term) || student.lastName?.toLowerCase().includes(term)) {
+          matchesSearch = true;
+        }
+        // קוד תלמיד
+        if (student.id?.toString().includes(term)) {
+          matchesSearch = true;
+        }
+        // נרשם על ידי
+        if (student.registrationNotes && student.registrationNotes.length > 0) {
+          const authorName = student.registrationNotes[0].authorName?.toLowerCase() || '';
+          if (authorName.includes(term)) {
+            matchesSearch = true;
+          }
+        }
+        // אימייל
+        if (student.email?.toLowerCase().includes(term)) {
           matchesSearch = true;
         }
       }
-      // אימייל
-      if (student.email?.toLowerCase().includes(term)) {
-        matchesSearch = true;
-      }
-    }
-    const matchesFilter = 
-      filterStatus === 'all' ||
-      (filterStatus === 'pending' && student.incompleteTasks.length > 0) ||
-      (filterStatus === 'completed' && student.incompleteTasks.length === 0);
-    return matchesSearch && matchesFilter;
-  });
+      const matchesFilter = 
+        filterStatus === 'all' ||
+        (filterStatus === 'pending' && student.incompleteTasks.length > 0) ||
+        (filterStatus === 'completed' && student.incompleteTasks.length === 0);
+      return matchesSearch && matchesFilter;
+    });
+    
+    // Apply sorting
+    return sortData(filtered, sortField, sortDirection);
+  }, [studentsWithRegistrationNotes, searchTerm, filterStatus, sortField, sortDirection]);
 
   // Pagination handlers
   const handleChangePage = (event, newPage) => {
@@ -386,6 +456,71 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
     });
     return counts;
   };
+
+  // Component for sortable table header
+  const SortableTableHeader = ({ field, children, icon }) => (
+    <Tooltip
+      title={`לחץ למיון לפי ${children} ${sortField === field ? (sortDirection === 'asc' ? '(יורד)' : '(עולה)') : ''}`}
+      placement="top"
+      arrow
+      sx={{
+        '& .MuiTooltip-tooltip': {
+          bgcolor: 'rgba(30, 41, 59, 0.9)',
+          color: 'white',
+          fontSize: '0.75rem',
+          fontWeight: 500,
+          borderRadius: '8px'
+        }
+      }}
+    >
+      <TableCell 
+        sx={{ 
+          textAlign: 'center', 
+          direction: 'rtl',
+          cursor: 'pointer',
+          userSelect: 'none',
+          transition: 'all 0.2s ease',
+          '&:hover': {
+            bgcolor: 'rgba(255, 255, 255, 0.1)',
+            transform: 'scale(1.02)'
+          }
+        }}
+        onClick={() => handleSort(field)}
+      >
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          gap: 0.2,
+          position: 'relative'
+        }}>
+          <Box sx={{ fontSize: '1.4em', mb: 0.2 }}>{icon}</Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'white' }}>
+              {children}
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <ArrowUpIcon 
+                sx={{ 
+                  fontSize: '16px',
+                  color: sortField === field && sortDirection === 'asc' ? '#fff' : 'rgba(255, 255, 255, 0.5)',
+                  transition: 'color 0.2s ease'
+                }} 
+              />
+              <ArrowDownIcon 
+                sx={{ 
+                  fontSize: '16px',
+                  color: sortField === field && sortDirection === 'desc' ? '#fff' : 'rgba(255, 255, 255, 0.5)',
+                  transition: 'color 0.2s ease',
+                  mt: -0.5
+                }} 
+              />
+            </Box>
+          </Box>
+        </Box>
+      </TableCell>
+    </Tooltip>
+  );
 
   if (loading) {
     return (
@@ -659,115 +794,179 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
     </Grid>
   </Box>
         
-        {/* אזור חיפוש מעוצב */}
+        {/* אזור חיפוש עדין ומקצועי */}
         <Box sx={{ 
           mb: 4, 
-          p: 4,
-          background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(147, 197, 253, 0.05) 100%)',
-          borderRadius: '54px',
-          border: '1px solid rgba(59, 130, 246, 0.1)',
-          boxShadow: '0 8px 32px rgba(59, 130, 246, 0.08)',
-          position: 'relative',
-          overflow: 'hidden',
-          direction: 'rtl',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '3px',
-            background: 'linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4)'
-          }
+          direction: 'rtl'
         }}>
-          <Box sx={{ display: 'flex', gap: 3, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
-            <TextField
-              label="  🔍 חפש תלמיד, קוד תלמיד, או שם רושם"
-              variant="filled"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              size="large"
-              sx={{ 
-                flex: 1,
-                minWidth: 400, 
-                maxWidth: 700,
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '20px',
-                  bgcolor: 'white',
-                  boxShadow: '0 8px 25px rgba(59, 130, 246, 0.12)',
-                  border: '2px solid transparent',
-                  transition: 'all 0.3s ease',
-                  fontSize: '1.1rem',
-                  '&:hover': {
-                    boxShadow: '0 12px 35px rgba(59, 130, 246, 0.18)',
-                    transform: 'translateY(-2px)',
+         
+           
+
+            {/* אזור החיפוש והכפתורים */}
+            <Box sx={{ 
+              display: 'flex', 
+              gap: 2, 
+              alignItems: 'center', 
+              flexWrap: 'wrap', 
+              justifyContent: 'center'
+            }}>
+              {/* שדה החיפוש */}
+              <TextField
+                label="🔍 חפש תלמיד, קוד תלמיד, או שם רושם"
+                variant="outlined"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                size="medium"
+                sx={{ 
+                  flex: 1,
+                  minWidth: 350, 
+                  maxWidth: 550,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '12px',
+                    bgcolor: '#fafafa',
+                    border: '1px solid #e2e8f0',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      borderColor: '#cbd5e1',
+                      bgcolor: '#ffffff',
+                    },
+                    '&.Mui-focused': {
+                      borderColor: '#3b82f6',
+                      bgcolor: '#ffffff',
+                      boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)',
+                    }
                   },
-                  '&.Mui-focused': {
-                    boxShadow: '0 15px 45px rgba(59, 130, 246, 0.25)',
-                    transform: 'translateY(-3px)',
-                    border: '2px solid rgba(59, 130, 246, 0.3)',
+                  '& .MuiInputLabel-root': {
+                    fontSize: '0.95rem',
+                    fontWeight: 500,
+                    color: '#64748b',
+                    right: 20,
+                    left: 'auto',
+                    transformOrigin: 'top right',
+                    zIndex: 1,
+                    backgroundColor: 'transparent',
+                    '&.Mui-focused, &.MuiFormLabel-filled': {
+                      color: '#3b82f6',
+                      right: 25,
+                      backgroundColor: '#ffffff',
+                      px: 1,
+                      transform: 'translate(0, -9px) scale(0.75)',
+                      transformOrigin: 'top right'
+                    }
+                  },
+                  '& .MuiOutlinedInput-input': {
+                    direction: 'rtl',
+                    textAlign: 'right',
+                    fontSize: '0.95rem',
+                    fontWeight: 500,
+                    pr: 2
+                  },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    textAlign: 'right',
+                    '& legend': {
+                      textAlign: 'right',
+                      marginRight: '10px'
+                    }
                   }
-                },
-                '& .MuiInputLabel-root': {
-                  fontSize: '1.1rem',
+                }}
+              />
+              
+              {/* כפתור רענון */}
+              <Button
+                variant="contained"
+                startIcon={<RefreshIcon />}
+                onClick={loadRegistrationTrackingData}
+                sx={{
+                  borderRadius: '12px',
+                  px: 3,
+                  py: 1.5,
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  bgcolor: '#3b82f6',
+                  color: 'white',
+                  boxShadow: 'none',
+                  transition: 'all 0.2s ease',
+                  minWidth: 140,
+                  '&:hover': {
+                    bgcolor: '#2563eb',
+                    boxShadow: '0 2px 8px rgba(59, 130, 246, 0.25)',
+                    transform: 'translateY(-1px)',
+                  },
+                  '&:active': {
+                    transform: 'translateY(0)',
+                  }
+                }}
+              >
+                רענן נתונים
+              </Button>
+              
+              {/* כפתור איפוס מיון */}
+              {sortField && (
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    setSortField('');
+                    setSortDirection('asc');
+                  }}
+                  sx={{
+                    borderRadius: '12px',
+                    px: 3,
+                    py: 1.5,
+                    fontSize: '0.9rem',
+                    fontWeight: 600,
+                    borderColor: '#d1d5db',
+                    color: '#6b7280',
+                    bgcolor: 'transparent',
+                    transition: 'all 0.2s ease',
+                    minWidth: 140,
+                    '&:hover': {
+                      borderColor: '#9ca3af',
+                      bgcolor: '#f9fafb',
+                      color: '#374151',
+                    }
+                  }}
+                >
+                  🔄 איפוס מיון
+                </Button>
+              )}
+            </Box>
+
+            {/* מחוון תוצאות חיפוש */}
+            {searchTerm && (
+              <Box sx={{ 
+                mt: 3, 
+                textAlign: 'center',
+                p: 2,
+                bgcolor: '#f0f9ff',
+                borderRadius: '8px',
+                border: '1px solid #e0f2fe'
+              }}>
+                <Typography variant="body2" sx={{ 
+                  color: '#0369a1',
                   fontWeight: 500,
-                  color: '#64748b',
-                  right: 14,
-                  left: 'auto',
-                  transformOrigin: 'top right',
-                  '&.Mui-focused, &.MuiFormLabel-filled': {
-                    // right: 14,
-                    // left: 'auto'
-                  }
-                },
-                '& .MuiOutlinedInput-input': {
-                  direction: 'rtl',
-                  textAlign: 'right',
-                  fontSize: '1.1rem',
-                  py: 2
-                }
-              }}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="start">
-                    {/* <SearchIcon sx={{ 
-                      color: '#3b82f6', 
-                      fontSize: '1.5rem',
-                      filter: 'drop-shadow(0 2px 4px rgba(59, 130, 246, 0.3))'
-                    }} /> */}
-                  </InputAdornment>
-                )
-              }}
-            />
-            
-            <Button
-              variant="contained"
-              startIcon={<RefreshIcon />}
-              onClick={loadRegistrationTrackingData}
-              sx={{
-                borderRadius: '20px',
-                px: 4,
-                py: 2,
-                fontSize: '1.0rem',
-                fontWeight: 700,
-                background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-                boxShadow: '0 8px 25px rgba(59, 130, 246, 0.3)',
-                border: 'none',
-                transition: 'all 0.3s ease',
-                minWidth: 160,
-                '&:hover': {
-                  background: 'linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%)',
-                  boxShadow: '0 12px 35px rgba(59, 130, 246, 0.4)',
-                  transform: 'translateY(-3px)',
-                },
-                '&:active': {
-                  transform: 'translateY(-1px)',
-                }
-              }}
-            >
-              רענן נתונים
-            </Button>
-          </Box>
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 1
+                }}>
+                  מחפש: "{searchTerm}"
+                  <Button
+                    size="small"
+                    onClick={() => setSearchTerm('')}
+                    sx={{ 
+                      color: '#0369a1', 
+                      minWidth: 'auto',
+                      p: 0.5,
+                      ml: 1,
+                      fontSize: '0.8rem'
+                    }}
+                  >
+                    ✕ נקה
+                  </Button>
+                </Typography>
+              </Box>
+            )}
+        
         </Box>
 
         {/* מונה תלמידים */}
@@ -793,15 +992,36 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
         סה"כ תלמידים בטבלה: {filteredStudents.length}
       </Typography>
       
-      <Typography variant="body2" sx={{ 
-        color: '#64748b',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 1
-      }}>
-        <InfoIcon sx={{ fontSize: 16 }} />
-        מציג {paginatedStudents.length} מתוך {filteredStudents.length} תלמידים
-      </Typography>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+        <Typography variant="body2" sx={{ 
+          color: '#64748b',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+          <InfoIcon sx={{ fontSize: 16 }} />
+          מציג {paginatedStudents.length} מתוך {filteredStudents.length} תלמידים
+        </Typography>
+        {sortField && (
+          <Typography variant="caption" sx={{ 
+            color: '#3b82f6',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.5,
+            fontWeight: 500
+          }}>
+            🔄 ממוין לפי: {
+              sortField === 'studentName' ? 'שם תלמיד' :
+              sortField === 'authorName' ? 'נרשם על ידי' :
+              sortField === 'status' ? 'סטטוס' :
+              sortField === 'priority' ? 'עדיפות' :
+              sortField === 'updateDate' ? 'תאריך עדכון' :
+              sortField === 'incompleteTasks' ? 'משימות חסרות' :
+              sortField
+            } ({sortDirection === 'asc' ? 'עולה' : 'יורד'})
+          </Typography>
+        )}
+      </Box>
     </Box>
 
         {/* טבלה מעוצבת */}
@@ -830,54 +1050,83 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                 }}
               >
                 <TableRow>
-                  <TableCell sx={{ textAlign: 'center', direction: 'rtl' }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.2 }}>
-                      <Box sx={{ fontSize: '1.4em', mb: 0.2 }}>📊</Box>
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'white' }}>
-                        סטטוס
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell sx={{ textAlign: 'center', direction: 'rtl' }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.2 }}>
-                      <Box sx={{ fontSize: '1.4em', mb: 0.2 }}>👤</Box>
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'white' }}>
-                        נרשם על ידי
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell sx={{ textAlign: 'center', direction: 'rtl' }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.2 }}>
-                      <Box sx={{ fontSize: '1.4em', mb: 0.2 }}>🎓</Box>
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'white' }}>
-                        תלמיד
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell sx={{ textAlign: 'center', direction: 'rtl', width: '250px' }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.2 }}>
-                      <Box sx={{ fontSize: '1.4em', mb: 0.2 }}>📋</Box>
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'white' }}>
-                        משימות חסרות
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell sx={{ textAlign: 'center', direction: 'rtl' }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.2 }}>
-                      <Box sx={{ fontSize: '1.4em', mb: 0.2 }}>⚡</Box>
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'white' }}>
-                        עדיפות
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell sx={{ textAlign: 'center', direction: 'rtl' }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.2 }}>
-                      <Box sx={{ fontSize: '1.4em', mb: 0.2 }}>📅</Box>
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'white' }}>
-                        תאריך עדכון
-                      </Typography>
-                    </Box>
-                  </TableCell>
+                  <SortableTableHeader field="status" icon="📊">
+                    סטטוס
+                  </SortableTableHeader>
+                  <SortableTableHeader field="authorName" icon="👤">
+                    נרשם על ידי
+                  </SortableTableHeader>
+                  <SortableTableHeader field="studentName" icon="🎓">
+                    תלמיד
+                  </SortableTableHeader>
+                  <Tooltip
+                    title={`לחץ למיון לפי משימות חסרות ${sortField === 'incompleteTasks' ? (sortDirection === 'asc' ? '(יורד)' : '(עולה)') : ''}`}
+                    placement="top"
+                    arrow
+                    sx={{
+                      '& .MuiTooltip-tooltip': {
+                        bgcolor: 'rgba(30, 41, 59, 0.9)',
+                        color: 'white',
+                        fontSize: '0.75rem',
+                        fontWeight: 500,
+                        borderRadius: '8px'
+                      }
+                    }}
+                  >
+                    <TableCell 
+                      sx={{ 
+                        textAlign: 'center', 
+                        direction: 'rtl', 
+                        width: '250px',
+                        cursor: 'pointer',
+                        userSelect: 'none',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          bgcolor: 'rgba(255, 255, 255, 0.1)',
+                          transform: 'scale(1.02)'
+                        }
+                      }}
+                      onClick={() => handleSort('incompleteTasks')}
+                    >
+                      <Box sx={{ 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        alignItems: 'center', 
+                        gap: 0.2,
+                        position: 'relative'
+                      }}>
+                        <Box sx={{ fontSize: '1.4em', mb: 0.2 }}>📋</Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'white' }}>
+                            משימות חסרות
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <ArrowUpIcon 
+                              sx={{ 
+                                fontSize: '16px',
+                                color: sortField === 'incompleteTasks' && sortDirection === 'asc' ? '#fff' : 'rgba(255, 255, 255, 0.5)',
+                                transition: 'color 0.2s ease'
+                              }} 
+                            />
+                            <ArrowDownIcon 
+                              sx={{ 
+                                fontSize: '16px',
+                                color: sortField === 'incompleteTasks' && sortDirection === 'desc' ? '#fff' : 'rgba(255, 255, 255, 0.5)',
+                                transition: 'color 0.2s ease',
+                                mt: -0.5
+                              }} 
+                            />
+                          </Box>
+                        </Box>
+                      </Box>
+                    </TableCell>
+                  </Tooltip>
+                  <SortableTableHeader field="priority" icon="⚡">
+                    עדיפות
+                  </SortableTableHeader>
+                  <SortableTableHeader field="updateDate" icon="📅">
+                    תאריך עדכון
+                  </SortableTableHeader>
                   <TableCell sx={{ textAlign: 'center', direction: 'rtl' }}>
                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.2 }}>
                       <Box sx={{ fontSize: '1.4em', mb: 0.2 }}>🎯</Box>
