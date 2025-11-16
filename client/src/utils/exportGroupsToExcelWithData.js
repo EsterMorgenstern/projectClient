@@ -36,6 +36,7 @@ export async function exportGroupsToExcelWithData() {
             'שם תלמיד': student.studentName,
             'טלפון': student.phone,
             'עיר': student.city ,
+            'קופת חולים': student.healthFound
           });
         });
       } else {
@@ -47,7 +48,8 @@ export async function exportGroupsToExcelWithData() {
           'מדריך': group.instructorName,
           'שם תלמיד': '',
           'טלפון': '',
-          'עיר': ''
+          'עיר': '',
+          'קופת חולים': ''
         });
       }
     });
@@ -67,7 +69,8 @@ export async function exportGroupsToExcelWithData() {
       { wch: 18 }, // מדריך
       { wch: 20 }, // שם תלמיד
       { wch: 15 } , // טלפון
-      { wch: 15 }  // עיר
+      { wch: 15 } , // עיר
+      { wch: 15 }  // קופת חולים
     ];
     worksheet['!rtl'] = true;
 

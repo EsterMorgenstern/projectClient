@@ -10,6 +10,7 @@ import { getGroupsByInstructorId } from './groupByInstructorId';
 import { getStudentsByGroupId } from './groupGetStudentsByGroupId';
 import { FindBestGroupForStudent, FindBestGroupsForStudent } from './groupFindBestGroupForStudent';
 import { getAllGroupsWithStudents } from './groupGetAllGroupsWithStudentsThunk';
+import { getGroupsByBranch } from './groupGetGroupsByBranchThunk';
 
 const groupSlice = createSlice({
   name: 'groups',
@@ -29,7 +30,10 @@ const groupSlice = createSlice({
     allGroupsWithStudentsError: null,
     groupWithStudents: null,
     groupWithStudentsLoading: false,
-    groupWithStudentsError: null
+    groupWithStudentsError: null,
+    groupsByBranch: [],
+    groupsByBranchLoading: false,
+    groupsByBranchError: null
   },
   reducers: {
     clearGroupsByDay: (state) => {
@@ -45,6 +49,11 @@ const groupSlice = createSlice({
     clearStudentsInGroup: (state) => {
       state.studentsInGroup = [];
       state.studentsInGroupLoading = false;
+    },
+    clearGroupsByBranch: (state) => {
+      state.groupsByBranch = [];
+      state.groupsByBranchLoading = false;
+      state.groupsByBranchError = null;
     }
   },
   extraReducers: (builder) => {
@@ -258,9 +267,26 @@ const groupSlice = createSlice({
       .addCase(getAllGroupsWithStudents.rejected, (state, action) => {
         state.allGroupsWithStudentsLoading = false;
         state.allGroupsWithStudentsError = action.payload;
+      })
+
+      // getGroupsByBranch
+      .addCase(getGroupsByBranch.pending, (state) => {
+        console.log('🔄 Fetching groups by branch...');
+        state.groupsByBranchLoading = true;
+        state.groupsByBranchError = null;
+      })
+      .addCase(getGroupsByBranch.fulfilled, (state, action) => {
+        console.log('✅ Groups by branch data received:', action.payload);
+        state.groupsByBranchLoading = false;
+        state.groupsByBranch = action.payload;
+      })
+      .addCase(getGroupsByBranch.rejected, (state, action) => {
+        console.error('❌ Error fetching groups by branch:', action.payload);
+        state.groupsByBranchLoading = false;
+        state.groupsByBranchError = action.payload;
       });
   },
 });
 
-export const { clearGroupsByDay, clearBestGroup, clearBestGroups, clearStudentsInGroup } = groupSlice.actions;
+export const { clearGroupsByDay, clearBestGroup, clearBestGroups, clearStudentsInGroup, clearGroupsByBranch } = groupSlice.actions;
 export default groupSlice.reducer;

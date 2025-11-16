@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { exportGroupsToExcelWithData } from '../../../utils/exportGroupsToExcelWithData';
+import { exportBranchToExcel, validateGroupsDataForExport } from '../../../utils/exportBranchToExcel';
+import { getGroupsByBranch } from '../../../store/group/groupGetGroupsByBranchThunk';
 import EditStudentDialog from '../../Students/components/EditStudentDialog';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { exportGroupStudentsToExcel } from '../../Groups/components/GroupStudentsExportExcel';
@@ -101,7 +103,7 @@ import { fetchInstructors } from '../../../store/instructor/instructorGetAllThun
 const EnrollStudent = () => {
   // ...existing code...
 
-  // כפתור יצוא לאקסל
+  // כפתור יצוא לאקסל - פונקציה כללית
   const handleExportGroupsExcel = async () => {
     try {
       if (!selectedBranch) {
@@ -136,6 +138,68 @@ const EnrollStudent = () => {
       });
     }
   };
+
+  // כפתור יצוא סניף לאקסל - פונקציה חדשה
+  const handleExportBranchExcel = async () => {
+    try {
+      if (!selectedBranch) {
+        setNotification({ 
+          open: true, 
+          message: 'לא נבחר סניף לייצוא', 
+          severity: 'error' 
+        });
+        return;
+      }
+
+      // הצגת הודעה על התחלת הייצוא
+      setNotification({ 
+        open: true, 
+        message: `מתחיל ייצוא נתוני ${selectedBranch.name}...`, 
+        severity: 'info' 
+      });
+
+      // קבלת נתוני הקבוצות והתלמידים של הסניף
+      console.log('🔄 מבקש נתוני סניף:', selectedBranch.branchId);
+      const result = await dispatch(getGroupsByBranch(selectedBranch.branchId));
+      
+      if (result.meta.requestStatus === 'fulfilled' && result.payload) {
+        const branchData = result.payload;
+        
+        // וואליצציה של הנתונים
+        if (!validateGroupsDataForExport(branchData)) {
+          setNotification({ 
+            open: true, 
+            message: 'אין נתונים תקינים לייצוא בסניף זה', 
+            severity: 'warning' 
+          });
+          return;
+        }
+
+        // ייצוא לאקסל
+        const exportResult = exportBranchToExcel(branchData, selectedBranch.name);
+        
+        if (exportResult.success) {
+          setNotification({ 
+            open: true, 
+            message: `נתוני ${selectedBranch.name} יוצאו בהצלחה! ${exportResult.message}`, 
+            severity: 'success' 
+          });
+        } else {
+          throw new Error(exportResult.error);
+        }
+      } else {
+        throw new Error('לא הצלחנו לקבל נתוני סניף מהשרת');
+      }
+
+    } catch (error) {
+      console.error('❌ שגיאה בייצוא סניף:', error);
+      setNotification({ 
+        open: true, 
+        message: `שגיאה בייצוא נתוני ${selectedBranch?.name || 'הסניף'}: ${error.message}`, 
+        severity: 'error' 
+      });
+    }
+  };
   const dispatch = useDispatch();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -156,7 +220,9 @@ const EnrollStudent = () => {
   const bestGroup = useSelector(state => state.groups.bestGroupForStudent);
   const studentsInGroup = useSelector(state => state.groups.studentsInGroup || []);
   const studentsInGroupLoading = useSelector(state => state.groups.studentsInGroupLoading);
-const instructors = useSelector(state => state.instructors.instructors || []);
+  const instructors = useSelector(state => state.instructors.instructors || []);
+  const groupsByBranch = useSelector(state => state.groups.groupsByBranch || []);
+  const groupsByBranchLoading = useSelector(state => state.groups.groupsByBranchLoading);
 
   const loading = useSelector(state =>
     state.courses.loading ||
@@ -2213,9 +2279,64 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
           <Typography variant="h5" fontWeight="bold" color="#1E3A8A">
             {selectedCourse?.couresName} - בחר סניף
           </Typography>
-  
+    {/* כפתור יצוא כללי */}
+        <Button
+          variant="contained"
+          onClick={handleExportGroupsExcel}
+          sx={{
+            background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+            color: '#374151',
+            border: '2px solid #e5e7eb',
+            borderRadius: '18px',
+            px: 4,
+            py: 2,
+            fontWeight: 600,
+            fontSize: '1rem',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+            minWidth: 260,
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            textTransform: 'none',
+            backdropFilter: 'blur(10px)',
+            position: 'relative',
+            overflow: 'hidden',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: '-100%',
+              width: '100%',
+              height: '100%',
+              background: 'linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.05), transparent)',
+              transition: 'left 0.6s ease-in-out'
+            },
+            '&:hover': {
+              background: 'linear-gradient(135deg, #dbeafe 0%, #e0f2fe 100%)',
+              border: '2px solid #3b82f6',
+              color: '#1e40af',
+              boxShadow: '0 8px 25px rgba(59, 130, 246, 0.15)',
+              transform: 'translateY(-1px)',
+              '&::before': {
+                left: '100%'
+              }
+            },
+            '&:active': {
+              transform: 'translateY(0px)',
+              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.2)'
+            }
+          }}
+        >
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 1.5,
+            letterSpacing: '0.01em'
+          }}>
+            <Box sx={{ fontSize: '18px', opacity: 0.8 }}>📊</Box>
+            <span>יצוא קבוצות + תלמידים לאקסל</span>
+          </Box>
+        </Button>
          
-        </Box>
+        </Box><br />
         {/* טבלת ערים וסניפים */}
         <Box sx={{ width: '100%', overflowX: 'auto', mt: 2 }}>
           {rows.map((citiesRow, rowIdx) => (
@@ -2372,49 +2493,39 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
             return `${courseName} - ${branchAddress} - בחר קבוצה`;
           })()}
         </Typography>
-         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mb: 2 }}>
+        {/* כפתור יצוא סניף */}
         <Button
           variant="contained"
-          onClick={handleExportGroupsExcel}
+          onClick={handleExportBranchExcel}
+          disabled={groupsByBranchLoading}
           sx={{
-            background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
-            color: '#374151',
-            border: '2px solid #e5e7eb',
+            background: 'linear-gradient(135deg, #4ee884ff 0%, #5036d6ff 100%)',
+            color: 'white',
+            border: '2px solid #f2f5fbff',
             borderRadius: '18px',
             px: 4,
             py: 2,
             fontWeight: 600,
             fontSize: '1rem',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-            minWidth: 260,
+            boxShadow: '0 4px 12px rgba(16, 120, 185, 0.25)',
+            minWidth: 240,
             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             textTransform: 'none',
-            backdropFilter: 'blur(10px)',
             position: 'relative',
             overflow: 'hidden',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: '-100%',
-              width: '100%',
-              height: '100%',
-              background: 'linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.05), transparent)',
-              transition: 'left 0.6s ease-in-out'
-            },
             '&:hover': {
-              background: 'linear-gradient(135deg, #dbeafe 0%, #e0f2fe 100%)',
-              border: '2px solid #3b82f6',
-              color: '#1e40af',
-              boxShadow: '0 8px 25px rgba(59, 130, 246, 0.15)',
+              background: 'linear-gradient(135deg, #057496ff 0%, #045178ff 100%)',
+              border: '2px solid #056196ff',
+              boxShadow: '0 8px 25px rgba(16, 165, 185, 0.35)',
               transform: 'translateY(-1px)',
-              '&::before': {
-                left: '100%'
-              }
             },
             '&:active': {
               transform: 'translateY(0px)',
-              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.2)'
+            },
+            '&:disabled': {
+              opacity: 0.6,
+              cursor: 'not-allowed'
             }
           }}
         >
@@ -2424,10 +2535,16 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
             gap: 1.5,
             letterSpacing: '0.01em'
           }}>
-            <Box sx={{ fontSize: '18px', opacity: 0.8 }}>📊</Box>
-            <span>יצוא קבוצות + תלמידים לאקסל</span>
+            {groupsByBranchLoading ? (
+              <CircularProgress size={16} sx={{ color: 'white' }} />
+            ) : (
+              <Box sx={{ fontSize: '18px' }}>🏢</Box>
+            )}
+            <span>יצוא פרטי סניף לאקסל</span>
           </Box>
         </Button>
+
+      
       </Box>
       </Box>
       {/* מיון לפי ימים ושעות, הצגת יום רק אם יש קבוצות */}

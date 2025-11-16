@@ -15,8 +15,8 @@ export async function exportGroupStudentsToExcel(groupId, groupName, dispatch) {
       'טלפון': student.phone || '',
       'שם פרטי': student.studentName?.split(' ')[0] || '',
       'שם משפחה': student.studentName?.split(' ').slice(1).join(' ') || '',
-      'כתובת': '', 
-      'עיר': student.city || '',
+       'עיר': student.city || '',
+      'קופת חולים': student.healthFound || '',
       'מזהה': student.studentId || '',
       'מידע נוסף': groupData.instructorName || ''
     }));
