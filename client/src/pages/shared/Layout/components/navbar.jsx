@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -83,6 +82,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { clearCurrentUser, selectUserData, setCurrentUser } from '../../../../store/user/userSlice';
 import LoginDialog from '../../../LogIn/LogInDialog';
 import UserRegistrationDialog from '../../../LogIn/UserRegistrationDialog';
+import { styled } from '@mui/system';
 
 const Navbar = () => {
   const dispatch = useDispatch();
@@ -683,6 +683,10 @@ const getUserDisplayName = () => {
             marginRight: 0,
             position: 'relative',
             zIndex: 1
+          },
+          '&:hover, &:active': {
+            zIndex: 10,
+            position: 'relative',
           }
         }}
         // ✅ הסר את startIcon ו-endIcon מהכפתור עצמו
@@ -751,12 +755,13 @@ const getUserDisplayName = () => {
   );
 };
   // כפתור ניווט מעוצב
- const NavButton = ({ item, index }) => (
+const NavButton = ({ item, index }) => (
   <motion.div
+    style={{ flex: '1 1 0', minWidth: 0, display: 'flex' }}
     whileHover={{ scale: 1.02 }}
     whileTap={{ scale: 0.98 }}
   >
-    <Tooltip
+          <Tooltip
       title={
         <Box sx={{ p: 1.5, maxWidth: 300 }}>
           <Typography variant="subtitle1" sx={{ 
@@ -779,7 +784,7 @@ const getUserDisplayName = () => {
         </Box>
       }
     >
-      <Button
+            <Button
         onClick={item.isMore ? handleMoreMenuOpen : () => handleNavigate(item.path)}
         startIcon={item.isMore ? <ExpandMore sx={{ fontSize: '18px !important' }} /> : item.icon}
         sx={{
@@ -789,14 +794,15 @@ const getUserDisplayName = () => {
             : item.isMore 
               ? 'rgba(255, 255, 255, 0.15)'
               : 'rgba(255, 255, 255, 0.1)',
-          borderRadius: 2,
-          px: { xs: 0.5, sm: 0.8, md: 1.2, lg: 1.5 },
-          py: { xs: 1, sm: 1.1, md: 1.2 },
-          mx: 0,
-          minWidth: item.isMore ? { xs: '40px', sm: '50px', md: '60px' } : { xs: '45px', sm: '65px', md: '80px', lg: '100px' },
-          maxWidth: item.isMore ? { xs: '40px', sm: '50px', md: '60px' } : { xs: '70px', sm: '90px', md: '110px', lg: '130px' },
+                borderRadius: 2,
+                px: { xs: 0.4, sm: 0.6, md: 0.8, lg: 1 },
+                py: { xs: 0.45, sm: 0.6, md: 0.7 },
+                minHeight: 40,
+                mx: 0,
           flex: '1 1 0',
-          width: 'auto',
+          minWidth: 0,
+          maxWidth: 'none',
+          width: '100%',
           fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.9rem', lg: '1rem' },
           fontWeight: ((item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path)) ? 600 : 500,
           textTransform: 'none',
@@ -812,6 +818,7 @@ const getUserDisplayName = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          width: '100%',
           position: 'relative',
           '&:hover': {
             background: ((item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path))
@@ -926,15 +933,7 @@ const getUserDisplayName = () => {
 
     <Divider key="divider1" sx={{ my: 0 }} />,
 
-    <MenuItem key="my-notes" onClick={handleNavigateToNotes} sx={{ py: 2, px: 3 }}>
-    <StickyNote2 sx={{ mr: 2, color: '#667eea' }} />
-    <Box>
-      <Typography variant="body1" sx={{ fontWeight: 600 }}>ההערות שלי</Typography>
-      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-        צפייה וניהול ההערות האישיות שלי
-      </Typography>
-    </Box>
-  </MenuItem>,
+
   <Divider key="divider2" sx={{ my: 1 }} />,
 
   <MenuItem key="logout" onClick={handleLogout} sx={{ color: 'error.main', py: 2, px: 3 }}>
@@ -1163,12 +1162,12 @@ const getUserDisplayName = () => {
           {!isMobile && (
             <Box sx={{
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-evenly',
+              alignItems: 'stretch',
+              justifyContent: 'space-between',
               flex: 1,
-              gap: { xs: 0.2, sm: 0.4, md: 0.6 },
-              px: { xs: 0.5, sm: 1, md: 1.5 },
-              minHeight: 64,
+              gap: { xs: '4px', sm: '6px', md: '8px' },
+              px: { xs: 0.3, sm: 0.6, md: 1 },
+              minHeight: 48,
               width: '100%',
               maxWidth: 'none',
               overflow: 'hidden',
