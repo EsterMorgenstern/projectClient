@@ -5126,6 +5126,7 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
               }
               const groupStartDate = selectedGroup.startDate;
               const numOfLessons = selectedGroup.numOfLessons;
+              const lessonsCompleted = selectedGroup.lessonsCompleted || 0;
               // השתמש בשדה enrollDate שהמשתמש ממלא
               const enrollDateCalc = enrollDate || groupStartDate;
               function getStudentLessonDates(groupStartDate, enrollDate, lessonDayOfWeek, numOfLessons) {

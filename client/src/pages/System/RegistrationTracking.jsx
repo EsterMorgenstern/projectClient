@@ -1212,7 +1212,7 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                     <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                         <Tooltip 
-                          title="👆 לחץ כאן לצפייה בפרטי התלמיד המלאים" 
+                          title="לחץ לצפייה בפרטי התלמיד 👆"
                           placement="top"
                           arrow
                           sx={{

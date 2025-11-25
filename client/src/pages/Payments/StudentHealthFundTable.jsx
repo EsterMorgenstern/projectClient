@@ -25,6 +25,8 @@ import { fetchHealthFunds } from '../../store/healthFund/fetchHealthFunds';
 import { getPaymentNotes, extractStudentIdsByAutomaticBillingNotes } from '../../store/studentNotes/getPaymentNotes';
 import { selectPaymentNotes, selectPaymentNotesLoading } from '../../store/studentNotes/studentNoteSlice';
 import DraggablePaper, { DragHandle } from '../../components/DraggablePaper';
+import StudentCoursesDialog from '../Students/components/studentCoursesDialog';
+import { getgroupStudentByStudentId } from '../../store/groupStudent/groupStudentGetByStudentIdThunk';
 
 // Styled table container inspired by instructorsTable and Home
 
@@ -121,6 +123,12 @@ const StudentHealthFundTable = () => {
   
   // דיאלוג ייצוא אקסל
   const [excelExportDialogOpen, setExcelExportDialogOpen] = useState(false);
+
+  // Student details dialog states
+  const [studentDetailsDialogOpen, setStudentDetailsDialogOpen] = useState(false);
+  const [selectedStudentForDetails, setSelectedStudentForDetails] = useState(null);
+  const [studentCourses, setStudentCourses] = useState([]);
+  const [loadingStudentCourses, setLoadingStudentCourses] = useState(false);
 
   // Notification state
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
@@ -1198,6 +1206,56 @@ const StudentHealthFundTable = () => {
     setExcelExportDialogOpen(false);
   };
 
+  // פונקציות לטיפול בדיאלוג פרטי תלמיד
+  const handleOpenStudentDetails = async (row) => {
+    try {
+      // בניית אובייקט התלמיד מנתוני השורה
+      const studentForDialog = {
+        id: row.studentId,
+        firstName: row.studentName?.split(' ')[0] || '',
+        lastName: row.studentName?.split(' ').slice(1).join(' ') || '',
+        email: row.email || '',
+        phone: row.phone || '',
+        city: row.city || '',
+        age: row.age || '',
+      };
+      
+      setSelectedStudentForDetails(studentForDialog);
+      
+      // פתיחת הדיאלוג מיד - ללא המתנה לטעינת הקורסים
+      setStudentDetailsDialogOpen(true);
+      
+      // איפוס קורסים קודמים ותחילת טעינה חדשה ברקע
+      setStudentCourses([]);
+      setLoadingStudentCourses(true);
+      
+      // טעינת קורסי התלמיד ברקע
+      try {
+        const coursesResult = await dispatch(getgroupStudentByStudentId(row.studentId));
+        if (coursesResult.payload) {
+          setStudentCourses(Array.isArray(coursesResult.payload) ? coursesResult.payload : []);
+        } else {
+          setStudentCourses([]);
+        }
+      } catch (coursesError) {
+        console.error('שגיאה בטעינת קורסי התלמיד:', coursesError);
+        setStudentCourses([]);
+      } finally {
+        setLoadingStudentCourses(false);
+      }
+      
+    } catch (error) {
+      console.error('שגיאה בפתיחת פרטי התלמיד:', error);
+    }
+  };
+
+  const handleCloseStudentDetails = () => {
+    setStudentDetailsDialogOpen(false);
+    setSelectedStudentForDetails(null);
+    setStudentCourses([]);
+    setLoadingStudentCourses(false);
+  };
+
   return (
   <Box sx={{ bgcolor: 'transparent', p: 0 }}>
     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
@@ -2165,7 +2223,27 @@ const StudentHealthFundTable = () => {
                   sx={{ background: idx % 2 === 0 ? '#f8fafc' : '#e2e8f0', height: 36 }}
                 >
                   <TableCell align="center">{highlightSearchTerm(row.studentId, searchTerm)}</TableCell>
-                  <TableCell align="center">{highlightSearchTerm(row.studentName || '-', searchTerm)}</TableCell>
+                  <TableCell 
+                    align="center" 
+                    sx={{ 
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        bgcolor: 'rgba(37, 99, 235, 0.08)',
+                        '& span': {
+                          color: '#2563EB',
+                          textDecoration: 'underline'
+                        }
+                      }
+                    }}
+                    onClick={() => handleOpenStudentDetails(row)}
+                  >
+                    <Tooltip title="לחץ לצפייה בפרטי התלמיד 👆" arrow>
+                      <span style={{ transition: 'all 0.2s ease' }}>
+                        {highlightSearchTerm(row.studentName || '-', searchTerm)}
+                      </span>
+                    </Tooltip>
+                  </TableCell>
                   <TableCell align="center">{highlightSearchTerm(row.age ?? '-', searchTerm)}</TableCell>
                   <TableCell align="center">{highlightSearchTerm(row.city || '-', searchTerm)}</TableCell>
                   <TableCell align="center">{highlightSearchTerm(row.startDateGroup ? new Date(row.startDateGroup).toLocaleDateString('he-IL') : '-', searchTerm)}</TableCell>
@@ -3409,6 +3487,18 @@ const StudentHealthFundTable = () => {
         data={healthFunds}
         healthFundList={healthFundList}
         dispatch={dispatch}
+      />
+
+      {/* דיאלוג פרטי תלמיד */}
+      <StudentCoursesDialog
+        open={studentDetailsDialogOpen}
+        onClose={handleCloseStudentDetails}
+        student={selectedStudentForDetails}
+        studentCourses={studentCourses}
+        loadingCourses={loadingStudentCourses}
+        showAddButton={false}
+        title={selectedStudentForDetails ? `${selectedStudentForDetails.firstName} ${selectedStudentForDetails.lastName}` : ''}
+        subtitle={selectedStudentForDetails ? `ת"ז: ${selectedStudentForDetails.id}${selectedStudentForDetails.email ? ` | 📧 ${selectedStudentForDetails.email}` : ''}` : ''}
       />
 
       {/* Notification Snackbar */}
