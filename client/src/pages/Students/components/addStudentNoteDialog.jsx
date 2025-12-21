@@ -982,7 +982,7 @@ const AddStudentNoteDialog = ({
                             }}
                         >
                             {isSaving ? 'שומר...' : (editMode ? 'עדכן הערה' : 'שמור הערה')}
-                        </Button>
+                            </Button>
                     </Box>
                 </DialogActions>
             </motion.div>

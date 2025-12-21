@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import AddStudentHealthFundDialog from './AddStudentHealthFundDialog';
 import {
   Dialog,
   DialogTitle,
@@ -15,7 +16,9 @@ import {
   Typography,
   IconButton,
   Divider,
-  Tooltip
+  Tooltip,
+  Snackbar,
+  Alert
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -78,6 +81,10 @@ const AddStudentDialog = ({
   const [loading, setLoading] = useState(false);
   const [termsDialogOpen, setTermsDialogOpen] = useState(false);
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
+  // דיאלוג סטודנט קופה
+  const [healthFundDialogOpen, setHealthFundDialogOpen] = useState(false);
+  // Notification state
+  const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
   const [studentNote, setStudentNote] = useState('');
   const [savedStudentData, setSavedStudentData] = useState(null);
 
@@ -370,7 +377,9 @@ const AddStudentDialog = ({
         ...newStudent,
         age: parseInt(newStudent.age),
         phone: newStudent.phone.toString(),
-        CreatedBy: currentUser ? `${currentUser.firstName || currentUser.FirstName || ''} ${currentUser.lastName || currentUser.LastName || ''}` : 'מערכת'
+        CreatedBy: newStudent.CreatedBy && newStudent.CreatedBy.trim() !== ''
+          ? newStudent.CreatedBy
+          : (currentUser ? `${currentUser.firstName || currentUser.FirstName || ''} ${currentUser.lastName || currentUser.LastName || ''}` : 'מערכת')
       };
 
       // ננסה קודם הוספה פשוטה
@@ -502,9 +511,16 @@ const AddStudentDialog = ({
     
     if (onSuccess) {
       console.log('📤 Sending student data to callback:', studentData);
-        onSuccess({ ...studentData, enrollDate, groupStatus: localGroupStatus }, 'התלמיד נוסף בהצלחה!', 'success');
-
+      onSuccess({ ...studentData, enrollDate, groupStatus: localGroupStatus }, 'התלמיד נוסף בהצלחה!', 'success');
     }
+  };
+  // פונקציה לפתיחת דיאלוג סטודנט קופה
+  const handleOpenHealthFundDialog = () => {
+    setHealthFundDialogOpen(true);
+  };
+  
+  const handleCloseHealthFundDialog = () => {
+    setHealthFundDialogOpen(false);
   };
 
   const handleNoteSubmit = (noteData) => {
@@ -1147,7 +1163,7 @@ useEffect(() => {
             transition: 'all 0.3s ease'
           }}
         >
-          {loading ? 'מוסיף...' : submitButtonText}
+          {loading ? '...מוסיף' : submitButtonText}
         </Button>
       </DialogActions>
 
@@ -1156,6 +1172,16 @@ useEffect(() => {
         open={termsDialogOpen}
         onClose={() => setTermsDialogOpen(false)}
         onAccept={() => setTermsDialogOpen(false)}
+      />
+
+      {/* דיאלוג סטודנט קופה */}
+      <AddStudentHealthFundDialog
+        open={healthFundDialogOpen}
+        onClose={handleCloseHealthFundDialog}
+        studentId={savedStudentData?.id || newStudent.id}
+        onSuccess={() => {
+          setHealthFundDialogOpen(false);
+        }}
       />
 
       {/* דיאלוג הוספת הערה */}
@@ -1172,6 +1198,22 @@ useEffect(() => {
           isPrivate: false
         }}
       />
+
+      {/* Notification Snackbar */}
+      <Snackbar 
+        open={notification.open} 
+        autoHideDuration={4000} 
+        onClose={() => setNotification({ ...notification, open: false })}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={() => setNotification({ ...notification, open: false })} 
+          severity={notification.severity} 
+          sx={{ width: '100%' }}
+        >
+          {notification.message}
+        </Alert>
+      </Snackbar>
     </Dialog>
   );
 };

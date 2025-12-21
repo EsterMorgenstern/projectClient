@@ -728,11 +728,13 @@ const StudentHealthFundTable = () => {
   }, [debouncedSearchTerm]);
 
   const handleOpenAddDialog = () => {
-    // Set current date as default for startDate
+    // Set current date as default for startDate and reset treatmentsUsed to 0
     const today = new Date().toISOString().split('T')[0];
     setFormData(prev => ({
       ...prev,
-      startDate: today
+      startDate: today,
+      treatmentsUsed: '0',
+      reportedTreatments: '0',
     }));
     setAddDialogOpen(true);
   };
@@ -2835,25 +2837,26 @@ const StudentHealthFundTable = () => {
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
-                select
-                label={<Box sx={{ display: 'flex', alignItems: 'center', direction: 'rtl' }}><LocalHospital sx={{ color: '#764ba2' }} /> <span>קופה</span><span style={{ color: '#d32f2f', fontWeight: 'bold', marginRight: 2 }}>*</span></Box>}
-                fullWidth
-                variant="outlined"
-                value={formData.healthFundId}
-                onChange={e => handleInputChange('healthFundId', e.target.value)}
-                inputProps={{ style: { direction: 'rtl', textAlign: 'right' } }}
-                SelectProps={{ native: false, renderValue: (selected) => {
-                  const fund = Array.isArray(healthFundList) ? healthFundList.find(f => String(f.healthFundId) === String(selected)) : null;
-                  return fund ? `${fund.name} (${fund.fundType})` : '';
-                }}}
-                helperText="בחירת קופה תמלא אוטומטית את שדות הטיפולים"
-              >
-                {Array.isArray(healthFundList) && healthFundList.map(fund => (
-                  <MenuItem key={fund.healthFundId} value={fund.healthFundId}>
-                    {fund.name} ({fund.fundType})
-                  </MenuItem>
-                ))}
-              </TextField>
+                  select
+                  label={<Box sx={{ display: 'flex', alignItems: 'center', direction: 'rtl' }}><LocalHospital sx={{ color: '#764ba2' }} /> <span>קופה</span><span style={{ color: '#d32f2f', fontWeight: 'bold', marginRight: 2 }}>*</span></Box>}
+                  fullWidth
+                  variant="outlined"
+                  value={formData.healthFundId}
+                  onChange={e => handleInputChange('healthFundId', e.target.value)}
+                  inputProps={{ style: { direction: 'rtl', textAlign: 'right' } }}
+                  SelectProps={{ native: false, renderValue: (selected) => {
+                    const fund = Array.isArray(healthFundList) ? healthFundList.find(f => String(f.healthFundId) === String(selected)) : null;
+                    return fund ? `${fund.name} (${fund.fundType})` : '';
+                  }}}
+                  helperText="בחירת קופה תמלא אוטומטית את שדות הטיפולים"
+                >
+                  <MenuItem value="" disabled>בחר קופה</MenuItem>
+                  {Array.isArray(healthFundList) && healthFundList.map(fund => (
+                    <MenuItem key={fund.healthFundId} value={fund.healthFundId}>
+                      {fund.name} ({fund.fundType})
+                    </MenuItem>
+                  ))}
+                </TextField>
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField 
@@ -2954,46 +2957,46 @@ const StudentHealthFundTable = () => {
                       border: `1px solid ${healthFundChecklist[item.key] ? '#BBF7D0' : '#FECACA'}`,
                       transition: 'all 0.2s ease'
                     }}>
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={healthFundChecklist[item.key]}
-                            onChange={(e) => handleChecklistChange(item.key, e.target.checked)}
-                            sx={{
-                              color: healthFundChecklist[item.key] ? '#22C55E' : '#D1D5DB',
-                              '&.Mui-checked': {
-                                color: '#22C55E',
-                              },
-                            }}
-                          />
-                        }
-                        label={
-                          <Box sx={{ textAlign: 'right', flex: 1 }}>
-                            <Typography variant="body1" sx={{ 
-                              fontWeight: 500, 
-                              color: healthFundChecklist[item.key] ? '#166534' : '#DC2626',
-                            }}>
-                              {item.label}
-                            </Typography>
-                            <Typography variant="body2" sx={{ 
-                              color: '#6B7280',
-                              fontSize: '0.85rem'
-                            }}>
-                              {item.description}
-                            </Typography>
-                          </Box>
-                        }
-                        sx={{ 
-                          alignItems: 'flex-start',
-                          margin: 0,
-                          width: '100%',
-                          '& .MuiFormControlLabel-label': {
-                            flex: 1,
-                            textAlign: 'right'
-                          }
-                        }}
-                      />
-                      
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Checkbox
+                          checked={healthFundChecklist[item.key]}
+                          onChange={async (e) => {
+                            handleChecklistChange(item.key, e.target.checked);
+                            // צור הערה אוטומטית מיידית כאשר מסומן
+                            if (e.target.checked) {
+                              await createAutomaticHealthFundNotes(formData.studentId);
+                              // רענון הערות לאחר יצירה
+                              if (formData.studentId) {
+                                try {
+                                  await dispatch(getNotesByStudentId(formData.studentId)).unwrap();
+                                } catch (err) {
+                                  console.error('שגיאה ברענון הערות לאחר יצירת הערה אוטומטית:', err);
+                                }
+                              }
+                            }
+                          }}
+                          sx={{
+                            color: healthFundChecklist[item.key] ? '#22C55E' : '#D1D5DB',
+                            '&.Mui-checked': {
+                              color: '#22C55E',
+                            },
+                          }}
+                        />
+                        <Box sx={{ textAlign: 'right', flex: 1 }}>
+                          <Typography variant="body1" sx={{ 
+                            fontWeight: 500, 
+                            color: healthFundChecklist[item.key] ? '#166534' : '#DC2626',
+                          }}>
+                            {item.label}
+                          </Typography>
+                          <Typography variant="body2" sx={{ 
+                            color: '#6B7280',
+                            fontSize: '0.85rem'
+                          }}>
+                            {item.description}
+                          </Typography>
+                        </Box>
+                      </Box>
                       {/* שדה טקסט נוסף לכל פריט */}
                       {healthFundChecklist[item.key] && (
                         <TextField

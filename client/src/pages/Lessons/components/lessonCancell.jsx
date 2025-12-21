@@ -105,9 +105,23 @@ const LessonCancellationManager = ({
     } = lessonCancellationsState;
 
     const {
-        groups = [],
-        loading: groupsLoading = false
+        // Group search and sorting
+        // groupsState.groups is the array, groupsState.loading is loading
+        // branchName is assumed to be city
+        // Add search state
+        // Sort by city, then filter by search
+        // Use filteredGroups in the Select
+        groups = groupsState.groups || [],
+        groupsLoading = groupsState.loading || false
     } = groupsState;
+
+    const [groupSearch, setGroupSearch] = useState('');
+    // Sort groups by city (branchName assumed as city)
+    const sortedGroups = [...groups].sort((a, b) => (a.branchName || '').localeCompare(b.branchName || ''));
+    // Filter by search
+    const filteredGroups = groupSearch.trim()
+        ? sortedGroups.filter(g => g.groupName && g.groupName.toLowerCase().includes(groupSearch.trim().toLowerCase()))
+        : sortedGroups;
 
     // Local state
     const [selectedGroup, setSelectedGroup] = useState(selectedGroupId || '');
@@ -1323,6 +1337,13 @@ const LessonCancellationManager = ({
                                     }}>
                                         בחר קבוצה
                                     </InputLabel>
+                                    <TextField
+                                        fullWidth
+                                        label="חפש לפי שם קבוצה"
+                                        value={groupSearch}
+                                        onChange={e => setGroupSearch(e.target.value)}
+                                        sx={{ mb: 2, direction: 'rtl' }}
+                                    />
                                     <Select
                                         value={selectedGroup}
                                         onChange={(e) => setSelectedGroup(e.target.value)}
@@ -1335,7 +1356,7 @@ const LessonCancellationManager = ({
                                             }
                                         }}
                                     >
-                                        {groups.map(group => (
+                                        {filteredGroups.map(group => (
                                             <MenuItem
                                                 key={group.groupId}
                                                 value={group.groupId}

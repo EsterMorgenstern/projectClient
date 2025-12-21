@@ -79,6 +79,7 @@ import { getgroupStudentByStudentId } from '../../../store/groupStudent/groupStu
 import { getStudentsByGroupId } from '../../../store/group/groupGetStudentsByGroupId';
 import { clearStudentsInGroup } from '../../../store/group/groupSlice';
 import AddStudentDialog from '../../Students/components/AddStudentDialog';
+import AddStudentHealthFundDialog from '../../Students/components/AddStudentHealthFundDialog';
 import { addCourse } from '../../../store/course/courseAddThunk';
 import { updateCourse } from '../../../store/course/courseUpdateThunk';
 import { addBranch } from '../../../store/branch/branchAddThunk';
@@ -106,15 +107,7 @@ const EnrollStudent = () => {
   // כפתור יצוא לאקסל - פונקציה כללית
   const handleExportGroupsExcel = async () => {
     try {
-      if (!selectedBranch) {
-        setNotification({ 
-          open: true, 
-          message: 'לא נבחר סניף לייצוא הקבוצות', 
-          severity: 'error' 
-        });
-        return;
-      }
-
+     
       setNotification({ 
         open: true, 
         message: 'מתחיל ייצוא קבוצות לאקסל...', 
@@ -304,6 +297,10 @@ const [studentLessons, setStudentLessons] = useState(0);
   const [selectedGroupForStudents, setSelectedGroupForStudents] = useState(null);
   const [enhancedStudentsInGroup, setEnhancedStudentsInGroup] = useState([]);
   const [addStudentDialogOpen, setAddStudentDialogOpen] = useState(false);
+
+  // Health Fund Dialog state
+  const [healthFundDialogOpen, setHealthFundDialogOpen] = useState(false);
+  const [selectedStudentForHealthFund, setSelectedStudentForHealthFund] = useState(null);
 
   // Student Group Search states
   const [studentSearchDialogOpen, setStudentSearchDialogOpen] = useState(false);
@@ -899,6 +896,9 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
     console.log('🚀 handleAddStudentAndEnroll called with:', { studentData, message, severity });
     
     if (severity === 'success' && studentData) {
+      // שמירת פרטי התלמיד לפתיחת דיאלוג קופת חולים
+      setSelectedStudentForHealthFund(studentData);
+      
       // בדיקה אם studentData הוא אובייקט תקין
       if (typeof studentData !== 'object' || !studentData.id) {
         console.error('❌ Invalid studentData received:', studentData);
@@ -957,27 +957,46 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
 
         setNotification({
           open: true,
-          message: `התלמיד ${studentData.firstName} ${studentData.lastName} נוסף בהצלחה ושובץ לקבוצה!`,
+          message: `התלמיד ${studentData.firstName} ${studentData.lastName} נוסף בהצלחה ושובץ לקבוצה`,
           severity: 'success',
           action: (
-            <Button
-              color="inherit"
-              size="small"
-              onClick={() => fetchAndShowStudentCourses(studentData.id)}
-              sx={{
-                fontWeight: 'bold',
-                bgcolor: 'rgba(255, 255, 255, 0.2)',
-                borderRadius: '8px',
-                px: 2,
-                '&:hover': {
-                  bgcolor: 'rgba(255, 255, 255, 0.3)',
-                }
-              }}
-            >
-              צפה בחוגים
-            </Button>
-            )
-          });
+            <Box sx={{ direction: 'rtl', textAlign: 'right', display: 'flex', gap: 1 }}>
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => fetchAndShowStudentCourses(studentData.id)}
+                sx={{
+                  fontWeight: 'bold',
+                  bgcolor: 'rgba(255, 255, 255, 0.2)',
+                  borderRadius: '8px',
+                  px: 2,
+                  ml: 1,
+                  '&:hover': {
+                    bgcolor: 'rgba(255, 255, 255, 0.3)',
+                  }
+                }}
+              >
+                צפה בחוגים
+              </Button>
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => handleOpenHealthFundDialog(studentData)}
+                sx={{
+                  fontWeight: 'bold',
+                  bgcolor: 'rgba(16, 185, 129, 0.3)',
+                  borderRadius: '8px',
+                  px: 2,
+                  '&:hover': {
+                    bgcolor: 'rgba(16, 185, 129, 0.4)',
+                  }
+                }}
+              >
+                🏥 קופת חולים
+              </Button>
+            </Box>
+          )
+        });
         }
         
       } catch (error) {
@@ -987,22 +1006,41 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
           message: `התלמיד נוסף בהצלחה אך היתה שגיאה בשיבוץ לקבוצה: ${error.message || 'אנא נסה שנית'}`,
           severity: 'warning',
           action: (
-            <Button
-              color="inherit"
-              size="small"
-              onClick={() => fetchAndShowStudentCourses(studentData.id)}
-              sx={{
-                fontWeight: 'bold',
-                bgcolor: 'rgba(255, 255, 255, 0.2)',
-                borderRadius: '8px',
-                px: 2,
-                '&:hover': {
-                  bgcolor: 'rgba(255, 255, 255, 0.3)',
-                }
-              }}
-            >
-              צפה בחוגים
-            </Button>
+            <>
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => fetchAndShowStudentCourses(studentData.id)}
+                sx={{
+                  fontWeight: 'bold',
+                  bgcolor: 'rgba(255, 255, 255, 0.2)',
+                  borderRadius: '8px',
+                  px: 2,
+                  ml: 1,
+                  '&:hover': {
+                    bgcolor: 'rgba(255, 255, 255, 0.3)',
+                  }
+                }}
+              >
+                צפה בחוגים
+              </Button>
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => handleOpenHealthFundDialog(studentData)}
+                sx={{
+                  fontWeight: 'bold',
+                  bgcolor: 'rgba(16, 185, 129, 0.3)',
+                  borderRadius: '8px',
+                  px: 2,
+                  '&:hover': {
+                    bgcolor: 'rgba(16, 185, 129, 0.4)',
+                  }
+                }}
+              >
+                🏥 קופת חולים
+              </Button>
+            </>
           )
         });
       }
@@ -1335,6 +1373,37 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
 
   const handleOpenStudentSearch = () => {
     setStudentSearchDialogOpen(true);
+  };
+
+  // Health Fund Dialog functions
+  const handleOpenHealthFundDialog = (studentData = null) => {
+    console.log('🏥 handleOpenHealthFundDialog called with:', studentData);
+    console.log('🏥 selectedStudentForHealthFund:', selectedStudentForHealthFund);
+    
+    const student = studentData || selectedStudentForHealthFund;
+    console.log('🏥 Final student data:', student);
+    
+    if (student && student.id) {
+      setSelectedStudentForHealthFund(student);
+      setHealthFundDialogOpen(true);
+      
+      // סגור את דיאלוג השיבוץ לחוג אם הוא פתוח
+      setAddStudentDialogOpen(false);
+      
+      console.log('✅ Health fund dialog opened');
+    } else {
+      console.error('❌ No student data available for health fund dialog');
+      setNotification({
+        open: true,
+        message: 'שגיאה: לא נמצאו פרטי תלמיד',
+        severity: 'error'
+      });
+    }
+  };
+
+  const handleCloseHealthFundDialog = () => {
+    setHealthFundDialogOpen(false);
+    setSelectedStudentForHealthFund(null);
   };
 
   const handleAddCourse = async () => {
@@ -3640,6 +3709,7 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
             
             <Button
               onClick={() => {
+                setEnrollDialogOpen(false);
                 setAddStudentDialogOpen(true);
               }}
               variant="outlined"
@@ -5077,6 +5147,21 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
         totalLessons: selectedGroup?.numOfLessons || 0,
         completedLessons: selectedGroup?.lessonsCompleted || 0,
         studentLessons: Math.max((selectedGroup?.numOfLessons || 0) - (selectedGroup?.lessonsCompleted || 0), 0)
+      }}
+    />
+
+    {/* דיאלוג קופת חולים */}
+    <AddStudentHealthFundDialog
+      open={healthFundDialogOpen}
+      onClose={handleCloseHealthFundDialog}
+      studentId={selectedStudentForHealthFund?.id}
+      onSuccess={() => {
+        handleCloseHealthFundDialog();
+        setNotification({
+          open: true,
+          message: '!קופת חולים נוספה בהצלחה לתלמיד',
+          severity: 'success'
+        });
       }}
     />
 

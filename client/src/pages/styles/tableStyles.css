@@ -383,6 +383,7 @@
 .dialog-actions {
   padding: 20px 24px !important;
   background: #f8fafc !important;
+ margin-right: 37px !important;
   gap: 12px !important;
 }
 
