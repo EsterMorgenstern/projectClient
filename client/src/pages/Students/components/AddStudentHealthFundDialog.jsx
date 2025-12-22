@@ -82,6 +82,7 @@ const AddStudentHealthFundDialog = ({ open, onClose, studentId, onSuccess }) => 
     const [additionalNotes, setAdditionalNotes] = useState({});
 
     // פונקציה לטיפול בהערות נוספות לכל פריט בצ'קליסט
+    // שינוי הערה נוספת רק משנה state, לא יוצר הערה
     const handleAdditionalNoteChange = (key, value) => {
       setAdditionalNotes(prev => ({ ...prev, [key]: value }));
     };
@@ -95,84 +96,54 @@ const AddStudentHealthFundDialog = ({ open, onClose, studentId, onSuccess }) => 
     const autoNoteCreatedOnSaveRef = useRef(false);
     const autoNoteCreatedOnChecklistRef = useRef(false);
 
-    // Checklist note creation: only create a note if the checked set changes and at least one is checked
-    const lastChecklistRef = useRef({});
-    const handleChecklistChange = async (key, checked) => {
-      setHealthFundChecklist(prev => {
-        const updated = { ...prev, [key]: checked };
-        // Only create a note if the checked set changed and at least one is checked
-        const prevChecked = Object.entries(lastChecklistRef.current).filter(([k, v]) => v).map(([k]) => k).sort().join(',');
-        const updatedChecked = Object.entries(updated).filter(([k, v]) => v).map(([k]) => k).sort().join(',');
-        if (updatedChecked && updatedChecked !== prevChecked) {
-          createChecklistHealthFundNote(formData.studentId, updated);
-        }
-        lastChecklistRef.current = updated;
-        return updated;
-      });
+    // שינוי צ'קבוקס רק משנה state, לא יוצר הערה
+    const handleChecklistChange = (key, checked) => {
+      setHealthFundChecklist(prev => ({ ...prev, [key]: checked }));
     };
 
     // Checklist note logic (no 'commitment treatments' rule)
-    const createChecklistHealthFundNote = async (studentId, checklistState) => {
-      if (!studentId) return;
+    // בניית הערת גביה מלאה - תיווצר רק בלחיצה על שמור
+    const buildFullCollectionNoteContent = () => {
       const selectedHealthFund = memoizedHealthFundList.find(fund => String(fund.healthFundId || fund.id) === String(formData.healthFundId));
       const healthFundName = selectedHealthFund?.name || selectedHealthFund?.healthFundName || 'קופת חולים';
       let noteContent = `קופת החולים : ${healthFundName} \n\n`;
-      const checkedItems = [];
-      const checklist = checklistState || healthFundChecklist;
+      const checklist = healthFundChecklist;
+      const notes = additionalNotes;
       if (checklist.noReferralSent) {
         const item = '🚫 לא שלחו הפניה';
-        checkedItems.push(item);
-        const additionalNote = additionalNotes.noReferralSent || '';
+        const additionalNote = notes.noReferralSent || '';
         noteContent += `${item}${additionalNote ? ` - ${additionalNote}` : ''}\n`;
       }
       if (checklist.noEligibility) {
         const item = '❌ אין זכאות לטיפולים';
-        checkedItems.push(item);
-        const additionalNote = additionalNotes.noEligibility || '';
+        const additionalNote = notes.noEligibility || '';
         noteContent += `${item}${additionalNote ? ` - ${additionalNote}` : ''}\n`;
       }
       if (checklist.insufficientTreatments) {
-        const item = '📊 מס\' הטיפולים בהתחייבות לא מספיק';
-        checkedItems.push(item);
+        const item = "📊 מס' הטיפולים בהתחייבות לא מספיק";
         const treatmentsNote = additionalTreatmentsNeeded ? ` - יש לשלוח התחייבות חדשה עם ${additionalTreatmentsNeeded} טיפולים נוספים` : '';
-        const additionalNote = additionalNotes.insufficientTreatments || '';
+        const additionalNote = notes.insufficientTreatments || '';
         noteContent += `${item}${treatmentsNote}${additionalNote ? ` - ${additionalNote}` : ''}\n`;
       }
       if (checklist.treatmentsFinished) {
         const item = '🔚 נגמרו הטיפולים';
-        checkedItems.push(item);
-        const additionalNote = additionalNotes.treatmentsFinished || '';
+        const additionalNote = notes.treatmentsFinished || '';
         noteContent += `${item}${additionalNote ? ` - ${additionalNote}` : ''}\n`;
       }
       if (checklist.authorizationCancelled) {
-        const item = '🚨 הו\'ק בוטלה';
-        checkedItems.push(item);
-        const additionalNote = additionalNotes.authorizationCancelled || '';
+        const item = "🚨 הו'ק בוטלה";
+        const additionalNote = notes.authorizationCancelled || '';
         noteContent += `${item}${additionalNote ? ` - ${additionalNote}` : ''}\n`;
       }
-      if (checkedItems.length > 0) {
-        const currentDate = new Date().toISOString();
-        const noteData = {
-          studentId: parseInt(studentId),
-          authorId: currentUser?.id || currentUser?.userId,
-          authorName: currentUser?.name || currentUser?.firstName + ' ' + currentUser?.lastName,
-          authorRole: currentUser?.role,
-          noteContent: noteContent,
-          dateCreated: currentDate,
-          createdDate: currentDate,
-          created: currentDate,
-          date: currentDate,
-          noteType: 'הערת גביה',
-          priority: 'בינוני',
-          isPrivate: false,
-          isActive: true
-        };
-        try {
-          await dispatch(addStudentNote(noteData)).unwrap();
-        } catch (error) {
-          // Optionally show error
+      Object.entries(notes).forEach(([key, value]) => {
+        if (value && !checklist[key]) {
+          const itemObj = checklistItems.find(i => i.key === key);
+          if (itemObj) {
+            noteContent += `${itemObj.label} - ${value}\n`;
+          }
         }
-      }
+      });
+      return noteContent;
     };
 
     // Create the 'commitment treatments' note (on save), and append only unique checklist notes if any
@@ -419,8 +390,12 @@ const memoizedHealthFundList = useMemo(() => {
                 onChange={e => handleInputChange('healthFundId', e.target.value)}
                 sx={{ background: '#fff' }}
                 displayEmpty
-                renderValue={selected => selected ? (memoizedHealthFundList.find(fund => String(fund.healthFundId || fund.id) === String(selected))?.healthFundName || memoizedHealthFundList.find(fund => String(fund.healthFundId || fund.id) === String(selected))?.name || '') : ''}
-              >
+renderValue={selected => {
+  if (!selected) return '';
+  const fund = memoizedHealthFundList.find(fund => String(fund.healthFundId || fund.id) === String(selected));
+  if (!fund) return '';
+  return (fund.healthFundName || fund.name) + (fund.fundType ? ` - ${fund.fundType}` : '');
+}}              >
                 {memoizedHealthFundList.length === 0 ? (
                   <MenuItem value="" disabled>
                     אין קופות זמינות
@@ -657,12 +632,58 @@ const memoizedHealthFundList = useMemo(() => {
               additionalTreatmentsNeeded,
               additionalNotes
             };
-            const result = await dispatch(addStudentHealthFund(payload));
-            // Always try to create automatic notes on save as well, but only once per dialog session for save
+
+            // Always create the 'מאוחדת' automatic note if needed
+            const selectedHealthFund = memoizedHealthFundList.find(fund => String(fund.healthFundId || fund.id) === String(formData.healthFundId));
+            if (
+              Number(formData.registeredTreatments) > Number(formData.commitmentTreatments) &&
+              selectedHealthFund &&
+              (selectedHealthFund.healthFundName === 'מאוחדת' || selectedHealthFund.name === 'מאוחדת')
+            ) {
+              const currentDate = new Date().toISOString();
+              const noteContent = 'הערת גביה אוטומטית: מס׳ הטיפולים בהתחייבות נמוך ממס׳ הטיפולים שנרשמו';
+              const noteData = {
+                studentId: parseInt(formData.studentId),
+                authorId: currentUser?.id || currentUser?.userId,
+                authorName: currentUser?.name || currentUser?.firstName + ' ' + currentUser?.lastName,
+                authorRole: currentUser?.role,
+                noteContent,
+                dateCreated: currentDate,
+                createdDate: currentDate,
+                created: currentDate,
+                date: currentDate,
+                noteType: 'הערת גביה',
+                priority: 'בינוני',
+                isPrivate: false,
+                isActive: true
+              };
+              await dispatch(addStudentNote(noteData));
+            }
+
+            // Checklist note (with all content)
             if (!autoNoteCreatedOnSaveRef.current) {
-              await createAutomaticHealthFundNotes(formData.studentId);
+              const noteContent = buildFullCollectionNoteContent();
+              const currentDate = new Date().toISOString();
+              const noteData = {
+                studentId: parseInt(formData.studentId),
+                authorId: currentUser?.id || currentUser?.userId,
+                authorName: currentUser?.name || currentUser?.firstName + ' ' + currentUser?.lastName,
+                authorRole: currentUser?.role,
+                noteContent: noteContent,
+                dateCreated: currentDate,
+                createdDate: currentDate,
+                created: currentDate,
+                date: currentDate,
+                noteType: 'הערת גביה',
+                priority: 'בינוני',
+                isPrivate: false,
+                isActive: true
+              };
+              await dispatch(addStudentNote(noteData));
               autoNoteCreatedOnSaveRef.current = true;
             }
+
+            const result = await dispatch(addStudentHealthFund(payload));
             if (addStudentHealthFund.fulfilled.match(result)) {
               setNotification({ open: true, message: 'הרישום לקופת חולים התבצע בהצלחה', severity: 'success' });
               if (onSuccess) onSuccess(result.payload);
