@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { checkUserPermission } from '../../utils/permissions';
-import StudentCoursesDialog from '../Students/components/studentCoursesDialog';
 import {
   Box,
   Typography,
@@ -33,6 +31,10 @@ import {
   CircularProgress,
   Alert,
   TablePagination,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -57,10 +59,10 @@ const RegistrationTracking = () => {
   
   // משימות רישום קבועות
   const registrationTasks = [
-    '💳 אמצעי תשלום מולא',
-    '👨‍🏫 מדריך עודכן',
-    '📱 הוכנס ל-GIS',
-    '📋 הוסבר על התחייבות/הפניה'
+    'אמצעי תשלום מולא',
+    'מדריך עודכן',
+    'הוכנס ל-GIS',
+    'הוסבר על התחייבות/הפניה'
   ];
   
   // States
@@ -69,6 +71,7 @@ const RegistrationTracking = () => {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterTask, setFilterTask] = useState('all');
   const [studentsData, setStudentsData] = useState({});
   const [saving, setSaving] = useState(false);
   const [editNotesMode, setEditNotesMode] = useState(false);
@@ -124,8 +127,17 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
     const lines = noteContent.split('\n');
     for (const line of lines) {
       if (line.includes('❌')) {
-        const taskName = line.replace('❌', '').trim();
-        tasks.push(taskName);
+        let clean = line.replace('❌', '').trim();
+        // Remove emoji at start if exists (old data)
+        clean = clean.replace(/^([\uD800-\uDBFF][\uDC00-\uDFFF]|[^\w\s])+/u, '').trim();
+        // Try to match to registrationTasks by inclusion
+        const matched = registrationTasks.find(task => clean.includes(task) || task.includes(clean));
+        if (matched && !tasks.includes(matched)) {
+          tasks.push(matched);
+        } else if (!matched && clean && !tasks.includes(clean)) {
+          // fallback: push clean if not matched
+          tasks.push(clean);
+        }
       }
     }
     return tasks;
@@ -265,12 +277,16 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
         filterStatus === 'all' ||
         (filterStatus === 'pending' && student.incompleteTasks.length > 0) ||
         (filterStatus === 'completed' && student.incompleteTasks.length === 0);
-      return matchesSearch && matchesFilter;
+
+      // סינון לפי משימת רישום
+      const matchesTask =
+        typeof filterTask === 'undefined' || filterTask === 'all' || student.incompleteTasks.includes(filterTask);
+
+      return matchesSearch && matchesFilter && matchesTask;
     });
-    
     // Apply sorting
     return sortData(filtered, sortField, sortDirection);
-  }, [studentsWithRegistrationNotes, searchTerm, filterStatus, sortField, sortDirection]);
+  }, [studentsWithRegistrationNotes, searchTerm, filterStatus, filterTask, sortField, sortDirection]);
 
   // Pagination handlers
   const handleChangePage = (event, newPage) => {
@@ -871,12 +887,40 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                 }}
               />
               
+              {/* סינון לפי משימת רישום */}
+
+              <Box sx={{ minWidth: 180 }}>
+                <FormControl fullWidth size="small" sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '10px',
+                  },
+                  '& .MuiInputLabel-root': {
+                    borderRadius: '10px',
+                  }
+                }}>
+                  <InputLabel id="filter-task-label">סנן לפי משימת רישום</InputLabel>
+                  <Select
+                    labelId="filter-task-label"
+                    id="filter-task-select"
+                    value={filterTask}
+                    label="סנן לפי משימת רישום"
+                    onChange={e => setFilterTask(e.target.value)}
+                  >
+                    <MenuItem value="all" sx={{ direction: 'rtl', textAlign: 'right' }}>הכל</MenuItem>
+                    {registrationTasks.map(task => (
+                      <MenuItem key={task} value={task} sx={{ direction: 'rtl', textAlign: 'right' }}>{task}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+
               {/* כפתור רענון */}
               <Button
                 variant="contained"
                 startIcon={<RefreshIcon />}
                 onClick={loadRegistrationTrackingData}
                 sx={{
+                 
                   borderRadius: '12px',
                   px: 3,
                   py: 1.5,

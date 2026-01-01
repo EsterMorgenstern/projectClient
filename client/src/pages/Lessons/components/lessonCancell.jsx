@@ -668,38 +668,39 @@ const LessonCancellationManager = ({
                                                                 fullWidth
                                                                 size="small"
                                                                 label="סיבת הביטול"
-                                                                value={bulkReason}
-                                                                onChange={(e) => setBulkReason(e.target.value)}
-                                                                placeholder="למשל: חג, מזג אוויר קשה..."
-                                                                multiline
-                                                                rows={2}
-                                                            />
-                                                        </Grid>
-                                                        <Grid item xs={12}>
-                                                            <Button
-                                                                fullWidth
-                                                                variant="contained"
-                                                                color="error"
-                                                                                                                                onClick={handleBulkCancelDay}
-                                                                disabled={!selectedDayForBulk || !bulkReason.trim() || bulkOperationLoading}
-                                                                startIcon={bulkOperationLoading ? <CircularProgress size={16} /> : <CancelScheduleSend />}
-                                                         sx={{direction: 'ltr'}}
-                                                         >
-                                                                {bulkOperationLoading ? 'מבטל...' : 'בטל את כל השיעורים'}
-                                                            </Button>
-                                                        </Grid>
-                                                    </Grid>
-                                                </Card>
-                                            </Grid>
-
-                                            <Grid item xs={12} md={6}>
-                                                <Card sx={{ p: 2, bgcolor: '#DBEAFE', border: '1px solid #60A5FA' }}>
-                                                    <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'bold', color: '#1E40AF' }}>
-                                                        בדיקת סטטוס יום ופעולות
-                                                    </Typography>
-                                                    
-                                                    <Grid container spacing={2}>
-                                                        <Grid item xs={12} sm={6} sx={{minWidth:'130px'}}>
+                                                                value={selectedGroup}
+                                                                onChange={(e) => setSelectedGroup(e.target.value)}
+                                                                sx={{
+                                                                    direction: 'rtl',
+                                                                    textAlign: 'right',
+                                                                    '& .MuiSelect-select': {
+                                                                        direction: 'rtl',
+                                                                        textAlign: 'right',
+                                                                        paddingRight: '14px'
+                                                                    }
+                                                                }}
+                                                            >
+                                                                {filteredGroups.map(group => (
+                                                                    <MenuItem
+                                                                        key={group.groupId}
+                                                                        value={group.groupId}
+                                                                        sx={{ direction: 'rtl', textAlign: 'right', justifyContent: 'flex-end' }}
+                                                                    >
+                                                                        <Box sx={{
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            gap: 1,
+                                                                            direction: 'rtl',
+                                                                            textAlign: 'right'
+                                                                        }}>
+                                                                            <Group sx={{ fontSize: 16 }} />
+                                                                            <Typography sx={{ direction: 'rtl', textAlign: 'right', width: '100%' }}>
+                                                                                {group.courseName} - {group.branchName} - {group.groupName}
+                                                                            </Typography>
+                                                                        </Box>
+                                                                    </MenuItem>
+                                                                ))}
+                                                            </TextField>
                                                             <FormControl fullWidth size="small">
                                                                 <InputLabel>יום לבדיקה</InputLabel>
                                                                 <Select
@@ -1333,43 +1334,55 @@ const LessonCancellationManager = ({
                             <Grid item xs={12} sx={{ minWidth: '120px' }}>
                                 <FormControl fullWidth>
                                     <InputLabel sx={{
-                                        transformOrigin: 'top right'
+                                        transformOrigin: 'top right',
+                                        direction: 'rtl',
+                                        textAlign: 'right',
+                                        right: 0,
+                                        left: 'auto'
                                     }}>
-                                        בחר קבוצה
+                                        {/* בחר קבוצה */}
                                     </InputLabel>
-                                    <TextField
-                                        fullWidth
-                                        label="חפש לפי שם קבוצה"
-                                        value={groupSearch}
-                                        onChange={e => setGroupSearch(e.target.value)}
-                                        sx={{ mb: 2, direction: 'rtl' }}
-                                    />
                                     <Select
                                         value={selectedGroup}
                                         onChange={(e) => setSelectedGroup(e.target.value)}
                                         label="בחר קבוצה"
+                                        displayEmpty
                                         sx={{
+                                            direction: 'rtl',
                                             textAlign: 'right',
                                             '& .MuiSelect-select': {
+                                                direction: 'rtl',
                                                 textAlign: 'right',
                                                 paddingRight: '14px'
                                             }
                                         }}
+                                        renderValue={selected => {
+                                            if (!selected) {
+                                                return <span style={{ color: '#888', direction: 'rtl', textAlign: 'right' }}>בחר קבוצה</span>;
+                                            }
+                                            const group = filteredGroups.find(g => g.groupId === selected);
+                                            return group ? `${group.groupName} - ${group.branchName} - ${group.courseName}` : '';
+                                        }}
                                     >
+                                        <MenuItem disabled value="">
+                                            <span style={{ color: '#888', direction: 'rtl', textAlign: 'right', width: '100%' }}>בחר קבוצה</span>
+                                        </MenuItem>
                                         {filteredGroups.map(group => (
                                             <MenuItem
                                                 key={group.groupId}
                                                 value={group.groupId}
-                                                sx={{ direction: 'rtl', justifyContent: 'flex-end' }}
+                                                sx={{ direction: 'rtl', textAlign: 'right', justifyContent: 'flex-end' }}
                                             >
                                                 <Box sx={{
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     gap: 1,
-                                                    direction: 'rtl'
+                                                    direction: 'rtl',
+                                                    textAlign: 'right',
+                                                    width: '100%'
                                                 }}>
                                                     <Group sx={{ fontSize: 16 }} />
-                                                    <Typography>
+                                                    <Typography sx={{ direction: 'rtl', textAlign: 'right', width: '100%' }}>
                                                         {group.groupName} - {group.branchName} - {group.courseName}
                                                     </Typography>
                                                 </Box>
@@ -1377,29 +1390,6 @@ const LessonCancellationManager = ({
                                         ))}
                                     </Select>
                                 </FormControl>
-                            </Grid>
-                            <Grid item xs={12} sx={{ direction: 'ltr' }}>
-                                <DatePicker
-                                    label="תאריך השיעור"
-                                    value={selectedCancellationDate}
-                                    onChange={(newValue) => setSelectedCancellationDate(newValue)}
-                                    renderInput={(params) =>
-                                        <TextField
-                                            {...params}
-                                            fullWidth
-                                            sx={{
-                                                '& .MuiInputLabel-root': {
-                                                    right: 14,
-                                                    left: 'auto',
-                                                    transformOrigin: 'top right'
-                                                },
-                                                '& .MuiOutlinedInput-input': {
-                                                    textAlign: 'right'
-                                                }
-                                            }}
-                                        />
-                                    }
-                                />
                             </Grid>
                             <Grid item xs={12}>
                                 <TextField
