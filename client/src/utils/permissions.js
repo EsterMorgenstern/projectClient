@@ -6,7 +6,9 @@ export const allowedUserIds = [
   315029371,
   208958256,
   300668381,
-  322641572
+  322641572,
+  324283993,
+  317815033
 ];
 
 export function checkUserPermission(userId, showNotification) {

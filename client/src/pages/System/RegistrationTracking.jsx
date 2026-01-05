@@ -53,6 +53,7 @@ import { selectRegistrationTrackingNotes, selectStudentNotesLoading } from '../.
 import { fetchStudents } from '../../store/student/studentGetAllThunk';
 import { updateStudentNote } from '../../store/studentNotes/studentNoteUpdateThunk';
 import { getgroupStudentByStudentId } from '../../store/groupStudent/groupStudentGetByStudentIdThunk';
+import StudentCoursesDialog from '../Students/components/studentCoursesDialog';
 
 const RegistrationTracking = () => {
   const dispatch = useDispatch();
