@@ -520,6 +520,7 @@ const sortedGroups = groups
   useEffect(() => {
     dispatch(fetchCourses());
     dispatch(fetchGroups()); // טען את כל הקבוצות לכל החוגים/סניפים בכניסה לעמוד
+    dispatch(fetchBranches()); // טען גם סניפים כדי שתצוגת "לפי ימים" תדע שמות סניפים בלי בחירת חוג
   }, [dispatch]);
 
   useEffect(() => {
