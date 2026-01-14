@@ -437,15 +437,37 @@ const [studentLessons, setStudentLessons] = useState(0);
     // בניית מבנה היררכי: חוג -> סניף -> קבוצות
     const hierarchy = {};
     filteredGroups.forEach(group => {
-      const course = courses.find(c => c.courseId === group.courseId);
-      const branch = branches.find(b => b.branchId === group.branchId);
+      const course = courses.find(c => c.courseId === group.courseId) || {
+        courseId: group.courseId,
+        courseName: group.courseName || group.couresName
+      };
+      const branchFromStore = branches.find(b => b.branchId === group.branchId);
+      const branch = branchFromStore || {
+        branchId: group.branchId,
+        name: group.branchName || group.branch?.name,
+        address: group.branchAddress || group.address,
+        city: group.branchCity || group.city
+      };
       const courseId = course?.courseId || group.courseId;
       const branchId = branch?.branchId || group.branchId;
+
+      const branchNameFallback = branch?.name
+        || branch?.branchName
+        || group.branchName
+        || group.branch?.name
+        || (branchId ? `סניף #${branchId}` : 'סניף לא ידוע');
+
+      const branchObj = {
+        ...branch,
+        name: branchNameFallback,
+        city: branch?.city || group.branchCity || group.city,
+        address: branch?.address || group.branchAddress || group.address
+      };
       if (!hierarchy[courseId]) {
         hierarchy[courseId] = { course, branches: {} };
       }
       if (!hierarchy[courseId].branches[branchId]) {
-        hierarchy[courseId].branches[branchId] = { branch, groups: [] };
+        hierarchy[courseId].branches[branchId] = { branch: branchObj, groups: [] };
       }
       hierarchy[courseId].branches[branchId].groups.push(group);
     });
@@ -875,16 +897,30 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
     setStudentGroupData({ ...studentGroupData, groupId: group.groupId });
     setGroupStatus(true); // איפוס הסטטוס לפעיל כברירת מחדל
     
-    // עדכון הקורס והסניף בהתאם לקבוצה שנבחרה
-    const course = courses.find(c => c.courseId === group.courseId);
-    const branch = branches.find(b => b.branchId === group.branchId);
+    // עדכון הקורס והסניף בהתאם לקבוצה שנבחרה (עם fallback מתוך הנתונים של הקבוצה)
+    const courseFromStore = courses.find(c => c.courseId === group.courseId);
+    const branchFromStore = branches.find(b => b.branchId === group.branchId);
+
+    const courseFallback = courseFromStore || {
+      courseId: group.courseId,
+      courseName: group.courseName || group.couresName
+    };
+
+    const branchNameFallback = branchFromStore?.name
+      || branchFromStore?.branchName
+      || group.branchName
+      || group.branch?.name
+      || (group.branchId ? `סניף #${group.branchId}` : 'סניף לא ידוע');
+
+    const branchFallback = {
+      branchId: branchFromStore?.branchId || group.branchId,
+      name: branchNameFallback,
+      address: branchFromStore?.address || group.branchAddress || group.address,
+      city: branchFromStore?.city || group.branchCity || group.city
+    };
     
-    if (course) {
-      setSelectedCourse(course);
-    }
-    if (branch) {
-      setSelectedBranch(branch);
-    }
+    setSelectedCourse(courseFallback);
+    setSelectedBranch(branchFallback);
     
     if (group.maxStudents > 0) {
       console.log('✅ Opening enroll dialog');
