@@ -122,7 +122,7 @@ const [moreMenuAnchor, setMoreMenuAnchor] = useState(null);
                        currentUser.id;
     
     if (hasUserData) {
-      console.log('✅ User is logged in via currentUser');
+      
       return true;
     }
   }
@@ -396,23 +396,19 @@ const getUserDisplayName = () => {
     return 'משתמש';
   }
   
-  console.log('🏷️ Getting display name for user:', user);
-  
   // קבל שם פרטי ומשפחה
   const firstName = user.FirstName || user.firstName || '';
   const lastName = user.LastName || user.lastName || '';
   
   // אם יש שם פרטי, החזר אותו
   if (firstName) {
-    console.log('✅ Display name from firstName:', firstName);
-    return firstName;
+       return firstName;
   }
   
   // אם יש שם מלא, נסה לחלץ את השם הפרטי
   if (lastName && !firstName) {
     // אם יש רק שם משפחה, השתמש בו
-    console.log('✅ Display name from lastName:', lastName);
-    return lastName;
+      return lastName;
   }
   
   // נסה לחלץ מאימייל

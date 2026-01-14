@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { exportGroupsToExcelWithData } from '../../../utils/exportGroupsToExcelWithData';
@@ -74,6 +73,7 @@ import {
 import { fetchCourses } from '../../../store/course/CoursesGetAllThunk';
 import { fetchBranches } from '../../../store/branch/branchGetAllThunk';
 import { getGroupsByCourseId } from '../../../store/group/groupGetGroupsByCourseIdThunk';
+import { fetchGroups } from '../../../store/group/groupGellAllThunk';
 import { groupStudentAddThunk } from '../../../store/groupStudent/groupStudentAddThunk';
 import { getgroupStudentByStudentId } from '../../../store/groupStudent/groupStudentGetByStudentIdThunk';
 import { getStudentsByGroupId } from '../../../store/group/groupGetStudentsByGroupId';
@@ -98,6 +98,7 @@ import SmartMatchingSystem from './smartMatchingSystem';
 import EnrollmentSuccess from './enrollmentSuccess';
 import { checkUserPermission } from'../../../utils/permissions';
 import StudentSearchDialog from '../../../components/StudentSearchDialog';
+import GroupCard from '../../../components/GroupCard';
 
 import './style/enrollStudent.css';
 import { fetchInstructors } from '../../../store/instructor/instructorGetAllThunk';
@@ -209,6 +210,7 @@ const EnrollStudent = () => {
   const courses = useSelector(state => state.courses.courses || []);
   const branches = useSelector(state => state.branches.branches || []);
   const groups = useSelector(state => state.groups.groupsByCourseId || []);
+  const allGroups = useSelector(state => state.groups.groups || []); // כל הקבוצות מכל החוגים/סניפים
   const groupStudents = useSelector(state => state.groupStudents.groupStudentById || []);
   const bestGroup = useSelector(state => state.groups.bestGroupForStudent);
   const studentsInGroup = useSelector(state => state.groups.studentsInGroup || []);
@@ -252,7 +254,8 @@ const EnrollStudent = () => {
   const [enrollDate, setEnrollDate] = useState('');
   const [groupStatus, setGroupStatus] = useState(true); // סטטוס קבוצה - פעיל/לא פעיל
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
-  const [view, setView] = useState('courses'); // courses, branches, groups
+  const [view, setView] = useState('courses'); // courses, branches, groups, days
+  const [selectedDay, setSelectedDay] = useState(null); // ליום שנבחר במיון לפי ימים
 const [selectedInstructorId, setSelectedInstructorId] = useState('');
 const [studentLessons, setStudentLessons] = useState(0);
 
@@ -337,16 +340,164 @@ const [studentLessons, setStudentLessons] = useState(0);
 
   // Constants
   const allowedSectors = ['כללי', 'חסידי', 'גור', 'ליטאי'];
-  const allowedDays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי'];
+  const allowedDays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי'];
+  // --- Render Days Filter ---
+  const renderDaysFilter = () => {
+    // סינון ימים שיש בהם קבוצות
+    const groupsSource = Array.isArray(allGroups) ? allGroups : Object.values(allGroups).flat();
+    const daysWithGroups = allowedDays.filter(day => 
+      groupsSource.some(group => group.dayOfWeek === day && group.isActive !== false)
+    );
+    
+    // אם אין ימים עם קבוצות, לא מציגים כלום
+    if (daysWithGroups.length === 0) {
+      return (
+        <Box sx={{ textAlign: 'center', mt: 4, color: '#94a3b8', fontWeight: 400, fontSize: '0.95rem' }}>
+          אין קבוצות זמינות כרגע
+        </Box>
+      );
+    }
+    
+    return (
+      <Box sx={{ display: 'flex', direction: 'rtl', justifyContent: 'center', gap: 1.5, mb: 4, mt: 3, flexWrap: 'wrap' }}>
+        {daysWithGroups.map((day) => (
+          <Button
+            key={day}
+            variant="text"
+            onClick={() => setSelectedDay(day)}
+            sx={{
+              minWidth: 100,
+              fontWeight: 500,
+              borderRadius: '16px',
+              fontSize: '0.9rem',
+              py: 1,
+              px: 2.5,
+              background: selectedDay === day
+                ? 'linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%)'
+                : 'transparent',
+              color: selectedDay === day ? '#4f46e5' : '#94a3b8',
+              border: selectedDay === day ? '1.5px solid #c7d2fe' : '1.5px solid transparent',
+              boxShadow: selectedDay === day
+                ? '0 2px 8px rgba(99, 102, 241, 0.15)'
+                : 'none',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                transform: 'translateY(-1px)',
+                background: selectedDay === day
+                  ? 'linear-gradient(135deg, #e0e7ff 0%, #ddd6fe 100%)'
+                  : 'rgba(241, 245, 249, 0.8)',
+                color: selectedDay === day ? '#4338ca' : '#64748b',
+                borderColor: selectedDay === day ? '#a5b4fc' : '#e2e8f0',
+                boxShadow: '0 3px 10px rgba(99, 102, 241, 0.12)'
+              }
+            }}
+          >
+            {day}
+          </Button>
+        ))}
+        <Button
+          variant="text"
+          onClick={() => setSelectedDay(null)}
+          sx={{
+            ml: 2,
+            fontWeight: 400,
+            fontSize: '0.85rem',
+            color: '#cbd5e1',
+            textDecoration: 'none',
+            borderRadius: '12px',
+            px: 2,
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              bgcolor: 'rgba(203, 213, 225, 0.1)',
+              color: '#94a3b8'
+            }
+          }}
+        >
+          איפוס
+        </Button>
+      </Box>
+    );
+  };
+
+  // --- Render Groups By Day (Hierarchical: Course -> Branch -> Groups) ---
+  const renderGroupsByDay = () => {
+    // שימוש בנתונים מ-state.groups.groups בלבד (כל הקבוצות מכל החוגים/סניפים)
+    const groupsSource = Array.isArray(allGroups) ? allGroups : Object.values(allGroups).flat();
+    if (!selectedDay) {
+      return (
+        <Box sx={{ textAlign: 'center', mt: 4, color: '#64748b', fontWeight: 500 }}>
+          בחר יום להצגת כל הקבוצות המתקיימות בו
+        </Box>
+      );
+    }
+    const filteredGroups = groupsSource.filter(group => group.dayOfWeek === selectedDay);
+    if (filteredGroups.length === 0) {
+      return null; // לא מציג כלום אם אין קבוצות
+    }
+    // בניית מבנה היררכי: חוג -> סניף -> קבוצות
+    const hierarchy = {};
+    filteredGroups.forEach(group => {
+      const course = courses.find(c => c.courseId === group.courseId);
+      const branch = branches.find(b => b.branchId === group.branchId);
+      const courseId = course?.courseId || group.courseId;
+      const branchId = branch?.branchId || group.branchId;
+      if (!hierarchy[courseId]) {
+        hierarchy[courseId] = { course, branches: {} };
+      }
+      if (!hierarchy[courseId].branches[branchId]) {
+        hierarchy[courseId].branches[branchId] = { branch, groups: [] };
+      }
+      hierarchy[courseId].branches[branchId].groups.push(group);
+    });
+    return (
+      <Box sx={{ mt: 3 }}>
+        {Object.values(hierarchy).map(({ course, branches }, courseIdx) => (
+          <Box key={course?.courseId || courseIdx} sx={{ mb: 5 }}>
+            <Typography variant="h5" fontWeight="bold" color="#1E3A8A" sx={{ mb: 2, textAlign: 'right' }}>
+              {course?.couresName || 'חוג לא ידוע'}
+            </Typography>
+            {Object.values(branches).map(({ branch, groups }, branchIdx) => (
+              <Box key={branch?.branchId || branchIdx} sx={{ mb: 3, pl: { xs: 0, md: 4 } }}>
+                <Typography variant="h6" fontWeight={600} color="#0ea5e9" sx={{ mb: 1, textAlign: 'right' }}>
+                  {branch?.name || 'סניף לא ידוע'}
+                  {branch?.city ? ` (${branch.city})` : ''}
+                </Typography>
+                <Box dir="rtl">
+                  <Grid container spacing={3} justifyContent="flex-start">
+                    {groups.map((group, idx) => {
+                      const instructor = instructors.find(i => i.instructorId === group.instructorId);
+                      return (
+                        <Grid item xs={12} sm={6} md={4} lg={3} key={`group-day-${group.groupId || idx}`}>
+                          <GroupCard
+                            group={group}
+                            instructor={instructor}
+                            handleViewStudents={handleViewStudents}
+                            handleAddStudentAndEnroll={handleAddStudentAndEnroll}
+                            handleGroupSelect={handleGroupSelect}
+                            exportGroupStudentsToExcel={exportGroupStudentsToExcel}
+                            dispatch={dispatch}
+                            handleMenuOpen={handleMenuOpen}
+                            itemVariants={itemVariants}
+                          />
+                        </Grid>
+                      );
+                    })}
+                  </Grid>
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        ))}
+      </Box>
+    );
+  };
 
 const dayOrder = {
   'ראשון': 1,
   'שני': 2,
   'שלישי': 3,
   'רביעי': 4,
-  'חמישי': 5,
-  'שישי': 6,
-  'שבת': 7
+  'חמישי': 5
 };
 
 function parseHour(hourStr) {
@@ -368,6 +519,7 @@ const sortedGroups = groups
   // Effects
   useEffect(() => {
     dispatch(fetchCourses());
+    dispatch(fetchGroups()); // טען את כל הקבוצות לכל החוגים/סניפים בכניסה לעמוד
   }, [dispatch]);
 
   useEffect(() => {
@@ -717,10 +869,24 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
   };
 
   const handleGroupSelect = (group) => {
+    console.log('🔍 handleGroupSelect called with group:', group);
     setSelectedGroup(group);
     setStudentGroupData({ ...studentGroupData, groupId: group.groupId });
     setGroupStatus(true); // איפוס הסטטוס לפעיל כברירת מחדל
+    
+    // עדכון הקורס והסניף בהתאם לקבוצה שנבחרה
+    const course = courses.find(c => c.courseId === group.courseId);
+    const branch = branches.find(b => b.branchId === group.branchId);
+    
+    if (course) {
+      setSelectedCourse(course);
+    }
+    if (branch) {
+      setSelectedBranch(branch);
+    }
+    
     if (group.maxStudents > 0) {
+      console.log('✅ Opening enroll dialog');
       setEnrollDialogOpen(true);
     } else {
       setNotification({
@@ -1919,241 +2085,121 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
     </Menu>
   );
 
-  // Render Smart Matching Button
+  // Render Smart Matching Button + Student Group Search Button Together
   const renderSmartMatchingButton = () => (
     <Box sx={{ 
       display: 'flex', 
       justifyContent: 'center', 
+      gap: 2,
       mb: 3,
-      mt: 2
+      mt: 2,
+      flexWrap: 'wrap'
     }}>
+      {/* Smart Matching Button */}
       <Button
         onClick={() => setAlgorithmDialogOpen(true)}
         disabled={loading}
         variant="contained"
-        size="large"
         sx={{
-          borderRadius: '20px',
-          px: 4,
-          py: 2.5,
+          borderRadius: '16px',
+          px: 3.5,
+          py: 1.8,
           fontSize: '1rem',
           fontWeight: 600,
           color: '#1e3a8a',
           background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
-          border: '2px solid #bfdbfe',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-          minHeight: '68px',
-          minWidth: '420px',
-          maxWidth: '520px',
+          border: '1.5px solid #bfdbfe',
+          boxShadow: '0 4px 15px rgba(59, 130, 246, 0.15)',
+          minHeight: '56px',
+          minWidth: '280px',
           textTransform: 'none',
-          position: 'relative',
-          overflow: 'hidden',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          backdropFilter: 'blur(10px)',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: '-100%',
-            width: '100%',
-            height: '100%',
-            background: 'linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent)',
-            transition: 'left 0.8s ease-in-out'
-          },
+          transition: 'all 0.3s ease',
           '&:hover': {
             background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
-            border: '2px solid #3b82f6',
-            boxShadow: '0 8px 25px rgba(59, 130, 246, 0.15)',
-            transform: 'translateY(-1px)',
+            border: '1.5px solid #3b82f6',
+            boxShadow: '0 6px 20px rgba(59, 130, 246, 0.2)',
             color: '#1d4ed8',
-            '&::before': {
-              left: '100%'
-            }
-          },
-          '&:active': {
-            transform: 'translateY(0px)',
-            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.2)'
+            transform: 'translateY(-2px)'
           },
           '&:disabled': {
-            opacity: 0.5,
-            transform: 'none',
+            opacity: 0.6,
             background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
             color: '#94a3b8'
           }
         }}
-        startIcon={
-          <Box sx={{ 
-            fontSize: '22px',
-            filter: 'grayscale(0.2)',
-            animation: loading ? 'none' : 'gentlePulse 3s infinite',
-            '@keyframes gentlePulse': {
-              '0%, 100%': { transform: 'scale(1)', opacity: 1 },
-              '50%': { transform: 'scale(1.05)', opacity: 0.8 }
-            }
-          }}>
-            🎯
-          </Box>
-        }
-        endIcon={
-          <Box sx={{ 
-            fontSize: '18px',
-            opacity: 0.7,
-            animation: loading ? 'none' : 'gentleSlide 2s infinite ease-in-out',
-            '@keyframes gentleSlide': {
-              '0%, 100%': { transform: 'translateX(0px)', opacity: 0.7 },
-              '50%': { transform: 'translateX(-2px)', opacity: 1 }
-            }
-          }}>
-            ←
-          </Box>
-        }
       >
         <Box sx={{ 
           display: 'flex', 
-          flexDirection: 'column', 
           alignItems: 'center',
-          textAlign: 'center'
+          gap: 1.5,
+          flexDirection: 'column'
         }}>
-          <Typography variant="h6" sx={{ 
-            fontWeight: 600, 
-            fontSize: '1.1rem',
-            lineHeight: 1.3,
-            mb: 0.3,
-            letterSpacing: '0.02em'
-          }}>
-            מערכת התאמה חכמה
-          </Typography>
-          <Typography variant="body2" sx={{ 
-            fontSize: '0.85rem',
-            opacity: 0.75,
-            lineHeight: 1.4,
-            fontWeight: 400
-          }}>
-            אלגוריתם מתקדם למציאת החוג המושלם לכל תלמיד
-          </Typography>
+          <Typography sx={{ fontSize: '1.6rem' }}>🎯</Typography>
+          <Box>
+            <Typography sx={{ fontWeight: 600, fontSize: '1rem', lineHeight: 1.2 }}>
+              מערכת התאמה חכמה
+            </Typography>
+            <Typography sx={{ fontWeight: 400, fontSize: '0.85rem', opacity: 0.8, lineHeight: 1.3 }}>
+              אלגוריתם מתקדם
+            </Typography>
+          </Box>
+        </Box>
+      </Button>
+
+      {/* Student Group Search Button */}
+      <Button
+        onClick={handleOpenStudentSearch}
+        disabled={loading}
+        variant="contained"
+        sx={{
+          borderRadius: '16px',
+          px: 3.5,
+          py: 1.8,
+          fontSize: '1rem',
+          fontWeight: 600,
+          color: '#1e40af',
+          background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+          border: '1.5px solid #bae6fd',
+          boxShadow: '0 4px 15px rgba(14, 165, 233, 0.15)',
+          minHeight: '56px',
+          minWidth: '280px',
+          textTransform: 'none',
+          transition: 'all 0.3s ease',
+          '&:hover': {
+            background: 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)',
+            border: '1.5px solid #0ea5e9',
+            boxShadow: '0 6px 20px rgba(14, 165, 233, 0.2)',
+            color: '#0369a1',
+            transform: 'translateY(-2px)'
+          },
+          '&:disabled': {
+            opacity: 0.6,
+            background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+            color: '#94a3b8'
+          }
+        }}
+      >
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center',
+          gap: 1.5,
+          flexDirection: 'column'
+        }}>
+          <Typography sx={{ fontSize: '1.6rem' }}>🔍</Typography>
+          <Box>
+            <Typography sx={{ fontWeight: 600, fontSize: '1rem', lineHeight: 1.2 }}>
+              חיפוש קבוצות
+            </Typography>
+            <Typography sx={{ fontWeight: 400, fontSize: '0.85rem', opacity: 0.8, lineHeight: 1.3 }}>
+              לפי קוד או שם תלמיד
+            </Typography>
+          </Box>
         </Box>
       </Button>
     </Box>
   );
 
-  // Render Student Group Search Button
-  const renderStudentGroupSearchButton = () => (
-    <Box sx={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      mb: 3
-    }}>
-      <Button
-        onClick={handleOpenStudentSearch}
-        disabled={loading}
-        variant="contained"
-        size="large"
-        sx={{
-          borderRadius: '20px',
-          px: 4,
-          py: 2.5,
-          fontSize: '1rem',
-          fontWeight: 600,
-          color: '#1e40af',
-          background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
-          border: '2px solid #bae6fd',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.06)',
-          minHeight: '68px',
-          minWidth: '420px',
-          maxWidth: '520px',
-          textTransform: 'none',
-          position: 'relative',
-          overflow: 'hidden',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          backdropFilter: 'blur(10px)',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: '-100%',
-            width: '100%',
-            height: '100%',
-            background: 'linear-gradient(90deg, transparent, rgba(14, 165, 233, 0.08), transparent)',
-            transition: 'left 0.8s ease-in-out'
-          },
-          '&:hover': {
-            background: 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)',
-            border: '2px solid #0ea5e9',
-            boxShadow: '0 8px 25px rgba(14, 165, 233, 0.12)',
-            transform: 'translateY(-1px)',
-            color: '#0369a1',
-            '&::before': {
-              left: '100%'
-            }
-          },
-          '&:active': {
-            transform: 'translateY(0px)',
-            boxShadow: '0 4px 12px rgba(14, 165, 233, 0.15)'
-          },
-          '&:disabled': {
-            opacity: 0.5,
-            transform: 'none',
-            background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
-            color: '#94a3b8'
-          }
-        }}
-        startIcon={
-          <Box sx={{ 
-            fontSize: '22px',
-            filter: 'grayscale(0.1)',
-            animation: loading ? 'none' : 'gentleRotate 4s linear infinite',
-            '@keyframes gentleRotate': {
-              '0%': { transform: 'rotate(0deg)' },
-              '25%': { transform: 'rotate(90deg)' },
-              '50%': { transform: 'rotate(180deg)' },
-              '75%': { transform: 'rotate(270deg)' },
-              '100%': { transform: 'rotate(360deg)' }
-            }
-          }}>
-            🔍
-          </Box>
-        }
-        endIcon={
-          <Box sx={{ 
-            fontSize: '18px',
-            opacity: 0.7,
-            animation: loading ? 'none' : 'gentleSlideRight 2s infinite ease-in-out',
-            '@keyframes gentleSlideRight': {
-              '0%, 100%': { transform: 'translateX(0px)', opacity: 0.7 },
-              '50%': { transform: 'translateX(2px)', opacity: 1 }
-            }
-          }}>
-            →
-          </Box>
-        }
-      >
-        <Box sx={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center',
-          textAlign: 'center'
-        }}>
-          <Typography variant="h6" sx={{ 
-            fontWeight: 600, 
-            fontSize: '1.1rem',
-            lineHeight: 1.3,
-            mb: 0.3,
-            letterSpacing: '0.02em'
-          }}>
-            חיפוש קבוצות לפי קוד או שם תלמיד
-          </Typography>
-          <Typography variant="body2" sx={{ 
-            fontSize: '0.85rem',
-            opacity: 0.75,
-            lineHeight: 1.4,
-            fontWeight: 400
-          }}>
-            מצא את כל הקבוצות בהן התלמיד רשום
-          </Typography>
-        </Box>
-      </Button>
-    </Box>
-  );
+
 
   // Render course cards
   const renderCourses = () => (
@@ -2624,10 +2670,20 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
           if (!groupsByDay[group.dayOfWeek]) groupsByDay[group.dayOfWeek] = [];
           groupsByDay[group.dayOfWeek].push(group);
         });
-        // סדר הימים לפי dayOrder
+        // סדר הימים לפי dayOrder - הצגת רק ימים שיש בהם קבוצות
         const daysSorted = Object.keys(dayOrder)
           .filter(day => groupsByDay[day] && groupsByDay[day].length > 0)
           .sort((a, b) => dayOrder[a] - dayOrder[b]);
+        
+        // אם אין יום אחד עם קבוצות, הצג הודעה
+        if (daysSorted.length === 0) {
+          return (
+            <Box sx={{ textAlign: 'center', mt: 4, color: '#64748b', fontWeight: 500 }}>
+              אין קבוצות זמינות בסניף זה
+            </Box>
+          );
+        }
+        
         return daysSorted.map(day => (
           <Box key={day} sx={{ mb: 4 }}>
             <Typography variant="h6" fontWeight="bold" color="#6366F1" sx={{ mb: 2, textAlign: 'right' }}>
@@ -2635,199 +2691,18 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
             </Typography>
             <Grid container spacing={3} justifyContent="flex-start" dir="rtl">
               {groupsByDay[day].map((group, index) => (
-                <Grid item xs={12} sm={6} md={4} key={`group-${group.groupId || group.id || index}`}>
-                  <motion.div variants={itemVariants}>
-                    <Paper
-                      elevation={3}
-                      component={motion.div}
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.98 }}
-                      sx={{
-                        p: 3,
-                        borderRadius: 3,
-                        height: '100%',
-                        width: 320,
-                        minWidth: 320,
-                        maxWidth: 320,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        cursor: 'pointer',
-                        background: group.availableSpots > 0
-                          ? 'linear-gradient(135deg, #ffffff 0%, #f0fff4 100%)'
-                          : 'linear-gradient(135deg, #ffffff 0%, #fff0f0 100%)',
-                        transition: 'all 0.3s ease',
-                        position: 'relative',
-                        overflow: 'hidden',
-                        direction: 'rtl',
-                        textAlign: 'right',
-                        '&:hover': {
-                          boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
-                        }
-                      }}
-                      onClick={() => handleGroupSelect(group)}
-                    >
-                      <IconButton
-  onClick={(e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    exportGroupStudentsToExcel(group.groupId, group.groupName, dispatch);
-  }}
-  sx={{
-    position: 'absolute',
-    top: 8,
-    left: 40,
-    color: '#3B82F6',
-    bgcolor: 'rgba(59, 130, 246, 0.1)',
-    '&:hover': {
-      bgcolor: 'rgba(59, 130, 246, 0.2)',
-    },
-    zIndex: 10
-  }}
-  size="small"
->
-  <Tooltip title="ייצוא לאקסל">
-    <FileDownloadIcon fontSize="small" />
-  </Tooltip>
-</IconButton>
-                      <IconButton
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          e.preventDefault();
-                          handleMenuOpen(e, group, 'group');
-                        }}
-                        sx={{
-                          position: 'absolute',
-                          top: 8,
-                          left: 8,
-                          color: '#6b7280',
-                          bgcolor: 'rgba(107, 114, 128, 0.1)',
-                          '&:hover': {
-                            bgcolor: 'rgba(107, 114, 128, 0.2)',
-                          },
-                          zIndex: 10
-                        }}
-                        size="small"
-                      >
-                        <MoreVertIcon fontSize="small" />
-                      </IconButton>
-
-                      {group.availableSpots <= 0 && (
-                        <Box
-                          sx={{
-                            position: 'absolute',
-                            top: 10,
-                            right: 10,
-                            bgcolor: 'error.main',
-                            color: 'white',
-                            px: 1,
-                            py: 0.5,
-                            borderRadius: 1,
-                            fontSize: '0.75rem',
-                            fontWeight: 'bold',
-                            transform: 'rotate(0deg)',
-                            zIndex: 1
-                          }}
-                        >
-                          מלא
-                        </Box>
-                      )}
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, justifyContent: 'flex-start' }}>
-                        <GroupIcon sx={{ fontSize: 40, color: '#6366F1', ml: 1 }} />
-                        <Typography variant="h6" fontWeight="bold" color="#1E3A8A">
-                          <span style={{wordBreak: 'break-word', whiteSpace: 'pre-line'}}>
-                            קבוצה {group.groupName}
-                          </span>
-                        </Typography>
-                      </Box>
-                      <Divider sx={{ width: '100%', mb: 2 }} />
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'flex-start' }}>
-                        <DayIcon fontSize="small" sx={{ color: '#6366F1', ml: 1 }} />
-                        <Typography variant="body2">
-                          {group.hour} {group.dayOfWeek}
-                        </Typography>
-                      </Box>
-
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'flex-start' }}>
-                        <StudentIcon fontSize="small" sx={{ color: '#6366F1', ml: 1 }} />
-                        <Typography variant="body2">
-                          גילאים: {group.ageRange}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'flex-start' }}>
-                        <SectorIcon fontSize="small" sx={{ color: '#6366F1', ml: 1 }} />
-                        <Typography variant="body2">
-                          מגזר: {group.sector || 'כללי'}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ mt: 'auto', pt: 2, width: '100%' }}>
-                        {/* שורה ראשונה: מקומות פנויים */}
-                        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 ,direction:'ltr'}}>
-                          <Chip
-                            icon={group.maxStudents > 0 ? <AvailableIcon /> : <FullIcon />}
-                            label={`${group.maxStudents} מקומות פנויים`}
-                            color={group.maxStudents > 0 ? "success" : "error"}
-                            variant="outlined"
-                            size="small"
-                          />
-                        </Box>
-                        {/* שורה שנייה: צפה ברשימת התלמידים */}
-                        <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%', mb: 2 }}>
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            startIcon={<ViewIcon />}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleViewStudents(group);
-                            }}
-                            sx={{
-                              direction:'ltr',
-                              borderColor: '#6366F1',
-                              color: '#6366F1',
-                              borderRadius: '8px',
-                              px: 2,
-                              '&:hover': {
-                                borderColor: '#4f46e5',
-                                color: '#4f46e5',
-                                bgcolor: 'rgba(99, 102, 241, 0.1)',
-                              },
-                              transition: 'all 0.3s ease'
-                            }}
-                          >
-                            צפה ברשימת התלמידים בקבוצה זו
-                          </Button>
-                        </Box>
-                        {/* שורה שלישית: כפתור שיבוץ תלמיד */}
-                        <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-                          <Tooltip title={group.maxStudents > 0 ? "לחץ לשיבוץ תלמיד" : "אין מקומות פנויים"}>
-                            <span>
-                              <Button
-                                variant="contained"
-                                size="small"
-                                disabled={group.maxStudents <= 0}
-                                startIcon={<EnrollIcon />}
-                                sx={{
-                                  direction:'ltr',
-                                  bgcolor: group.maxStudents > 0 ? '#10B981' : 'grey.400',
-                                  borderRadius: '8px',
-                                  boxShadow: group.maxStudents > 0 ? '0 4px 10px rgba(16, 185, 129, 0.2)' : 'none',
-                                  px: 3,
-                                  py: 1,
-                                  '&:hover': {
-                                    bgcolor: group.maxStudents > 0 ? '#059669' : 'grey.400',
-                                    boxShadow: group.maxStudents > 0 ? '0 6px 15px rgba(16, 185, 129, 0.3)' : 'none',
-                                  },
-                                  transition: 'all 0.3s ease'
-                                }}
-                              >
-                                שבץ תלמיד חדש/קיים לקבוצה זו
-                              </Button>
-                            </span>
-                          </Tooltip>
-                        </Box>
-                      </Box>
-                    </Paper>
-                  </motion.div>
+                <Grid item xs={12} sx={{direction:'rtl'}} sm={6} md={4} key={`group-${group.groupId || group.id || index}`}>
+                  <GroupCard
+                    group={group}
+                    instructor={group.instructor}
+                    handleViewStudents={handleViewStudents}
+                    handleAddStudentAndEnroll={handleAddStudentAndEnroll}
+                    handleGroupSelect={handleGroupSelect}
+                    exportGroupStudentsToExcel={exportGroupStudentsToExcel}
+                    dispatch={dispatch}
+                    handleMenuOpen={handleMenuOpen}
+                    itemVariants={itemVariants}
+                  />
                 </Grid>
               ))}
             </Grid>
@@ -2839,6 +2714,75 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
     </motion.div>
   );
 
+
+  // --- Render View Tabs ---
+  const renderViewTabs = () => (
+    <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mt: 3, mb: 3, flexWrap: 'wrap' }}>
+      <Button
+        variant="text"
+        onClick={() => setView('courses')}
+        sx={{
+          minWidth: 110,
+          fontWeight: 500,
+          borderRadius: '14px',
+          py: 1.2,
+          px: 2.5,
+          fontSize: '0.9rem',
+          background: view === 'courses'
+            ? 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)'
+            : 'transparent',
+          color: view === 'courses' ? '#0284c7' : '#94a3b8',
+          border: view === 'courses' ? '1.5px solid #bae6fd' : '1.5px solid transparent',
+          boxShadow: view === 'courses' ? '0 2px 8px rgba(14, 165, 233, 0.12)' : 'none',
+          transition: 'all 0.2s ease',
+          '&:hover': {
+            background: view === 'courses'
+              ? 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)'
+              : 'rgba(241, 245, 249, 0.6)',
+            color: view === 'courses' ? '#0369a1' : '#64748b',
+            borderColor: view === 'courses' ? '#7dd3fc' : '#e2e8f0',
+            transform: 'translateY(-1px)'
+          }
+        }}
+      >
+לפי חוג   </Button>
+      <Button
+        variant="text"
+        onClick={() => {
+          setView('days');
+          setSelectedCourse(null);
+          setSelectedBranch(null);
+        }}
+        sx={{
+          minWidth: 110,
+          fontWeight: 500,
+          borderRadius: '14px',
+          py: 1.2,
+          px: 2.5,
+          fontSize: '0.9rem',
+          background: view === 'days'
+            ? 'linear-gradient(135deg, #f0f9ff 0%, #cdeafc 100%)'
+            : 'transparent',
+          color: view === 'days' ? '#0284c7' : '#94a3b8',
+          border: view === 'days' ? '1.5px solid #bae6fd' : '1.5px solid transparent',
+          boxShadow: view === 'days' ? '0 2px 8px rgba(14, 165, 233, 0.12)' : 'none',
+          transition: 'all 0.2s ease',
+          '&:hover': {
+            background: view === 'days'
+              ? 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)'
+              : 'rgba(241, 245, 249, 0.6)',
+            color: view === 'days' ? '#0369a1' : '#64748b',
+            borderColor: view === 'days' ? '#7dd3fc' : '#e2e8f0',
+            transform: 'translateY(-1px)'
+          }
+        }}
+      >
+         לפי יום 
+      </Button>
+    </Box>
+  );
+
+  // --- Main Render ---
   return (
     <Container maxWidth="xl">
       <Box
@@ -2877,147 +2821,76 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
           >
             בחר חוג, סניף וקבוצה כדי לשבץ תלמיד בקלות ובמהירות
           </Typography>
-          
           {/* הודעה על שמירה אוטומטית */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+          <Paper
+            elevation={0}
+            sx={{
+              background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+              border: '1.5px solid #e2e8f0',
+              borderRadius: 2,
+              p: 1.5,
+              mb: 2,
+              textAlign: 'center',
+              maxWidth: '360px',
+              mx: 'auto'
+            }}
           >
-            <Paper
-              elevation={1}
+            <Typography
+              variant="body2"
               sx={{
-                background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
-                border: '2px solid #e2e8f0',
-                borderRadius: 3,
-                p: 2,
-                mb: 3,
-                textAlign: 'center',
-                maxWidth: '480px',
-                mx: 'auto',
-                position: 'relative',
-                overflow: 'hidden',
-                backdropFilter: 'blur(10px)',
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: '2px',
-                  background: 'linear-gradient(90deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%)',
-                  borderRadius: '12px 12px 0 0'
-                }
+                color: '#475569',
+                fontWeight: '500',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 0.8,
+                fontSize: '0.8rem',
+                lineHeight: 1.4
               }}
             >
-              <Typography
-                variant="body2"
+              <Typography component="span" sx={{ fontSize: '0.9rem' }}>💾</Typography>
+              הנתונים נשמרים אוטומטית
+            </Typography>
+            {/* כפתור ניקוי נתונים */}
+            <Box sx={{ mt: 1 }}>
+              <Button
+                onClick={resetForm}
+                variant="text"
+                size="small"
+                startIcon={<DeleteSweep sx={{ fontSize: '1rem' }} />}
                 sx={{
-                  color: '#475569',
-                  fontWeight: '500',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 1,
-                  fontSize: { xs: '0.8rem', md: '0.875rem' },
-                  lineHeight: 1.4,
-                  letterSpacing: '0.01em'
+                  borderRadius: '12px',
+                  px: 2,
+                  py: 0.8,
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  color: '#64748b',
+                  textTransform: 'none',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    background: '#fee2e2',
+                    color: '#dc2626'
+                  }
                 }}
               >
-                <Box sx={{ 
-                  fontSize: '16px',
-                  filter: 'grayscale(0.3)',
-                  animation: 'gentlePulse 3s infinite',
-                  '@keyframes gentlePulse': {
-                    '0%, 100%': { opacity: 1, transform: 'scale(1)' },
-                    '50%': { opacity: 0.8, transform: 'scale(1.05)' }
-                  }
-                }}>
-                  💾
-                </Box>
-                הנתונים נשמרים אוטומטית - תוכל לעבור ללשוניות אחרות ולחזור בכל עת
-              </Typography>
-              
-              {/* כפתור ניקוי נתונים */}
-              <Box sx={{ mt: 1.5 }}>
-                <Button
-                  onClick={resetForm}
-                  variant="contained"
-                  size="small"
-                  startIcon={<DeleteSweep />}
-                  sx={{
-                    borderRadius: '16px',
-                    px: 3,
-                    py: 1.5,
-                    fontSize: '0.875rem',
-                    fontWeight: 600,
-                    color: '#475569',
-                    background: 'linear-gradient(135deg, #fef7ff 0%, #f1f5f9 100%)',
-                    border: '2px solid #e2e8f0',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.06)',
-                    minHeight: '40px',
-                    textTransform: 'none',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    backdropFilter: 'blur(10px)',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    '&::before': {
-                      content: '""',
-                      position: 'absolute',
-                      top: 0,
-                      left: '-100%',
-                      width: '100%',
-                      height: '100%',
-                      background: 'linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.05), transparent)',
-                      transition: 'left 0.6s ease-in-out'
-                    },
-                    '&:hover': {
-                      background: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
-                      border: '2px solid #fca5a5',
-                      color: '#dc2626',
-                      boxShadow: '0 8px 25px rgba(239, 68, 68, 0.12)',
-                      transform: 'translateY(-1px)',
-                      '&::before': {
-                        left: '100%'
-                      }
-                    },
-                    '&:active': {
-                      transform: 'translateY(0px)',
-                      boxShadow: '0 4px 12px rgba(239, 68, 68, 0.15)'
-                    }
-                  }}
-                >
-                  נקה את כל הנתונים השמורים
-                </Button>
-              </Box>
-            </Paper>
-          </motion.div>
+                נקה נתונים
+              </Button>
+            </Box>
+          </Paper>
         </motion.div>
 
-        {/* Smart Matching Button */}
+        {/* Smart Matching Button + Student Group Search Button */}
         {renderSmartMatchingButton()}
-        
-        {/* Student Group Search Button */}
-        {renderStudentGroupSearchButton()}
 
-        {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-            <CircularProgress size={60} thickness={4} />
-          </Box>
-        ) : (
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={view}
-              initial={{ opacity: 0, x: view === 'courses' ? -20 : 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: view === 'courses' ? 20 : -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              {view === 'courses' && renderCourses()}
-              {view === 'branches' && renderBranches()}
-              {view === 'groups' && renderGroups()}
-            </motion.div>
-          </AnimatePresence>
+        {renderViewTabs()}
+        {view === 'courses' && renderCourses()}
+        {view === 'branches' && renderBranches()}
+        {view === 'groups' && renderGroups()}
+        {view === 'days' && (
+          <>
+            {renderDaysFilter()}
+            {renderGroupsByDay()}
+          </>
         )}
 
         {/* Render Menu */}
@@ -3396,7 +3269,7 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
               <Grid container spacing={2}>
                 <Grid item xs={6}>
                   <Typography variant="body2">
-                    <strong>חוג:</strong> {selectedCourse?.couresName}
+                    <strong>חוג:</strong> {selectedCourse?.courseName || selectedCourse?.couresName}
                   </Typography>
                 </Grid>
                 <Grid item xs={6}>
