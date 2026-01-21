@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import StyledTableShell from '../../components/StyledTableShell';
+import StatsCard from '../../components/StatsCard';
 import {
   Box,
   Typography,
@@ -8,10 +10,8 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableContainer,
-  TableHead,
   TableRow,
-  Paper,
+  
   Chip,
   IconButton,
   TextField,
@@ -44,8 +44,9 @@ import {
   Info as InfoIcon,
   Edit as EditIcon,
   Refresh as RefreshIcon,
-  KeyboardArrowUp as ArrowUpIcon,
-  KeyboardArrowDown as ArrowDownIcon,
+  Cancel as CancelIcon,
+  TrendingUp as TrendingUpIcon,
+  Assessment as AssessmentIcon,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getStudentNotesByRegistrationTracking } from '../../store/studentNotes/studentNotesGetByRegistrationTracking';
@@ -474,71 +475,6 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
     return counts;
   };
 
-  // Component for sortable table header
-  const SortableTableHeader = ({ field, children, icon }) => (
-    <Tooltip
-      title={`לחץ למיון לפי ${children} ${sortField === field ? (sortDirection === 'asc' ? '(יורד)' : '(עולה)') : ''}`}
-      placement="top"
-      arrow
-      sx={{
-        '& .MuiTooltip-tooltip': {
-          bgcolor: 'rgba(30, 41, 59, 0.9)',
-          color: 'white',
-          fontSize: '0.75rem',
-          fontWeight: 500,
-          borderRadius: '8px'
-        }
-      }}
-    >
-      <TableCell 
-        sx={{ 
-          textAlign: 'center', 
-          direction: 'rtl',
-          cursor: 'pointer',
-          userSelect: 'none',
-          transition: 'all 0.2s ease',
-          '&:hover': {
-            bgcolor: 'rgba(255, 255, 255, 0.1)',
-            transform: 'scale(1.02)'
-          }
-        }}
-        onClick={() => handleSort(field)}
-      >
-        <Box sx={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center', 
-          gap: 0.2,
-          position: 'relative'
-        }}>
-          <Box sx={{ fontSize: '1.4em', mb: 0.2 }}>{icon}</Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'white' }}>
-              {children}
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <ArrowUpIcon 
-                sx={{ 
-                  fontSize: '16px',
-                  color: sortField === field && sortDirection === 'asc' ? '#fff' : 'rgba(255, 255, 255, 0.5)',
-                  transition: 'color 0.2s ease'
-                }} 
-              />
-              <ArrowDownIcon 
-                sx={{ 
-                  fontSize: '16px',
-                  color: sortField === field && sortDirection === 'desc' ? '#fff' : 'rgba(255, 255, 255, 0.5)',
-                  transition: 'color 0.2s ease',
-                  mt: -0.5
-                }} 
-              />
-            </Box>
-          </Box>
-        </Box>
-      </TableCell>
-    </Tooltip>
-  );
-
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
@@ -586,231 +522,54 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
       </Typography>
           
       </Box>
-  {/* סטטיסטיקות רישום - עיצוב אלגנטי ומתקדם */}
-  <Box sx={{ display: 'flex', justifyContent: 'center', mb: 5 }}>
-    <Grid container spacing={4} sx={{ maxWidth: '1200px' }}>
-      <Grid item xs={12} md={3}>
-        <Card sx={{ 
-          textAlign: 'center', 
-          background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 50%, #fca5a5 100%)', 
-          borderRadius: '20px', 
-          boxShadow: '0 10px 30px rgba(220, 38, 38, 0.15)', 
-          transition: 'all 0.3s ease',
-          border: '1px solid rgba(220, 38, 38, 0.2)',
-          overflow: 'hidden',
-          position: 'relative',
-          '&:hover': { 
-            transform: 'translateY(-8px)', 
-            boxShadow: '0 20px 40px rgba(220, 38, 38, 0.25)',
-            '& .stat-icon': { transform: 'scale(1.1) rotate(5deg)' },
-            '& .stat-number': { transform: 'scale(1.05)' }
-          },
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '4px',
-            background: 'linear-gradient(90deg, #dc2626, #ef4444)'
-          }
-        }}>
-          <CardContent sx={{ py: 3 }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
-              <Box className="stat-icon" sx={{ 
-                fontSize: 40, 
-                transition: 'transform 0.3s ease',
-                filter: 'drop-shadow(0 4px 8px rgba(220, 38, 38, 0.3))'
-              }}>❌</Box>
-              <Typography className="stat-number" variant="h3" sx={{ 
-                color: '#dc2626', 
-                fontWeight: 800,
-                fontSize: '2.5rem',
-                transition: 'transform 0.3s ease',
-                textShadow: '0 2px 4px rgba(220, 38, 38, 0.2)'
-              }}>
-                {studentsWithRegistrationNotes.filter(s => s.incompleteTasks.length > 0).length}
-              </Typography>
-              <Typography variant="body1" sx={{ 
-                color: '#7f1d1d', 
-                fontWeight: 600,
-                fontSize: '0.95rem',
-                textAlign: 'center'
-              }}>
-                תלמידים עם משימות חסרות
-              </Typography>
-            </Box>
-          </CardContent>
-        </Card>
-      </Grid>
-      
-      <Grid item xs={12} md={3}>
-        <Card sx={{ 
-          textAlign: 'center', 
-          background: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 50%, #86efac 100%)', 
-          borderRadius: '20px', 
-          boxShadow: '0 10px 30px rgba(22, 163, 74, 0.15)', 
-          transition: 'all 0.3s ease',
-          border: '1px solid rgba(22, 163, 74, 0.2)',
-          overflow: 'hidden',
-          position: 'relative',
-          '&:hover': { 
-            transform: 'translateY(-8px)', 
-            boxShadow: '0 20px 40px rgba(22, 163, 74, 0.25)',
-            '& .stat-icon': { transform: 'scale(1.1) rotate(-5deg)' },
-            '& .stat-number': { transform: 'scale(1.05)' }
-          },
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '4px',
-            background: 'linear-gradient(90deg, #16a34a, #22c55e)'
-          }
-        }}>
-          <CardContent sx={{ py: 3 }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
-              <Box className="stat-icon" sx={{ 
-                fontSize: 40, 
-                transition: 'transform 0.3s ease',
-                filter: 'drop-shadow(0 4px 8px rgba(22, 163, 74, 0.3))'
-              }}>✅</Box>
-              <Typography className="stat-number" variant="h3" sx={{ 
-                color: '#16a34a', 
-                fontWeight: 800,
-                fontSize: '2.5rem',
-                transition: 'transform 0.3s ease',
-                textShadow: '0 2px 4px rgba(22, 163, 74, 0.2)'
-              }}>
-                {studentsWithRegistrationNotes.filter(s => s.incompleteTasks.length === 0).length}
-              </Typography>
-              <Typography variant="body1" sx={{ 
-                color: '#15803d', 
-                fontWeight: 600,
-                fontSize: '0.95rem',
-                textAlign: 'center'
-              }}>
-                תלמידים שהושלמו
-              </Typography>
-            </Box>
-          </CardContent>
-        </Card>
-      </Grid>
-      
-      <Grid item xs={12} md={3}>
-        <Card sx={{ 
-          textAlign: 'center', 
-          background: 'linear-gradient(135deg, #fef3c7 0%, #fed7aa 50%, #fdba74 100%)', 
-          borderRadius: '20px', 
-          boxShadow: '0 10px 30px rgba(217, 119, 6, 0.15)', 
-          transition: 'all 0.3s ease',
-          border: '1px solid rgba(217, 119, 6, 0.2)',
-          overflow: 'hidden',
-          position: 'relative',
-          '&:hover': { 
-            transform: 'translateY(-8px)', 
-            boxShadow: '0 20px 40px rgba(217, 119, 6, 0.25)',
-            '& .stat-icon': { transform: 'scale(1.1) rotate(10deg)' },
-            '& .stat-number': { transform: 'scale(1.05)' }
-          },
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '4px',
-            background: 'linear-gradient(90deg, #d97706, #f59e0b)'
-          }
-        }}>
-          <CardContent sx={{ py: 3 }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
-              <Box className="stat-icon" sx={{ 
-                fontSize: 40, 
-                transition: 'transform 0.3s ease',
-                filter: 'drop-shadow(0 4px 8px rgba(217, 119, 6, 0.3))'
-              }}>🔥</Box>
-              <Typography className="stat-number" variant="h3" sx={{ 
-                color: '#d97706', 
-                fontWeight: 800,
-                fontSize: '2.5rem',
-                transition: 'transform 0.3s ease',
-                textShadow: '0 2px 4px rgba(217, 119, 6, 0.2)'
-              }}>
-                {studentsWithRegistrationNotes.filter(s => s.priority === 'גבוהה').length}
-              </Typography>
-              <Typography variant="body1" sx={{ 
-                color: '#92400e', 
-                fontWeight: 600,
-                fontSize: '0.95rem',
-                textAlign: 'center'
-              }}>
-                עדיפות גבוהה
-              </Typography>
-            </Box>
-          </CardContent>
-        </Card>
-      </Grid>
-      
-      <Grid item xs={12} md={3}>
-        <Card sx={{ 
-          textAlign: 'center', 
-          background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 50%, #cbd5e1 100%)', 
-          borderRadius: '20px', 
-          boxShadow: '0 10px 30px rgba(71, 85, 105, 0.15)', 
-          transition: 'all 0.3s ease',
-          border: '1px solid rgba(71, 85, 105, 0.2)',
-          overflow: 'hidden',
-          position: 'relative',
-          '&:hover': { 
-            transform: 'translateY(-8px)', 
-            boxShadow: '0 20px 40px rgba(71, 85, 105, 0.25)',
-            '& .stat-icon': { transform: 'scale(1.1) rotate(-10deg)' },
-            '& .stat-number': { transform: 'scale(1.05)' }
-          },
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '4px',
-            background: 'linear-gradient(90deg, #475569, #64748b)'
-          }
-        }}>
-          <CardContent sx={{ py: 3 }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
-              <Box className="stat-icon" sx={{ 
-                fontSize: 40, 
-                transition: 'transform 0.3s ease',
-                filter: 'drop-shadow(0 4px 8px rgba(71, 85, 105, 0.3))'
-              }}>📊</Box>
-              <Typography className="stat-number" variant="h3" sx={{ 
-                color: '#475569', 
-                fontWeight: 800,
-                fontSize: '2.5rem',
-                transition: 'transform 0.3s ease',
-                textShadow: '0 2px 4px rgba(71, 85, 105, 0.2)'
-              }}>
-                {studentsWithRegistrationNotes.length}
-              </Typography>
-              <Typography variant="body1" sx={{ 
-                color: '#64748b', 
-                fontWeight: 600,
-                fontSize: '0.95rem',
-                textAlign: 'center'
-              }}>
-                סה"כ במעקב
-              </Typography>
-            </Box>
-          </CardContent>
-        </Card>
-      </Grid>
-    </Grid>
+  {/* סטטיסטיקות רישום */}
+  <Box sx={{ 
+    display: 'grid',
+    gridTemplateColumns: { xs: 'repeat(1, minmax(0, 1fr))', sm: 'repeat(2, minmax(0, 1fr))', md: 'repeat(4, minmax(0, 1fr))' },
+    gap: 1,
+    mt: 3,
+    mb: 3.4,
+    width: '75%',
+    mx: 'auto'
+  }}>
+    <StatsCard
+      label="משימות חסרות"
+      value={studentsWithRegistrationNotes.filter(s => s.incompleteTasks.length > 0).length}
+      note="תלמידים שנדרשים"
+      bg="linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)"
+      icon={ErrorIcon}
+      iconBg="rgba(220, 38, 38, 0.12)"
+      numberAlign="center"
+    />
+    <StatsCard
+      label="הושלמו"
+      value={studentsWithRegistrationNotes.filter(s => s.incompleteTasks.length === 0).length}
+      note="תלמידים מוכנים"
+      bg="linear-gradient(135deg, #ecfdf3 0%, #dcfce7 100%)"
+      icon={CheckCircleIcon}
+      iconBg="rgba(34, 197, 94, 0.12)"
+      numberAlign="center"
+    />
+    <StatsCard
+      label="עדיפות גבוהה"
+      value={studentsWithRegistrationNotes.filter(s => s.priority === 'גבוהה').length}
+      note="דורשים טיפול מיידי"
+      bg="linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)"
+      icon={TrendingUpIcon}
+      iconBg="rgba(245, 158, 11, 0.12)"
+      numberAlign="center"
+    />
+    <StatsCard
+      label='סה"כ במעקב'
+      value={studentsWithRegistrationNotes.length}
+      note="כל התלמידים"
+       bg="linear-gradient(135deg, #ffe8f9c4 0%, #ffd5f256 100%)"
+          icon={AssessmentIcon}
+          iconBg="rgba(242, 58, 227, 0.12)"
+      numberAlign="center"
+    />
   </Box>
-        
+        <br/>
         {/* אזור חיפוש עדין ומקצועי */}
         <Box sx={{ 
           mb: 4, 
@@ -1070,118 +829,22 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
     </Box>
 
         {/* טבלה מעוצבת */}
-        <Paper 
-          sx={{ 
-            borderRadius: '20px',
-            overflow: 'hidden',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.08)',
-            border: '1px solid rgba(59, 130, 246, 0.1)',
-            direction: 'rtl'
-          }}
+        <StyledTableShell
+          enableSort={true}
+          onSort={handleSort}
+          sortField={sortField}
+          sortDirection={sortDirection}
+          enableHorizontalScroll={true}
+          headers={[
+            { label: 'סטטוס', field: 'status', align: 'center' },
+            { label: 'נרשם על ידי', field: 'authorName', align: 'center', sx: { minWidth: '150px' } },
+            { label: 'תלמיד', field: 'studentName', align: 'center' },
+            { label: 'משימות חסרות', field: 'incompleteTasks', align: 'center', sx: { width: '250px' } },
+            { label: 'עדיפות', field: 'priority', align: 'center' },
+            { label: 'תאריך עדכון', field: 'updateDate', align: 'center', sx: { minWidth: '140px' } },
+            { label: 'פעולות', align: 'center', sortable: false }
+          ]}
         >
-          <TableContainer>
-            <Table sx={{ direction: 'rtl' }}>
-              <TableHead 
-                sx={{ 
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-                  '& .MuiTableCell-head': {
-                    color: 'white',
-                    fontWeight: 'bold',
-                    fontSize: '0.95rem',
-                    textAlign: 'center',
-                    py: 1,
-                    borderBottom: 'none'
-                  }
-                }}
-              >
-                <TableRow>
-                  <SortableTableHeader field="status" icon="📊">
-                    סטטוס
-                  </SortableTableHeader>
-                  <SortableTableHeader field="authorName" icon="👤">
-                    נרשם על ידי
-                  </SortableTableHeader>
-                  <SortableTableHeader field="studentName" icon="🎓">
-                    תלמיד
-                  </SortableTableHeader>
-                  <Tooltip
-                    title={`לחץ למיון לפי משימות חסרות ${sortField === 'incompleteTasks' ? (sortDirection === 'asc' ? '(יורד)' : '(עולה)') : ''}`}
-                    placement="top"
-                    arrow
-                    sx={{
-                      '& .MuiTooltip-tooltip': {
-                        bgcolor: 'rgba(30, 41, 59, 0.9)',
-                        color: 'white',
-                        fontSize: '0.75rem',
-                        fontWeight: 500,
-                        borderRadius: '8px'
-                      }
-                    }}
-                  >
-                    <TableCell 
-                      sx={{ 
-                        textAlign: 'center', 
-                        direction: 'rtl', 
-                        width: '250px',
-                        cursor: 'pointer',
-                        userSelect: 'none',
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                          bgcolor: 'rgba(255, 255, 255, 0.1)',
-                          transform: 'scale(1.02)'
-                        }
-                      }}
-                      onClick={() => handleSort('incompleteTasks')}
-                    >
-                      <Box sx={{ 
-                        display: 'flex', 
-                        flexDirection: 'column', 
-                        alignItems: 'center', 
-                        gap: 0.2,
-                        position: 'relative'
-                      }}>
-                        <Box sx={{ fontSize: '1.4em', mb: 0.2 }}>📋</Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'white' }}>
-                            משימות חסרות
-                          </Typography>
-                          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                            <ArrowUpIcon 
-                              sx={{ 
-                                fontSize: '16px',
-                                color: sortField === 'incompleteTasks' && sortDirection === 'asc' ? '#fff' : 'rgba(255, 255, 255, 0.5)',
-                                transition: 'color 0.2s ease'
-                              }} 
-                            />
-                            <ArrowDownIcon 
-                              sx={{ 
-                                fontSize: '16px',
-                                color: sortField === 'incompleteTasks' && sortDirection === 'desc' ? '#fff' : 'rgba(255, 255, 255, 0.5)',
-                                transition: 'color 0.2s ease',
-                                mt: -0.5
-                              }} 
-                            />
-                          </Box>
-                        </Box>
-                      </Box>
-                    </TableCell>
-                  </Tooltip>
-                  <SortableTableHeader field="priority" icon="⚡">
-                    עדיפות
-                  </SortableTableHeader>
-                  <SortableTableHeader field="updateDate" icon="📅">
-                    תאריך עדכון
-                  </SortableTableHeader>
-                  <TableCell sx={{ textAlign: 'center', direction: 'rtl' }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.2 }}>
-                      <Box sx={{ fontSize: '1.4em', mb: 0.2 }}>🎯</Box>
-                      <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'white' }}>
-                        פעולות
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              </TableHead>
               <TableBody>
                 {paginatedStudents.map((student, index) => (
                   <TableRow 
@@ -1415,8 +1078,7 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                   </TableRow>
                 ))}
               </TableBody>
-            </Table>
-          </TableContainer>
+        </StyledTableShell>
           
           {/* Pagination */}
           {filteredStudents.length > 0 && (
@@ -1455,6 +1117,7 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
               }}
             />
           )}
+        </Box>
           
           {filteredStudents.length === 0 && (
             <Box sx={{ 
@@ -1507,7 +1170,8 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
               )}
             </Box>
           )}
-        </Paper>        <Dialog
+        
+        <Dialog
           open={detailsDialogOpen}
           onClose={handleCloseDialog}
           maxWidth="md"
@@ -1670,7 +1334,7 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
             {alert.message}
           </Alert>
         )}
-      </Box>  </Box>
+      </Box>
     </motion.div>
   );
 };

@@ -6,7 +6,7 @@ export const deleteCourse = createAsyncThunk(
     async (courseId, { rejectWithValue }) => {
         try {
             const response = await axios.delete(`${API_BASE_URL}/Course/Delete?courseId=${courseId}`);
-            return response.data;
+            return { courseId, data: response.data };
         } catch (error) {
             return rejectWithValue(error.response?.data || 'Failed to delete course');
         }

@@ -36,6 +36,7 @@ import { useDispatch } from 'react-redux';
 import { useSelector } from 'react-redux';
 import { editStudent } from '../../../store/student/studentEditThunk';
 import { getNotesByStudentId } from '../../../store/studentNotes/studentNotesGetById';
+import { fetchHealthFunds } from '../../../store/healthFund/fetchHealthFunds';
 import { checkUserPermission } from '../../../utils/permissions';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import InfoIcon from '@mui/icons-material/Info';
@@ -48,6 +49,9 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success', action: null });
   // קבלת המשתמש הנוכחי מה-redux
   const currentUser = useSelector(state => state.user?.currentUser || state.users?.currentUser || null);
+  // קבלת רשימת קופות החולים מה-redux
+  const healthFunds = useSelector(state => state.healthFunds?.items || []);
+  const healthFundsLoading = useSelector(state => state.healthFunds?.loading || false);
   const dispatch = useDispatch();
   const [formData, setFormData] = useState({
   id: '',
@@ -60,7 +64,9 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
     age: '',
     city: '',
     school: '',
-    healthFund: '',
+    healthFundId: null,
+    healthFundName: '',
+    healthFundPlan: '',
     class: '',
     sector: '',
     status: '',
@@ -72,16 +78,14 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
   const [studentNotes, setStudentNotes] = useState([]);
   const [notesLoading, setNotesLoading] = useState(false);
 
-  // אפשרויות קופת חולים עם אייקונים
-  const healthFundOptions = [
-    { value: 'מכבי', label: '🏥 מכבי', icon: '🏥' },
-    { value: 'מאוחדת', label: '🏥 מאוחדת', icon: '🏥' },
-    { value: 'לאומית', label: '🏥 לאומית', icon: '🏥' },
-    { value: 'כללית', label: '🏥 כללית', icon: '🏥' },
-    { value: 'הסדר אחר', label: '🏥 הסדר אחר', icon: '🏥' }
-  ];
+  // טעינת רשימת קופות החולים כשהדיאלוג נפתח
+  useEffect(() => {
+    if (open) {
+      dispatch(fetchHealthFunds());
+    }
+  }, [open, dispatch]);
 
-  // אפשרויות גיל עם אייקונים
+    // אפשרויות גיל עם אייקונים
   const ageOptions = [
     { value: 5, label: '🎂 בן 5', icon: '🎂' },
     { value: 6, label: '🎂 בן 6', icon: '🎂' },
@@ -185,7 +189,9 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
         age: student.age || '',
         city: student.city || '',
         school: student.school || '',
-        healthFund: student.healthFund || student.healthfund || '',
+        healthFundId: student.healthFundId || null,
+        healthFundName: student.healthFundName || '',
+        healthFundPlan: student.healthFundPlan || '',
         class: normalizeClass(student.class || student.className || student.grade || student.classLevel),
         sector: student.sector || '',
         status: student.status || (student.isActive !== undefined ? (student.isActive ? 'פעיל' : 'לא פעיל') : ''),
@@ -251,12 +257,26 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
     
     try {
       const studentData = {
-        ...formData,
-        age: parseInt(formData.age),
-        phone: formData.phone.toString()
+        id: formData.id,
+        firstName: formData.firstName || '',
+        lastName: formData.lastName || '',
+        phone: (formData.phone || '').toString(),
+        secondaryPhone: formData.secondaryPhone || '',
+        email: formData.email || '',
+        age: parseInt(formData.age) || 0,
+        city: formData.city || '',
+        school: formData.school || '',
+        healthFundId: formData.healthFundId || null,
+        class: formData.class || '',
+        sector: formData.sector || '',
+        status: formData.status || 'ליד',
+        createdBy: formData.createdBy || '',
+        IdentityCard: formData.IdentityCard || ''
       };
 
       console.log('Sending student data for update:', studentData);
+      console.log('FormData before send:', formData);
+      console.log('StudentData keys:', Object.keys(studentData));
 
       if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setError(msg))) return;
       const result = await dispatch(editStudent({
@@ -329,7 +349,9 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
       age: '',
       city: '',
       school: '',
-      healthFund: '',
+      healthFundId: null,
+      healthFundName: '',
+      healthFundPlan: '',
       class: '',
       sector: '',
       status: '',
@@ -473,7 +495,13 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
               variant="outlined"
               value={formData.createdBy}
               onChange={(e) => handleInputChange('createdBy', e.target.value)}
-              sx={{ textAlign: 'right' }}
+              sx={{ 
+                textAlign: 'right',
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+              InputLabelProps={{ sx: { right: 24, left: 'auto', transformOrigin: 'top right' } }}
               placeholder="שם יוצר/מלל חופשי"
             />
           </Grid>
@@ -486,7 +514,13 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
               variant="outlined"
               value={formData.id}
               required
-              sx={{ textAlign: 'right' }}
+              sx={{ 
+                textAlign: 'right',
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+              InputLabelProps={{ sx: { right: 24, left: 'auto', transformOrigin: 'top right' } }}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
@@ -497,7 +531,13 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
               variant="outlined"
               value={formData.IdentityCard}
               onChange={(e) => handleInputChange('IdentityCard', e.target.value)}
-              sx={{ textAlign: 'right' }}
+              sx={{ 
+                textAlign: 'right',
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+              InputLabelProps={{ sx: { right: 24, left: 'auto', transformOrigin: 'top right' } }}
               placeholder="הזן מספר זיהוי נוסף"
             />
           </Grid>
@@ -511,7 +551,13 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
               value={formData.phone}
               onChange={(e) => handleInputChange('phone', e.target.value)}
               required
-              sx={{ textAlign: 'right' }}
+              sx={{ 
+                textAlign: 'right',
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+              InputLabelProps={{ sx: { right: 24, left: 'auto', transformOrigin: 'top right' } }}
             />
           </Grid>
 
@@ -523,7 +569,13 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
               variant="outlined"
               value={formData.secondaryPhone}
               onChange={(e) => handleInputChange('secondaryPhone', e.target.value)}
-              sx={{ textAlign: 'right' }}
+              sx={{ 
+                textAlign: 'right',
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+              InputLabelProps={{ sx: { right: 24, left: 'auto', transformOrigin: 'top right' } }}
               placeholder="טלפון נוסף (אופציונלי)"
             />
           </Grid>
@@ -536,7 +588,13 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
               variant="outlined"
               value={formData.email}
               onChange={(e) => handleInputChange('email', e.target.value)}
-              sx={{ textAlign: 'right' }}
+              sx={{ 
+                textAlign: 'right',
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+              InputLabelProps={{ sx: { right: 24, left: 'auto', transformOrigin: 'top right' } }}
               placeholder="example@email.com"
             />
           </Grid>
@@ -549,7 +607,13 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
               value={formData.firstName}
               onChange={(e) => handleInputChange('firstName', e.target.value)}
               required
-              sx={{ textAlign: 'right' }}
+              sx={{ 
+                textAlign: 'right',
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+              InputLabelProps={{ sx: { right: 24, left: 'auto', transformOrigin: 'top right' } }}
             />
           </Grid>
 
@@ -561,13 +625,27 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
               value={formData.lastName}
               onChange={(e) => handleInputChange('lastName', e.target.value)}
               required
-              sx={{ textAlign: 'right' }}
+              sx={{ 
+                textAlign: 'right',
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+              InputLabelProps={{ sx: { right: 24, left: 'auto', transformOrigin: 'top right' } }}
             />
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <FormControl fullWidth variant="outlined">
-              <InputLabel>🎂 גיל</InputLabel>
+            <FormControl 
+              fullWidth 
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+            >
+              <InputLabel sx={{ right: 24, left: 'auto', transformOrigin: 'top right' }}>🎂 גיל</InputLabel>
               <Select
                 value={formData.age}
                 onChange={(e) => handleInputChange('age', e.target.value)}
@@ -591,7 +669,13 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
               value={formData.city}
               onChange={(e) => handleInputChange('city', e.target.value)}
               required
-              sx={{ textAlign: 'right' }}
+              sx={{ 
+                textAlign: 'right',
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+              InputLabelProps={{ sx: { right: 24, left: 'auto', transformOrigin: 'top right' } }}
             />
           </Grid>
 
@@ -610,30 +694,68 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
               variant="outlined"
               value={formData.school}
               onChange={(e) => handleInputChange('school', e.target.value)}
-              sx={{ textAlign: 'right' }}
+              sx={{ 
+                textAlign: 'right',
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+              InputLabelProps={{ sx: { right: 24, left: 'auto', transformOrigin: 'top right' } }}
             />
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <FormControl fullWidth variant="outlined">
-              <InputLabel>🏥 קופת חולים</InputLabel>
+            <FormControl 
+              fullWidth 
+              variant="outlined"
+              disabled={healthFundsLoading}
+              sx={{
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+            >
+              <InputLabel sx={{ right: 24, left: 'auto', transformOrigin: 'top right' }}>
+                🏥 קופת חולים והסדר
+              </InputLabel>
               <Select
-                value={formData.healthFund}
-                onChange={(e) => handleInputChange('healthFund', e.target.value)}
-                label="🏥 קופת חולים"
+                value={formData.healthFundId || ''}
+                onChange={(e) => {
+                  const selectedFund = healthFunds.find(hf => hf.healthFundId === e.target.value);
+                  handleInputChange('healthFundId', e.target.value);
+                  if (selectedFund) {
+                    handleInputChange('healthFundName', selectedFund.name);
+                    handleInputChange('healthFundPlan', selectedFund.fundType);
+                  }
+                }}
+                label="🏥 קופת חולים והסדר"
+                disabled={healthFundsLoading}
+                dir="rtl"
               >
-                {healthFundOptions.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
+                {healthFundsLoading ? (
+                  <MenuItem disabled>טוען...</MenuItem>
+                ) : (
+                  healthFunds.map((fund) => (
+                    <MenuItem key={fund.healthFundId} value={fund.healthFundId}>
+                      {fund.name} • {fund.fundType}
+                    </MenuItem>
+                  ))
+                )}
               </Select>
             </FormControl>
-          </Grid>
+                  </Grid>
 
           <Grid item xs={12} sm={6}>
-            <FormControl fullWidth variant="outlined">
-              <InputLabel>📚 כיתה</InputLabel>
+            <FormControl 
+              fullWidth 
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+            >
+              <InputLabel sx={{ right: 24, left: 'auto', transformOrigin: 'top right' }}>📚 כיתה</InputLabel>
               <Select
                 value={formData.class}
                 onChange={(e) => handleInputChange('class', e.target.value)}
@@ -655,8 +777,16 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <FormControl fullWidth variant="outlined">
-              <InputLabel>🌍 מגזר</InputLabel>
+            <FormControl 
+              fullWidth 
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+            >
+              <InputLabel sx={{ right: 24, left: 'auto', transformOrigin: 'top right' }}>🌍 מגזר</InputLabel>
               <Select
                 value={formData.sector}
                 onChange={(e) => handleInputChange('sector', e.target.value)}
@@ -672,8 +802,16 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <FormControl fullWidth variant="outlined">
-              <InputLabel>📊 סטטוס תלמיד</InputLabel>
+            <FormControl 
+              fullWidth 
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+            >
+              <InputLabel sx={{ right: 24, left: 'auto', transformOrigin: 'top right' }}>📊 סטטוס תלמיד</InputLabel>
               <Select
                 value={formData.status}
                 onChange={(e) => handleInputChange('status', e.target.value)}

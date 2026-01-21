@@ -3486,16 +3486,16 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
         px: 3,
         py: 1,
         fontWeight: 'bold',
-        bgcolor: groupStatus === false ? '#EF4444' : 'transparent',
-        borderColor: '#EF4444',
-        color: groupStatus === false ? 'white' : '#EF4444',
+        bgcolor: groupStatus === false ? '#efa544ff' : 'transparent',
+        borderColor: '#efa544ff',
+        color: groupStatus === false ? 'white' : '#efa544ff',
         '&:hover': {
-          bgcolor: groupStatus === false ? '#DC2626' : 'rgba(239, 68, 68, 0.1)',
-          borderColor: '#EF4444'
+          bgcolor: groupStatus === false ? '#ed992cff' : 'rgba(239, 68, 68, 0.1)',
+          borderColor: '#efa544ff'
         }
       }}
     >
-      ❌ לא פעיל
+      🤝 ליד 
     </Button>
   </Box>
   <Typography variant="caption" sx={{ 

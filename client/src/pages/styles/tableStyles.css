@@ -222,65 +222,52 @@
   transform: scale(1.05);
 }
 
-/* ===== ACTION BUTTONS ===== */
+/* ===== ACTION BUTTONS (ICON BUTTONS) ===== */
+/* כללים קלילים לאייקונים בלבד - בלא רקע מלא */
 .action-buttons {
   display: flex !important;
-  gap: 6px !important;
+  gap: 4px !important;
   justify-content: center !important;
   flex-wrap: wrap !important;
+  align-items: center !important;
+  min-height: 24px !important;
 }
 
-.action-button {
-  border-radius: 8px !important;
-  font-weight: 600 !important;
-  font-size: 0.8rem !important;
-  padding: 6px 12px !important;
-  transition: all 0.3s ease !important;
-  text-transform: none !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
-  border: none !important;
-  min-width: 60px !important;
+/* עבור MUI IconButton בלבד */
+.action-button.MuiIconButton-root {
+  padding: 4px !important;
+  font-size: 1rem !important;
+  border-radius: 4px !important;
+  transition: all 0.2s ease !important;
 }
 
-.action-button:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+.action-button.MuiIconButton-root:hover {
+  transform: scale(1.1) !important;
 }
 
-.action-button.edit {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
-  color: white !important;
+/* צבעים קלילים רק לאייקון */
+.action-button.info svg {
+  color: #60A5FA !important;
 }
 
-.action-button.edit:hover {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+.action-button.info:hover svg {
+  color: #3B82F6 !important;
 }
 
-.action-button.delete {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
-  color: white !important;
+.action-button.edit svg {
+  color: #F6D365 !important;
 }
 
-.action-button.delete:hover {
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+.action-button.edit:hover svg {
+  color: #FCD34D !important;
 }
 
-.action-button.info {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
-  color: white !important;
+.action-button.delete svg {
+  color: #FF6B6B !important;
 }
 
-.action-button.info:hover {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
-}
-
-.action-button.attendance {
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
-  color: white !important;
-}
-
-.action-button.attendance:hover {
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
+.action-button.delete:hover svg {
+  color: #EF4444 !important;
 }
 
 /* ===== EMPTY STATE ===== */
@@ -324,8 +311,8 @@
 .main-add-button {
   background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%) !important;
   color: white !important;
-  border-radius: 20px !important;
-  font-size: 1.2rem !important;
+  border-radius: 10px !important;
+  font-size: 1.1rem !important;
   font-weight: 700 !important;
   padding: 16px 32px !important;
   margin: 24px 0 !important;
@@ -488,23 +475,6 @@
   vertical-align: middle !important;
 }
 
-.action-buttons {
-  display: flex !important;
-  gap: 4px !important;
-  flex-wrap: wrap !important;
-  align-items: center !important;
-  justify-content: center !important;
-  min-height: 32px !important; /* ✅ הקטנתי מ-44px ל-32px */
-}
-
-.action-button {
-  min-width: 60px !important;
-  height: 24px !important; /* ✅ הקטנתי מ-29px ל-24px */
-  font-size: 0.7rem !important; /* ✅ הקטנתי מ-0.75rem */
-  padding: 2px 6px !important; /* ✅ הקטנתי מ-4px 8px */
-  margin: 1px !important;
-}
-
 .table-cell,
 .table-head-cell {
   text-align: center !important;
@@ -549,21 +519,6 @@
   padding: 0 !important; /* ✅ הוסף את זה */
 }
 
-.action-button {
-  border-radius: 8px !important;
-  font-weight: 600 !important;
-  font-size: 0.7rem !important;
-  padding: 2px 6px !important;
-  transition: all 0.3s ease !important;
-  text-transform: none !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
-  border: none !important;
-  min-width: 60px !important;
-  height: 24px !important;
-  margin: 0 !important; /* ✅ הוסף את זה */
-  vertical-align: middle !important; /* ✅ הוסף את זה */
-}
-
 /* ✅ הוסף כללים ספציפיים לתאי הטבלה */
 .table-cell {
   padding: 4px 8px !important;
@@ -574,7 +529,7 @@
   font-weight: 500 !important;
   height: 40px !important;
   vertical-align: middle !important;
-  line-height: 1 !important; /* ✅ הוסף את זה */
+  line-height: 1 !important;
 }
 
 /* ✅ הוסף כלל ספציפי לתא הפעולות */
@@ -587,100 +542,21 @@
   padding: 0 !important;
 }
 
-/* ✅ תיקון נוסף לכפתורי MUI */
-.action-button.MuiButton-root {
-  margin: 0 !important;
-  padding: 2px 6px !important;
-  min-height: 24px !important;
-  height: 24px !important;
-  line-height: 1 !important;
-}
-
-/* ✅ תיקון לאייקונים בכפתורים */
-.action-button .MuiButton-startIcon {
-  margin-left: 0.3rem !important;
-  margin-right: 0 !important;
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-}
-
-/* ✅ הוסף כללים לגובה שורות קטן יותר */
+/* ✅ עדכן את גובה השורה */
 .advanced-table .table-row {
   height: 40px !important;
   min-height: 40px !important;
-  line-height: 1 !important; /* ✅ הוסף את זה */
+  line-height: 1 !important;
 }
 
 .advanced-table .table-cell {
   padding: 4px 8px !important;
   vertical-align: middle !important;
-  line-height: 1 !important; /* ✅ הוסף את זה */
+  line-height: 1 !important;
   height: 40px !important;
-}
-
-/* ✅ תיקון ספציפי לתאי פעולות */
-.advanced-table .table-cell:first-child {
-  padding: 8px 10px !important; /* ✅ padding קטן יותר לתא הפעולות */
-}
-.action-button {
-  border-radius: 8px !important;
-  font-weight: 600 !important;
-  font-size: 0.75rem !important; /* ✅ הגדלתי מ-0.7rem ל-0.75rem */
-  padding: 4px 8px !important; /* ✅ הגדלתי מ-2px 6px ל-4px 8px */
-  transition: all 0.3s ease !important;
-  text-transform: none !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
-  border: none !important;
-  min-width: 65px !important; /* ✅ הגדלתי מ-60px ל-65px */
-  height: 28px !important; /* ✅ הגדלתי מ-24px ל-28px */
-  margin: 0 !important;
-  vertical-align: middle !important;
-}
-
-/* ✅ עדכן גם את הגובה המינימלי של הקונטיינר */
-.action-buttons {
-  display: flex !important;
-  gap: 4px !important;
-  justify-content: center !important;
-  flex-wrap: wrap !important;
-  align-items: center !important;
-  min-height: 36px !important; /* ✅ הגדלתי מ-32px ל-36px */
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* ✅ עדכן את הכלל הספציפי למUI */
-.action-button.MuiButton-root {
-  margin: 0 !important;
-  padding: 4px 8px !important; /* ✅ הגדלתי מ-2px 6px */
-  min-height: 28px !important; /* ✅ הגדלתי מ-24px */
-  height: 28px !important; /* ✅ הגדלתי מ-24px */
-  line-height: 1 !important;
-}
-
-/* ✅ עדכן גם את האייקונים */
-.action-button .MuiButton-startIcon {
-  margin-left: 0.4rem !important; /* ✅ הגדלתי מ-0.3rem */
-  margin-right: 0 !important;
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-}
-
-/* ✅ עדכן את גובה השורה אם צריך */
-.advanced-table .table-row {
-  height: 44px !important; /* ✅ הגדלתי מ-40px ל-44px כדי להכיל כפתורים גדולים יותר */
-  min-height: 44px !important;
-  line-height: 1 !important;
-}
-
-.advanced-table .table-cell {
-  padding: 4px 8px !important;
-  vertical-align: middle !important;
-  line-height: 1 !important;
-  height: 44px !important; /* ✅ הגדלתי מ-40px ל-44px */
 }
 
 /* ✅ עדכן גם את הסקלטון */
 .skeleton-row {
-  height: 44px !important; /* ✅ הגדלתי מ-40px ל-44px */
+  height: 40px !important;
 }

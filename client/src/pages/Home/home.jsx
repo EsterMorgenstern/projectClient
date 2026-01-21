@@ -226,7 +226,7 @@ export const Home = () => {
       title: "ניהול חוגים, סניפים וקבוצות",
       description: "יצירת וניהול חוגים, סניפים וקבוצות, קביעת לוחות זמנים ומעקב אחר התקדמות הלמידה",
       icon: SchoolIcon,
-      path: "/entrollStudent",
+      path: "/enroll-student",
       color: "#32CD32",
       gradient: "linear-gradient(135deg, #32CD32, #228B22)",
       badge: "פעיל",
@@ -246,7 +246,7 @@ export const Home = () => {
       title: "לוח שנה ייחודי",
       description: "לוח שנה מתקדם לרישום נוכחות יומי, תזכורות ומעקב אחר אירועים חשובים",
       icon: CalendarTodayIcon,
-      path: "/attendanceCalendar",
+      path: "/attendance-calendar",
       color: "#FF8C00",
       gradient: "linear-gradient(135deg, #FF8C00, #FF7F50)",
       badge: "חדש",
@@ -276,7 +276,7 @@ export const Home = () => {
       title: "רישום לחוגים",
       description: "רישום תלמידים חדשים לחוגים ושיבוץ קל ומהיר",
       icon: PersonAddIcon,
-      path: "/entrollStudent",
+      path: "/enroll-student",
       color: "#20B2AA",
       gradient: "linear-gradient(135deg, #20B2AA, #008B8B)",
       badge: "מהיר",
@@ -491,7 +491,7 @@ export const Home = () => {
                 variant="outlined"
                 color="inherit"
                 size="large"
-                onClick={() => navigate("/entrollStudent")}
+                onClick={() => navigate("/enroll-student")}
                 sx={{
                   direction: 'ltr',
                   mx: 1,
@@ -1294,7 +1294,7 @@ export const Home = () => {
                   <ActionButton
                     variant="outlined"
                     size="large"
-                    onClick={() => navigate("/aboutSystem")}
+                    onClick={() => navigate("/about-system")}
                     sx={{
                       mx: 1,
                       borderColor: "white",

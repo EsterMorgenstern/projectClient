@@ -2,9 +2,8 @@
 import {
   Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField,
   Box, Typography, InputAdornment, Pagination, FormControl, InputLabel,
-  Select, MenuItem, CircularProgress, Skeleton, Table, TableContainer,
-  Paper, TableHead, TableRow, TableCell, TableBody, List, ListItem,
-  ListItemText, Chip
+  Select, MenuItem, CircularProgress, Skeleton, TableRow, TableCell, TableBody, List, ListItem,
+  ListItemText, Chip, Tooltip, IconButton, Paper
 } from '@mui/material';
 import {
   Add, Edit, Delete, Search as SearchIcon, PersonAdd, Email,
@@ -16,68 +15,31 @@ import { fetchInstructors } from '../../store/instructor/instructorGetAllThunk';
 import { deleteInstructor } from '../../store/instructor/instuctorDeleteThunk';
 import { addInstructor } from '../../store/instructor/instructorAddThunk';
 import { editInstructor } from '../../store/instructor/instructorEditThunk';
-import '../styles/tableStyles.css';
 import { getGroupsByInstructorId } from '../../store/group/groupByInstructorId';
 import { checkUserPermission } from '../../utils/permissions';
+import StyledTableShell from '../../components/StyledTableShell';
+import StatsCard from '../../components/StatsCard';
 
 // קומפוננטת Loading Skeleton למדריכים
-const InstructorLoadingSkeleton = () => (
-  <TableContainer component={Paper} className="advanced-table loading-skeleton">
-    <Table>
-      <TableHead className="table-head">
-        <TableRow>
-          <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🎯</span>
-              <span style={{ fontSize: '0.9em' }}>פעולות</span>
-            </div>
-          </TableCell>
-          <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🆔</span>
-              <span style={{ fontSize: '0.9em' }}>קוד מדריך</span>
-            </div>
-          </TableCell>
-          <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>👤</span>
-              <span style={{ fontSize: '0.9em' }}>שם פרטי</span>
-            </div>
-          </TableCell>
-          <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>👥</span>
-              <span style={{ fontSize: '0.9em' }}>שם משפחה</span>
-            </div>
-          </TableCell>
-          <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>📞</span>
-              <span style={{ fontSize: '0.9em' }}>טלפון</span>
-            </div>
-          </TableCell>
-          <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>📧</span>
-              <span style={{ fontSize: '0.9em' }}>אימייל</span>
-            </div>
-          </TableCell>
+const InstructorLoadingSkeleton = ({ headers }) => (
+  <StyledTableShell headers={headers}>
+    <TableBody>
+      {[...Array(5)].map((_, index) => (
+        <TableRow key={index}>
+          {headers.map((_, cellIdx) => (
+            <TableCell key={cellIdx}>
+              <Skeleton
+                variant="rectangular"
+                width={cellIdx === 0 ? 200 : 120}
+                height={24}
+                sx={{ borderRadius: '8px' }}
+              />
+            </TableCell>
+          ))}
         </TableRow>
-      </TableHead>
-      <TableBody>
-        {[...Array(5)].map((_, index) => (
-          <TableRow key={index} className="skeleton-row">
-            <TableCell><Skeleton variant="rectangular" width={250} height={10} sx={{ borderRadius: '8px' }} /></TableCell>
-            <TableCell><Skeleton variant="text" width={80} /></TableCell>
-            <TableCell><Skeleton variant="text" width={100} /></TableCell>
-            <TableCell><Skeleton variant="text" width={120} /></TableCell>
-            <TableCell><Skeleton variant="text" width={90} /></TableCell>
-            <TableCell><Skeleton variant="text" width={150} /></TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  </TableContainer>
+      ))}
+    </TableBody>
+  </StyledTableShell>
 );
 
 // קומפוננטת Empty State למדריכים
@@ -712,6 +674,17 @@ export default function InstructorsTable() {
   const error = useSelector((state) => state.instructors.error);
   const currentUser = useSelector((state) => state.users?.currentUser);
 
+  const tableHeaders = [
+    { label: 'קוד מדריך', align: 'center' },
+    { label: 'שם פרטי', align: 'center' },
+    { label: 'שם משפחה', align: 'center' },
+    { label: 'טלפון', align: 'center' },
+    { label: 'מייל', align: 'center' },
+    { label: 'עיר', align: 'center' },
+    { label: 'מגזר', align: 'center' },
+    { label: 'פעולות', align: 'center' }
+  ];
+
   // הוסף selectors לחוגים
   const instructorGroups = useSelector((state) => state.groups.instructorGroups || []);
   const groupsLoading = useSelector((state) => state.groups.loading);
@@ -819,6 +792,14 @@ export default function InstructorsTable() {
     }
   };
 
+  const totalInstructors = Array.isArray(instructors) ? instructors.length : 0;
+  const uniqueCities = Array.isArray(instructors)
+    ? new Set(instructors.map((i) => i?.city).filter(Boolean)).size
+    : 0;
+  const uniqueSectors = Array.isArray(instructors)
+    ? new Set(instructors.map((i) => i?.sector).filter(Boolean)).size
+    : 0;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -842,6 +823,52 @@ export default function InstructorsTable() {
           </Typography>
         </motion.div>
 
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.15 }}
+        >
+          <Box
+            sx={{
+              mt: 3,
+              mb: 2.7,
+              display: 'grid',
+              gridTemplateColumns: { xs: 'repeat(1, minmax(0, 1fr))', sm: 'repeat(2, minmax(0, 1fr))', md: 'repeat(3, minmax(0, 1fr))' },
+              gap: 1.25,
+              maxWidth: { xs: '100%', md: 900 },
+              mx: 'auto'
+            }}
+          >
+            <StatsCard
+              label="סה&quot;כ מדריכים"
+              value={totalInstructors}
+              note="במערכת כולה"
+              bg="linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%)"
+              icon={Groups}
+              iconBg="rgba(59, 130, 246, 0.12)"
+              numberAlign="right"
+            />
+            <StatsCard
+              label="ערים מיוצגות"
+              value={uniqueCities}
+              note="פריסה גיאוגרפית"
+                bg="linear-gradient(135deg, #ffe8f9c4 0%, #ffd5f256 100%)"
+                        icon={LocationCity}
+                        iconBg="rgba(242, 58, 227, 0.12)"
+              numberAlign="right"
+            />
+            <StatsCard
+              label="מגזרים שונים"
+              value={uniqueSectors}
+              note="גיוון מדריכים"
+              bg="linear-gradient(135deg, #ecfdf3 0%, #dcfce7 100%)"
+              icon={Badge}
+              iconBg="rgba(34, 197, 94, 0.12)"
+              numberAlign="right"
+            />
+          </Box>
+        </motion.div>
+<br/>
         {/* שדה חיפוש */}
         <motion.div
           className="search-container slide-in-right"
@@ -897,7 +924,7 @@ export default function InstructorsTable() {
             </Box>
           </Box>
         </motion.div>
- {/* כפתור הוספת מדריך חדש */}
+        {/* כפתור הוספת מדריך חדש */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -915,8 +942,9 @@ export default function InstructorsTable() {
             size="large"
             className="main-add-button glow-effect"
             fullWidth
+            sx={{ gap: 1 }}
           >
-            ➕ הוסף מדריך חדש
+             הוסף מדריך חדש
           </Button>
         </motion.div>
         {/* טבלה */}
@@ -928,7 +956,7 @@ export default function InstructorsTable() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              <InstructorLoadingSkeleton />
+              <InstructorLoadingSkeleton headers={tableHeaders} />
             </motion.div>
           ) : paginatedInstructors.length > 0 ? (
             <motion.div
@@ -938,114 +966,70 @@ export default function InstructorsTable() {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.5 }}
             >
-              <TableContainer component={Paper} className="advanced-table custom-scrollbar">
-                <Table>
-                  <TableHead className="table-head">
-                    <TableRow>
-                      <TableCell className="table-head-cell" style={{ width: 200, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🎯</span>
-                          <span style={{ fontSize: '0.9em' }}>פעולות</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 120, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🆔</span>
-                          <span style={{ fontSize: '0.9em' }}>קוד מדריך</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 120, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>👤</span>
-                          <span style={{ fontSize: '0.9em' }}>שם פרטי</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 140, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>👥</span>
-                          <span style={{ fontSize: '0.9em' }}>שם משפחה</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 110, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>📞</span>
-                          <span style={{ fontSize: '0.9em' }}>טלפון</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 180, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>📧</span>
-                          <span style={{ fontSize: '0.9em' }}>מייל</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 100, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🏙️</span>
-                          <span style={{ fontSize: '0.9em' }}>עיר</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 120, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🌍</span>
-                          <span style={{ fontSize: '0.9em' }}>מגזר</span>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    <AnimatePresence>
-                      {paginatedInstructors
-                        .filter(row => row?.id != null && row?.id !== '')
-                        .map((instructor, index) => (
-                          <motion.tr
-                            key={instructor.id}
-                            component={TableRow}
-                            className="table-row"
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 20 }}
-                            transition={{
-                              duration: 0.3,
-                              delay: index * 0.05,
-                              type: "spring",
-                              stiffness: 100
-                            }}
-                            whileHover={{ scale: 1.001 }}
+              <StyledTableShell headers={tableHeaders} enableHorizontalScroll={true}>
+                <TableBody>
+                  <AnimatePresence>
+                    {paginatedInstructors
+                      .filter(row => row?.id != null && row?.id !== '')
+                      .map((instructor, index) => (
+                        <motion.tr
+                          key={instructor.id}
+                          component={TableRow}
+                          className="table-row"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 20 }}
+                          transition={{
+                            duration: 0.3,
+                            delay: index * 0.05,
+                            type: "spring",
+                            stiffness: 100
+                          }}
+                          whileHover={{ scale: 1.001 }}
 
-                          >
-                            {/* עמודת פעולות */}
-                            <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>
-                              <Box className="action-buttons" sx={{
-                                display: 'flex',
-                                gap: 0.3,
-                                flexWrap: 'wrap',
-                                minHeight: '30px'
-                              }}>
-                                <Button
-                                  variant="contained"
-                                  startIcon={<Groups />}
+                        >
+                          {/* עמודות נתונים */}
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{instructor.id}</TableCell>
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{instructor.firstName}</TableCell>
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{instructor.lastName}</TableCell>
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{instructor.phone}</TableCell>
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+                              <Email sx={{ color: '#3B82F6', fontSize: 12 }} />
+                              <span style={{ fontSize: '0.85rem' }}>{instructor.email}</span>
+                            </Box>
+                          </TableCell>
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{instructor.city}</TableCell>
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{instructor.sector}</TableCell>
+
+                          {/* עמודת פעולות */}
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5, minWidth: '200px' }}>
+                            <Box className="action-buttons" sx={{
+                              display: 'flex',
+                              gap: 0.3,
+                              flexWrap: 'wrap',
+                              minHeight: '30px',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}>
+                              <Tooltip title="חוגים">
+                                <IconButton
                                   size="small"
                                   className="action-button info"
                                   onClick={() => handleShowInstructorGroups(instructor)}
                                   sx={{
-                                    backgroundColor: '#10B981',
-                                    '&:hover': { backgroundColor: '#059669' },
-                                    minWidth: '55px',
-                                    height: '22px',
-                                    fontSize: '0.65rem',
-                                    px: 0.5,
-                                    py: 0.2,
-                                    '& .MuiButton-startIcon': {
-                                      marginLeft: 0.3,
-                                      marginRight: 0,
+                                    color: '#60A5FA',
+                                    '&:hover': {
+                                      color: '#3B82F6',
+                                      backgroundColor: 'rgba(96, 165, 250, 0.08)'
                                     }
                                   }}
                                 >
-                                  חוגים
-                                </Button>
-                                <Button
-                                  variant="contained"
-                                  startIcon={<Edit />}
+                                  <Groups fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="ערוך">
+                                <IconButton
                                   size="small"
                                   className="action-button edit"
                                   onClick={() => {
@@ -1061,22 +1045,18 @@ export default function InstructorsTable() {
                                     setOpenEdit(true);
                                   }}
                                   sx={{
-                                    minWidth: '55px',
-                                    height: '22px',
-                                    fontSize: '0.65rem',
-                                    px: 0.5,
-                                    py: 0.2,
-                                    '& .MuiButton-startIcon': {
-                                      marginLeft: 0.3,
-                                      marginRight: 0,
+                                    color: '#F6D365',
+                                    '&:hover': {
+                                      color: '#FCD34D',
+                                      backgroundColor: 'rgba(246, 211, 101, 0.08)'
                                     }
                                   }}
                                 >
-                                  ערוך
-                                </Button>
-                                <Button
-                                  variant="contained"
-                                  startIcon={<Delete />}
+                                  <Edit fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="מחק">
+                                <IconButton
                                   size="small"
                                   className="action-button delete"
                                   onClick={() => {
@@ -1092,42 +1072,25 @@ export default function InstructorsTable() {
                                     setDeleteOpen(true);
                                   }}
                                   sx={{
-                                    minWidth: '55px',
-                                    height: '22px',
-                                    fontSize: '0.65rem',
-                                    px: 0.5,
-                                    py: 0.2,
-                                    '& .MuiButton-startIcon': {
-                                      marginLeft: 0.3,
-                                      marginRight: 0,
+                                    color: '#FF6B6B',
+                                    '&:hover': {
+                                      color: '#EF4444',
+                                      backgroundColor: 'rgba(255, 107, 107, 0.08)'
                                     }
                                   }}
                                 >
-                                  מחק
-                                </Button>
-                              </Box>
-                            </TableCell>
-
-                            <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{instructor.id}</TableCell>
-                            <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{instructor.firstName}</TableCell>
-                            <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{instructor.lastName}</TableCell>
-                            <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{instructor.phone}</TableCell>
-                            <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
-                                <Email sx={{ color: '#3B82F6', fontSize: 12 }} />
-                                <span style={{ fontSize: '0.85rem' }}>{instructor.email}</span>
-                              </Box>
-                            </TableCell>
-                            <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{instructor.city}</TableCell>
-                            <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{instructor.sector}</TableCell>
+                                  <Delete fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </Box>
+                          </TableCell>
 
 
-                          </motion.tr>
-                        ))}
-                    </AnimatePresence>
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                        </motion.tr>
+                      ))}
+                  </AnimatePresence>
+                </TableBody>
+              </StyledTableShell>
             </motion.div>
           ) : (
             <motion.div
@@ -1170,7 +1133,7 @@ export default function InstructorsTable() {
           </motion.div>
         )}
 
-       
+
 
         {/* דיאלוג הוספת מדריך */}
         <Dialog
@@ -1321,40 +1284,72 @@ export default function InstructorsTable() {
         <Dialog
           open={deleteOpen}
           onClose={() => setDeleteOpen(false)}
-          maxWidth="sm"
-          className="advanced-dialog"
+          PaperProps={{
+            sx: {
+              direction: 'rtl',
+              borderRadius: 2,
+              minWidth: { xs: '90%', sm: '400px' },
+              overflow: 'hidden'
+            }
+          }}
         >
-          <DialogTitle className="dialog-title" sx={{ background: 'linear-gradient(45deg, #EF4444, #DC2626) !important' }}>
-            🗑️ מחיקת מדריך
+          <DialogTitle
+            sx={{
+              bgcolor: '#ef4444',
+              color: 'white',
+              textAlign: 'center',
+              py: 2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 1
+            }}
+          >
+            <Delete />
+            אישור מחיקה
           </DialogTitle>
-          <DialogContent className="dialog-content">
-            <Box sx={{ textAlign: 'center', py: 2 }}>
-              <Typography variant="h6" sx={{ color: '#374151', mb: 2 }}>
-                ? האם אתה בטוח שברצונך למחוק את המדריך
-              </Typography>
-              <Typography variant="h5" sx={{
-                color: '#1E3A8A',
-                fontWeight: 'bold'
-              }}>
-                {currentInstructor.firstName} {currentInstructor.lastName}
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#64748B', mt: 1 }}>
-                פעולה זו לא ניתנת לביטול
-              </Typography>
-            </Box>
+          <DialogContent sx={{ pt: 3, pb: 2, textAlign: 'center', mt: 1 }}>
+            <Typography variant="h6" gutterBottom>
+              האם אתה בטוח שברצונך למחוק את המדריך?
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+              {currentInstructor.firstName} {currentInstructor.lastName}
+            </Typography>
+            <Typography variant="body2" color="error.main" sx={{ mt: 2, fontWeight: 'bold' }}>
+              פעולה זו לא ניתנת לביטול!
+            </Typography>
           </DialogContent>
-          <DialogActions className="dialog-actions">
-            <Button onClick={() => setDeleteOpen(false)} className="dialog-button primary">
-              ❌ ביטול
+          <DialogActions sx={{ px: 3, pb: 3, justifyContent: 'space-between', direction: 'ltr' }}>
+            <Button
+              onClick={() => setDeleteOpen(false)}
+              variant="outlined"
+              color="primary"
+              sx={{
+                borderRadius: '8px',
+                px: 3,
+                py: 1,
+                borderWidth: '2px'
+              }}
+            >
+              ביטול
             </Button>
             <Button
               onClick={() => {
                 handleDelete(currentInstructor.id);
                 setDeleteOpen(false);
               }}
-              className="dialog-button secondary"
+              variant="contained"
+              color="error"
+              startIcon={<Delete />}
+              sx={{
+                borderRadius: '8px',
+                px: 3,
+                py: 1,
+                bgcolor: '#ef4444',
+                boxShadow: '0 4px 14px rgba(239, 68, 68, 0.3)'
+              }}
             >
-              🗑️ כן, מחק
+              מחק
             </Button>
           </DialogActions>
         </Dialog>

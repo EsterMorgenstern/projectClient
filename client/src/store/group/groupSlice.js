@@ -11,6 +11,7 @@ import { getStudentsByGroupId } from './groupGetStudentsByGroupId';
 import { FindBestGroupForStudent, FindBestGroupsForStudent } from './groupFindBestGroupForStudent';
 import { getAllGroupsWithStudents } from './groupGetAllGroupsWithStudentsThunk';
 import { getGroupsByBranch } from './groupGetGroupsByBranchThunk';
+import { getGroupDetails } from './groupGetDetailsThunk';
 
 const groupSlice = createSlice({
   name: 'groups',
@@ -32,8 +33,13 @@ const groupSlice = createSlice({
     groupWithStudentsLoading: false,
     groupWithStudentsError: null,
     groupsByBranch: [],
+    // Track which branch ID the current groupsByBranch belongs to
+    groupsByBranchId: null,
     groupsByBranchLoading: false,
-    groupsByBranchError: null
+    groupsByBranchError: null,
+    groupDetails: null,
+    groupDetailsLoading: false,
+    groupDetailsError: null
   },
   reducers: {
     clearGroupsByDay: (state) => {
@@ -54,6 +60,11 @@ const groupSlice = createSlice({
       state.groupsByBranch = [];
       state.groupsByBranchLoading = false;
       state.groupsByBranchError = null;
+    },
+    clearGroupDetails: (state) => {
+      state.groupDetails = null;
+      state.groupDetailsLoading = false;
+      state.groupDetailsError = null;
     }
   },
   extraReducers: (builder) => {
@@ -74,32 +85,28 @@ const groupSlice = createSlice({
     builder
       // getAllGroups
       .addCase(fetchGroups.pending, (state) => {
-        console.log('Fetching groups...');
         state.loading = true;
       })
       .addCase(fetchGroups.fulfilled, (state, action) => {
-        console.log(action.payload);
         state.loading = false;
         state.groups = action.payload;
       })
       .addCase(fetchGroups.rejected, (state, action) => {
-        console.error('Error fetching groups:', action.error.message);
         state.loading = false;
         state.error = action.error.message;
       })
 
       // getGroupsByCourseId   
       .addCase(getGroupsByCourseId.pending, (state) => {
-        console.log('getGroupsByCourseId...')
         state.loading = true;
       })
       .addCase(getGroupsByCourseId.fulfilled, (state, action) => {
-        console.log("groupsByCourseId", action.payload);
         state.loading = false;
         state.groupsByCourseId = action.payload;
+        // Do NOT merge into state.groups - causes infinite re-renders
+        // Component will use groupsByCourseId directly when needed
       })
       .addCase(getGroupsByCourseId.rejected, (state, action) => {
-        console.error('Error getting groups by course:', action.error.message);
         state.loading = false;
         state.error = action.error.message;
       })
@@ -219,18 +226,26 @@ const groupSlice = createSlice({
       .addCase(updateGroup.fulfilled, (state, action) => {
         console.log('Group updated:', action.payload);
         state.loading = false;
-        const groupId = action.payload.groupId;
+        const groupId = action.payload.groupId || action.payload.GroupId || action.payload.id;
         
         // עדכן במערך הקבוצות הכללי
-        const generalIndex = state.groups.findIndex((group) => group.groupId === groupId);
+        const generalIndex = state.groups.findIndex((group) => (group.groupId === groupId || group.GroupId === groupId || group.id === groupId));
         if (generalIndex !== -1) {
           state.groups[generalIndex] = action.payload;
         }
         
         // עדכן במערך הקבוצות לפי חוג
-        const courseIndex = state.groupsByCourseId.findIndex((group) => group.groupId === groupId);
+        const courseIndex = state.groupsByCourseId.findIndex((group) => (group.groupId === groupId || group.GroupId === groupId || group.id === groupId));
         if (courseIndex !== -1) {
           state.groupsByCourseId[courseIndex] = action.payload;
+        }
+
+        // עדכן גם במערך הקבוצות לפי סניף (אם נשמר)
+        if (state.groupsByBranch && Array.isArray(state.groupsByBranch)) {
+          const branchIndex = state.groupsByBranch.findIndex((group) => (group.groupId === groupId || group.GroupId === groupId || group.id === groupId));
+          if (branchIndex !== -1) {
+            state.groupsByBranch[branchIndex] = action.payload;
+          }
         }
       })
       .addCase(updateGroup.rejected, (state, action) => {
@@ -270,23 +285,40 @@ const groupSlice = createSlice({
       })
 
       // getGroupsByBranch
-      .addCase(getGroupsByBranch.pending, (state) => {
-        console.log('🔄 Fetching groups by branch...');
+      .addCase(getGroupsByBranch.pending, (state, action) => {
         state.groupsByBranchLoading = true;
         state.groupsByBranchError = null;
+        // Keep existing data, but note which branch is being requested
+        state.groupsByBranchId = action.meta?.arg || null;
       })
       .addCase(getGroupsByBranch.fulfilled, (state, action) => {
-        console.log('✅ Groups by branch data received:', action.payload);
         state.groupsByBranchLoading = false;
         state.groupsByBranch = action.payload;
+        state.groupsByBranchId = action.meta?.arg || null;
+        // Do NOT merge into state.groups - causes infinite re-renders
+        // Component will use groupsByBranch directly when needed
       })
       .addCase(getGroupsByBranch.rejected, (state, action) => {
-        console.error('❌ Error fetching groups by branch:', action.payload);
         state.groupsByBranchLoading = false;
         state.groupsByBranchError = action.payload;
+        state.groupsByBranchId = null;
+      })
+
+      // getGroupDetails
+      .addCase(getGroupDetails.pending, (state) => {
+        state.groupDetailsLoading = true;
+        state.groupDetailsError = null;
+      })
+      .addCase(getGroupDetails.fulfilled, (state, action) => {
+        state.groupDetailsLoading = false;
+        state.groupDetails = action.payload;
+      })
+      .addCase(getGroupDetails.rejected, (state, action) => {
+        state.groupDetailsLoading = false;
+        state.groupDetailsError = action.payload;
       });
   },
 });
 
-export const { clearGroupsByDay, clearBestGroup, clearBestGroups, clearStudentsInGroup, clearGroupsByBranch } = groupSlice.actions;
+export const { clearGroupsByDay, clearBestGroup, clearBestGroups, clearStudentsInGroup, clearGroupsByBranch, clearGroupDetails } = groupSlice.actions;
 export default groupSlice.reducer;

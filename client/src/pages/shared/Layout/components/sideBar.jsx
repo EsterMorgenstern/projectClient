@@ -99,7 +99,7 @@ const Sidebar = () => {
           </ListItemButton>
         </ListItem>
          <ListItem disablePadding>
-          <ListItemButton component={Link} to="/aboutSystem">
+          <ListItemButton component={Link} to="/about-system">
             <ListItemIcon sx={{ color: 'white' }}>
                   <FaRegLightbulb />
             </ListItemIcon>

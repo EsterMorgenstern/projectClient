@@ -4,115 +4,50 @@ import { checkUserPermission } from '../../utils/permissions';
 import EditStudentDialog from './components/EditStudentDialog';
 import {
   Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField,
-  Box, Typography, MenuItem, TableContainer, Paper, TableHead, TableRow,
+  Box, Typography, MenuItem, TableRow,
   TableCell, TableBody, Chip, InputAdornment, Pagination, FormControl,
-  InputLabel, Select, CircularProgress, Skeleton, Table, Tooltip, Snackbar,
-  Alert
+  InputLabel, Select, CircularProgress, Skeleton, Tooltip, Snackbar,
+  Alert, IconButton
 } from '@mui/material';
 import {
   Add, Edit, Delete, Info as InfoIcon, Check as CheckIcon,
   Close as CloseIcon, School as CourseIcon, Search as SearchIcon,
-  PersonAdd, Visibility, History as HistoryIcon
+  PersonAdd, Visibility, History as HistoryIcon,
+  PeopleAltRounded, CheckCircleRounded, LocationCityRounded, SchoolRounded
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
 import StudentAttendanceHistory from './components/studentAttendanceHistory'
 import { fetchStudents } from '../../store/student/studentGetAllThunk';
-import { addStudent } from '../../store/student/studentAddThunk';
-import { addStudentNote } from '../../store/studentNotes/studentNoteAddThunk';
-import { getgroupStudentByStudentId } from '../../store/groupStudent/groupStudentGetByStudentIdThunk';
-import { deleteStudent } from '../../store/student/studentDeleteThunk';
 import { editStudent } from '../../store/student/studentEditThunk';
-import TermsDialog from '../Enrollment/components/termDialog';
+import { deleteStudent } from '../../store/student/studentDeleteThunk';
 import { useNavigate } from 'react-router-dom';
-import '../styles/tableStyles.css';
 import { PersonStandingIcon } from 'lucide-react';
 import StudentCoursesDialog from './components/studentCoursesDialog';
+import StyledTableShell from '../../components/StyledTableShell';
+import StatsCard from '../../components/StatsCard';
+import '../styles/tableStyles.css';
 
 // קומפוננטת Loading Skeleton מתקדמת
-const LoadingSkeleton = () => (
-  <TableContainer component={Paper} className="advanced-table loading-skeleton">
-    <Table>
-      <TableHead className="table-head">
-        <TableRow>
-          <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🎯</span>
-              <span style={{ fontSize: '0.9em' }}>פעולות</span>
-            </div>
-          </TableCell>
-          <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🆔</span>
-              <span style={{ fontSize: '0.9em' }}>קוד תלמיד</span>
-            </div>
-          </TableCell>
-          <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>👤</span>
-              <span style={{ fontSize: '0.9em' }}>שם פרטי</span>
-            </div>
-          </TableCell>
-          <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>👥</span>
-              <span style={{ fontSize: '0.9em' }}>שם משפחה</span>
-            </div>
-          </TableCell>
-          <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>📞</span>
-              <span style={{ fontSize: '0.9em' }}>טלפון</span>
-            </div>
-          </TableCell>
-          <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>📱</span>
-              <span style={{ fontSize: '0.9em' }}>טלפון נוסף</span>
-            </div>
-          </TableCell>
-          <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>📧</span>
-              <span style={{ fontSize: '0.9em' }}>מייל</span>
-            </div>
-          </TableCell>
-          <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🎂</span>
-              <span style={{ fontSize: '0.9em' }}>גיל</span>
-            </div>
-          </TableCell>
-          <TableCell className="table-head-cell" style={{ textAlign: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🏙️</span>
-              <span style={{ fontSize: '0.9em' }}>עיר</span>
-            </div>
-          </TableCell>
+const LoadingSkeleton = ({ headers }) => (
+  <StyledTableShell headers={headers}>
+    <TableBody>
+      {[...Array(5)].map((_, index) => (
+        <TableRow key={index}>
+          {headers.map((_, cellIdx) => (
+            <TableCell key={cellIdx}>
+              <Skeleton
+                variant="rectangular"
+                width={cellIdx === 0 ? 200 : 100}
+                height={24}
+                sx={{ borderRadius: '8px' }}
+              />
+            </TableCell>
+          ))}
         </TableRow>
-      </TableHead>
-      <TableBody>
-        {[...Array(5)].map((_, index) => (
-          <TableRow key={index} className="skeleton-row">
-            <TableCell><Skeleton variant="rectangular" width={200} height={30} sx={{ borderRadius: '8px' }} /></TableCell>
-            <TableCell><Skeleton variant="text" width={80} /></TableCell>
-            <TableCell><Skeleton variant="text" width={100} /></TableCell>
-            <TableCell><Skeleton variant="text" width={120} /></TableCell>
-            <TableCell><Skeleton variant="text" width={90} /></TableCell>
-            <TableCell><Skeleton variant="text" width={150} /></TableCell>
-            <TableCell><Skeleton variant="text" width={60} /></TableCell>
-            <TableCell><Skeleton variant="text" width={80} /></TableCell>
-            <TableCell><Skeleton variant="text" width={80} /></TableCell>
-            <TableCell><Skeleton variant="text" width={80} /></TableCell>
-            <TableCell><Skeleton variant="text" width={60} /></TableCell>
-            <TableCell><Skeleton variant="text" width={60} /></TableCell>
-            <TableCell><Skeleton variant="text" width={100} /></TableCell>
-            <TableCell><Skeleton variant="text" width={80} /></TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  </TableContainer>
+      ))}
+    </TableBody>
+  </StyledTableShell>
 );
 
 
@@ -139,27 +74,38 @@ export default function StudentsTable() {
   const studentCourses = useSelector((state) => state.groupStudents.groupStudentById);
   const loading = useSelector((state) => state.students.loading);
   const error = useSelector((state) => state.students.error);
-  
+
+  const tableHeaders = [
+    { label: 'קוד תלמיד', align: 'center' },
+    { label: 'מספר זיהוי', align: 'center' },
+    { label: 'שם פרטי', align: 'center' },
+    { label: 'שם משפחה', align: 'center' },
+    { label: 'טלפון', align: 'center' },
+    { label: 'טלפון נוסף', align: 'center' },
+    { label: 'מייל', align: 'center' },
+    { label: 'גיל', align: 'center' },
+    { label: 'עיר', align: 'center' },
+    { label: 'בית ספר', align: 'center' },
+    { label: 'קופת חולים', align: 'center' },
+    { label: 'כיתה', align: 'center' },
+    { label: 'מגזר', align: 'center' },
+    { label: 'סטטוס', align: 'center' },
+    { label: 'פעולות', align: 'center' }
+  ];
+
   // קבלת המשתמש הנוכחי
   const currentUser = useSelector(state => {
     return state.users?.currentUser || state.auth?.currentUser || state.user?.currentUser || null;
   });
 
-  const [open, setOpen] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [editStudentDialogOpen, setEditStudentDialogOpen] = useState(false);
   const [selectedStudentForEdit, setSelectedStudentForEdit] = useState(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [openCoursesDialog, setOpenCoursesDialog] = useState(false);
   const [currentStudent, setCurrentStudent] = useState({
     id: null, firstName: '', lastName: '', phone: null, secondaryPhone: '', age: 0, city: '',
-    school: '', healthFund: '', class: "", sector: "", status: 'פעיל', identityCard: ''
+    school: '', class: "", sector: "", status: 'פעיל', identityCard: ''
   });
-  const [newStudent, setnewStudent] = useState({
-    id: null, firstName: '', lastName: '', phone: null, secondaryPhone: '', email: '', age: 0,
-    city: '', school: '', healthFund: '', class: "", sector: "", status: 'פעיל', identityCard: ''
-  });
-  const [termsOpen, setTermsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success', action: null });
@@ -168,7 +114,6 @@ export default function StudentsTable() {
     if (reason === 'clickaway') return;
     setNotification({ ...notification, open: false });
   };
-  const [formError, setFormError] = useState('');
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -286,91 +231,8 @@ export default function StudentsTable() {
     await dispatch(fetchStudents());
   };
 
-  // פונקציה ליצירת הערה אוטומטית לתלמיד חדש
-  const createAutomaticRegistrationNote = async (studentId) => {
-    try {
-      // פונקציה לקבלת פרטי המשתמש
-      const getUserDetails = (user) => {
-        if (!user) return { fullName: 'מערכת', role: 'מערכת אוטומטית' };
-        
-        const firstName = user.firstName || user.FirstName || 'משתמש';
-        const lastName = user.lastName || user.LastName || 'אורח';
-        const role = user.role || user.Role || 'מורה';
-        
-        return {
-          fullName: `${firstName} ${lastName}`,
-          role
-        };
-      };
-
-      const userDetails = getUserDetails(currentUser);
-      
-      const currentDate = new Date().toLocaleDateString('he-IL', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-      
-      const noteData = {
-        studentId: studentId,
-        noteContent: `נרשם בפעם הראשונה למערכת בתאריך ${currentDate} באמצעות "ניהול תלמידים"`,
-        noteType: 'כללי',
-        priority: 'בינוני',
-        isPrivate: false,
-        authorName: userDetails.fullName,
-        authorRole: userDetails.role
-      };
-
-      console.log('📝 Creating automatic registration note for student table:', noteData);
-      
-      const result = await dispatch(addStudentNote(noteData));
-      
-      if (addStudentNote.fulfilled.match(result)) {
-        console.log('✅ Automatic registration note created successfully in student table');
-      } else {
-        console.warn('⚠️ Failed to create automatic registration note in student table:', result.payload);
-      }
-    } catch (error) {
-      console.error('❌ Error creating automatic registration note in student table:', error);
-      // לא נציג שגיאה למשתמש כי זו פונקציה רקעית
-    }
-  };
-
-  const handleAdd = async () => {
-  if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
-    // בדיקת שדות חובה
-    const requiredFields = [
-      { key: 'id', label: 'תעודת זהות' },
-      { key: 'firstName', label: 'שם פרטי' },
-      { key: 'lastName', label: 'שם משפחה' },
-      { key: 'phone', label: 'טלפון' },
-      { key: 'age', label: 'גיל' },
-      { key: 'city', label: 'עיר' },
-      { key: 'healthFund', label: 'קופת חולים' }
-    ];
-    const missing = requiredFields.filter(f => !newStudent[f.key] || newStudent[f.key].toString().trim() === '' || (f.key === 'age' && (newStudent.age === 0 || isNaN(newStudent.age))));
-    if (missing.length > 0) {
-      setFormError('נא למלא את כל שדות החובה: ' + missing.map(f => f.label).join(', '));
-      return;
-    }
-    setFormError('');
-    const addResult = await dispatch(addStudent(newStudent));
-    if (addResult.type === 'students/addStudent/fulfilled') {
-      // יצירת הערה אוטומטית לתלמיד החדש
-      await createAutomaticRegistrationNote(newStudent.id);
-      refreshTable();
-      setnewStudent({
-        id: null, firstName: '', lastName: '', phone: null, secondaryPhone: '', email: '', age: 0,
-        city: '', school: '', healthFund: '', class: "", sector: "", status: 'פעיל', identityCard: ''
-      });
-      setOpen(false);
-    }
-  };
-
   const handleEdit = async () => {
-  if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+    if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
     if (await dispatch(editStudent(currentStudent))) {
       setOpenEdit(false);
       refreshTable();
@@ -378,7 +240,7 @@ export default function StudentsTable() {
   };
 
   const handleDelete = async (id) => {
-  if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+    if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
     if (await dispatch(deleteStudent(id))) {
       refreshTable();
     }
@@ -389,6 +251,14 @@ export default function StudentsTable() {
     setCoursesDialogOpen(true);
     await dispatch(getgroupStudentByStudentId(student.id));
   };
+
+  const totalStudents = Array.isArray(students) ? students.length : 0;
+  const activeStudents = Array.isArray(students)
+    ? students.filter((s) => (s?.status || '').trim() === 'פעיל').length
+    : 0;
+  const uniqueClasses = Array.isArray(students)
+    ? new Set(students.map((s) => s?.class).filter(Boolean)).size
+    : 0;
 
   return (
     <motion.div
@@ -414,6 +284,54 @@ export default function StudentsTable() {
         </motion.div>
 
 
+        {/* קלפי סטטיסטיקה עדינים */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.15 }}
+        >
+          <Box
+            sx={{
+              mt: 3,
+              mb: 2.7,
+              display: 'grid',
+              gridTemplateColumns: { xs: 'repeat(1, minmax(0, 1fr))', sm: 'repeat(2, minmax(0, 1fr))', md: 'repeat(3, minmax(0, 1fr))' },
+              gap: 1.25,
+              maxWidth: { xs: '100%', md: 900 },
+              mx: 'auto'
+            }}
+          >
+            <StatsCard
+              label="סה&quot;כ תלמידים"
+              value={totalStudents}
+              note="במערכת כולה"
+              bg="linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%)"
+              icon={PeopleAltRounded}
+              iconBg="rgba(59, 130, 246, 0.12)"
+              numberAlign="center"
+            />
+            <StatsCard
+              label="תלמידים פעילים"
+              value={activeStudents}
+              note="סטטוס פעיל"
+              bg="linear-gradient(135deg, #ecfdf3 0%, #dcfce7 100%)"
+              icon={CheckCircleRounded}
+              iconBg="rgba(34, 197, 94, 0.12)"
+              numberAlign="center"
+            />
+            <StatsCard
+              label="כיתות פעילות"
+              value={uniqueClasses}
+              note="התפלגות כיתות"
+              bg="linear-gradient(135deg, #ffe8f9c4 0%, #ffd5f256 100%)"
+              icon={SchoolRounded}
+              iconBg="rgba(242, 58, 227, 0.12)"
+              numberAlign="center"
+            />
+          </Box>
+        </motion.div>
+
+<br/>
         {/* שדה חיפוש */}
         <motion.div
           className="search-container slide-in-right"
@@ -438,7 +356,7 @@ export default function StudentsTable() {
           />
         </motion.div>
 
-       
+
 
         {/* בקרות עמוד */}
         <motion.div
@@ -471,23 +389,6 @@ export default function StudentsTable() {
           </Box>
         </motion.div>
 
- {/* כפתור הוספת תלמיד חדש מעל הטבלה */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.35 }}
-        >
-          <Button
-            onClick={() => setTermsOpen(true)}
-            variant="contained"
-            startIcon={<PersonAdd />}
-            size="large"
-            className="main-add-button glow-effect"
-            fullWidth
-          >
-            ➕ הוסף תלמיד חדש
-          </Button>
-        </motion.div>
         {/* טבלה */}
         <AnimatePresence mode="wait">
           {loading ? (
@@ -497,7 +398,7 @@ export default function StudentsTable() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              <LoadingSkeleton />
+              <LoadingSkeleton headers={tableHeaders} />
             </motion.div>
           ) : paginatedStudents.length > 0 ? (
             <motion.div
@@ -507,286 +408,197 @@ export default function StudentsTable() {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.5 }}
             >
-              <TableContainer component={Paper} className="advanced-table custom-scrollbar">
-                <Table>
-                  <TableHead className="table-head">
-                    <TableRow>
-                      <TableCell className="table-head-cell" style={{ width: 180, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🎯</span>
-                          <span style={{ fontSize: '0.9em' }}>פעולות</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 110, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🆔</span>
-                          <span style={{ fontSize: '0.9em' }}>קוד תלמיד</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 110, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🪪</span>
-                          <span style={{ fontSize: '0.9em' }}>מספר זיהוי</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 130, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>👤</span>
-                          <span style={{ fontSize: '0.9em' }}>שם פרטי</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 110, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>👥</span>
-                          <span style={{ fontSize: '0.9em' }}>שם משפחה</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 70, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>📞</span>
-                          <span style={{ fontSize: '0.9em' }}>טלפון</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 80, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span className="emoji-support" style={{ fontSize: '1.1em', marginBottom: '2px' }}>📱</span>
-                          <span style={{ fontSize: '0.9em' }}>טלפון נוסף</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 120, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span className="emoji-support" style={{ fontSize: '1.1em', marginBottom: '2px' }}>📧</span>
-                          <span style={{ fontSize: '0.9em' }}>מייל</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 60, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🎂</span>
-                          <span style={{ fontSize: '0.9em' }}>גיל</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 100, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🏙️</span>
-                          <span style={{ fontSize: '0.9em' }}>עיר</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 150, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🏫</span>
-                          <span style={{ fontSize: '0.9em' }}>בית ספר</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 160, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🏥</span>
-                          <span style={{ fontSize: '0.9em' }}>קופת חולים</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 80, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>📚</span>
-                          <span style={{ fontSize: '0.9em' }}>כיתה</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 100, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>🌍</span>
-                          <span style={{ fontSize: '0.9em' }}>מגזר</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="table-head-cell" style={{ width: 120, textAlign: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.1em', marginBottom: '2px' }}>📊</span>
-                          <span style={{ fontSize: '0.9em' }}>סטטוס</span>
-                        </div>
-                      </TableCell>
-                     
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    <AnimatePresence>
-                      {paginatedStudents
-                        .filter(row => row?.id != null && row?.id !== '')
-                        .map((student, index) => (
-                          <motion.tr
-                            key={student.id}
-                            component={TableRow}
-                            className="table-row"
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 20 }}
-                            transition={{
-                              duration: 0.3,
-                              delay: index * 0.05,
-                              type: "spring",
-                              stiffness: 100
-                            }}
-                            whileHover={{ scale: 1.001 }}
-                          >
-                           <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}> {/* ✅ הקטנתי padding */}
-  <Box className="action-buttons" sx={{ 
-    display: 'flex', 
-    gap: 0.3, // ✅ הקטנתי gap
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '30px' // ✅ הקטנתי גובה מינימלי
-  }}>
-    <Button
-      variant="contained"
-      startIcon={<Edit />}
-      size="small"
-      className="action-button edit"
-      onClick={() => {
-        setSelectedStudentForEdit(student);
-        setEditStudentDialogOpen(true);
-      }}
-      sx={{
-        minWidth: '55px', // ✅ הקטנתי רוחב
-        height: '22px', // ✅ הקטנתי גובה
-        fontSize: '0.65rem', // ✅ הקטנתי טקסט
-        px: 0.5, // ✅ הקטנתי padding
-        py: 0.2,
-        '& .MuiButton-startIcon': {
-          marginLeft: 0.3,
-          marginRight: 0,
-        }
-      }}
-    >
-      ערוך
-    </Button>
-    <Button
-      variant="contained"
-      startIcon={<Delete />}
-      size="small"
-      className="action-button delete"
-      onClick={() => {
-        setCurrentStudent({
-          id: student.id,
-          firstName: student.firstName,
-          lastName: student.lastName,
-          phone: student.phone,
-          secondaryPhone: student.secondaryPhone,
-          age: student.age,
-          city: student.city,
-          school: student.school,
-          healthFund: student.healthFund,
-          class: student.class,
-          sector: student.sector,
-          status: student.status || 'פעיל'
-        });
-        setDeleteOpen(true);
-      }}
-      sx={{
-        minWidth: '55px',
-        height: '22px',
-        fontSize: '0.65rem',
-        px: 0.5,
-        py: 0.2,
-        '& .MuiButton-startIcon': {
-          marginLeft: 0.3,
-          marginRight: 0,
-        }
-      }}
-    >
-      מחק
-    </Button>
-    <Button
-      variant="contained"
-      startIcon={<InfoIcon />}
-      size="small"
-      className="action-button info"
-      onClick={() => handleViewCourses(student)}
-      sx={{
-        minWidth: '60px',
-        height: '22px',
-        fontSize: '0.55rem',
-        px: 0.5,
-        py: 0.2,
-        '& .MuiButton-startIcon': {
-          marginLeft: 0.3,
-          marginRight: 0,
-        }
-      }}
-    >
-      פרטים
-    </Button>
-  </Box>
-</TableCell>
-
-<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.id}</TableCell>
-<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.identityCard || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}</TableCell>
-<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.firstName}</TableCell>
-<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.lastName}</TableCell>
-<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.phone}</TableCell>
-<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>
-  {student.secondaryPhone && student.secondaryPhone.trim() ? (
-    <Tooltip title={`טלפון נוסף: ${student.secondaryPhone}`}>
-      <Box 
-        component="span" 
-        sx={{ 
-          color: 'inherit'
-        }}
-      >
-        {student.secondaryPhone || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}
-      </Box>
-    </Tooltip>
-  ) : (
-    <Typography variant="body2" sx={{ color: '#999', fontStyle: 'italic' }}>
-      אין טלפון נוסף
-    </Typography>
-  )}
-</TableCell>
-<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>
-  {student.email && student.email.trim() ? (
-    <Tooltip title={`שלח מייל ל-${student.email}`}>
-      <Box 
-        component="span" 
-        sx={{ 
-          cursor: 'pointer', 
-          color: '#1976d2',
-          textDecoration: 'underline',
-          '&:hover': { color: '#1565c0' }
-        }}
-        onClick={() => window.open(`mailto:${student.email}`, '_self')}
-      >
-        {student.email || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}
-      </Box>
-    </Tooltip>
-  ) : (
-    <Typography variant="body2" sx={{ color: '#999', fontStyle: 'italic' }}>
-      אין מייל
-    </Typography>
-  )}
-</TableCell>
-<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.age || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}</TableCell>
-<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.city || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}</TableCell>
-<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.school || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}</TableCell>
-<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.healthFund || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}</TableCell>
-<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.class || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}</TableCell>
-<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.sector || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}</TableCell>
-<TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>
-  <Chip
-    label={student.status || 'פעיל'}
-    size="small"
-    sx={{
-      backgroundColor: 
-        student.status === 'פעיל' ? '#10b981' :
-        student.status === 'ליד' ? '#f59e0b' :
-        student.status === 'לא רלוונטי' ? '#ef4444' : '#6b7280',
-      color: 'white',
-      fontWeight: 'bold',
-      fontSize: '0.75rem'
-    }}
-  />
-</TableCell>
-                          </motion.tr>
-                        ))}
-                    </AnimatePresence>
-                  </TableBody>
-                </Table>
-              </TableContainer>
+              <StyledTableShell headers={tableHeaders} enableHorizontalScroll={true}>
+                <TableBody>
+                  <AnimatePresence>
+                    {paginatedStudents
+                      .filter(row => row?.id != null && row?.id !== '')
+                      .map((student, index) => (
+                        <motion.tr
+                          key={student.id}
+                          component={TableRow}
+                          className="table-row"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 20 }}
+                          transition={{
+                            duration: 0.3,
+                            delay: index * 0.05,
+                            type: "spring",
+                            stiffness: 100
+                          }}
+                          whileHover={{ scale: 1.001 }}
+                        >
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.id}</TableCell>
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.identityCard || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}</TableCell>
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.firstName}</TableCell>
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.lastName}</TableCell>
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.phone}</TableCell>
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>
+                            {student.secondaryPhone && student.secondaryPhone.trim() ? (
+                              <Tooltip title={`טלפון נוסף: ${student.secondaryPhone}`}>
+                                <Box
+                                  component="span"
+                                  sx={{
+                                    color: 'inherit'
+                                  }}
+                                >
+                                  {student.secondaryPhone || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}
+                                </Box>
+                              </Tooltip>
+                            ) : (
+                              <Typography variant="body2" sx={{ color: '#999', fontStyle: 'italic' }}>
+                                אין טלפון נוסף
+                              </Typography>
+                            )}
+                          </TableCell>
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>
+                            {student.email && student.email.trim() ? (
+                              <Tooltip title={`שלח מייל ל-${student.email}`}>
+                                <Box
+                                  component="span"
+                                  sx={{
+                                    cursor: 'pointer',
+                                    color: '#1976d2',
+                                    textDecoration: 'underline',
+                                    '&:hover': { color: '#1565c0' }
+                                  }}
+                                  onClick={() => window.open(`mailto:${student.email}`, '_self')}
+                                >
+                                  {student.email || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}
+                                </Box>
+                              </Tooltip>
+                            ) : (
+                              <Typography variant="body2" sx={{ color: '#999', fontStyle: 'italic' }}>
+                                אין מייל
+                              </Typography>
+                            )}
+                          </TableCell>
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.age || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}</TableCell>
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.city || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}</TableCell>
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.school || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}</TableCell>
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>
+                            {student.healthFundName || student.healthFundPlan ? (
+                              <Typography variant="body2" sx={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                                <span style={{ fontWeight: 600 }}>
+                                  {student.healthFundName || '—'}
+                                </span>
+                                {student.healthFundPlan && (
+                                  <span style={{ color: '#64748b', marginRight: '6px' }}>
+                                    {' • '}{student.healthFundPlan}
+                                  </span>
+                                )}
+                              </Typography>
+                            ) : (
+                              <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.class || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}</TableCell>
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.sector || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}</TableCell>
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>
+                            <Chip
+                              label={student.status || 'פעיל'}
+                              size="small"
+                              sx={{
+                                backgroundColor:
+                                  student.status === 'פעיל' ? 'rgba(16, 185, 129, 0.15)' :
+                                    student.status === 'ליד' ? 'rgba(245, 158, 11, 0.15)' :
+                                      student.status === 'לא רלוונטי' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(107, 114, 128, 0.15)',
+                                color:
+                                  student.status === 'פעיל' ? '#10b981' :
+                                    student.status === 'ליד' ? '#f59e0b' :
+                                      student.status === 'לא רלוונטי' ? '#ef4444' : '#6b7280',
+                                fontWeight: 'bold',
+                                fontSize: '0.75rem',
+                                border:
+                                  student.status === 'פעיל' ? '1px solid rgba(16, 185, 129, 0.3)' :
+                                    student.status === 'ליד' ? '1px solid rgba(245, 158, 11, 0.3)' :
+                                      student.status === 'לא רלוונטי' ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(107, 114, 128, 0.3)'
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5, minWidth: '180px' }}>
+                            <Box className="action-buttons" sx={{
+                              display: 'flex',
+                              gap: 0.3,
+                              flexWrap: 'wrap',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              minHeight: '30px'
+                            }}>
+                              <Tooltip title="פרטים">
+                                <IconButton
+                                  size="small"
+                                  className="action-button info"
+                                  onClick={() => handleViewCourses(student)}
+                                  sx={{
+                                    color: '#60A5FA',
+                                    '&:hover': {
+                                      color: '#3B82F6',
+                                      backgroundColor: 'rgba(96, 165, 250, 0.08)'
+                                    }
+                                  }}
+                                >
+                                  <InfoIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="ערוך">
+                                <IconButton
+                                  size="small"
+                                  className="action-button edit"
+                                  onClick={() => {
+                                    setSelectedStudentForEdit(student);
+                                    setEditStudentDialogOpen(true);
+                                  }}
+                                  sx={{
+                                    color: '#F6D365',
+                                    '&:hover': {
+                                      color: '#FCD34D',
+                                      backgroundColor: 'rgba(246, 211, 101, 0.08)'
+                                    }
+                                  }}
+                                >
+                                  <Edit fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="מחק">
+                                <IconButton
+                                  size="small"
+                                  className="action-button delete"
+                                  onClick={() => {
+                                    setCurrentStudent({
+                                      id: student.id,
+                                      firstName: student.firstName,
+                                      lastName: student.lastName,
+                                      phone: student.phone,
+                                      secondaryPhone: student.secondaryPhone,
+                                      age: student.age,
+                                      city: student.city,
+                                      school: student.school,
+                                      class: student.class,
+                                      sector: student.sector,
+                                      status: student.status || 'פעיל'
+                                    });
+                                    setDeleteOpen(true);
+                                  }}
+                                  sx={{
+                                    color: '#FF6B6B',
+                                    '&:hover': {
+                                      color: '#EF4444',
+                                      backgroundColor: 'rgba(255, 107, 107, 0.08)'
+                                    }
+                                  }}
+                                >
+                                  <Delete fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </Box>
+                          </TableCell>
+                        </motion.tr>
+                      ))}
+                  </AnimatePresence>
+                </TableBody>
+              </StyledTableShell>
             </motion.div>
           ) : (
             <motion.div
@@ -838,199 +650,6 @@ export default function StudentsTable() {
           studentCourses={studentCourses}
           showAddButton={true}
         />
-
-        {/* דיאלוג תנאים */}
-        <TermsDialog
-          open={termsOpen}
-          onClose={() => setTermsOpen(false)}
-          onAccept={() => {
-            setTermsOpen(false);
-            setnewStudent({
-              id: null, firstName: '', lastName: '', phone: null, secondaryPhone: '', age: 0,
-              city: '', school: '', healthFund: '', class: "", sector: ""
-            });
-            setOpen(true);
-          }}
-        />
-
-        {/* דיאלוג הוספת תלמיד */}
-        <Dialog
-          open={open}
-          onClose={() => setOpen(false)}
-          maxWidth="sm"
-          fullWidth
-          className="advanced-dialog"
-        >
-          <DialogTitle className="dialog-title">
-            ➕ הוסף תלמיד חדש
-          </DialogTitle>
-          <DialogContent className="dialog-content">
-            {formError && (
-              <Alert severity="error" sx={{ mb: 2 }}>{formError}</Alert>
-            )}
-            <TextField
-              fullWidth
-              label={<span><span role="img" aria-label="person">👤</span> נרשם ע"י</span>}
-              value={newStudent.createdBy || ''}
-              onChange={(e) => setnewStudent({ ...newStudent, createdBy: e.target.value })}
-              className="dialog-field"
-              placeholder="שם משתמש או מלל חופשי"
-              helperText="ניתן לשנות את שם היוצר או להכניס מלל חופשי"
-            />
-            <TextField
-              fullWidth
-              label={<span>🆔 תעודת זהות <span style={{ color: 'red' }}>*</span></span>}
-              value={newStudent.id || ''}
-              onChange={(e) => setnewStudent({ ...newStudent, id: e.target.value })}
-              className="dialog-field"
-            />
-            <TextField
-              fullWidth
-              label={<span>🪪 מספר זיהוי (אופציונלי)</span>}
-              value={newStudent.identityCard || ''}
-              onChange={(e) => setnewStudent({ ...newStudent, identityCard: e.target.value })}
-              className="dialog-field"
-              placeholder="הזן מספר זיהוי נוסף"
-            />
-            <TextField
-              fullWidth
-              label={<span>👤 שם פרטי <span style={{ color: 'red' }}>*</span></span>}
-              value={newStudent.firstName}
-              onChange={(e) => setnewStudent({ ...newStudent, firstName: e.target.value })}
-              className="dialog-field"
-            />
-            <TextField
-              fullWidth
-              label={<span>👥 שם משפחה <span style={{ color: 'red' }}>*</span></span>}
-              value={newStudent.lastName}
-              onChange={(e) => setnewStudent({ ...newStudent, lastName: e.target.value })}
-              className="dialog-field"
-            />
-            <TextField
-              fullWidth
-              label={<span>📞 טלפון <span style={{ color: 'red' }}>*</span></span>}
-              value={newStudent.phone || ''}
-              onChange={(e) => setnewStudent({ ...newStudent, phone: e.target.value })}
-              className="dialog-field"
-            />
-            <TextField
-              fullWidth
-              label="📱 טלפון נוסף"
-              value={newStudent.secondaryPhone || ''}
-              onChange={(e) => setnewStudent({ ...newStudent, secondaryPhone: e.target.value })}
-              className="dialog-field"
-              placeholder="טלפון נוסף (אופציונלי)"
-            />
-            <TextField
-              fullWidth
-              label="📧 מייל"
-              type="email"
-              value={newStudent.email || ''}
-              onChange={(e) => setnewStudent({ ...newStudent, email: e.target.value })}
-              className="dialog-field"
-              placeholder="example@email.com"
-            />
-            <TextField
-              fullWidth
-              select
-              label={<span>🎂 גיל <span style={{ color: 'red' }}>*</span></span>}
-              value={newStudent.age}
-              onChange={(e) => setnewStudent({ ...newStudent, age: parseInt(e.target.value) })}
-              className="dialog-field"
-            >
-              {ageOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              fullWidth
-              label={<span>🏙️ עיר <span style={{ color: 'red' }}>*</span></span>}
-              value={newStudent.city}
-              onChange={(e) => setnewStudent({ ...newStudent, city: e.target.value })}
-              className="dialog-field"
-            />
-            <TextField
-              fullWidth
-              label="🏫 בית ספר"
-              value={newStudent.school}
-              onChange={(e) => setnewStudent({ ...newStudent, school: e.target.value })}
-              className="dialog-field"
-            />
-            <TextField
-              fullWidth
-              select
-              label="🏥 קופת חולים "
-              value={newStudent.healthFund}
-              onChange={(e) => setnewStudent({ ...newStudent, healthFund: e.target.value })}
-              className="dialog-field"
-              required
-             
-            >
-              {healthFundOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              fullWidth
-              select
-              label="📚 כיתה"
-              value={newStudent.class}
-              onChange={(e) => setnewStudent({ ...newStudent, class: e.target.value })}
-              className="dialog-field"
-            >
-              {classOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              fullWidth
-              select
-              label="🌍 מגזר"
-              value={newStudent.sector}
-              onChange={(e) => setnewStudent({ ...newStudent, sector: e.target.value })}
-              className="dialog-field"
-            >
-              {sectorOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              fullWidth
-              select
-              label="📊 סטטוס"
-              value={newStudent.status || 'פעיל'}
-              onChange={(e) => setnewStudent({ ...newStudent, status: e.target.value })}
-              className="dialog-field"
-            >
-              {statusOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </TextField>
-          </DialogContent>
-          <DialogActions className="dialog-actions">
-            <Button onClick={() => setOpen(false)} className="dialog-button secondary">
-              ❌ ביטול
-            </Button>
-            <Button 
-              onClick={handleAdd} 
-              className="dialog-button primary"
-              disabled={!newStudent.id || !newStudent.firstName || !newStudent.lastName || 
-                       !newStudent.phone || !newStudent.age || !newStudent.city || !newStudent.healthFund}
-            >
-              ✅ הוסף תלמיד
-            </Button>
-          </DialogActions>
-        </Dialog>
 
         {/* דיאלוג עריכה */}
         <Dialog
@@ -1120,20 +739,6 @@ export default function StudentsTable() {
             <TextField
               fullWidth
               select
-              label="🏥 קופת חולים"
-              value={currentStudent.healthFund}
-              onChange={(e) => setCurrentStudent({ ...currentStudent, healthFund: e.target.value })}
-              className="dialog-field"
-            >
-              {healthFundOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              fullWidth
-              select
               label="📚 כיתה"
               value={currentStudent.class}
               onChange={(e) => setCurrentStudent({ ...currentStudent, class: e.target.value })}
@@ -1188,37 +793,72 @@ export default function StudentsTable() {
         <Dialog
           open={deleteOpen}
           onClose={() => setDeleteOpen(false)}
-          maxWidth="sm"
-          className="advanced-dialog"
+          PaperProps={{
+            sx: {
+              direction: 'rtl',
+              borderRadius: 2,
+              minWidth: { xs: '90%', sm: '400px' },
+              overflow: 'hidden'
+            }
+          }}
         >
-          <DialogTitle className="dialog-title" sx={{ background: 'linear-gradient(45deg, #EF4444, #DC2626) !important' }}>
-            🗑️ מחיקת תלמיד
+          <DialogTitle
+            sx={{
+              bgcolor: '#ef4444',
+              color: 'white',
+              textAlign: 'center',
+              py: 2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 1
+            }}
+          >
+            <Delete />
+            אישור מחיקה
           </DialogTitle>
-          <DialogContent className="dialog-content">
-            <Box sx={{ textAlign: 'center', py: 2 }}>
-              <Typography variant="h6" sx={{ color: '#374151', mb: 2 }}>
-                ? האם אתה בטוח שברצונך למחוק את התלמיד
-              </Typography>
-              <Typography variant="h5" sx={{ color: '#1E3A8A', fontWeight: 'bold' }}>
-                {currentStudent.firstName} {currentStudent.lastName}
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#64748B', mt: 1 }}>
-                פעולה זו לא ניתנת לביטול
-              </Typography>
-            </Box>
+          <DialogContent sx={{ pt: 3, pb: 2, textAlign: 'center', mt: 1 }}>
+            <Typography variant="h6" gutterBottom>
+              האם אתה בטוח שברצונך למחוק את התלמיד?
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+              {currentStudent.firstName} {currentStudent.lastName}
+            </Typography>
+            <Typography variant="body2" color="error.main" sx={{ mt: 2, fontWeight: 'bold' }}>
+              פעולה זו לא ניתנת לביטול!
+            </Typography>
           </DialogContent>
-          <DialogActions className="dialog-actions">
-            <Button onClick={() => setDeleteOpen(false)} className="dialog-button primary">
-              ❌ ביטול
+          <DialogActions sx={{ px: 3, pb: 3, justifyContent: 'space-between', direction: 'ltr' }}>
+            <Button
+              onClick={() => setDeleteOpen(false)}
+              variant="outlined"
+              color="primary"
+              sx={{
+                borderRadius: '8px',
+                px: 3,
+                py: 1,
+                borderWidth: '2px'
+              }}
+            >
+              ביטול
             </Button>
             <Button
               onClick={() => {
                 handleDelete(currentStudent.id);
                 setDeleteOpen(false);
               }}
-              className="dialog-button secondary"
+              variant="contained"
+              color="error"
+              startIcon={<Delete />}
+              sx={{
+                borderRadius: '8px',
+                px: 3,
+                py: 1,
+                bgcolor: '#ef4444',
+                boxShadow: '0 4px 14px rgba(239, 68, 68, 0.3)'
+              }}
             >
-              🗑️ כן, מחק
+              מחק
             </Button>
           </DialogActions>
         </Dialog>

@@ -35,6 +35,7 @@ import { checkUserPermission } from '../../../utils/permissions';
 import { addStudentNote } from '../../../store/studentNotes/studentNoteAddThunk';
 import { getStudentById } from '../../../store/student/studentGetByIdThunk';
 import { editStudent } from '../../../store/student/studentEditThunk';
+import { fetchHealthFunds } from '../../../store/healthFund/fetchHealthFunds';
 import TermsDialog from '../../Enrollment/components/termDialog';
 import AddStudentNoteDialog from './addStudentNoteDialog';
 
@@ -60,6 +61,10 @@ const AddStudentDialog = ({
     return state.users?.currentUser || state.auth?.currentUser || state.user?.currentUser || null;
   });
   
+  // קבלת רשימת קופות החולים מה-redux
+  const healthFunds = useSelector(state => state.healthFunds?.items || []);
+  const healthFundsLoading = useSelector(state => state.healthFunds?.loading || false);
+  
   const [newStudent, setNewStudent] = useState({
   id: '',
   IdentityCard: '',
@@ -71,7 +76,9 @@ const AddStudentDialog = ({
     age: '',
     city: '',
     school: '',
-    healthFund: '',
+    healthFundId: null,
+    healthFundName: '',
+    healthFundPlan: '',
     class: '',
     sector: '',
     status: 'ליד',
@@ -91,6 +98,13 @@ const AddStudentDialog = ({
   const [enrollDate, setEnrollDate] = useState('');
   const [localGroupStatus, setLocalGroupStatus] = useState(groupStatus);
   // הסרנו שדות תאריך סיום ויום שיעור - הכל מחושב מנתוני הקבוצה
+
+  // טעינת רשימת קופות החולים כשהדיאלוג נפתח
+  useEffect(() => {
+    if (open) {
+      dispatch(fetchHealthFunds());
+    }
+  }, [open, dispatch]);
 
   // מצב הצ'קליסט למעקב אחר משימות הרישום
   const [registrationChecklist, setRegistrationChecklist] = useState({
@@ -192,7 +206,9 @@ const AddStudentDialog = ({
       age: '',
       city: '',
       school: '',
-      healthFund: '',
+      healthFundId: null,
+      healthFundName: '',
+      healthFundPlan: '',
       class: '',
       sector: '',
       status: 'ליד'
@@ -332,11 +348,16 @@ const AddStudentDialog = ({
   };
 
   const validateForm = () => {
-  const required = ['id', 'firstName', 'lastName', 'phone', 'age', 'city', 'healthFund'];
+  const required = ['id', 'firstName', 'lastName', 'phone', 'age', 'city', 'healthFundId'];
   // דרוש גם תאריך התחלה
-  const isStudentFieldsValid = required.every(field => newStudent[field] && newStudent[field].toString().trim() !== '');
+  const isStudentFieldsValid = required.every(field => {
+    const value = newStudent[field];
+    return value !== null && value !== undefined && value.toString().trim() !== '';
+  });
+  // ודא גם ששם קופת חולים לא ריק
+  const isHealthFundNameValid = (newStudent.healthFund || '').toString().trim() !== '';
   const isEnrollDateValid = enrollDate && enrollDate.trim() !== '';
-  return isStudentFieldsValid && isEnrollDateValid;
+  return isStudentFieldsValid && isHealthFundNameValid && isEnrollDateValid;
   };
 
   // פונקציה לחישוב תאריכי שיעורים לתלמיד לפי נתוני הקבוצה בלבד
@@ -373,10 +394,42 @@ const AddStudentDialog = ({
 
     setLoading(true);
     try {
+      const parsedHealthFundId = Number(newStudent.healthFundId);
+      if (!Number.isInteger(parsedHealthFundId)) {
+        setLoading(false);
+        if (onSuccess) {
+          onSuccess(null, 'יש לבחור קופת חולים לפני שמירה', 'error');
+        }
+        return;
+      }
+      // Resolve selected fund from list to prevent stale/empty names
+      const selectedFund = (healthFunds || []).find(hf => Number(hf.healthFundId) === parsedHealthFundId);
+      const healthFundName = (selectedFund?.name || newStudent.healthFund || '').toString().trim();
+      // Validate healthFund name is not empty
+      if (!healthFundName) {
+        setLoading(false);
+        console.error('❌ Health fund name is empty', { healthFundId: parsedHealthFundId, selectedFund, healthFundState: newStudent.healthFund });
+        if (onSuccess) {
+          onSuccess(null, 'שם קופת החולים ריק - בחר קופה תקפה', 'error');
+        }
+        return;
+      }
+
       const studentData = {
-        ...newStudent,
-        age: parseInt(newStudent.age),
-        phone: newStudent.phone.toString(),
+        id: newStudent.id || '',
+        IdentityCard: newStudent.IdentityCard || '',
+        firstName: newStudent.firstName || '',
+        lastName: newStudent.lastName || '',
+        phone: (newStudent.phone || '').toString(),
+        secondaryPhone: newStudent.secondaryPhone || '',
+        email: newStudent.email || '',
+        age: parseInt(newStudent.age) || 0,
+        city: newStudent.city || '',
+        school: newStudent.school || '',
+        healthFundId: parsedHealthFundId,
+        class: newStudent.class || '',
+        sector: newStudent.sector || '',
+        status: newStudent.status || 'ליד',
         CreatedBy: newStudent.CreatedBy && newStudent.CreatedBy.trim() !== ''
           ? newStudent.CreatedBy
           : (currentUser ? `${currentUser.firstName || currentUser.FirstName || ''} ${currentUser.lastName || currentUser.LastName || ''}` : 'מערכת')
@@ -384,6 +437,24 @@ const AddStudentDialog = ({
 
       // ננסה קודם הוספה פשוטה
       console.log('🔍 Trying to add student directly');
+      console.log('📤 Full Student Data being sent to server:', JSON.stringify(studentData, null, 2));
+      console.log('📋 Student Data Details:');
+      console.log('   - ID:', studentData.id);
+      console.log('   - First Name:', studentData.firstName);
+      console.log('   - Last Name:', studentData.lastName);
+      console.log('   - Phone:', studentData.phone);
+      console.log('   - Email:', studentData.email);
+      console.log('   - Age:', studentData.age);
+      console.log('   - City:', studentData.city);
+      console.log('   - School:', studentData.school);
+      console.log('   - Class:', studentData.class);
+      console.log('   - Sector:', studentData.sector);
+      console.log('   - Status:', studentData.status);
+      console.log('   - Health Fund Name:', studentData.healthFund, '(type:', typeof studentData.healthFund + ')');
+      console.log('   - Health Fund ID:', studentData.healthFundId, '(type:', typeof studentData.healthFundId + ')');
+      console.log('   - Created By:', studentData.CreatedBy);
+      console.log('⚠️ Checking payload keys:', Object.keys(studentData));
+      console.log('⚠️ Is healthFundName in payload?', 'healthFundName' in studentData ? '❌ YES - WRONG!' : '✅ NO - CORRECT!');
   if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
   let result = await dispatch(addStudent(studentData));
       
@@ -640,7 +711,14 @@ useEffect(() => {
                 variant="outlined"
                 value={newStudent.CreatedBy || (currentUser ? `${currentUser.firstName || currentUser.FirstName || ''} ${currentUser.lastName || currentUser.LastName || ''}` : 'מערכת')}
                 onChange={(e) => handleInputChange('CreatedBy', e.target.value)}
-                sx={{ textAlign: 'right', mt: 1 }}
+                sx={{ 
+                  textAlign: 'right', 
+                  mt: 1,
+                  '& .MuiOutlinedInput-notchedOutline legend': {
+                    textAlign: 'right'
+                  }
+                }}
+                InputLabelProps={{ sx: { right: 24, left: 'auto', transformOrigin: 'top right' } }}
                 placeholder={currentUser ? `${currentUser.firstName || currentUser.FirstName || ''} ${currentUser.lastName || currentUser.LastName || ''}` : 'מערכת'}
                 helperText="ניתן לשנות את שם היוצר או להכניס מלל חופשי"
               />
@@ -656,7 +734,15 @@ useEffect(() => {
               value={newStudent.id}
               onChange={(e) => handleInputChange('id', e.target.value)}
               required
-              sx={{ textAlign: 'right', width: '160px', minWidth: '120px' }}
+              sx={{ 
+                textAlign: 'right', 
+                width: '160px', 
+                minWidth: '120px',
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+              InputLabelProps={{ sx: { right: 24, left: 'auto', transformOrigin: 'top right' } }}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
@@ -666,7 +752,15 @@ useEffect(() => {
               variant="outlined"
               value={newStudent.IdentityCard}
               onChange={(e) => handleInputChange('IdentityCard', e.target.value)}
-              sx={{ textAlign: 'right', width: '160px', minWidth: '120px' }}
+              sx={{ 
+                textAlign: 'right', 
+                width: '160px', 
+                minWidth: '120px',
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+              InputLabelProps={{ sx: { right: 24, left: 'auto', transformOrigin: 'top right' } }}
               placeholder="הזן מספר זיהוי נוסף"
             />
           </Grid>
@@ -678,7 +772,15 @@ useEffect(() => {
               value={newStudent.phone}
               onChange={(e) => handleInputChange('phone', e.target.value)}
               required
-              sx={{ textAlign: 'right', width: '180px', minWidth: '120px' }}
+              sx={{ 
+                textAlign: 'right', 
+                width: '180px', 
+                minWidth: '120px',
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+              InputLabelProps={{ sx: { right: 24, left: 'auto', transformOrigin: 'top right' } }}
             />
           </Grid>
 
@@ -689,7 +791,15 @@ useEffect(() => {
               variant="outlined"
               value={newStudent.secondaryPhone}
               onChange={(e) => handleInputChange('secondaryPhone', e.target.value)}
-              sx={{ textAlign: 'right', width: '180px', minWidth: '120px' }}
+              sx={{ 
+                textAlign: 'right', 
+                width: '180px', 
+                minWidth: '120px',
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+              InputLabelProps={{ sx: { right: 24, left: 'auto', transformOrigin: 'top right' } }}
               placeholder="טלפון נוסף (אופציונלי)"
             />
           </Grid>
@@ -701,7 +811,15 @@ useEffect(() => {
               variant="outlined"
               value={newStudent.email}
               onChange={(e) => handleInputChange('email', e.target.value)}
-              sx={{ textAlign: 'right', width: '220px', minWidth: '120px' }}
+              sx={{ 
+                textAlign: 'right', 
+                width: '220px', 
+                minWidth: '120px',
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+              InputLabelProps={{ sx: { right: 24, left: 'auto', transformOrigin: 'top right' } }}
               placeholder="example@email.com"
             />
           </Grid>
@@ -713,7 +831,15 @@ useEffect(() => {
               value={newStudent.firstName}
               onChange={(e) => handleInputChange('firstName', e.target.value)}
               required
-              sx={{ textAlign: 'right', width: '160px', minWidth: '120px' }}
+              sx={{ 
+                textAlign: 'right', 
+                width: '160px', 
+                minWidth: '120px',
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+              InputLabelProps={{ sx: { right: 24, left: 'auto', transformOrigin: 'top right' } }}
             />
           </Grid>
 
@@ -724,13 +850,29 @@ useEffect(() => {
               value={newStudent.lastName}
               onChange={(e) => handleInputChange('lastName', e.target.value)}
               required
-              sx={{ textAlign: 'right', width: '160px', minWidth: '120px' }}
+              sx={{ 
+                textAlign: 'right', 
+                width: '160px', 
+                minWidth: '120px',
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+              InputLabelProps={{ sx: { right: 24, left: 'auto', transformOrigin: 'top right' } }}
             />
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <FormControl fullWidth variant="outlined">
-              <InputLabel>🎂 גיל</InputLabel>
+            <FormControl 
+              fullWidth 
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+            >
+              <InputLabel sx={{ right: 24, left: 'auto', transformOrigin: 'top right' }}>🎂 גיל</InputLabel>
               <Select
                 value={newStudent.age}
                 onChange={(e) => handleInputChange('age', e.target.value)}
@@ -746,21 +888,57 @@ useEffect(() => {
             </FormControl>
           </Grid>
  <Grid item xs={12} sm={6}>
-            <FormControl fullWidth variant="outlined" required>
-              <InputLabel>🏥 קופת חולים *</InputLabel>
+            <FormControl 
+              fullWidth 
+              variant="outlined" 
+              required
+              sx={{
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+            >
+              <InputLabel sx={{ right: 24, left: 'auto', transformOrigin: 'top right' }}>🏥 קופת חולים *</InputLabel>
               <Select
-                value={newStudent.healthFund}
-                onChange={(e) => handleInputChange('healthFund', e.target.value)}
+                value={newStudent.healthFundId || ''}
+                onChange={(e) => {
+                  const rawValue = e.target.value;
+                  const parsedId = rawValue === '' || rawValue === null ? null : Number(rawValue);
+                  const selectedFund = healthFunds.find(hf => Number(hf.healthFundId) === parsedId);
+                  handleInputChange('healthFundId', parsedId);
+                  if (selectedFund && selectedFund.name) {
+                    handleInputChange('healthFund', selectedFund.name);
+                    handleInputChange('healthFundName', selectedFund.name);
+                    handleInputChange('healthFundPlan', selectedFund.fundType || '');
+                    console.log('✅ Health fund selected:', { id: parsedId, name: selectedFund.name });
+                  } else {
+                    handleInputChange('healthFund', '');
+                    handleInputChange('healthFundName', '');
+                    handleInputChange('healthFundPlan', '');
+                    console.warn('⚠️ Selected fund missing name:', selectedFund);
+                  }
+                }}
                 label="🏥 קופת חולים *"
                 required
-                             >
-                {healthFundOptions.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
+                disabled={healthFundsLoading}
+                dir="rtl"
+              >
+                {healthFundsLoading ? (
+                  <MenuItem disabled>טוען...</MenuItem>
+                ) : (
+                  healthFunds.map((fund) => (
+                    <MenuItem key={fund.healthFundId} value={fund.healthFundId}>
+                      {fund.name} • {fund.fundType}
+                    </MenuItem>
+                  ))
+                )}
               </Select>
             </FormControl>
+            {newStudent.healthFundName && newStudent.healthFundPlan && (
+              <Typography variant="caption" sx={{ display: 'block', mt: 0.5, mr: 1, color: '#64748b' }}>
+                נבחר: <strong>{newStudent.healthFundName}</strong> • {newStudent.healthFundPlan}
+              </Typography>
+            )}
           </Grid>
           <Grid item xs={12} sm={6}>
             <TextField
@@ -769,7 +947,15 @@ useEffect(() => {
               value={newStudent.city}
               onChange={(e) => handleInputChange('city', e.target.value)}
               required
-              sx={{ textAlign: 'right', width: '160px', minWidth: '120px' }}
+              sx={{ 
+                textAlign: 'right', 
+                width: '160px', 
+                minWidth: '120px',
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+              InputLabelProps={{ sx: { right: 24, left: 'auto', transformOrigin: 'top right' } }}
             />
           </Grid>
 <TextField
@@ -853,17 +1039,16 @@ useEffect(() => {
                       px: 3,
                       py: 1,
                       fontWeight: 'bold',
-                      bgcolor: localGroupStatus === false ? '#EF4444' : 'transparent',
-                      borderColor: '#EF4444',
-                      color: localGroupStatus === false ? 'white' : '#EF4444',
+                      bgcolor: localGroupStatus === false ? '##efa544ff' : 'transparent',
+                      borderColor: '##efa544ff',
+                      color: localGroupStatus === false ? 'white' : '#efa544ff',
                       '&:hover': {
-                        bgcolor: localGroupStatus === false ? '#DC2626' : 'rgba(239, 68, 68, 0.1)',
-                        borderColor: '#EF4444'
+                        bgcolor: localGroupStatus === false ? '#ed992cff' : 'rgba(239, 68, 68, 0.1)',
+                        borderColor: '#efa544ff'
                       }
                     }}
                   >
-                    ❌ לא פעיל
-                  </Button>
+🤝 ליד                  </Button>
                 </Box>
                 <Typography variant="caption" sx={{ 
                   display: 'block', 
@@ -871,7 +1056,7 @@ useEffect(() => {
                   mt: 1, 
                   color: '#6B7280' 
                 }}>
-                  {localGroupStatus ? 'התלמיד יהיה פעיל בקבוצה ותירשם נוכחות' : 'התלמיד יהיה רשום אך לא פעיל בקבוצה'}
+                  {localGroupStatus ? 'התלמיד יהיה פעיל בקבוצה ותירשם נוכחות' : 'התלמיד יהיה רשום כליד בקבוצה'}
                 </Typography>
               </Box>
             </Grid>
@@ -892,15 +1077,29 @@ useEffect(() => {
               variant="outlined"
               value={newStudent.school}
               onChange={(e) => handleInputChange('school', e.target.value)}
-              sx={{ textAlign: 'right' }}
+              sx={{ 
+                textAlign: 'right',
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+              InputLabelProps={{ sx: { right: 24, left: 'auto', transformOrigin: 'top right' } }}
             />
           </Grid>
 
          
 
           <Grid item xs={12} sm={6}>
-            <FormControl fullWidth variant="outlined">
-              <InputLabel>📚 כיתה</InputLabel>
+            <FormControl 
+              fullWidth 
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+            >
+              <InputLabel sx={{ right: 24, left: 'auto', transformOrigin: 'top right' }}>📚 כיתה</InputLabel>
               <Select
                 value={newStudent.class}
                 onChange={(e) => handleInputChange('class', e.target.value)}
@@ -916,8 +1115,16 @@ useEffect(() => {
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <FormControl fullWidth variant="outlined">
-              <InputLabel>🌍 מגזר</InputLabel>
+            <FormControl 
+              fullWidth 
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+            >
+              <InputLabel sx={{ right: 24, left: 'auto', transformOrigin: 'top right' }}>🌍 מגזר</InputLabel>
               <Select
                 value={newStudent.sector}
                 onChange={(e) => handleInputChange('sector', e.target.value)}
@@ -933,8 +1140,16 @@ useEffect(() => {
           </Grid>
 
           <Grid item xs={12} sm={6} sx={{minWidth: '150px'}}>
-            <FormControl fullWidth variant="outlined" >
-              <InputLabel >📊 סטטוס תלמיד</InputLabel>
+            <FormControl 
+              fullWidth 
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+            >
+              <InputLabel sx={{ right: 24, left: 'auto', transformOrigin: 'top right' }}>📊 סטטוס תלמיד</InputLabel>
               <Select
                 value={newStudent.status}
                 onChange={(e) => handleInputChange('status', e.target.value)}
@@ -960,7 +1175,14 @@ useEffect(() => {
               value={studentNote}
               onChange={(e) => setStudentNote(e.target.value)}
               placeholder="ניתן להוסיף כאן הערות חשובות על התלמיד..."
-              sx={{ textAlign: 'right', minWidth: '250px' }}
+              sx={{ 
+                textAlign: 'right', 
+                minWidth: '250px',
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+              InputLabelProps={{ sx: { right: 24, left: 'auto', transformOrigin: 'top right' } }}
             />
           </Grid>
 

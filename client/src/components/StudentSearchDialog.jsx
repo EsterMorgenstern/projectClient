@@ -152,7 +152,6 @@ const StudentSearchDialog = ({ open, onClose }) => {
       age: student.age,
       city: student.city,
       school: student.school,
-      healthFund: student.healthFund,
       class: student.class,
       sector: student.sector,
       status: student.status

@@ -37,7 +37,8 @@ const branchSlice = createSlice({
       .addCase(deleteBranch.fulfilled, (state, action) => {
         console.log(action.payload);
         state.loading = false;
-        state.branches = state.branches.filter((branch) => branch.branchId !== action.payload.branchId);
+        const branchIdToDelete = action.payload.branchId || action.payload;
+        state.branches = state.branches.filter((branch) => branch.branchId !== branchIdToDelete);
       })
       .addCase(deleteBranch.rejected, (state, action) => {
         console.error('Error deleteBranch:', action.error.message);

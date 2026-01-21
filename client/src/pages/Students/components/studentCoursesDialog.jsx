@@ -1029,7 +1029,7 @@ const StudentCoursesDialog = ({
                           size="medium"
                           startIcon={<Add />}
                           onClick={() => {
-                            navigate('/entrollStudent');
+                            navigate('/enroll-student');
                             onClose();
                           }}
                           sx={{
@@ -1155,7 +1155,7 @@ const StudentCoursesDialog = ({
                   size="medium"
                   startIcon={<Add sx={{ fontSize: 20 }} />}
                   onClick={() => {
-                    navigate('/entrollStudent');
+                    navigate('/enroll-student');
                     onClose();
                   }}
                   sx={{

@@ -9,7 +9,7 @@ export const updateStudentNote = createAsyncThunk(
             const response = await axios.put(`${API_BASE_URL}/StudentNotes/Update`, studentNote);
             return response.data;
         } catch (error) {
-            return rejectWithValue(error.response?.data || 'Failed to edit instructor');
+            return rejectWithValue(error.response?.data || 'Failed to edit student note');
         }
     }
 );

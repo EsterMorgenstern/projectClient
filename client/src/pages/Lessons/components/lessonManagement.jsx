@@ -283,7 +283,7 @@ const LessonManagement = () => {
                   <Button
                     variant="contained"
                     size="large"
-                    onClick={() => navigate('/attendanceCalendar')}
+                    onClick={() => navigate('/attendance-calendar')}
                     sx={{
                       background: 'linear-gradient(135deg, #3B82F6, #60A5FA)',
                       '&:hover': { 

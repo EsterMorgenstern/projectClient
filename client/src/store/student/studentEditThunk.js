@@ -10,7 +10,7 @@ export const editStudent = createAsyncThunk(
 
             return response.data;
         } catch (error) {
-            return rejectWithValue(error.response?.data || 'Failed to edit instructor');
+            return rejectWithValue(error.response?.data || 'Failed to edit student');
         }
     }
 );
