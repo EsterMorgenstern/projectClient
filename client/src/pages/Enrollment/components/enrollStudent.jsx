@@ -875,7 +875,7 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
   const getGroupsStatusText = (count) => {
     if (count === 0) return 'אין קבוצות פעילות';
     if (count === 1) return 'קבוצה אחת זמינה';
-    return `${count} קבוצות זמינות`;
+    return `קבוצות זמינות: ${count}`;
   };
 
   const handleCourseSelect = (course) => {
@@ -2559,15 +2559,18 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
                             {branch.address || 'כתובת לא ידועה'}
                           </Typography>
                           <Chip
-                            label={`ילדים פעילים: ${branch.maxGroupSize }`}
+                            label={`תלמידים פעילים: ${branch.ActiveStudentsCount ?? branch.activeStudentsCount ?? 0}`}
                             color="secondary"
                             size="small"
-                            sx={{ mt: 1, bgcolor: '#6366F1', color: 'white', fontWeight: 'bold' }}
+                            sx={{ mt: 1, bgcolor: '#1e3b8ad8', color: 'white', fontWeight: 'bold', letterSpacing: 0.2 }}
                           />
-                          <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ mt: 1 }}>
-                            {statusText}
-                          </Typography>
-                        </Paper>
+                           <Chip
+                            label= {statusText}
+                            color="secondary"
+                            size="small"
+                            sx={{ mt: 1, bgcolor: '#12af6bd8', color: 'white', fontWeight: 'bold', letterSpacing: 0.2 }}
+                          />
+                                                 </Paper>
                       );
                     })}
                   </Paper>

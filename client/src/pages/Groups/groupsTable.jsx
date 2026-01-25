@@ -1250,9 +1250,14 @@ const GroupsTable = () => {
                       {branch.address ? `${branch.address}, ${branch.city || ''}` : 'כתובת לא צוינה'}
                     </Typography>
                     <Chip
-                      label={`${branchGroups.length} קבוצות`}
+                      label={`מספר קבוצות: ${branchGroups.length} `}
                       size="small"
                       sx={{ mt: 2, background: 'rgba(16,185,129,0.15)', color: '#047857', fontWeight: 'bold' }}
+                    />
+                    <Chip
+                      label={`תלמידים פעילים: ${branch.ActiveStudentsCount ?? branch.activeStudentsCount ?? 0}`}
+                      size="small"
+                      sx={{ mt: 1, background: 'rgba(37,99,235,0.12)', color: '#1d4ed8', fontWeight: 'bold' }}
                     />
 
                     {/* כפתורי עריכה ומחיקה */}
