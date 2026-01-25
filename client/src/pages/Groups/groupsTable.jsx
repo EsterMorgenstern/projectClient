@@ -110,7 +110,8 @@ const GroupsTable = () => {
     sector: '',
     numOfLessons: '',
     startDate: '',
-    lessonsCompleted: ''
+    lessonsCompleted: '',
+    isActive: true
   }), []);
 
   const [formData, setFormData] = useState(initialFormData);
@@ -341,7 +342,8 @@ const GroupsTable = () => {
         sector: group.sector || '',
         numOfLessons: group.numOfLessons || '',
         startDate: group.startDate || '',
-        lessonsCompleted: group.lessonsCompleted || ''
+        lessonsCompleted: group.lessonsCompleted || '',
+        isActive: group.isActive !== undefined ? group.isActive : true
       });
     } else {
       setEditingItem(null);
@@ -349,7 +351,8 @@ const GroupsTable = () => {
       setFormData({
         ...initialFormData,
         CourseId: selectedCourse?.courseId || selectedCourse?.id || '',
-        BranchId: selectedBranch?.branchId || selectedBranch?.BranchId || selectedBranch?.id || ''
+        BranchId: selectedBranch?.branchId || selectedBranch?.BranchId || selectedBranch?.id || '',
+        isActive: true
       });
     }
     setOpenGroupDialog(true);
@@ -453,7 +456,8 @@ const GroupsTable = () => {
           Sector: formData.sector || 'כללי',
           NumOfLessons: parseInt(formData.numOfLessons) || 0,
           StartDate: formData.startDate || '',
-          LessonsCompleted: parseInt(formData.lessonsCompleted) || 0
+          LessonsCompleted: parseInt(formData.lessonsCompleted) || 0,
+          IsActive: formData.isActive !== undefined ? formData.isActive : true
         };
         console.log('📤 Sending group data:', groupData);
         console.log('📋 Form data:', formData);
@@ -480,6 +484,7 @@ const GroupsTable = () => {
             instructorName: instructorName,
             CourseId: formData.CourseId,
             BranchId: formData.BranchId,
+            isActive: formData.isActive !== undefined ? formData.isActive : true
           };
           console.log('✅ [Optimistic] Updating groups state immediately:', updatedGroupData);
           updateGroupsStateOptimistic(updatedGroupData);
@@ -717,6 +722,7 @@ const GroupsTable = () => {
       maxStudents: g.maxStudents,
       lessons: `${g.lessonsCompleted || 0}/${g.numOfLessons || '-'}`,
       sector: g.sector,
+      isActive: g.isActive !== undefined ? g.isActive : true,
     })).filter(row =>
       row.groupName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       row.courseName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -736,6 +742,7 @@ const GroupsTable = () => {
       { label: 'מקומות פנויים' },
       { label: 'שיעורים' },
       { label: 'מגזר' },
+      { label: 'סטטוס' },
       { label: 'פעולות', align: 'center' }
     ];
 
@@ -874,6 +881,21 @@ const GroupsTable = () => {
                 <TableCell align="right" sx={{ py: 2, fontSize: '0.9rem' }}>{row.maxStudents || '-'}</TableCell>
                 <TableCell align="right" sx={{ py: 2, fontSize: '0.9rem' }}>{row.lessons}</TableCell>
                 <TableCell align="right" sx={{ py: 2, fontSize: '0.9rem' }}>{row.sector || '-'}</TableCell>
+                <TableCell align="right" sx={{ py: 2, fontSize: '0.9rem' }}>
+                  <Chip
+                    label={row.isActive ? '✅ פעיל' : '⏸️ לא פעיל'}
+                    size="small"
+                    sx={{
+                      bgcolor: row.isActive
+                        ? 'rgba(34, 197, 94, 0.15)'
+                        : 'rgba(107, 114, 128, 0.15)',
+                      color: row.isActive ? '#16a34a' : '#6b7280',
+                      fontWeight: 600,
+                      fontSize: '0.85rem',
+                      border: `1px solid ${row.isActive ? '#86efac' : '#d1d5db'}`
+                    }}
+                  />
+                </TableCell>
                 <TableCell align="center">
                   <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.75 }}>
                     <Tooltip title="פרטי קבוצה">
@@ -1410,6 +1432,27 @@ const GroupsTable = () => {
                         </span>
                       </Typography>
                     </Box>
+                    {/* סטטוס פעיל/לא פעיל - מתחת לשם הקבוצה */}
+                    {!group.isActive && (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+                        <Chip
+                          label="⏸️ לא פעיל"
+                          size="medium"
+                          sx={{
+                            bgcolor: 'rgba(107, 114, 128, 0.2)',
+                            color: '#6b7280',
+                            fontWeight: 700,
+                            fontSize: '0.9rem',
+                            border: '1.5px solid #9ca3af',
+                            animation: 'pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                            '@keyframes pulse': {
+                              '0%, 100%': { opacity: 1 },
+                              '50%': { opacity: 0.6 }
+                            }
+                          }}
+                        />
+                      </Box>
+                    )}
                     <Divider sx={{ width: '100%', mb: 2 }} />
 
                     {/* פרטי הקבוצה */}

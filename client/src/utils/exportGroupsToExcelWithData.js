@@ -25,6 +25,7 @@ export async function exportGroupsToExcelWithData() {
 
     const rows = [];
     groups.forEach(group => {
+      const groupStatus = group.isActive !== undefined ? (group.isActive ? '✅ פעיל' : '⏸️ לא פעיל') : '✅ פעיל';
       if (group.students && group.students.length > 0) {
         group.students.forEach(student => {
           rows.push({
@@ -33,6 +34,7 @@ export async function exportGroupsToExcelWithData() {
             'סניף': group.branchName,
             'יום ושעה': group.schedule,
             'מדריך': group.instructorName,
+            'סטטוס הקבוצה': groupStatus,
             'קוד תלמיד': student.studentId,
             'שם תלמיד': student.studentName,
             'טלפון': student.phone,
@@ -47,6 +49,7 @@ export async function exportGroupsToExcelWithData() {
           'סניף': group.branchName,
           'יום ושעה': group.schedule,
           'מדריך': group.instructorName,
+          'סטטוס הקבוצה': groupStatus,
           'קוד תלמיד': '',
           'שם תלמיד': '',
           'טלפון': '',
@@ -61,7 +64,7 @@ export async function exportGroupsToExcelWithData() {
     // יצירת workbook ו-worksheet
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.json_to_sheet(rows, { header: [
-      'שם קבוצה', 'חוג', 'סניף', 'יום ושעה', 'מדריך', 'קוד תלמיד', 'שם תלמיד', 'טלפון'
+      'שם קבוצה', 'חוג', 'סניף', 'יום ושעה', 'מדריך', 'סטטוס הקבוצה', 'קוד תלמיד', 'שם תלמיד', 'טלפון', 'עיר', 'קופת חולים'
     ] });
     worksheet['!cols'] = [
       { wch: 30 }, // שם קבוצה
@@ -69,10 +72,11 @@ export async function exportGroupsToExcelWithData() {
       { wch: 15 }, // סניף
       { wch: 10 }, // יום ושעה
       { wch: 18 }, // מדריך
-       {wch: 20 }, // קוד תלמיד
+      { wch: 15 }, // סטטוס
+      { wch: 20 }, // קוד תלמיד
       { wch: 20 }, // שם תלמיד
-      { wch: 15 } , // טלפון
-      { wch: 15 } , // עיר
+      { wch: 15 }, // טלפון
+      { wch: 15 }, // עיר
       { wch: 15 }  // קופת חולים
     ];
     worksheet['!rtl'] = true;

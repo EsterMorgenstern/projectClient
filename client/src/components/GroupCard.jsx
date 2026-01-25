@@ -112,6 +112,27 @@ const GroupCard = ({
           </span>
         </Typography>
       </Box>
+      {/* סטטוס פעיל/לא פעיל - מתחת לשם הקבוצה */}
+      {!group.isActive && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+          <Chip
+            label="⏸️ לא פעיל"
+            size="medium"
+            sx={{
+              bgcolor: 'rgba(107, 114, 128, 0.2)',
+              color: '#6b7280',
+              fontWeight: 700,
+              fontSize: '0.9rem',
+              border: '1.5px solid #9ca3af',
+              animation: 'pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              '@keyframes pulse': {
+                '0%, 100%': { opacity: 1 },
+                '50%': { opacity: 0.6 }
+              }
+            }}
+          />
+        </Box>
+      )}
       <Divider sx={{ width: '100%', mb: 2 }} />
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'flex-start' }}>
         <DayIcon fontSize="small" sx={{ color: '#6366F1', ml: 1 }} />

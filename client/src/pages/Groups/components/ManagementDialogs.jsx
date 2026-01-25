@@ -15,7 +15,8 @@ import {
   Select,
   MenuItem,
   Divider,
-  Autocomplete
+  Autocomplete,
+  FormControlLabel
 } from '@mui/material';
 import {
   Info as InfoIcon,
@@ -637,6 +638,61 @@ export const GroupDialog = ({ open, values, onChange, onSubmit, onClose, onReset
             value={values.numOfLessons}
             onChange={(e) => onChange('numOfLessons', e.target.value)}
           />
+        </Grid>
+        <Grid item xs={12}>
+          <Box sx={{ p: 2, bgcolor: 'rgba(99, 102, 241, 0.05)', borderRadius: 1.5, border: '1px solid rgba(99, 102, 241, 0.1)' }}>
+            <Typography variant="body2" sx={{ fontWeight: 500, color: '#1e3a8a', mb: 2 }}>
+              סטטוס קבוצה
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1.5 }}>
+              <Button
+                variant={values.isActive ? "contained" : "outlined"}
+                onClick={() => onChange('isActive', true)}
+                sx={{ 
+                  flex: 1,
+                  py: 0.75,
+                  fontWeight: 700,
+                  borderRadius: 1.5,
+                  fontSize: '0.85rem',
+                  boxShadow: values.isActive ? '0 4px 12px rgba(16, 185, 129, 0.4)' : 'none',
+                  transition: 'all 0.3s ease',
+                  color: values.isActive ? '#ffffff' : '#10b981',
+                  backgroundColor: values.isActive ? '#10b981' : 'transparent',
+                  borderColor: '#10b981',
+                  borderWidth: '2px',
+                  '&:hover': {
+                    backgroundColor: values.isActive ? '#059669' : 'rgba(16, 185, 129, 0.1)',
+                    boxShadow: values.isActive ? '0 6px 16px rgba(16, 185, 129, 0.4)' : 'none'
+                  }
+                }}
+              >
+                פעיל
+              </Button>
+              <Button
+                variant={!values.isActive ? "contained" : "outlined"}
+                onClick={() => onChange('isActive', false)}
+                sx={{ 
+                  flex: 1,
+                  py: 0.75,
+                  fontWeight: 700,
+                  borderRadius: 1.5,
+                  fontSize: '0.85rem',
+                  boxShadow: !values.isActive ? '0 4px 12px rgba(239, 68, 68, 0.4)' : 'none',
+                  transition: 'all 0.3s ease',
+                  color: !values.isActive ? '#ffffff' : '#ef4444',
+                  backgroundColor: !values.isActive ? '#ef4444' : 'transparent',
+                  borderColor: '#ef4444',
+                  borderWidth: '2px',
+                  '&:hover': {
+                    backgroundColor: !values.isActive ? '#dc2626' : 'rgba(239, 68, 68, 0.1)',
+                    boxShadow: !values.isActive ? '0 6px 16px rgba(239, 68, 68, 0.4)' : 'none'
+                  }
+                }}
+              >
+                לא פעיל
+              </Button>
+            </Box>
+          </Box>
         </Grid>
         <Grid item xs={12}>
           <FormControl
