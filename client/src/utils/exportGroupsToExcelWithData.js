@@ -39,7 +39,7 @@ export async function exportGroupsToExcelWithData() {
             'שם תלמיד': student.studentName,
             'טלפון': student.phone,
             'עיר': student.city ,
-            'קופת חולים': student.healthFound
+            'קופת חולים': student.healthFund
           });
         });
       } else {

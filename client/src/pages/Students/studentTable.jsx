@@ -188,7 +188,7 @@ export default function StudentsTable() {
       const phoneMatch = student.phone?.toString().includes(term);
       const secondaryPhoneMatch = student.secondaryPhone?.toString().includes(term);
       const cityMatch = student.city?.toLowerCase().includes(term);
-      const statusMatch = student.status?.toLowerCase().includes(term);
+      const statusMatch = (student.status || '').toLowerCase().includes(term);
       return firstNameMatch || lastNameMatch || fullNameMatch || idMatch || identityCardMatch || phoneMatch || secondaryPhoneMatch || cityMatch || statusMatch;
     });
   };
@@ -342,7 +342,7 @@ export default function StudentsTable() {
           <TextField
             fullWidth
             variant="outlined"
-            placeholder="🔍 חפש תלמיד לפי שם, ת״ז, טלפון או עיר..."
+            placeholder="🔍 חפש תלמיד לפי שם, ת״ז, טלפון, סטטוס או עיר..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-field"

@@ -12,12 +12,11 @@ import {
   Close as CloseIcon, School as SchoolIcon,
   Group as GroupIcon, ArrowBack,
   LocationOn as LocationIcon, CalendarToday as DayIcon, ChildCare as StudentIcon, Apartment as SectorIcon,
-  CheckCircleOutline as AvailableIcon, Cancel as FullIcon, Person as PersonIcon
+  CheckCircleOutline as AvailableIcon, Cancel as FullIcon, Person as PersonIcon, People as PeopleIcon
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchGroups } from '../../store/group/groupGellAllThunk';
-import { getGroupsByBranch } from '../../store/group/groupGetGroupsByBranchThunk';
 import { getGroupsByCourseId } from '../../store/group/groupGetGroupsByCourseIdThunk';
 import { addGroup } from '../../store/group/groupAddThunk';
 import { updateGroup } from '../../store/group/groupUpdateThunk';
@@ -52,12 +51,11 @@ const GroupsTable = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const groupsState = useSelector(state => state.groups || {});
-  // Use groupsByBranch if a branch is selected, otherwise use groups
+  // Use groupsByCourseId when a course is selected for efficient filtering
   const {
     groups = groupsState.groups || [],
-    groupsByBranch = groupsState.groupsByBranch || [],
-    groupsByBranchId = groupsState.groupsByBranchId || null,
-    groupsByBranchLoading = groupsState.groupsByBranchLoading || false,
+    groupsByCourseId = groupsState.groupsByCourseId || [],
+    groupsByCourseIdLoading = groupsState.groupsByCourseIdLoading || false,
     loading: groupsLoading,
     error
   } = groupsState;
@@ -148,15 +146,8 @@ const GroupsTable = () => {
     }
   }, [selectedCourse, dispatch]);
 
-  // When a branch is selected - immediately load its groups
-  useEffect(() => {
-    if (selectedBranch) {
-      const branchId = selectedBranch.branchId || selectedBranch.id || selectedBranch.BranchId;
-      if (branchId) {
-        dispatch(getGroupsByBranch(branchId));
-      }
-    }
-  }, [selectedBranch, dispatch]);
+  // When a branch is selected - filter groups from the course data (no additional API call needed)
+  // The groups are already loaded from getGroupsByCourseId when the course was selected
 
   // Helper functions - עם memoization לביצועים מיטביים
   const getBranchesForCourse = useCallback((courseId) => {
@@ -172,14 +163,14 @@ const GroupsTable = () => {
   }, [branches]);
 
   const getGroupsForBranch = useCallback((branchId) => {
-    // Use all groups array for accurate count
-    const allGroups = groups || [];
+    // Use groupsByCourseId if available (when a course is selected), otherwise use all groups
+    const allGroups = (groupsByCourseId && groupsByCourseId.length > 0) ? groupsByCourseId : groups || [];
     const result = allGroups.filter(g => {
       const gBranchId = g.branchId || g.BranchId;
       return gBranchId === branchId || gBranchId === Number(branchId);
     });
     return result;
-  }, [groups]);
+  }, [groups, groupsByCourseId]);
 
   const getGroupsByDay = useCallback((groupsList) => {
     const days = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי'];
@@ -198,22 +189,10 @@ const GroupsTable = () => {
     if (!selectedBranch) return [];
     const branchId = selectedBranch.branchId || selectedBranch.id || selectedBranch.BranchId;
 
-    // Prefer Redux-provided branch groups only if they match the current branchId
-    if (groupsByBranch && groupsByBranch.length > 0 && groupsByBranchId === branchId) {
-      return groupsByBranch;
-    }
-
-    // Fallback: filter from main groups array for immediate display
+    // Filter course groups by selected branch (no additional API call needed)
     const filtered = getGroupsForBranch(branchId);
-    if (filtered.length > 0) return filtered;
-
-    // If loading and no data yet, preserve last known groups to avoid clearing UI
-    if (groupsByBranchLoading && lastBranchGroupsRef.current && lastBranchGroupsRef.current.length > 0) {
-      return lastBranchGroupsRef.current;
-    }
-
-    return filtered; // empty
-  }, [selectedBranch, groupsByBranch, groupsByBranchId, groupsByBranchLoading, getGroupsForBranch, groups]);
+    return filtered;
+  }, [selectedBranch, getGroupsForBranch]);
 
   const sortedGroupsData = useMemo(() => {
     // פשוט מחזירים את הקבוצות ללא מיון לפי ימים
@@ -516,23 +495,23 @@ const GroupsTable = () => {
           }
         } else if (editType === 'branch') {
           dispatch(fetchBranches());
-          // אם יש סניף נבחר, רענן את הקבוצות שלו
-          if (selectedBranch) {
-            const branchId = selectedBranch.branchId || selectedBranch.id || selectedBranch.BranchId;
-            if (branchId) {
-              dispatch(getGroupsByBranch(branchId));
+          // אם יש קורס נבחר, רענן את הקבוצות שלו
+          if (selectedCourse) {
+            const courseId = selectedCourse.courseId || selectedCourse.id || selectedCourse.CourseId;
+            if (courseId) {
+              dispatch(getGroupsByCourseId(courseId));
             }
           }
         } else if (editType === 'group') {
-          // רענן רק את קבוצות הסניף הנוכחי (הרבה יותר מהיר מ-fetchGroups)
-          if (selectedBranch) {
-            const branchId = selectedBranch.branchId || selectedBranch.id || selectedBranch.BranchId;
-            if (branchId) {
-              console.log('🔄 Refreshing branch groups only (much faster)');
-              dispatch(getGroupsByBranch(branchId));
+          // רענן את קבוצות הקורס הנוכחי
+          if (selectedCourse) {
+            const courseId = selectedCourse.courseId || selectedCourse.id || selectedCourse.CourseId;
+            if (courseId) {
+              console.log('🔄 Refreshing course groups only (much faster)');
+              dispatch(getGroupsByCourseId(courseId));
             }
           } else {
-            // אם לא בתצוגת סניף, רענן הכל
+            // אם לא בתצוגת קורס, רענן הכל
             console.log('🔄 Refreshing all groups');
             dispatch(fetchGroups());
           }
@@ -599,12 +578,9 @@ const GroupsTable = () => {
             }
           }
         } else if (deleteType === 'group') {
-          // רענון הקבוצות לפי ההקשר
-          const branchId = selectedBranch?.branchId || selectedBranch?.id || selectedBranch?.BranchId;
+          // רענון הקבוצות לפי ההקשר - עדיף קורס מעל סניף
           const courseId = selectedCourse?.courseId || selectedCourse?.id || selectedCourse?.CourseId;
-          if (branchId) {
-            dispatch(getGroupsByBranch(branchId));
-          } else if (courseId) {
+          if (courseId) {
             dispatch(getGroupsByCourseId(courseId));
           } else {
             dispatch(fetchGroups());
@@ -637,7 +613,7 @@ const GroupsTable = () => {
   // ============ RENDER HEADER & STATS ============
   const renderHeaderAndStats = () => (
     <>
-      <Box sx={{ mb: 6 }}>
+      <Box sx={{ mt: 2, mb: 7 }}>
         <Typography
           variant="h3"
           sx={{
@@ -751,7 +727,7 @@ const GroupsTable = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-      >
+              >
         <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
           <Button
             variant="outlined"
@@ -1250,14 +1226,14 @@ const GroupsTable = () => {
                       {branch.address ? `${branch.address}, ${branch.city || ''}` : 'כתובת לא צוינה'}
                     </Typography>
                     <Chip
-                      label={`מספר קבוצות: ${branchGroups.length} `}
+                      label={`קבוצות פעילות: ${branch.ActiveGroupsCount ?? branch.activeGroupsCount ?? branchGroups.length}`}
                       size="small"
                       sx={{ mt: 2, background: 'rgba(16,185,129,0.15)', color: '#047857', fontWeight: 'bold' }}
                     />
                     <Chip
                       label={`תלמידים פעילים: ${branch.ActiveStudentsCount ?? branch.activeStudentsCount ?? 0}`}
                       size="small"
-                      sx={{ mt: 1, background: 'rgba(37,99,235,0.12)', color: '#1d4ed8', fontWeight: 'bold' }}
+                      sx={{ mt: 2, background: 'rgba(37,99,235,0.12)', color: '#1d4ed8', fontWeight: 'bold' }}
                     />
 
                     {/* כפתורי עריכה ומחיקה */}
@@ -1402,165 +1378,202 @@ const GroupsTable = () => {
             return (
               <Grid item xs={12} sm={6} md={4} lg={3} key={`group-${group.id || index}`}>
                 <motion.div variants={itemVariants}>
-                  <Paper
-                    elevation={3}
-                    component={motion.div}
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.98 }}
-                    sx={{
-                      p: 3,
-                      borderRadius: 3,
-                      height: '100%',
-                      width: 320,
-                      minWidth: 320,
-                      maxWidth: 320,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      cursor: 'pointer',
-                      background: 'linear-gradient(135deg, #ff9af700 0%, #feffff 100%)',
-                      transition: 'all 0.3s ease',
-                      position: 'relative',
-                      overflow: 'hidden',
-                      direction: 'rtl',
-                      textAlign: 'right',
-                      '&:hover': {
-                        boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                  <Tooltip
+                    title="👈 לחץ פעמיים כדי להציג את פרטי הקבוצה"
+                    placement="top"
+                    arrow
+                    componentsProps={{
+                      tooltip: {
+                        sx: {
+                          bgcolor: '#5f6368',
+                          color: 'white',
+                          borderRadius: 1,
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                          px: 1.5,
+                          py: 0.75,
+                          boxShadow: '0 4px 10px rgba(0,0,0,0.18)'
+                        }
+                      },
+                      arrow: {
+                        sx: {
+                          color: '#5f6368'
+                        }
                       }
                     }}
                   >
-                    {/* שם קבוצה עם אייקון */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, justifyContent: 'flex-start' }}>
-                      <GroupIcon sx={{ fontSize: 32, color: '#6366F1', ml: 1 }} />
-                      <Typography variant="h6" fontWeight="bold" color="#1E3A8A" component="span">
-                        <span style={{ wordBreak: 'break-word', whiteSpace: 'pre-line' }}>
-                          {group.groupName}
-                        </span>
-                      </Typography>
-                    </Box>
-                    {/* סטטוס פעיל/לא פעיל - מתחת לשם הקבוצה */}
-                    {!group.isActive && (
-                      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-                        <Chip
-                          label="⏸️ לא פעיל"
-                          size="medium"
-                          sx={{
-                            bgcolor: 'rgba(107, 114, 128, 0.2)',
-                            color: '#6b7280',
-                            fontWeight: 700,
-                            fontSize: '0.9rem',
-                            border: '1.5px solid #9ca3af',
-                            animation: 'pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                            '@keyframes pulse': {
-                              '0%, 100%': { opacity: 1 },
-                              '50%': { opacity: 0.6 }
-                            }
-                          }}
-                        />
+                    <Paper
+                      elevation={3}
+                      component={motion.div}
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.98 }}
+                      onDoubleClick={() => handleOpenGroupDetails(group)}
+                      sx={{
+                        p: 3,
+                        borderRadius: 3,
+                        height: '100%',
+                        width: 320,
+                        minWidth: 320,
+                        maxWidth: 320,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        cursor: 'pointer',
+                        background: 'linear-gradient(135deg, #ff9af700 0%, #feffff 100%)',
+                        transition: 'all 0.3s ease',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        direction: 'rtl',
+                        textAlign: 'right',
+                        '&:hover': {
+                          boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                        }
+                      }}
+                    >
+                      {/* שם קבוצה עם אייקון */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, justifyContent: 'flex-start' }}>
+                        <GroupIcon sx={{ fontSize: 32, color: '#6366F1', ml: 1 }} />
+                        <Typography variant="h6" fontWeight="bold" color="#1E3A8A" component="span">
+                          <span style={{ wordBreak: 'break-word', whiteSpace: 'pre-line' }}>
+                            {group.groupName}
+                          </span>
+                        </Typography>
                       </Box>
-                    )}
-                    <Divider sx={{ width: '100%', mb: 2 }} />
-
-                    {/* פרטי הקבוצה */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'flex-start' }}>
-                      <DayIcon fontSize="small" sx={{ color: '#6366F1', ml: 1 }} />
-                      <Typography variant="body2" component="span">
-                        {(() => {
-                          let day = group.dayOfWeek || group.day;
-                          let hour = group.hour;
-
-                          // If day/hour not available, try to parse from schedule
-                          if (!day && group.schedule) {
-                            const parts = group.schedule.split(' ');
-                            day = parts[0];
-                            hour = parts[1];
-                          }
-
-                          return `${day || '-'} · ${hour || '-'}`;
-                        })()}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'flex-start' }}>
-                      <StudentIcon fontSize="small" sx={{ color: '#6366F1', ml: 1 }} />
-                      <Typography variant="body2" component="span">
-                        גילאים: {group.ageRange || '-'}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'flex-start' }}>
-                      <SectorIcon fontSize="small" sx={{ color: '#6366F1', ml: 1 }} />
-                      <Typography variant="body2" component="span">
-                        מגזר: {group.sector || 'כללי'}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'flex-start' }}>
-                      <PersonIcon fontSize="small" sx={{ color: '#6366F1', ml: 1 }} />
-                      <Typography variant="body2" component="span">
-                        מדריך: {group.instructorName || '-'}
-                      </Typography>
-                    </Box>
-
-                    {/* מקומות פנויים - Chip */}
-                    <Box sx={{ mt: 'auto', pt: 2, width: '100%' }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2, direction: 'ltr' }}>
-                        <Chip
-                          icon={group.maxStudents > 0 ? <AvailableIcon /> : <FullIcon />}
-                          label={`${group.maxStudents} מקומות פנויים`}
-                          color={group.maxStudents > 0 ? "success" : "error"}
-                          variant="outlined"
-                          size="small"
-                          sx={{
-                            '& .MuiChip-icon': {
-                              bgcolor: group.maxStudents > 0 ? '#22c55e' : '#ef4444',
-                              color: 'white',
-                              borderRadius: '50%',
-                              padding: '4px',
-                              width: '24px',
-                              height: '24px'
-                            }
-                          }}
-                        />
-                      </Box>
-
-                      {/* כפתורי עריכה ומחיקה */}
-                      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
-                        <Tooltip title="ערוך קבוצה">
-                          <IconButton
-                            size="small"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOpenGroupDialog(group);
-                            }}
+                      {/* סטטוס פעיל/לא פעיל - מתחת לשם הקבוצה */}
+                      {!group.isActive && (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+                          <Chip
+                            label="⏸️ לא פעיל"
+                            size="medium"
                             sx={{
-                              color: '#6366F1',
-                              bgcolor: 'rgba(99, 102, 241, 0.1)',
-                              '&:hover': { bgcolor: 'rgba(99, 102, 241, 0.2)' }
+                              bgcolor: 'rgba(107, 114, 128, 0.2)',
+                              color: '#6b7280',
+                              fontWeight: 700,
+                              fontSize: '0.9rem',
+                              border: '1.5px solid #9ca3af',
+                              animation: 'pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                              '@keyframes pulse': {
+                                '0%, 100%': { opacity: 1 },
+                                '50%': { opacity: 0.6 }
+                              }
                             }}
-                          >
-                            <Edit fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="מחק קבוצה">
-                          <IconButton
-                            size="small"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(group, 'group');
-                            }}
-                            sx={{
-                              color: '#ef4444',
-                              bgcolor: 'rgba(239, 68, 68, 0.1)',
-                              '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.2)' }
-                            }}
-                          >
-                            <Delete fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
+                          />
+                        </Box>
+                      )}
+                      <Divider sx={{ width: '100%', mb: 2 }} />
+
+                      {/* פרטי הקבוצה */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'flex-start' }}>
+                        <DayIcon fontSize="small" sx={{ color: '#6366F1', ml: 1 }} />
+                        <Typography variant="body2" component="span">
+                          {(() => {
+                            let day = group.dayOfWeek || group.day;
+                            let hour = group.hour;
+
+                            // If day/hour not available, try to parse from schedule
+                            if (!day && group.schedule) {
+                              const parts = group.schedule.split(' ');
+                              day = parts[0];
+                              hour = parts[1];
+                            }
+
+                            return `${day || '-'} · ${hour || '-'}`;
+                          })()}
+                        </Typography>
                       </Box>
-                    </Box>
-                  </Paper>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'flex-start' }}>
+                        <StudentIcon fontSize="small" sx={{ color: '#6366F1', ml: 1 }} />
+                        <Typography variant="body2" component="span">
+                          גילאים: {group.ageRange || '-'}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'flex-start' }}>
+                        <SectorIcon fontSize="small" sx={{ color: '#6366F1', ml: 1 }} />
+                        <Typography variant="body2" component="span">
+                          מגזר: {group.sector || 'כללי'}
+                        </Typography>
+                      </Box>
+
+                      {/* מקומות פנויים - Chip */}
+                      <Box sx={{ mt: 'auto', pt: 0, width: '100%' }}>
+                        {/* תלמידים פעילים */}
+                        {group.activeStudents !== undefined && (
+                          <Box sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.5,
+                            mb: 1,
+                            color: '#6366F1'
+                          }}>
+                            <PeopleIcon sx={{ fontSize: '17px' }} />
+                            <Typography variant="body2" sx={{ fontWeight: '600', fontSize: '0.875rem' }}>
+                תלמידים פעילים: {group.activeStudents} 
+                            </Typography>
+                          </Box>
+                        )}
+                        {/* מקומות פנויים */}
+                        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2, direction: 'ltr' }}>
+                          <Chip
+                            icon={group.maxStudents > 0 ? <AvailableIcon /> : <FullIcon />}
+                            label={`${group.maxStudents} מקומות פנויים`}
+                            color={group.maxStudents > 0 ? "success" : "error"}
+                            variant="outlined"
+                            size="small"
+                            sx={{
+                              '& .MuiChip-icon': {
+                                bgcolor: group.maxStudents > 0 ? '#22c55e' : '#ef4444',
+                                color: 'white',
+                                borderRadius: '50%',
+                                padding: '4px',
+                                width: '24px',
+                                height: '24px'
+                              }
+                            }}
+                          />
+                        </Box>
+
+                        {/* כפתורי עריכה ומחיקה */}
+                        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+                          <Tooltip title="ערוך קבוצה">
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenGroupDialog(group);
+                              }}
+                              sx={{
+                                color: '#6366F1',
+                                bgcolor: 'rgba(99, 102, 241, 0.1)',
+                                '&:hover': { bgcolor: 'rgba(99, 102, 241, 0.2)' }
+                              }}
+                            >
+                              <Edit fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="מחק קבוצה">
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(group, 'group');
+                              }}
+                              sx={{
+                                color: '#ef4444',
+                                bgcolor: 'rgba(239, 68, 68, 0.1)',
+                                '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.2)' }
+                              }}
+                            >
+                              <Delete fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </Box>
+                    </Paper>
+                  </Tooltip>
                 </motion.div>
               </Grid>
             );
-          })}              </Grid>
+          })}
+        </Grid>
       </motion.div>
     );
   };
@@ -1729,7 +1742,8 @@ const GroupsTable = () => {
     <Box sx={{
       background: 'linear-gradient(to right, #e0f2fe, #f8fafc)',
       minHeight: '100vh',
-      py: 4
+      py: 4,
+                            borderRadius: 8
     }}>
       <Box sx={{ maxWidth: 1400, mx: 'auto', px: 3, direction: 'rtl' }}>
         {renderHeaderAndStats()}

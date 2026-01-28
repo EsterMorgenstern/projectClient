@@ -29,7 +29,7 @@ const Routing = () => {
         <Route path="/attendance-calendar" element={<Layout><AttendanceCalendar /></Layout>} />
         <Route path="/enroll-student" element={<Layout><EnrollStudent /></Layout>} />
         <Route path="/classes-management" element={<Layout><GroupsTable /></Layout>} />
-        <Route path="/group/:groupId" element={<GroupDetailsPage />} />
+        <Route path="/group/:groupId" element={<Layout><GroupDetailsPage /></Layout>} />
         <Route path="/lesson-management" element={<Layout><LessonManagement /></Layout>} />
         <Route path="/health-fund-management" element={<Layout><HealthFundManagement /></Layout>} />
         <Route path="/grow-payment-callback" element={<GrowPaymentCallback />} />

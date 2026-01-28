@@ -41,6 +41,8 @@ const HealthFundManagement = () => {
     maxTreatmentsPerYear: '',
     pricePerLesson: '',
     monthlyPrice: '',
+    validUntilAge: '',
+    eligibilityDetails: '',
     requiresReferral: false,
     requiresCommitment: false,
     isActive: true
@@ -56,6 +58,8 @@ const HealthFundManagement = () => {
       maxTreatmentsPerYear: '',
       pricePerLesson: '',
       monthlyPrice: '',
+      validUntilAge: '',
+      eligibilityDetails: '',
       requiresReferral: false,
       requiresCommitment: false,
       isActive: true
@@ -229,6 +233,18 @@ const HealthFundManagement = () => {
                 </TableCell>
                 <TableCell sx={{ fontWeight: 'bold', color: 'white', textAlign: 'center' }}>
                   <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <Description sx={{ color: '#f59e42' }} />
+                    <span>גיל זכאות</span>
+                  </Box>
+                </TableCell>
+                <TableCell sx={{ fontWeight: 'bold', color: 'white', textAlign: 'center' }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <Description sx={{ color: '#a3e635' }} />
+                    <span>פרטי זכאות</span>
+                  </Box>
+                </TableCell>
+                <TableCell sx={{ fontWeight: 'bold', color: 'white', textAlign: 'center' }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                     <Note sx={{ color: '#F59E42' }} />
                     <span>הפניה</span>
                   </Box>
@@ -261,6 +277,8 @@ const HealthFundManagement = () => {
                   <TableCell align="center">{fund.maxTreatmentsPerYear}</TableCell>
                   <TableCell align="center">{fund.pricePerLesson}</TableCell>
                   <TableCell align="center">{fund.monthlyPrice}</TableCell>
+                  <TableCell align="center">{fund.validUntilAge}</TableCell>
+                  <TableCell align="center">{fund.eligibilityDetails}</TableCell>
                   <TableCell align="center"><Chip label={fund.requiresReferral ? 'נדרש' : 'לא נדרש'} color={fund.requiresReferral ? 'warning' : 'success'} /></TableCell>
                   <TableCell align="center"><Chip label={fund.requiresCommitment ? 'נדרש' : 'לא נדרש'} color={fund.requiresCommitment ? 'warning' : 'success'} /></TableCell>
                   <TableCell align="center"><Chip label={fund.isActive ? 'פעילה' : 'לא פעילה'} color={fund.isActive ? 'success' : 'default'} /></TableCell>
@@ -322,6 +340,12 @@ const HealthFundManagement = () => {
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField label="מחיר חודשי" type="number" fullWidth variant="outlined" value={editFormData.monthlyPrice} onChange={e => handleEditInputChange('monthlyPrice', e.target.value)} inputProps={{ style: { direction: 'rtl', textAlign: 'right' } }} />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField label="גיל זכאות" type="number" fullWidth variant="outlined" value={editFormData.validUntilAge || ''} onChange={e => handleEditInputChange('validUntilAge', e.target.value)} inputProps={{ style: { direction: 'rtl', textAlign: 'right' } }} />
+              </Grid>
+              <Grid item xs={12} sm={12}>
+                <TextField label="פרטי זכאות" fullWidth variant="outlined" value={editFormData.eligibilityDetails || ''} onChange={e => handleEditInputChange('eligibilityDetails', e.target.value)} inputProps={{ style: { direction: 'rtl', textAlign: 'right' } }} />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -484,6 +508,27 @@ const HealthFundManagement = () => {
                 variant="outlined" 
                 value={formData.monthlyPrice} 
                 onChange={e => handleInputChange('monthlyPrice', e.target.value)} 
+                inputProps={{ style: { direction: 'rtl', textAlign: 'right' } }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField 
+                label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, direction: 'rtl' }}><Description sx={{ color: '#f59e42' }} /> <span>גיל זכאות</span></Box>} 
+                type="number" 
+                fullWidth 
+                variant="outlined" 
+                value={formData.validUntilAge} 
+                onChange={e => handleInputChange('validUntilAge', e.target.value)} 
+                inputProps={{ style: { direction: 'rtl', textAlign: 'right' } }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={12}>
+              <TextField 
+                label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, direction: 'rtl' }}><Description sx={{ color: '#a3e635' }} /> <span>פרטי זכאות</span></Box>} 
+                fullWidth 
+                variant="outlined" 
+                value={formData.eligibilityDetails} 
+                onChange={e => handleInputChange('eligibilityDetails', e.target.value)} 
                 inputProps={{ style: { direction: 'rtl', textAlign: 'right' } }}
               />
             </Grid>

@@ -19,7 +19,7 @@ export async function exportGroupStudentsToExcel(groupId, groupName, dispatch) {
       'שם פרטי': student.studentName?.split(' ')[0] || '',
       'שם משפחה': student.studentName?.split(' ').slice(1).join(' ') || '',
        'עיר': student.city || '',
-      'קופת חולים': student.healthFound || '',
+      'קופת חולים': student.healthFund || '',
       'מזהה': student.studentId || '',
       'מדריך': groupData.instructorName || ''
     }));

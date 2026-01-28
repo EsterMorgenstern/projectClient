@@ -873,9 +873,8 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
   };
 
   const getGroupsStatusText = (count) => {
-    if (count === 0) return 'אין קבוצות פעילות';
-    if (count === 1) return 'קבוצה אחת זמינה';
-    return `קבוצות זמינות: ${count}`;
+    // מציג טקסט סטטוס אחיד לפי דרישת הלקוח
+    return `קבוצות פעילות: ${count}`;
   };
 
   const handleCourseSelect = (course) => {
@@ -2028,23 +2027,13 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
 
   // Animation variants
   const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        duration: 0.5
-      }
-    }
+    hidden: { opacity: 1 },
+    visible: { opacity: 1 }
   };
 
   const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: { duration: 0.5 }
-    }
+    hidden: { y: 0, opacity: 1 },
+    visible: { y: 0, opacity: 1 }
   };
 
   // Render menu
@@ -2281,8 +2270,7 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
               <Paper
                 elevation={3}
                 component={motion.div}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.98 }}
+                // ביטול אפקטי hover/tap
                 sx={{
                   p: 3,
                   borderRadius: 3,
@@ -2503,7 +2491,8 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
                       <LocationOn sx={{ color: '#10B981', ml: 1 }} />
                     </Box>
                     {branchesByCity[city].map((branch, branchIdx) => {
-                      const activeGroupsCount = getActiveGroupsCountForBranch(branch.branchId);
+                      const computedCount = getActiveGroupsCountForBranch(branch.branchId);
+                      const activeGroupsCount = branch.ActiveGroupsCount ?? branch.activeGroupsCount ?? computedCount;
                       const groupsColor = getGroupsCountColor(activeGroupsCount);
                       const statusText = getGroupsStatusText(activeGroupsCount);
                       return (
@@ -4904,6 +4893,13 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
                     <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-start', direction: 'rtl' }}>
                       <span>🆔 ת"ז: {student.fullDetails?.id || student.Student?.id || student.studentId || student.id}</span>
                     </Typography>
+                    {(student?.healthFundName || student?.healthFundPlan) && (
+                      <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-start', direction: 'rtl' }}>
+                        <span>
+                          🏥 {student?.healthFundName || ''}{student?.healthFundPlan ? ` • ${student?.healthFundPlan}` : ''}
+                        </span>
+                      </Typography>
+                    )}
                     {(student.fullDetails?.phone || student.Student?.phone || student.phone) && (
                       <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-start', direction: 'rtl' }}>
                         <span>📞 טלפון: {student.fullDetails?.phone || student.Student?.phone || student.phone}</span>
@@ -4974,12 +4970,7 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
     direction: 'rtl'
   }}
 >
-  {/* <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-    <StatusIcon status={student.student?.status} />
-    סטטוס: {student.student?.status}
-  </span> */}
-
-
+  
 </Typography>
  <Typography
   variant="body2"

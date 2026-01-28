@@ -6,6 +6,8 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import DayIcon from '@mui/icons-material/CalendarToday';
 import StudentIcon from '@mui/icons-material/ChildCare';
 import SectorIcon from '@mui/icons-material/Apartment';
+import PeopleIcon from '@mui/icons-material/People';
+import PersonIcon from '@mui/icons-material/Person';
 import AvailableIcon from '@mui/icons-material/CheckCircleOutline';
 import FullIcon from '@mui/icons-material/Cancel';
 import ViewIcon from '@mui/icons-material/Visibility';
@@ -152,9 +154,24 @@ const GroupCard = ({
           מגזר: {group.sector || 'כללי'}
         </Typography>
       </Box>
-      <Box sx={{ mt: 'auto', pt: 2, width: '100%' }}>
-        {/* שורה ראשונה: מקומות פנויים */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 ,direction:'ltr'}}>
+      <Box sx={{ mt: 'auto', pt:0, width: '100%' }}>
+        {/* תלמידים פעילים */}
+        {group.activeStudents !== undefined && (
+          <Box sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.5,
+            mb: 1,
+            color: '#6366F1'
+          }}>
+            <PeopleIcon sx={{ fontSize: '17px' }} />
+            <Typography variant="body2" sx={{ fontWeight: '600', fontSize: '0.875rem' }}>
+              תלמידים פעילים: {group.activeStudents} 
+            </Typography>
+          </Box>
+        )}
+        {/* מקומות פנויים */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2, direction: 'ltr' }}>
           <Chip
             icon={group.maxStudents > 0 ? <AvailableIcon /> : <FullIcon />}
             label={`${group.maxStudents} מקומות פנויים`}

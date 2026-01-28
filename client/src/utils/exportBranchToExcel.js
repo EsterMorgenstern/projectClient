@@ -62,7 +62,7 @@ export const exportBranchToExcel = (groupsData, branchName = 'סניף') => {
             student.studentName || '',
             student.phone || '',
             student.city || '',
-            student.healthFound || ''
+            student.healthFund || ''
           ];
           excelData.push(row);
         });

@@ -196,8 +196,7 @@ const GroupDetailsPanel = ({ groupId: propGroupId } = {}) => {
   const progressPercent = group.numOfLessons ? ((group.lessonsCompleted || 0) / group.numOfLessons) * 100 : 0;
 
   return (
-    <Box sx={{ background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)', minHeight: '100vh', py: 4, px: 2, direction: 'rtl' }}>
-      <Container maxWidth="lg">
+      <Container maxWidth="lg"  sx={{ minHeight: '100vh',  px: 2, direction: 'rtl' }}>
         {/* כפתור חזרה - מופיע רק כשמשתמשים ב-route params */}
         {routeGroupId && (
           <Box sx={{ mb: 3 }}>
@@ -559,7 +558,6 @@ const GroupDetailsPanel = ({ groupId: propGroupId } = {}) => {
           </CardContent>
         </Card>
       </Container>
-    </Box>
   );
 };
 
