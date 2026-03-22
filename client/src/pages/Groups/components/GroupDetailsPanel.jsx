@@ -112,7 +112,7 @@ const GroupDetailsPanel = ({ groupId: propGroupId } = {}) => {
         return 'error';
       case 'future':
         return 'info';
-      case 'plus':
+      case 'completion':
         return 'warning';
       default:
         return 'default';
@@ -124,7 +124,7 @@ const GroupDetailsPanel = ({ groupId: propGroupId } = {}) => {
       completed: 'בוצע',
       canceled: 'בוטל',
       future: 'עתידי',
-      plus: 'השלמה'
+      completion: 'השלמה'
     };
     return labels[status] || status;
   };

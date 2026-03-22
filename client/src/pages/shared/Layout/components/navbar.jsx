@@ -242,6 +242,31 @@ const Navbar = () => {
     }
   ];
 
+  const mobileNavigationItems = [
+    ...navigationItems.filter(item => !item.isMore),
+    {
+      title: 'מעקב רישום',
+      path: '/registration-tracking',
+      icon: <Assignment />,
+      color: '#60A5FA',
+      description: 'מעקב אחר תהליכי רישום'
+    },
+    {
+      title: 'ההערות שלי',
+      path: '/my-notes',
+      icon: <StickyNote2 />,
+      color: '#FBBF24',
+      description: 'ניהול ההערות האישיות'
+    },
+    {
+      title: 'אודות המערכת',
+      path: '/about-system',
+      icon: <Info />,
+      color: '#93C5FD',
+      description: 'מידע על המערכת'
+    }
+  ];
+
   // ✅ כל הפונקציות מוגדרות כאן
 
   const handleMoreMenuOpen = (event) => {
@@ -281,6 +306,7 @@ const Navbar = () => {
   };
 
   const handleNavigate = (path) => {
+    if (!path) return;
     navigate(path);
     setMobileOpen(false);
   };
@@ -447,6 +473,8 @@ const Navbar = () => {
     <Box sx={{
       width: 350,
       height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
       background: 'linear-gradient(180deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
       direction: 'rtl',
       position: 'relative',
@@ -475,70 +503,9 @@ const Navbar = () => {
         backdropFilter: 'blur(20px)'
       }
     }}>
-      {/* כותרת התפריט */}
-      <Paper sx={{
-        p: 4,
-        background: 'rgba(255,255,255,0.15)',
-        backdropFilter: 'blur(20px)',
-        m: 0,
-        borderRadius: 0,
-        borderBottom: '1px solid rgba(255,255,255,0.2)',
-        position: 'relative',
-        zIndex: 1
-      }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-
-            <Box>
-              <Box sx={{ minWidth: 10, maxWidth: 30 }}>
-                <Typography variant="h6" sx={{
-                  fontWeight: 'bold',
-                  fontSize: '1.1rem',
-                  color: 'white',
-                  textShadow: '0 2px 10px rgba(0,0,0,0.3)',
-                  maxWidth: 30,
-                  whiteSpace: 'normal'
-                }}>
-                  מערכת ניהול חוגים
-                </Typography>
-                <Typography variant="caption" sx={{
-                  opacity: 0.9,
-                  fontSize: '0.8rem',
-                  color: 'white',
-                  maxWidth: 30,
-                  whiteSpace: 'normal'
-                }}>
-                  ניהול חכם ויעיל
-                </Typography>
-              </Box>
-            </Box>
-            <Avatar sx={{
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 100%)',
-              border: '3px solid rgba(255,255,255,0.4)',
-              backdropFilter: 'blur(10px)',
-              boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
-              width: 60,
-              height: 60
-            }}>
-              <School sx={{ fontSize: 30, color: 'white' }} />
-            </Avatar>
-          </Box>
-          <IconButton
-            onClick={handleDrawerToggle}
-            sx={{
-              color: 'white',
-              background: 'rgba(255,255,255,0.1)',
-              '&:hover': { background: 'rgba(255,255,255,0.2)' }
-            }}
-          >
-            <Close />
-          </IconButton>
-        </Box>
-      </Paper>
-
       {/* רשימת ניווט */}
-      <List sx={{ px: 2, pt: 2, position: 'relative', zIndex: 1 }}>
-        {navigationItems.map((item) => (
+      <List sx={{ px: 2, pt: 11, pb: 3, position: 'relative', zIndex: 1, flex: 1, overflowY: 'auto' }}>
+        {mobileNavigationItems.map((item) => (
           <motion.div
             key={item.title}
             whileHover={{ scale: 1.02, x: 5 }}
@@ -606,10 +573,6 @@ const Navbar = () => {
 
       {/* מידע נוסף בתחתית */}
       <Box sx={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
         p: 3,
         background: 'rgba(0,0,0,0.2)',
         backdropFilter: 'blur(20px)',

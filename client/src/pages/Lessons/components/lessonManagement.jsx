@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Box,
   Typography,
@@ -10,19 +10,13 @@ import {
   Container
 } from '@mui/material';
 import {
-  Cancel,
+  CheckCircle,
   Assessment,
-  CalendarToday,
-  Group
+  CalendarToday
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import LessonCancellationManager from './lessonCancell';
-import AttendanceReports from '../../Attendance/components/attendanceReports';
-
 const LessonManagement = () => {
-  const [cancellationManagerOpen, setCancellationManagerOpen] = useState(false);
-  const [attendanceReportsOpen, setAttendanceReportsOpen] = useState(false);
   const navigate = useNavigate();
 
   return (
@@ -66,24 +60,23 @@ const LessonManagement = () => {
             </Typography>
           </Box>
 
-          <Grid container spacing={4} sx={{ direction: 'rtl' }}>
+          <Grid container spacing={4} sx={{ direction: 'rtl', justifyContent: 'center' }}>
             {/* ביטולי שיעורים */}
             <Grid item xs={12} md={6} lg={4}>
               <Card
                 component={motion.div}
                 whileHover={{ 
                   scale: 1.05,
-                  boxShadow: '0 20px 40px rgba(220, 38, 38, 0.2)'
+                  boxShadow: '0 20px 40px rgba(30, 64, 175, 0.2)'
                 }}
                 transition={{ duration: 0.3 }}
                 sx={{
                   height: '100%',
-                  width:'350px',
                   display: 'flex',
                   flexDirection: 'column',
                   borderRadius: 4,
-                  background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-                  border: '1px solid rgba(220, 38, 38, 0.1)',
+                  background: 'linear-gradient(135deg, #ffffff 0%, #eef2ff 100%)',
+                  border: '1px solid rgba(30, 64, 175, 0.12)',
                   overflow: 'hidden',
                   position: 'relative',
                   '&::before': {
@@ -93,7 +86,7 @@ const LessonManagement = () => {
                     left: 0,
                     right: 0,
                     height: 4,
-                    background: 'linear-gradient(90deg, #DC2626, #EF4444)'
+                    background: 'linear-gradient(90deg, #1E3A8A, #38BDF8)'
                   }
                 }}
               >
@@ -103,33 +96,33 @@ const LessonManagement = () => {
                       width: 80,
                       height: 80,
                       borderRadius: '50%',
-                      background: 'linear-gradient(135deg, #DC2626, #EF4444)',
+                      background: 'linear-gradient(135deg, #1E3A8A, #38BDF8)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       mx: 'auto',
                       mb: 3,
-                      boxShadow: '0 8px 25px rgba(220, 38, 38, 0.3)'
+                      boxShadow: '0 8px 25px rgba(30, 64, 175, 0.25)'
                     }}
                   >
-                    <Cancel sx={{ fontSize: 40, color: 'white' }} />
+                    <CheckCircle sx={{ fontSize: 40, color: 'white' }} />
                   </Box>
                   <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 2, color: '#1F2937' }}>
-                    ביטולי שיעורים
+                    השלמות וביטולים
                   </Typography>
                   <Typography variant="body1" sx={{ color: '#6B7280', lineHeight: 1.6 }}>
-                    נהל ביטולי שיעורים, צפה בסיכומים חודשיים וחשב תשלומים
+                    ניהול שיעורי השלמה וביטולים במקום אחד
                   </Typography>
                 </CardContent>
                 <CardActions sx={{ justifyContent: 'center', pb: 4 }}>
                   <Button
                     variant="contained"
                     size="large"
-                    onClick={() => setCancellationManagerOpen(true)}
+                    onClick={() => navigate('/lesson-status-management')}
                     sx={{
-                      background: 'linear-gradient(135deg, #DC2626, #EF4444)',
+                      background: 'linear-gradient(135deg, #1E3A8A, #38BDF8)',
                       '&:hover': { 
-                        background: 'linear-gradient(135deg, #B91C1C, #DC2626)',
+                        background: 'linear-gradient(135deg, #1E40AF, #0EA5E9)',
                         transform: 'translateY(-2px)'
                       },
                       borderRadius: 3,
@@ -137,11 +130,11 @@ const LessonManagement = () => {
                       py: 1.5,
                       fontWeight: 'bold',
                       fontSize: '1rem',
-                      boxShadow: '0 4px 15px rgba(220, 38, 38, 0.4)',
+                      boxShadow: '0 4px 15px rgba(30, 64, 175, 0.3)',
                       transition: 'all 0.3s ease'
                     }}
                   >
-                    פתח ניהול ביטולים
+                    פתח ניהול השלמות וביטולים
                   </Button>
                 </CardActions>
               </Card>
@@ -204,7 +197,7 @@ const LessonManagement = () => {
                   <Button
                     variant="contained"
                     size="large"
-                    onClick={() => setAttendanceReportsOpen(true)}
+                    onClick={() => navigate('/attendance-reports')}
                     sx={{
                       background: 'linear-gradient(135deg, #059669, #10B981)',
                       '&:hover': { 
@@ -232,7 +225,7 @@ const LessonManagement = () => {
                 component={motion.div}
                 whileHover={{ 
                   scale: 1.05,
-                  boxShadow: '0 20px 40px rgba(59, 130, 246, 0.2)'
+                  boxShadow: '0 20px 40px rgba(234, 88, 12, 0.22)'
                 }}
                 transition={{ duration: 0.3 }}
                 sx={{
@@ -240,8 +233,8 @@ const LessonManagement = () => {
                   display: 'flex',
                   flexDirection: 'column',
                   borderRadius: 4,
-                  background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-                  border: '1px solid rgba(59, 130, 246, 0.1)',
+                  background: 'linear-gradient(135deg, #ffffff 0%, #fff7ed 100%)',
+                  border: '1px solid rgba(234, 88, 12, 0.12)',
                   overflow: 'hidden',
                   position: 'relative',
                   '&::before': {
@@ -251,7 +244,7 @@ const LessonManagement = () => {
                     left: 0,
                     right: 0,
                     height: 4,
-                    background: 'linear-gradient(90deg, #3B82F6, #60A5FA)'
+                    background: 'linear-gradient(90deg, #F97316, #FDBA74)'
                   }
                 }}
               >
@@ -261,13 +254,13 @@ const LessonManagement = () => {
                       width: 80,
                       height: 80,
                       borderRadius: '50%',
-                      background: 'linear-gradient(135deg, #3B82F6, #60A5FA)',
+                      background: 'linear-gradient(135deg, #F97316, #FDBA74)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       mx: 'auto',
                       mb: 3,
-                      boxShadow: '0 8px 25px rgba(59, 130, 246, 0.3)'
+                      boxShadow: '0 8px 25px rgba(234, 88, 12, 0.3)'
                     }}
                   >
                     <CalendarToday sx={{ fontSize: 40, color: 'white' }} />
@@ -285,9 +278,9 @@ const LessonManagement = () => {
                     size="large"
                     onClick={() => navigate('/attendance-calendar')}
                     sx={{
-                      background: 'linear-gradient(135deg, #3B82F6, #60A5FA)',
+                      background: 'linear-gradient(135deg, #F97316, #FDBA74)',
                       '&:hover': { 
-                        background: 'linear-gradient(135deg, #2563EB, #3B82F6)',
+                        background: 'linear-gradient(135deg, #EA580C, #F97316)',
                         transform: 'translateY(-2px)'
                       },
                       borderRadius: 3,
@@ -295,7 +288,7 @@ const LessonManagement = () => {
                       py: 1.5,
                       fontWeight: 'bold',
                       fontSize: '1rem',
-                      boxShadow: '0 4px 15px rgba(59, 130, 246, 0.4)',
+                      boxShadow: '0 4px 15px rgba(234, 88, 12, 0.35)',
                       transition: 'all 0.3s ease'
                     }}
                   >
@@ -306,17 +299,6 @@ const LessonManagement = () => {
             </Grid>
           </Grid>
 
-          {/* רכיב ניהול ביטולי שיעורים */}
-          <LessonCancellationManager
-            open={cancellationManagerOpen}
-            onClose={() => setCancellationManagerOpen(false)}
-          />
-
-          {/* רכיב דוחות נוכחות */}
-          <AttendanceReports
-            open={attendanceReportsOpen}
-            onClose={() => setAttendanceReportsOpen(false)}
-          />
         </Container>
       </Box>
     </motion.div>

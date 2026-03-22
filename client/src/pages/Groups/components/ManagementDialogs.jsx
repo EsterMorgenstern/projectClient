@@ -359,43 +359,57 @@ export const BranchDialog = ({ open, values, onChange, onSubmit, onClose, onRese
 );
 
 export const GroupDialog = ({ open, values, onChange, onSubmit, onClose, onReset, isEdit, instructors = [] }) => {
+  // State למעקב אחר שינויים בסטטוס
+  const [initialIsActive, setInitialIsActive] = React.useState(null);
+  const [statusChanged, setStatusChanged] = React.useState(false);
+
+  // עדכון initial state כאשר הדיאלוג נפתח
+  React.useEffect(() => {
+    if (open && isEdit && values?.isActive !== undefined) {
+      setInitialIsActive(values.isActive);
+      setStatusChanged(false);
+    }
+  }, [open, isEdit]);
+
+  // בדיקה אם הסטטוס השתנה
+  React.useEffect(() => {
+    if (initialIsActive !== null && values?.isActive !== undefined) {
+      setStatusChanged(initialIsActive !== values.isActive);
+    }
+  }, [values?.isActive, initialIsActive]);
+
   const resolvedInstructorId = React.useMemo(() => {
     const current = values?.instructorId;
     console.log('🔍 GroupDialog - Resolving instructor:', { current, instructors });
     
     if (current === undefined || current === null || current === '') return '';
 
-    // Prefer match by id
-    const byId = instructors.find(i => {
+    // נמיר לסטרינג ונבדוק התאמה לפי instructorId או id
+    const currentStr = String(current);
+    const found = instructors.find(i => {
       const idVal = i.instructorId ?? i.id;
-      return String(idVal) === String(current);
+      // נשווה גם כמספר וגם כסטרינג
+      return String(idVal) === currentStr || Number(idVal) === Number(current);
     });
-    if (byId) {
-      console.log('✅ Found instructor by ID:', byId);
-      return byId.instructorId ?? byId.id;
+    
+    if (found) {
+      const foundId = found.instructorId ?? found.id;
+      console.log('✅ Found instructor:', found, 'ID:', foundId);
+      return foundId;
     }
 
-    // Fallback: match by full name string if value holds a name
-    const byName = instructors.find(i => {
-      const fullName = `${i.firstName || ''} ${i.lastName || ''}`.trim();
-      return i.instructorName === current || fullName === String(current).trim();
-    });
-    if (byName) {
-      console.log('✅ Found instructor by name:', byName);
-      return byName.instructorId ?? byName.id;
-    }
-
-    console.log('⚠️ No instructor match found, returning current:', current);
-    return current;
+    // אם לא מצאנו - נחזיר ריק כדי שה-Select לא יהיה עם ערך לא קיים
+    console.log('⚠️ No instructor match found for:', current);
+    return '';
   }, [instructors, values?.instructorId]);
 
   const handleInstructorChange = (rawValue) => {
-    if (rawValue === '') {
-      onChange('instructorId', '');
+    if (rawValue === '' || rawValue === undefined || rawValue === null) {
+      onChange('instructorId', null);
       return;
     }
     const numeric = Number(rawValue);
-    onChange('instructorId', Number.isFinite(numeric) ? numeric : '');
+    onChange('instructorId', Number.isFinite(numeric) ? numeric : null);
   };
 
   return (
@@ -504,7 +518,6 @@ export const GroupDialog = ({ open, values, onChange, onSubmit, onClose, onReset
               onChange={(e) => onChange('dayOfWeek', e.target.value)}
               label="יום בשבוע"
               inputProps={{ dir: 'rtl' }}
-              startAdornment={<DayIcon sx={{ color: '#6366F1', mr: 1 }} />}
             >
               {allowedDays.map((dayOfWeek) => (
                 <MenuItem key={dayOfWeek} value={dayOfWeek}>
@@ -591,7 +604,6 @@ export const GroupDialog = ({ open, values, onChange, onSubmit, onClose, onReset
               onChange={(e) => onChange('sector', e.target.value)}
               label="מגזר"
               inputProps={{ dir: 'rtl' }}
-              startAdornment={<SectorIcon sx={{ color: '#6366F1', mr: 1 }} />}
             >
               {allowedSectors.map((sector) => (
                 <MenuItem key={sector} value={sector}>
@@ -692,45 +704,34 @@ export const GroupDialog = ({ open, values, onChange, onSubmit, onClose, onReset
                 לא פעיל
               </Button>
             </Box>
+            {statusChanged && initialIsActive === false && values.isActive === true && (
+              <Paper
+                elevation={0}
+                sx={{
+                  bgcolor: 'rgba(59, 130, 246, 0.08)',
+                  border: '1px solid rgba(59, 130, 246, 0.2)',
+                  borderRadius: 1.5,
+                  p: 1.5,
+                  mt: 2
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: '#1e40af',
+                    fontWeight: 500,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    fontSize: '0.8rem'
+                  }}
+                >
+                  <InfoIcon sx={{ fontSize: 16 }} />
+                  כאשר הסטטוס הופך מלא פעיל לפעיל נוצרים השיעורים לפי תאריך ההתחלה, היום בשבוע ומס' השיעורים
+                </Typography>
+              </Paper>
+            )}
           </Box>
-        </Grid>
-        <Grid item xs={12}>
-          <FormControl
-            fullWidth
-            margin="dense"
-            variant="outlined"
-            sx={{
-              minWidth: '100%',
-              '& .MuiOutlinedInput-notchedOutline legend': {
-                textAlign: 'right'
-              }
-            }}
-          >
-            <InputLabel id="instructor-select-label" sx={{ right: 24, left: 'auto', transformOrigin: 'top right' }}>
-              מדריך
-            </InputLabel>
-            <Select
-              labelId="instructor-select-label"
-              value={resolvedInstructorId === '' ? '' : String(resolvedInstructorId)}
-              onChange={(e) => handleInstructorChange(e.target.value)}
-              label="מדריך"
-              inputProps={{ dir: 'rtl' }}
-            >
-              {instructors?.map((instructor) => {
-                const optionId = instructor.instructorId ?? instructor.id;
-                const optionName = instructor.firstName && instructor.lastName
-                  ? `${instructor.firstName} ${instructor.lastName}`
-                  : instructor.instructorName || 'מדריך';
-                return (
-                  <MenuItem key={optionId} value={String(optionId)}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      {optionName}
-                    </Box>
-                  </MenuItem>
-                );
-              })}
-            </Select>
-          </FormControl>
         </Grid>
       </Grid>
     </DialogContent>

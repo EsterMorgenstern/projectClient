@@ -27,8 +27,7 @@ const Layout = ({ children }) => {
           {children}
         </motion.main>
         
-        {/* Sidebar - אם אתה רוצה לשמור עליו */}
-        {/* <Sidebar /> */}
+        
       </Box>
     </Box>
   );

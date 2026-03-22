@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import PropTypes from 'prop-types';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -31,11 +31,13 @@ import {
   Work as WorkIcon
 } from '@mui/icons-material';
 import { addUser } from '../../store/user/userAddThunk';
+import { checkUserPermission, allowedUserIds } from '../../utils/permissions';
 
 const UserRegistrationDialog = ({ open, onClose, onRegistrationSuccess }) => {
   const dispatch = useDispatch();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const currentUser = useSelector(state => state.users?.currentUser || state.auth?.currentUser || state.user?.currentUser || null);
 
   // ✅ הוסף את כל ה-state variables החסרים
   const [formData, setFormData] = useState({
@@ -44,7 +46,8 @@ const UserRegistrationDialog = ({ open, onClose, onRegistrationSuccess }) => {
     lastName: '',
     email: '',
     phone: '',
-    role: 'Student'
+    role: 'Student',
+    adminCode: ''
   });
 
   const [errors, setErrors] = useState({});
@@ -67,7 +70,8 @@ const UserRegistrationDialog = ({ open, onClose, onRegistrationSuccess }) => {
       lastName: '',
       email: '',
       phone: '',
-      role: 'Student'
+      role: 'Student',
+      adminCode: ''
     });
     setErrors({});
     setIsSubmitting(false);
@@ -139,12 +143,18 @@ const UserRegistrationDialog = ({ open, onClose, onRegistrationSuccess }) => {
       newErrors.role = 'יש לבחור תפקיד';
     }
 
+    if (!formData.adminCode?.toString().trim()) {
+      newErrors.adminCode = 'יש להזין קוד מנהל';
+    } else if (!allowedUserIds.includes(Number(formData.adminCode))) {
+      newErrors.adminCode = 'קוד מנהל אינו מורשה';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
  
- // ✅ תקן את handleSubmit
+ 
 // ✅ תיקון מושלם - נטפל בכל סוג תגובה מהשרת
 const handleSubmit = async () => {
   // הסר בדיקת הרשאות
@@ -373,6 +383,37 @@ const handleSubmit = async () => {
             <MenuItem value="מנהל מערכת">מנהל מערכת</MenuItem>
           </TextField>
         </Grid>
+
+        <Grid item xs={12}>
+          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            <TextField
+              label="קוד מנהל"
+              placeholder="הכנס קוד מנהל"
+              value={formData.adminCode || ''}
+              onChange={handleInputChange('adminCode')}
+              error={!!errors.adminCode}
+              helperText={errors.adminCode || 'נדרש לאישור הרשמה'}
+              InputProps={{
+                startAdornment: <WorkIcon color={errors.adminCode ? 'error' : 'primary'} sx={{ mr: 1 }} />
+              }}
+              sx={{
+                width: '100%',
+                maxWidth: 360,
+                bgcolor: 'rgba(102, 126, 234, 0.06)',
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  '& fieldset': {
+                    borderColor: 'rgba(102, 126, 234, 0.35)'
+                  },
+                  '&:hover fieldset': {
+                    borderColor: 'rgba(102, 126, 234, 0.6)'
+                  }
+                },
+              }}
+            />
+          </Box>
+        </Grid>
+       
       </Grid>
 
       <Button
@@ -439,7 +480,7 @@ const handleSubmit = async () => {
         }}
       />
       <Typography variant="h6" sx={{ mb: 2 }}>
-        יוצר את החשבון שלך...
+       ... יוצר את החשבון שלך
       </Typography>
       <Typography variant="body2" color="text.secondary">
         אנא המתן בזמן שאנו מעבדים את הפרטים שלך

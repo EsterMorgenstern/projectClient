@@ -7,6 +7,7 @@ import EnrollStudent from '../Enrollment/components/enrollStudent';
 import AboutSystem from './aboutSystem';
 import LessonManagement from '../Lessons/components/lessonManagement';
 import AttendanceCalendar from '../Attendance/attendanceCalendar'
+import AttendanceReports from '../Attendance/components/attendanceReports';
 import HomeLayout from '../shared/Layout/components/homeLayout';
 import MyNotes from '../shared/Layout/components/myNotes';
 import GrowPaymentCallback from '../Payments/GrowPaymentCallback';
@@ -15,6 +16,7 @@ import RegistrationTracking from './RegistrationTracking';
 import HealthFundManagement from '../Payments/HealthFundManagement';
 import GroupsTable from '../Groups/groupsTable';
 import GroupDetailsPage from '../Groups/groupDetailsPage';
+import LessonStatusManagementPage from '../Lessons/LessonStatusManagementPage';
 
 const Routing = () => {
   return (
@@ -27,6 +29,7 @@ const Routing = () => {
         <Route path="/students" element={<Layout><StudentsTable /></Layout>} />
         <Route path="/instructors" element={<Layout><InstructorsTable /></Layout>} />
         <Route path="/attendance-calendar" element={<Layout><AttendanceCalendar /></Layout>} />
+        <Route path="/attendance-reports" element={<Layout><AttendanceReports /></Layout>} />
         <Route path="/enroll-student" element={<Layout><EnrollStudent /></Layout>} />
         <Route path="/classes-management" element={<Layout><GroupsTable /></Layout>} />
         <Route path="/group/:groupId" element={<Layout><GroupDetailsPage /></Layout>} />
@@ -34,6 +37,7 @@ const Routing = () => {
         <Route path="/health-fund-management" element={<Layout><HealthFundManagement /></Layout>} />
         <Route path="/grow-payment-callback" element={<GrowPaymentCallback />} />
         <Route path="/grow-payment-test" element={<Layout><GrowPaymentTest /></Layout>} />
+        <Route path="/lesson-status-management" element={<Layout><LessonStatusManagementPage /></Layout>} />
       </Routes>
     </Router>
   );

@@ -270,6 +270,10 @@ const [studentLessons, setStudentLessons] = useState(0);
   const [editGroupDialogOpen, setEditGroupDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   
+  // State למעקב אחר שינויים בסטטוס קבוצה
+  const [initialGroupStatus, setInitialGroupStatus] = useState(null);
+  const [groupStatusChanged, setGroupStatusChanged] = useState(false);
+  
   const [studentCoursesDialogOpen, setStudentCoursesDialogOpen] = useState(false);
   const [selectedStudentForDialog, setSelectedStudentForDialog] = useState(null);
   const [selectedStudentCoursesForDialog, setSelectedStudentCoursesForDialog] = useState([]);
@@ -2037,6 +2041,20 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
   };
 
   // Render menu
+  // Effect למעקב אחר שינויים בסטטוס קבוצה
+  useEffect(() => {
+    if (editGroupDialogOpen && editingItem?.isActive !== undefined) {
+      setInitialGroupStatus(editingItem.isActive);
+      setGroupStatusChanged(false);
+    }
+  }, [editGroupDialogOpen]);
+
+  useEffect(() => {
+    if (initialGroupStatus !== null && editingItem?.isActive !== undefined) {
+      setGroupStatusChanged(initialGroupStatus !== editingItem.isActive);
+    }
+  }, [editingItem?.isActive, initialGroupStatus]);
+
   // Edit functions
   const handleEditFromMenu = () => {
     if (selectedItemForMenu && menuType) {
@@ -4735,6 +4753,90 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
               value={editingItem?.startDate || ''}
               onChange={(e) => setEditingItem({ ...editingItem, startDate: e.target.value })}
             />
+          </Grid>
+          <Grid item xs={12}>
+            <Box sx={{ p: 2, bgcolor: 'rgba(99, 102, 241, 0.05)', borderRadius: 1.5, border: '1px solid rgba(99, 102, 241, 0.1)' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, color: '#1e3a8a', mb: 2, textAlign: 'right' }}>
+                סטטוס קבוצה
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1.5 }}>
+                <Button
+                  variant={editingItem?.isActive ? "contained" : "outlined"}
+                  onClick={() => setEditingItem({ ...editingItem, isActive: true })}
+                  sx={{ 
+                    flex: 1,
+                    py: 0.75,
+                    fontWeight: 700,
+                    borderRadius: 1.5,
+                    fontSize: '0.85rem',
+                    boxShadow: editingItem?.isActive ? '0 4px 12px rgba(16, 185, 129, 0.4)' : 'none',
+                    transition: 'all 0.3s ease',
+                    color: editingItem?.isActive ? '#ffffff' : '#10b981',
+                    backgroundColor: editingItem?.isActive ? '#10b981' : 'transparent',
+                    borderColor: '#10b981',
+                    borderWidth: '2px',
+                    '&:hover': {
+                      backgroundColor: editingItem?.isActive ? '#059669' : 'rgba(16, 185, 129, 0.1)',
+                      boxShadow: editingItem?.isActive ? '0 6px 16px rgba(16, 185, 129, 0.4)' : 'none'
+                    }
+                  }}
+                >
+                  פעיל
+                </Button>
+                <Button
+                  variant={!editingItem?.isActive ? "contained" : "outlined"}
+                  onClick={() => setEditingItem({ ...editingItem, isActive: false })}
+                  sx={{ 
+                    flex: 1,
+                    py: 0.75,
+                    fontWeight: 700,
+                    borderRadius: 1.5,
+                    fontSize: '0.85rem',
+                    boxShadow: !editingItem?.isActive ? '0 4px 12px rgba(239, 68, 68, 0.4)' : 'none',
+                    transition: 'all 0.3s ease',
+                    color: !editingItem?.isActive ? '#ffffff' : '#ef4444',
+                    backgroundColor: !editingItem?.isActive ? '#ef4444' : 'transparent',
+                    borderColor: '#ef4444',
+                    borderWidth: '2px',
+                    '&:hover': {
+                      backgroundColor: !editingItem?.isActive ? '#dc2626' : 'rgba(239, 68, 68, 0.1)',
+                      boxShadow: !editingItem?.isActive ? '0 6px 16px rgba(239, 68, 68, 0.4)' : 'none'
+                    }
+                  }}
+                >
+                  לא פעיל
+                </Button>
+              </Box>
+              {groupStatusChanged && initialGroupStatus === false && editingItem?.isActive === true && (
+                <Paper
+                  elevation={0}
+                  sx={{
+                    bgcolor: 'rgba(59, 130, 246, 0.08)',
+                    border: '1px solid rgba(59, 130, 246, 0.2)',
+                    borderRadius: 1.5,
+                    p: 1.5,
+                    mt: 2
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: '#1e40af',
+                      fontWeight: 500,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      fontSize: '0.8rem',
+                      textAlign: 'right',
+                      direction: 'rtl'
+                    }}
+                  >
+                    <InfoIcon sx={{ fontSize: 16 }} />
+                    כאשר הסטטוס הופך מלא פעיל לפעיל נוצרים השיעורים לפי תאריך ההתחלה, היום בשבוע ומס' השיעורים
+                  </Typography>
+                </Paper>
+              )}
+            </Box>
           </Grid>
         </Grid>
       </DialogContent>

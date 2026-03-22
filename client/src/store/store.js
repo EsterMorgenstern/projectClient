@@ -9,7 +9,7 @@ import groupReduser from './group/groupSlice';
 import attendanceReduser from './attendance/attendanceSlice';
 import studentNotesReduser from './studentNotes/studentNoteSlice';
 import usersReducer from './user/userSlice';
-import lessonCancellationsReducer from './lessonsCancelation/lessonsCancelationSlice';
+import lessonsReducer from './lessons/lessonsSlice';
 import paymentsReducer from './payments/paymentsSlice';
 
 import healthFundReducer from './healthFund/healthFundSlice';
@@ -26,7 +26,7 @@ const store = configureStore({
     groups:groupReduser,
     attendances:attendanceReduser,
     studentNotes:studentNotesReduser,
-    lessonCancellations: lessonCancellationsReducer,
+    lessons: lessonsReducer,
     payments: paymentsReducer,
 
     healthFunds: healthFundReducer,

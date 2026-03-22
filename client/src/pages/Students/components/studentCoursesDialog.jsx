@@ -5,7 +5,7 @@ import {
   TableRow, TableCell, TableBody, Chip, Avatar, Divider,
   Card, CardContent, Grid, IconButton, Tabs, Tab,
   Accordion, AccordionSummary, AccordionDetails,
-  Menu, MenuItem, DialogContentText
+  Menu, MenuItem, DialogContentText, Snackbar, Alert
 } from '@mui/material';
 
 import {
@@ -79,6 +79,7 @@ const StudentCoursesDialog = ({
   const [deletingCourse, setDeletingCourse] = useState(false);
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
+  const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
 
   // כל ה-useSelector hooks
   const studentNotes = useSelector((state) => state.studentNotes.studentNotes);
@@ -140,6 +141,7 @@ const StudentCoursesDialog = ({
 
   const handleUpdateNote = async (noteData) => {
     try {
+      if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
       await dispatch(updateStudentNote({
         noteId: selectedNote.noteId,
         ...noteData
@@ -154,6 +156,7 @@ const StudentCoursesDialog = ({
 
   const handleDeleteNote = async () => {
     try {
+      if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
       await dispatch(deleteStudentNote(noteToDelete.noteId));
       dispatch(getNotesByStudentId(student.id));
       setDeleteConfirmOpen(false);
@@ -201,6 +204,7 @@ const StudentCoursesDialog = ({
   const handleEditCourseSave = async (updatedFields) => {
     setEditCourseLoading(true);
     try {
+      if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
       const payload = {
         groupStudentId: editingCourse.groupStudentId,
         studentId: editingCourse.studentId,
@@ -238,6 +242,7 @@ const StudentCoursesDialog = ({
 
     setDeletingCourse(true);
     try {
+      if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
       console.log('🗑️ Deleting course with groupStudentId:', courseToDelete.groupStudentId);
 
       const result = await dispatch(deleteGroupStudent(courseToDelete.groupStudentId));
@@ -1457,6 +1462,20 @@ const StudentCoursesDialog = ({
           />
         </Dialog>
       )}
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={4000}
+        onClose={() => setNotification(prev => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setNotification(prev => ({ ...prev, open: false }))}
+          severity={notification.severity}
+          sx={{ borderRadius: 2 }}
+        >
+          {notification.message}
+        </Alert>
+      </Snackbar>
     </AnimatePresence>
   );
 

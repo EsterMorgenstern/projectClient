@@ -906,7 +906,7 @@ const GroupsTable = () => {
               </TableRow>
             ))}
             {flatRows.length === 0 && (
-              <TableRow>
+              <TableRow key="empty-row">
                 <TableCell colSpan={11} align="center" sx={{ py: 4, color: 'text.secondary' }}>
                   אין נתונים להצגה
                 </TableCell>
