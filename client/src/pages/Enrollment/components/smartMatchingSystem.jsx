@@ -63,8 +63,7 @@ const SmartMatchingSystem = ({ studentData, onEnrollSuccess, onClose }) => {
 
     // Permission check before enrollment
     const userId = studentData?.userId || studentData?.id;
-    if (!checkUserPermission(userId, true)) {
-      alert('אין לך הרשאה לבצע רישום תלמיד לקבוצה');
+    if (!checkUserPermission(userId, (message) => alert(message))) {
       return;
     }
 

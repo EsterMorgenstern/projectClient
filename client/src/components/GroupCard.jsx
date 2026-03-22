@@ -27,6 +27,8 @@ const GroupCard = ({
 }) => {
   // רקע קבוע ניטרלי-ורדרד לכל הכרטיסים
   const background = 'linear-gradient(135deg, #ff9af700 0%, #feffff 100%)';
+  const availableGreen = '#0bb585';
+  const availableGreenHover = '#1fc999';
 
   return (
     <Paper
@@ -149,7 +151,7 @@ const GroupCard = ({
         </Typography>
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'flex-start' }}>
-        <SectorIcon fontSize="small" sx={{ color: '#6366F1', ml: 1 }} />
+        <SectorIcon fontSize="small" sx={{ color: '#6366F1', ml: 1 }}/>
         <Typography variant="body2" component="span">
           מגזר: {group.sector || 'כללי'}
         </Typography>
@@ -175,12 +177,19 @@ const GroupCard = ({
           <Chip
             icon={group.maxStudents > 0 ? <AvailableIcon /> : <FullIcon />}
             label={`${group.maxStudents} מקומות פנויים`}
-            color={group.maxStudents > 0 ? "success" : "error"}
             variant="outlined"
             size="small"
             sx={{
+              borderColor: group.maxStudents > 0 ? availableGreen : '#ef4444',
+              color: group.maxStudents > 0 ? availableGreen : '#ef4444',
+              backgroundColor: group.maxStudents > 0 ? 'rgba(4, 120, 87, 0.06)' : 'rgba(239, 68, 68, 0.05)',
+              '& .MuiChip-label': {
+                color: group.maxStudents > 0 ? '#065f46' : '#b91c1c',
+                fontWeight: 500,
+                opacity: 1
+              },
               '& .MuiChip-icon': {
-                bgcolor: group.maxStudents > 0 ? '#22c55e' : '#ef4444',
+                bgcolor: group.maxStudents > 0 ? availableGreen : '#ef4444',
                 color: 'white',
                 borderRadius: '50%',
                 padding: '4px',
@@ -228,14 +237,16 @@ const GroupCard = ({
                 startIcon={<EnrollIcon />}
                 sx={{
                   direction:'ltr',
-                  bgcolor: group.maxStudents > 0 ? '#10B981' : 'grey.400',
+                  bgcolor: group.maxStudents > 0 ? availableGreen : 'grey.400',
+                  border: group.maxStudents > 0 ? `1px solid ${availableGreen}` : '1px solid transparent',
                   borderRadius: '8px',
-                  boxShadow: group.maxStudents > 0 ? '0 4px 10px rgba(16, 185, 129, 0.2)' : 'none',
+                  boxShadow: group.maxStudents > 0 ? '0 4px 10px rgba(4, 120, 87, 0.22)' : 'none',
                   px: 3,
                   py: 1,
                   '&:hover': {
-                    bgcolor: group.maxStudents > 0 ? '#059669' : 'grey.400',
-                    boxShadow: group.maxStudents > 0 ? '0 6px 15px rgba(16, 185, 129, 0.3)' : 'none',
+                    bgcolor: group.maxStudents > 0 ? availableGreenHover : 'grey.400',
+                    borderColor: group.maxStudents > 0 ? availableGreenHover : 'transparent',
+                    boxShadow: group.maxStudents > 0 ? '0 6px 15px rgba(4, 120, 87, 0.32)' : 'none',
                   },
                   transition: 'all 0.3s ease'
                 }}

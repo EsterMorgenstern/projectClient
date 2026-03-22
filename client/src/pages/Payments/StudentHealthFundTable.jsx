@@ -190,6 +190,7 @@ const StudentHealthFundTable = () => {
   };
   const handleSaveNote = async (note) => {
     try {
+      if (!ensurePermission()) return;
       if (note.noteId) {
         await dispatch(updateStudentNote(note)).unwrap();
       } else {
@@ -634,6 +635,13 @@ const StudentHealthFundTable = () => {
     };
   };
 
+  const ensurePermission = () => {
+    return checkUserPermission(
+      currentUser?.id || currentUser?.userId,
+      (message, severity) => setNotification({ open: true, message, severity })
+    );
+  };
+
   // הגדרת פריטי הצ'קליסט
   const checklistItems = [
     {
@@ -790,6 +798,11 @@ const StudentHealthFundTable = () => {
     console.log('🔍 צ\'קליסט גביה:', healthFundChecklist);
     
     setSaving(true);
+
+    if (!ensurePermission()) {
+      setSaving(false);
+      return;
+    }
     
     // בדיקת שדות חובה
     const requiredFields = [];
@@ -892,6 +905,7 @@ const StudentHealthFundTable = () => {
 
   // פונקציה ליצירת הערה אוטומטית כאשר קופה מאוחדת וטיפולים נמוכים
   const createAutomaticInsufficientTreatmentsNote = async (studentId, healthFundName) => {
+    if (!ensurePermission()) return null;
     const userDetails = getUserDetails(currentUser);
     
     if (!userDetails || !userDetails.id) {
@@ -929,15 +943,8 @@ const StudentHealthFundTable = () => {
     console.log('🔍 התחלת יצירת הערות גביה אוטומטיות לתלמיד:', studentId);
     console.log('🔍 צ\'קליסט נוכחי:', healthFundChecklist);
     console.log('🔍 משתמש נוכחי:', currentUser);
-    
-    // בדיקת הרשאות - אבל לא נעצור בגלל זה
-    const hasPermission = checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => {
-      console.log('⚠️ אזהרת הרשאות:', msg);
-    });
-    
-    if (!hasPermission) {
-      console.log('⚠️ אין הרשאות, אבל ממשיכים ליצור הערה');
-    }
+
+    if (!ensurePermission()) return null;
     
     const userDetails = getUserDetails(currentUser);
     console.log('🔍 פרטי משתמש אחרי getUserDetails:', userDetails);
@@ -1076,6 +1083,10 @@ const StudentHealthFundTable = () => {
   const handleEditSave = async () => {
     setEditSaving(true);
     try {
+      if (!ensurePermission()) {
+        setEditSaving(false);
+        return;
+      }
       await dispatch(updateStudentHealthFund(editFormData)).unwrap();
       handleCloseEditDialog();
       dispatch(fetchStudentHealthFunds());
@@ -1099,6 +1110,10 @@ const StudentHealthFundTable = () => {
   const handleDeleteConfirm = async () => {
     setDeleteSaving(true);
     try {
+      if (!ensurePermission()) {
+        setDeleteSaving(false);
+        return;
+      }
       await dispatch(deleteStudentHealthFund(deleteId)).unwrap();
       handleCloseDeleteDialog();
       dispatch(fetchStudentHealthFunds());
@@ -1155,6 +1170,8 @@ const StudentHealthFundTable = () => {
       alert('שגיאה: לא נמצא מזהה תלמיד');
       return;
     }
+
+    if (!ensurePermission()) return;
 
     setReportingInProgress(true);
     try {
@@ -2430,6 +2447,7 @@ const StudentHealthFundTable = () => {
         }}
         onDeleteNote={async (note) => {
           try {
+            if (!ensurePermission()) return;
             if (note.noteId) {
               console.log('מחיקת הערה: שולח לשרת noteId', note.noteId);
               const deleteResult = await dispatch(deleteStudentNote(note.noteId)).unwrap();

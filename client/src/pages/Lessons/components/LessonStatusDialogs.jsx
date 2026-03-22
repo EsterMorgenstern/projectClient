@@ -15,7 +15,7 @@ import {
   Typography
 } from '@mui/material';
 import { format } from 'date-fns';
-import { Info as InfoIcon, Cancel as CancelIcon, Add as AddIcon, CheckCircle as CheckCircleIcon } from '@mui/icons-material';
+import { Info as InfoIcon, Cancel as CancelIcon, Add as AddIcon, CheckCircle as CheckCircleIcon, Delete as DeleteIcon } from '@mui/icons-material';
 
 const LessonStatusDialogs = ({
   cancelDialogOpen,
@@ -45,6 +45,13 @@ const LessonStatusDialogs = ({
   onMarkCompletion,
   onMarkDateChange,
   markCompletionLessonOptions,
+  deleteCompletionOpen,
+  onCloseDeleteCompletion,
+  onConfirmDeleteCompletion,
+  deleteCompletionData,
+  groupMap,
+  formatDate,
+  outlinedButtonSx,
   dangerButtonSx,
   warnButtonSx
 }) => {
@@ -132,6 +139,16 @@ const LessonStatusDialogs = ({
     };
     const branchKey = Object.keys(colors).find(key => branch?.includes(key));
     return branchKey ? colors[branchKey] : '#64748B';
+  };
+
+  const pickLessonField = (lesson, keys, fallback = '') => {
+    for (const key of keys) {
+      const value = lesson?.[key];
+      if (value !== undefined && value !== null && String(value).trim() !== '') {
+        return value;
+      }
+    }
+    return fallback;
   };
 
   const handleCancelReasonChange = useCallback((e) => {
@@ -306,9 +323,13 @@ const LessonStatusDialogs = ({
             >
               {cancelGroupsOptions.map((lesson) => {
                 const lessonId = lesson.lessonId || lesson.id;
-                const groupName = lesson.groupName || lesson.GroupName || '---';
-                const city = lesson.city || 'לא ידוע';
-                const cityColor = getCityColor(city);
+                const groupName = pickLessonField(lesson, ['groupName', 'GroupName'], '---');
+                const locationName = pickLessonField(
+                  lesson,
+                  ['city', 'City', 'branchName', 'BranchName'],
+                  'ללא סניף'
+                );
+                const locationColor = getCityColor(locationName);
                 return (
                   <MenuItem 
                     key={lessonId} 
@@ -317,7 +338,7 @@ const LessonStatusDialogs = ({
                       direction: 'rtl', 
                       textAlign: 'right', 
                       justifyContent: 'right',
-                      borderRight: `4px solid ${cityColor}`,
+                      borderRight: `4px solid ${locationColor}`,
                       mb: 0.5
                     }}
                   >
@@ -326,11 +347,11 @@ const LessonStatusDialogs = ({
                         component="span" 
                         sx={{ 
                           fontWeight: 'bold', 
-                          color: cityColor,
+                          color: locationColor,
                           minWidth: '80px'
                         }}
                       >
-                        {city}
+                        {locationName}
                       </Typography>
                       <Typography component="span" sx={{ color: '#374151' }}>
                         {groupName}
@@ -841,9 +862,13 @@ const LessonStatusDialogs = ({
             >
               {markCompletionLessonOptions.map((lesson) => {
                 const lessonId = lesson.lessonId || lesson.id;
-                const groupName = lesson.groupName || lesson.GroupName || '---';
-                const city = lesson.city || 'לא ידוע';
-                const cityColor = getCityColor(city);
+                const groupName = pickLessonField(lesson, ['groupName', 'GroupName'], '---');
+                const locationName = pickLessonField(
+                  lesson,
+                  ['city', 'City', 'branchName', 'BranchName'],
+                  'ללא סניף'
+                );
+                const locationColor = getCityColor(locationName);
                 return (
                   <MenuItem 
                     key={lessonId} 
@@ -852,7 +877,7 @@ const LessonStatusDialogs = ({
                       direction: 'rtl', 
                       textAlign: 'right', 
                       justifyContent: 'right',
-                      borderRight: `4px solid ${cityColor}`,
+                      borderRight: `4px solid ${locationColor}`,
                       mb: 0.5
                     }}
                   >
@@ -861,11 +886,11 @@ const LessonStatusDialogs = ({
                         component="span" 
                         sx={{ 
                           fontWeight: 'bold', 
-                          color: cityColor,
+                          color: locationColor,
                           minWidth: '80px'
                         }}
                       >
-                        {city}
+                        {locationName}
                       </Typography>
                       <Typography component="span" sx={{ color: '#374151' }}>
                         {groupName}
@@ -903,6 +928,69 @@ const LessonStatusDialogs = ({
             onClick={onMarkCompletion}
           >
             שמור
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={deleteCompletionOpen}
+        onClose={onCloseDeleteCompletion}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 2, direction: 'rtl' } }}
+      >
+        <DialogTitle sx={{ bgcolor: '#dc2626', color: 'white', textAlign: 'center', py: 2, fontWeight: 'bold' }}>
+          מחיקת שיעור השלמה
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3, pb: 2, direction: 'rtl', textAlign: 'center' }}>
+          <Box sx={{ mb: 3, mt: 1.5, display: 'flex', justifyContent: 'center' }}>
+            <Box
+              sx={{
+                width: 70,
+                height: 70,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'rgba(220, 38, 38, 0.12)'
+              }}
+            >
+              <DeleteIcon sx={{ fontSize: 35, color: '#dc2626' }} />
+            </Box>
+          </Box>
+          <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+            האם ברצונך למחוק את ההשלמה הזו?
+          </Typography>
+          {deleteCompletionData && (
+            <Paper
+              elevation={0}
+              sx={{
+                bgcolor: '#fef2f2',
+                border: '1px solid #fecaca',
+                borderRadius: 2,
+                p: 2,
+                mb: 2,
+                textAlign: 'right'
+              }}
+            >
+              <Typography variant="body2" sx={{ fontWeight: 500, color: '#b91c1c' }}>
+                <strong>קבוצה:</strong> {groupMap?.get(deleteCompletionData.groupId) || deleteCompletionData.groupId}
+              </Typography>
+              <Typography variant="body2" sx={{ fontWeight: 500, color: '#b91c1c', mt: 0.5 }}>
+                <strong>תאריך:</strong> {formatDate ? formatDate(deleteCompletionData.lessonDate) : deleteCompletionData.lessonDate}
+              </Typography>
+              <Typography variant="body2" sx={{ fontWeight: 500, color: '#b91c1c', mt: 0.5 }}>
+                <strong>שעה:</strong> {deleteCompletionData.lessonHour || '---'}
+              </Typography>
+            </Paper>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, justifyContent: 'center', gap: 1 }}>
+          <Button variant="outlined" onClick={onCloseDeleteCompletion} sx={outlinedButtonSx}>
+            ביטול
+          </Button>
+          <Button variant="contained" onClick={onConfirmDeleteCompletion} sx={dangerButtonSx}>
+            כן, למחוק
           </Button>
         </DialogActions>
       </Dialog>

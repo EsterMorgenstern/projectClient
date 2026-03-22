@@ -20,6 +20,28 @@ import {
 import * as XLSX from 'xlsx';
 import { fetchUnreportedDates } from '../store/studentHealthFund/fetchUnreportedDates';
 
+const EXCEL_MAX_SHEET_NAME_LENGTH = 31;
+
+const sanitizeExcelSheetName = (name, fallback = 'Sheet1') => {
+  const safeName = String(name ?? '')
+    .replace(/[\[\]\*\?/\\:]/g, '-')
+    .trim();
+
+  if (!safeName) {
+    return fallback;
+  }
+
+  return safeName.slice(0, EXCEL_MAX_SHEET_NAME_LENGTH);
+};
+
+const sanitizeFileNamePart = (value, fallback = 'export') => {
+  const safeValue = String(value ?? '')
+    .replace(/[<>:"/\\|\?\*]/g, '-')
+    .trim();
+
+  return safeValue || fallback;
+};
+
 const ExcelExportDialog = ({ open, onClose, data, healthFundList, dispatch }) => {
   const [selectedHealthFund, setSelectedHealthFund] = useState('');
   const [exporting, setExporting] = useState(false);
@@ -155,10 +177,12 @@ const ExcelExportDialog = ({ open, onClose, data, healthFundList, dispatch }) =>
 
       const workbook = XLSX.utils.book_new();
       const selectedFundName = healthFundOptions.find(f => f.id === selectedHealthFund)?.name || selectedHealthFund;
-      XLSX.utils.book_append_sheet(workbook, worksheet, `${selectedFundName}`);
+      const sheetName = sanitizeExcelSheetName(selectedFundName, 'תלמידים');
+      XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
 
       // שמירת הקובץ
-      const fileName = `תלמידים_${selectedFundName}_${new Date().toLocaleDateString('he-IL').replace(/\//g, '-')}.xlsx`;
+      const safeFundName = sanitizeFileNamePart(selectedFundName, 'קופה');
+      const fileName = `תלמידים_${safeFundName}_${new Date().toLocaleDateString('he-IL').replace(/\//g, '-')}.xlsx`;
       XLSX.writeFile(workbook, fileName);
 
       console.log(`✅ ייצוא הושלם: ${filteredStudents.length} תלמידים נוצאו לקובץ ${fileName}`);

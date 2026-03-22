@@ -1,5 +1,27 @@
 import * as XLSX from 'xlsx';
 
+const EXCEL_MAX_SHEET_NAME_LENGTH = 31;
+
+const sanitizeExcelSheetName = (name, fallback = 'Sheet1') => {
+  const safeName = String(name ?? '')
+    .replace(/[\[\]\*\?/\\:]/g, '-')
+    .trim();
+
+  if (!safeName) {
+    return fallback;
+  }
+
+  return safeName.slice(0, EXCEL_MAX_SHEET_NAME_LENGTH);
+};
+
+const sanitizeFileNamePart = (value, fallback = 'export') => {
+  const safeValue = String(value ?? '')
+    .replace(/[<>:"/\\|\?\*]/g, '-')
+    .trim();
+
+  return safeValue || fallback;
+};
+
 /**
  * יוצא נתוני קבוצות ותלמידים של סניף לקובץ אקסל
  * @param {Array} groupsData - מערך הקבוצות עם התלמידים 
@@ -138,12 +160,13 @@ export const exportBranchToExcel = (groupsData, branchName = 'סניף') => {
     }
 
     // הוספת הגיליון לחוברת
-    const sheetName = `${branchName} - קבוצות ותלמידים`;
+    const sheetName = sanitizeExcelSheetName(`${branchName} - קבוצות ותלמידים`, 'קבוצות_ותלמידים');
     XLSX.utils.book_append_sheet(wb, ws, sheetName);
 
     // יצירת שם קובץ עם תאריך נוכחי
     const currentDate = new Date().toLocaleDateString('he-IL').replace(/\./g, '-');
-    const fileName = `${branchName}_קבוצות_ותלמידים_${currentDate}.xlsx`;
+    const safeBranchName = sanitizeFileNamePart(branchName, 'סניף');
+    const fileName = `${safeBranchName}_קבוצות_ותלמידים_${currentDate}.xlsx`;
 
     // הורדת הקובץ
     XLSX.writeFile(wb, fileName);

@@ -55,6 +55,7 @@ import { fetchStudents } from '../../store/student/studentGetAllThunk';
 import { updateStudentNote } from '../../store/studentNotes/studentNoteUpdateThunk';
 import { getgroupStudentByStudentId } from '../../store/groupStudent/groupStudentGetByStudentIdThunk';
 import StudentCoursesDialog from '../Students/components/studentCoursesDialog';
+import { checkUserPermission } from '../../utils/permissions';
 
 const RegistrationTracking = () => {
   const dispatch = useDispatch();

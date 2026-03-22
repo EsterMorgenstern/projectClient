@@ -21,10 +21,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { createGrowPayment } from '../../store/payments/createGrowPayment';
 import { useGrowSDK, openGrowWallet } from '../../utils/growSDK';
 import { usePaymentCallback, pollPaymentStatus } from '../../utils/paymentCallback';
+import { checkUserPermission } from '../../utils/permissions';
 
 const GrowPaymentDialog = ({ open, onClose, student, amount: initialAmount, description: initialDescription }) => {
     const dispatch = useDispatch();
     const { loading, error } = useSelector(state => state.payments);
+    const currentUser = useSelector(state => state.users?.currentUser || state.auth?.currentUser || state.user?.currentUser || null);
     
     // טעינת GROW SDK
     useGrowSDK();
@@ -195,6 +197,10 @@ const GrowPaymentDialog = ({ open, onClose, student, amount: initialAmount, desc
 
         if (!formData.phone.trim()) {
             alert('יש להזין מספר טלפון');
+            return;
+        }
+
+        if (!checkUserPermission(currentUser?.id || currentUser?.userId, (message, severity) => setSnackbar({ open: true, message, severity: severity || 'error' }))) {
             return;
         }
 

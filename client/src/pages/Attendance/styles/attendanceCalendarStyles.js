@@ -9,6 +9,7 @@ export const styles = {
     borderRadius: theme.shape.borderRadius * 2,
   }),
   pageHeader: (theme) => ({
+    marginTop: theme.spacing(1.5),
     marginBottom: theme.spacing(4),
     textAlign: 'center',
   }),

@@ -1,5 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { saveAttendance } from './saveAttendance';
+import { batchUpdateAttendances } from './batchUpdateAttendances';
 import { fetchAttendanceByDate } from './fetchAttendanceByDate';
 import { fetchAttendanceRange } from './fetchAttendanceRange';
 import { fetchAttendanceHistory } from './fetchAttendanceHistory';
@@ -59,21 +59,16 @@ const attendanceSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
-            // Save attendance
-            .addCase(saveAttendance.pending, (state) => {
+            // Batch update attendances
+            .addCase(batchUpdateAttendances.pending, (state) => {
                 state.loading = true;
                 state.error = null;
             })
-            .addCase(saveAttendance.fulfilled, (state, action) => {
+            .addCase(batchUpdateAttendances.fulfilled, (state) => {
                 state.loading = false;
                 state.lastSaved = new Date().toISOString();
-                
-                // עדכן את הסטטוס שנוכחות נשמרה
-                const { groupId, date } = action.meta.arg;
-                const key = `${groupId}-${date}`;
-                state.attendanceMarkedStatus[key] = true;
             })
-            .addCase(saveAttendance.rejected, (state, action) => {
+            .addCase(batchUpdateAttendances.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
             })

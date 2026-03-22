@@ -12,7 +12,7 @@ import {
   useMediaQuery, useTheme, CircularProgress
 } from '@mui/material';
 import {
-  CalendarMonth, Today, NavigateBefore, NavigateNext,
+  Today, NavigateBefore, NavigateNext,
   Event, School, LocationOn, Group, Person, CheckCircle,
   Cancel, Search, FilterList, Save, Comment, Check,
   ExpandMore, ExpandLess, Close, Info, AccessTime
@@ -20,7 +20,7 @@ import {
 
 
 // Import date utilities
-import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, isSameDay, startOfWeek, endOfWeek, eachDayOfInterval, startOfMonth, endOfMonth } from 'date-fns';
+import { format, addMonths, subMonths, eachDayOfInterval, startOfMonth, endOfMonth } from 'date-fns';
 import { he } from 'date-fns/locale';
 
 // Import Hebrew calendar utilities
@@ -31,40 +31,45 @@ import { fetchCourses } from '../../store/course/CoursesGetAllThunk';
 import { fetchBranches } from '../../store/branch/branchGetAllThunk';
 import { fetchGroups } from '../../store/group/groupGellAllThunk';
 import { clearGroupsByDay } from '../../store/group/groupSlice';
-import { getGroupsByDay } from '../../store/group/groupGetByDayThunk';
 
 // Import custom components
 import MonthlyCalendar from './components/monthlyCalendar'
-import WeeklyCalendar from './components/weeklyCalendar';
-import DailyCalendar from './components/dailyCalendar';
 import AttendanceDialog from './components/attendanceDialog';
 import CourseSelectionDialog from './components/courseSelectionDialog';
+import AttendanceLessonsListView from './components/attendanceLessonsListView';
 
 // Import styles
 import { styles } from './styles/attendanceCalendarStyles';
 import { getStudentsByGroupId } from '../../store/student/studentGetByGroup';
 import { fetchAttendanceByDate } from '../../store/attendance/fetchAttendanceByDate';
-import { saveAttendance } from '../../store/attendance/saveAttendance';
-import { updateLocalAttendance } from '../../store/attendance/attendanceSlice';
-import { fetchAttendanceRange } from '../../store/attendance/fetchAttendanceRange';
-import { isMarkedForDay } from '../../store/attendance/attendanceGetIsMarkedForDay';
+import { batchUpdateAttendances } from '../../store/attendance/batchUpdateAttendances';
+import { getLessonsByDate } from '../../store/lessons/getLessonsByDate';
+import { getLessonsByDateRange } from '../../store/lessons/getLessonsByDateRange';
+
+const EMPTY_ARRAY = [];
+const EMPTY_OBJECT = {};
+
+const getAttendanceStudentId = (record) => record?.studentId ?? record?.StudentId ?? null;
+const getAttendancePresence = (record) => record?.wasPresent ?? record?.WasPresent ?? true;
+const getAttendanceRecordId = (record) => record?.attendanceId ?? record?.AttendanceId ?? 0;
 
 const AttendanceCalendar = () => {
   const dispatch = useDispatch();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
 
   // Redux state
-  const courses = useSelector(state => state.courses.courses || []);
-  const branches = useSelector(state => state.branches.branches || []);
-  const groups = useSelector(state => state.groups.groups || []);
-  const groupsByDay = useSelector(state => state.groups.groupsByDay || []);
-  const groupsByDayLoading = useSelector(state => state.groups.groupsByDayLoading || false);
-  const students = useSelector(state => {
-    return state.students?.studentsByGroup || [];
-  });
-  const attendanceRecords = useSelector(state => state.attendances.records || []);
+  const courses = useSelector(state => state.courses.courses ?? EMPTY_ARRAY);
+  const branches = useSelector(state => state.branches.branches ?? EMPTY_ARRAY);
+  const groups = useSelector(state => state.groups.groups ?? EMPTY_ARRAY);
+  const lessonsByDate = useSelector(state => state.lessons.lessonsByDate ?? EMPTY_OBJECT);
+  const lessonsLoading = useSelector(state => state.lessons.loading || false);
+  const attendanceMarkedStatus = useSelector(state => state.attendances.attendanceMarkedStatus ?? EMPTY_OBJECT);
+  const students = useSelector(state => state.students?.studentsByGroup ?? EMPTY_ARRAY);
+  const attendanceRecords = useSelector(state => state.attendances.records ?? EMPTY_OBJECT);
+  const currentUser = useSelector(state => (
+    state.users?.currentUser || state.auth?.currentUser || state.user?.currentUser || null
+  ));
   const loading = useSelector(state =>
     state.courses.loading ||
     state.branches.loading ||
@@ -72,22 +77,124 @@ const AttendanceCalendar = () => {
     state.students.loading ||
     state.attendances.loading
   );
- const isMarkedForDayStatus = useSelector(state => state.attendances.isMarkedForDay || {});
+
+  const mapLessonStatus = (lesson) => lesson?.lessonStatus || lesson?.status || lesson?.Status || 'future';
+  const normalizeLessonField = (lesson, keys, fallback = null) => {
+    for (const key of keys) {
+      const value = lesson?.[key];
+      if (value !== undefined && value !== null && value !== '') {
+        return value;
+      }
+    }
+    return fallback;
+  };
   // Local state
-  const [viewMode, setViewMode] = useState('month');
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [displayMode, setDisplayMode] = useState('calendar');
   const [selectedDate, setSelectedDate] = useState(null);
   const [courseSelectionOpen, setCourseSelectionOpen] = useState(false);
   const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedBranch, setSelectedBranch] = useState(null);
   const [selectedGroup, setSelectedGroup] = useState(null);
+  const [selectedLessonId, setSelectedLessonId] = useState(null);
   const [attendanceData, setAttendanceData] = useState({});
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filter, setFilter] = useState('all');
   const [studentsLoaded, setStudentsLoaded] = useState(false);
   const [hebrewHolidays, setHebrewHolidays] = useState(new Map());
+
+  const groupsForSelectedDate = React.useMemo(() => {
+    if (!selectedDate) return [];
+
+    const dateKey = format(selectedDate, 'yyyy-MM-dd');
+    const lessonsForDate = lessonsByDate[dateKey] || [];
+
+    return lessonsForDate.map((lesson) => {
+      const lessonGroupId = normalizeLessonField(lesson, ['groupId', 'GroupId']);
+      const lessonCourseId = normalizeLessonField(lesson, ['courseId', 'CourseId']);
+      const lessonBranchId = normalizeLessonField(lesson, ['branchId', 'BranchId']);
+      const lessonGroupName = normalizeLessonField(lesson, ['groupName', 'GroupName'], 'קבוצה לא ידועה');
+
+      const groupFromStore = groups.find((g) => g.groupId === lessonGroupId)
+        || groups.find((g) => g.groupName === lessonGroupName);
+      const course = courses.find((c) => c.courseId === (groupFromStore?.courseId || lessonCourseId));
+      const branch = branches.find((b) => b.branchId === (groupFromStore?.branchId || lessonBranchId));
+
+      const resolvedGroupId = groupFromStore?.groupId || lessonGroupId;
+      if (!resolvedGroupId) return null;
+
+      return {
+        ...groupFromStore,
+        groupId: resolvedGroupId,
+        courseId: groupFromStore?.courseId || lessonCourseId,
+        branchId: groupFromStore?.branchId || lessonBranchId,
+        groupName: groupFromStore?.groupName || lessonGroupName,
+        lessonId: normalizeLessonField(lesson, ['lessonId', 'LessonId', 'id', 'Id']),
+        lessonStatus: mapLessonStatus(lesson),
+        lessonDate: normalizeLessonField(lesson, ['lessonDate', 'LessonDate', 'date', 'Date'], dateKey),
+        hour: normalizeLessonField(lesson, ['lessonHour', 'LessonHour', 'hour', 'Hour'], groupFromStore?.hour),
+        courseName: normalizeLessonField(lesson, ['courseName', 'CourseName'], course?.couresName || course?.courseName || groupFromStore?.courseName),
+        branchName: normalizeLessonField(lesson, ['branchName', 'BranchName', 'city', 'City'], branch?.name || branch?.city || groupFromStore?.branchName),
+        branchAddress: normalizeLessonField(lesson, ['branchAddress', 'BranchAddress'], branch?.address || branch?.name || branch?.city)
+      };
+    }).filter(Boolean);
+  }, [selectedDate, lessonsByDate, groups, courses, branches]);
+
+  const lessonRowsForList = React.useMemo(() => {
+    const rows = [];
+
+    Object.entries(lessonsByDate).forEach(([dateKey, lessonsForDate]) => {
+      (lessonsForDate || []).forEach((lesson) => {
+        const lessonGroupId = normalizeLessonField(lesson, ['groupId', 'GroupId']);
+        const lessonCourseId = normalizeLessonField(lesson, ['courseId', 'CourseId']);
+        const lessonBranchId = normalizeLessonField(lesson, ['branchId', 'BranchId']);
+        const lessonGroupName = normalizeLessonField(lesson, ['groupName', 'GroupName'], 'קבוצה לא ידועה');
+
+        const groupFromStore = groups.find((g) => g.groupId === lessonGroupId)
+          || groups.find((g) => g.groupName === lessonGroupName);
+        const course = courses.find((c) => c.courseId === (groupFromStore?.courseId || lessonCourseId));
+        const branch = branches.find((b) => b.branchId === (groupFromStore?.branchId || lessonBranchId));
+
+        const resolvedGroupId = groupFromStore?.groupId || lessonGroupId;
+        if (!resolvedGroupId) return;
+
+        const lessonStatus = mapLessonStatus(lesson);
+        const lessonDate = normalizeLessonField(lesson, ['lessonDate', 'LessonDate', 'date', 'Date'], dateKey);
+        const attendanceKey = `${resolvedGroupId}-${lessonDate}`;
+
+        rows.push({
+          groupId: resolvedGroupId,
+          groupName: groupFromStore?.groupName || lessonGroupName,
+          courseId: groupFromStore?.courseId || lessonCourseId,
+          courseName: normalizeLessonField(lesson, ['courseName', 'CourseName'], course?.couresName || course?.courseName || groupFromStore?.courseName),
+          branchId: groupFromStore?.branchId || lessonBranchId,
+          city: normalizeLessonField(lesson, ['city', 'City'], branch?.city || branch?.name || groupFromStore?.branchName),
+          branchName: normalizeLessonField(lesson, ['branchName', 'BranchName', 'city', 'City'], branch?.name || branch?.city || groupFromStore?.branchName),
+          hour: normalizeLessonField(lesson, ['lessonHour', 'LessonHour', 'hour', 'Hour'], groupFromStore?.hour),
+          lessonId: normalizeLessonField(lesson, ['lessonId', 'LessonId', 'id', 'Id']),
+          lessonDate,
+          lessonStatus,
+          isReported: lessonStatus === 'done' || attendanceMarkedStatus[attendanceKey] === true,
+          rawGroup: {
+            ...groupFromStore,
+            groupId: resolvedGroupId,
+            courseId: groupFromStore?.courseId || lessonCourseId,
+            branchId: groupFromStore?.branchId || lessonBranchId,
+            groupName: groupFromStore?.groupName || lessonGroupName,
+            courseName: normalizeLessonField(lesson, ['courseName', 'CourseName'], course?.couresName || course?.courseName || groupFromStore?.courseName),
+            branchName: normalizeLessonField(lesson, ['branchName', 'BranchName', 'city', 'City'], branch?.name || branch?.city || groupFromStore?.branchName),
+            hour: normalizeLessonField(lesson, ['lessonHour', 'LessonHour', 'hour', 'Hour'], groupFromStore?.hour)
+          }
+        });
+      });
+    });
+
+    return rows.sort((a, b) => {
+      const dateCompare = a.lessonDate.localeCompare(b.lessonDate);
+      if (dateCompare !== 0) return dateCompare;
+      return String(a.hour || '').localeCompare(String(b.hour || ''));
+    });
+  }, [lessonsByDate, groups, courses, branches, attendanceMarkedStatus]);
 
   // פונקציה לטעינת חגים עבריים
   const loadHebrewHolidays = (year) => {
@@ -100,9 +207,7 @@ const AttendanceCalendar = () => {
         sedrot: false,
         il: true,
         noModern: false,
-        noRoshChodesh: false,
-        noMinorFasts: false,
-        noModernIsrael: false
+        noRoshChodesh: false
       });
 
       const holidayMap = new Map();
@@ -145,9 +250,6 @@ const AttendanceCalendar = () => {
           });
         }
       });
-const alephElul = new HDate(1, 'Elul', year).greg();
-const alephElulKey = format(alephElul, 'yyyy-MM-dd');
-holidayMap.delete(alephElulKey);
       // מחק א' אלול מהמפה כדי שלא יוצג כחג
       try {
         const alephElul = new HDate(1, 'Elul', year).greg();
@@ -509,33 +611,16 @@ holidayMap.delete(alephElulKey);
 
   // פונקציה לקבלת מידע על חג
   const getHebrewHolidayInfo = (date) => {
-    // דיאגנוסטיקה: הדפס את כל האירועים סביב א' אלול
+    // א' אלול הוא יום לימודים רגיל ולכן לא יוצג כחג.
     try {
-      const currentYear = date.getFullYear();
-      const alephElul = new HDate(1, 'Elul', currentYear).greg();
-      const startDiag = addDays(alephElul, -3);
-      const endDiag = addDays(alephElul, 3);
-      let diagMsg = "אירועים סביב א' אלול:\n";
-      for (let d = new Date(startDiag); d <= endDiag; d = addDays(d, 1)) {
-        const key = format(d, 'yyyy-MM-dd');
-        const event = hebrewHolidays.get(key);
-        diagMsg += `${key}: ${event ? event.name + ' (' + event.nameEn + ')' : '---'}\n`;
-      }
-      // הדפס לדפדפן
-      console.log("-------------------------"+diagMsg);
-    } catch (e) {
-      console.warn('Diagnostic failed:', e);
-    }
-    // ראשית, בדוק אם זה א' אלול - אם כן, אל תחזיר מידע על חג
-    try {
-      const currentYear = date.getFullYear();
-      const alephElul = new HDate(1, 'Elul', currentYear).greg();
-      if (isSameDay(date, alephElul)) {
-        return null; // א' אלול - לא מציג כחג, זה יום פעיל רגיל
+      const hdate = new HDate(date);
+      if (hdate.getMonthName() === 'Elul' && hdate.getDate() === 1) {
+        return null;
       }
     } catch (hebrewDateError) {
-      // אם יש שגיאה בחישוב התאריך העברי, המשך לבדיקה רגילה
+      // אם החישוב העברי נכשל, נמשיך לבדיקה הרגילה מהמפה.
     }
+
     const dateKey = format(date, 'yyyy-MM-dd');
     return hebrewHolidays.get(dateKey) || null;
   };
@@ -557,35 +642,6 @@ holidayMap.delete(alephElulKey);
     const days = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
     return days[dateObj.getDay()];
   };
-useEffect(() => {
-  const loadMonthlyAttendanceStatus = async () => {
-    if (viewMode === 'month') {
-      const startDate = startOfMonth(currentDate);
-      const endDate = endOfMonth(currentDate);
-      const daysInMonth = eachDayOfInterval({ start: startDate, end: endDate });
-
-      // טען סטטוס נוכחות לכל יום בחודש
-      const loadPromises = daysInMonth.map(async (date) => {
-        const dateString = format(date, 'yyyy-MM-dd');
-        
-        // בדוק אם כבר יש נתונים עבור התאריך הזה
-        if (isMarkedForDayStatus[dateString] === undefined) {
-          try {
-            await dispatch(isMarkedForDay({ date: dateString }));
-          } catch (error) {
-            console.warn(`Failed to check attendance status for ${dateString}:`, error);
-          }
-        }
-      });
-
-      // הרץ את כל הבדיקות במקביל
-      await Promise.allSettled(loadPromises);
-    }
-  };
-
-  loadMonthlyAttendanceStatus();
-}, [currentDate, viewMode, dispatch, isMarkedForDayStatus]);
-
   useEffect(() => {
     const initializeData = async () => {
       try {
@@ -628,15 +684,14 @@ useEffect(() => {
 
   useEffect(() => {
     if (students.length > 0 && selectedGroup && selectedDate && studentsLoaded) {
-      console.log('Students loaded, initializing attendance data:', students);
-
       const dateString = format(selectedDate, 'yyyy-MM-dd');
       const existingAttendance = attendanceRecords[dateString] || [];
 
       const initialAttendance = {};
       students.forEach(student => {
-        const existingRecord = existingAttendance.find(r => r.studentId === student.studentId);
-        initialAttendance[student.studentId] = existingRecord ? existingRecord.wasPresent : true;
+        const currentStudentId = student.studentId || student.id;
+        const existingRecord = existingAttendance.find(r => getAttendanceStudentId(r) === currentStudentId);
+        initialAttendance[currentStudentId] = existingRecord ? getAttendancePresence(existingRecord) : true;
       });
 
       setAttendanceData(initialAttendance);
@@ -644,29 +699,14 @@ useEffect(() => {
     }
   }, [students, selectedGroup, selectedDate, studentsLoaded, attendanceRecords]);
 
-  // Handle view mode change
-  const handleViewModeChange = (event, newMode) => {
-    if (newMode !== null) {
-      setViewMode(newMode);
-    }
-  };
-
   // Handle date navigation
   const handleDateChange = (direction) => {
-    if (viewMode === 'month') {
-      setCurrentDate(direction === 'next' ? addMonths(currentDate, 1) : subMonths(currentDate, 1));
-    } else if (viewMode === 'week') {
-      setCurrentDate(direction === 'next' ? addWeeks(currentDate, 1) : subWeeks(currentDate, 1));
-    } else if (viewMode === 'day') {
-      setCurrentDate(direction === 'next' ? addDays(currentDate, 1) : subDays(currentDate, 1));
-    }
+    setCurrentDate(direction === 'next' ? addMonths(currentDate, 1) : subMonths(currentDate, 1));
   };
 
 
   // Handle date selection 
   const handleDateSelect = async (date) => {
-    console.log('handleDateSelect called with:', date, typeof date);
-
     if (!date || (date instanceof Date && isNaN(date.getTime()))) {
       console.error('Invalid date selected:', date);
       setNotification({
@@ -693,45 +733,27 @@ useEffect(() => {
 
     setSelectedDate(date);
 
-    // טען קבוצות ליום זה
-    const dayName = getDayOfWeekHebrew(date);
-    console.log('Loading groups for day:', dayName);
+    // טען שיעורים לפי תאריך בפועל
+    const dateKey = format(date, 'yyyy-MM-dd');
 
     try {
-      await dispatch(getGroupsByDay(dayName)).unwrap();
+      await dispatch(getLessonsByDate({ date: dateKey })).unwrap();
       setCourseSelectionOpen(true);
     } catch (error) {
-      console.error('Failed to load groups for day:', error);
+      console.error('Failed to load lessons by date:', error);
       setNotification({
         open: true,
-        message: 'שגיאה בטעינת חוגים ליום זה',
+        message: 'שגיאה בטעינת שיעורים לתאריך זה',
         severity: 'error'
       });
     }
   };
 
-  // הוסף פונקציה לקבלת יום בשבוע בעברית
-  const getDayOfWeekHebrew = (date) => {
-    if (!date) {
-      console.warn('getDayOfWeekHebrew received null/undefined date');
-      return 'לא צוין';
-    }
-
-    const dateObj = date instanceof Date ? date : new Date(date);
-
-    if (isNaN(dateObj.getTime())) {
-      console.warn('getDayOfWeekHebrew received invalid date:', date);
-      return 'תאריך לא תקין';
-    }
-
-    const days = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
-    return days[dateObj.getDay()];
-  };
   //  handleGroupSelect
-const handleGroupSelect = async (group) => {
-  console.log('🔍 handleGroupSelect called with group:', group);
-  
-  if (!selectedDate) {
+const handleGroupSelect = async (group, dateOverride = null) => {
+  const effectiveDate = dateOverride || selectedDate;
+
+  if (!effectiveDate) {
     setNotification({
       open: true,
       message: 'שגיאה: לא נבחר תאריך',
@@ -753,9 +775,6 @@ const handleGroupSelect = async (group) => {
     name: group.branchName
   };
   
-  console.log('🔍 Found course:', course);
-  console.log('🔍 Found branch:', branch);
-  
   if (!course.courseName || !branch.name) {
     console.error('❌ Course or branch not found');
     setNotification({
@@ -768,24 +787,17 @@ const handleGroupSelect = async (group) => {
 
   // עדכן את ה-state
   setSelectedGroup(group);
+  setSelectedLessonId(group.lessonId || 0);
   setSelectedCourse(course);
   setSelectedBranch(branch);
 
-   console.log('🔄 Setting state with:', {
-    course: course.courseName,
-    branch: branch.branchName,
-    group: group.groupName
-  });
-
   try {
     // טען תלמידים
-    console.log('📚 Loading students for group:', group.groupId);
     await dispatch(getStudentsByGroupId(group.groupId)).unwrap();
     setStudentsLoaded(true); // חשוב!
-    console.log('✅ Students loaded successfully');
     
     // טען נוכחות קיימת
-    const dateString = format(selectedDate, 'yyyy-MM-dd');
+    const dateString = format(effectiveDate, 'yyyy-MM-dd');
     try {
       await dispatch(fetchAttendanceByDate({
         groupId: group.groupId,
@@ -808,60 +820,25 @@ const handleGroupSelect = async (group) => {
     });
   }
 };
-  
-  const renderDialogs = () => {
-    const groupsByDay = useSelector(state => state.groups.groupsByDay || []);
-    const groupsByDayLoading = useSelector(state => state.groups.groupsByDayLoading || false);
 
-    return (
-      <>
-        {/* Course Selection Dialog */}
-        <CourseSelectionDialog
-          open={courseSelectionOpen}
-          onClose={() => {
-            setCourseSelectionOpen(false);
-            dispatch(clearGroupsByDay());
-            setSelectedDate(null);
-          }}
-          selectedDate={selectedDate}
-          groupsByDay={groupsByDay || []}
-          groupsByDayLoading={groupsByDayLoading || false}
-          onGroupSelect={handleGroupSelect}
-        />
+const handleListLessonSelect = async (lessonRow) => {
+  if (!lessonRow?.lessonDate || !lessonRow?.rawGroup) return;
 
-        {/* Attendance Dialog */}
-      <AttendanceDialog
-  open={attendanceDialogOpen}
-  onClose={() => {
-    console.log('🔄 Closing attendance dialog');
-    setAttendanceDialogOpen(false);
-    resetSelections();
-  }}
-  selectedDate={selectedDate}
-  selectedCourse={selectedCourse}
-  selectedBranch={selectedBranch}
-  selectedGroup={selectedGroup}
-  students={students}
-  attendanceData={attendanceData}
-  onAttendanceChange={handleAttendanceChange}
-  onSave={handleSaveAttendance}
-  courseName={selectedCourse?.courseName || selectedCourse?.couresName || selectedCourse?.name}
-  branchName={selectedBranch?.branchName || selectedBranch?.name}
-  groupName={selectedGroup?.groupName || selectedGroup?.name}
-/>
-      </>
-    );
-  };
+  const selectedLessonDate = new Date(lessonRow.lessonDate);
+  if (Number.isNaN(selectedLessonDate.getTime())) return;
+
+  setSelectedDate(selectedLessonDate);
+  await handleGroupSelect(lessonRow.rawGroup, selectedLessonDate);
+};
 
   const handleAttendanceChange = (studentId, wasPresent) => {
-  console.log('📝 Attendance changed:', { studentId, wasPresent });
   setAttendanceData(prev => ({
     ...prev,
     [studentId]: wasPresent
   }));
 };
-const handleSaveAttendance = async (note = '') => {
-  if (!selectedGroup || !selectedDate || !students || students.length === 0) {
+const handleSaveAttendance = async () => {
+  if (!selectedGroup || !selectedDate || !students || students.length === 0 || !selectedLessonId) {
     setNotification({
       open: true,
       message: 'חסרים נתונים לשמירת הנוכחות',
@@ -871,23 +848,32 @@ const handleSaveAttendance = async (note = '') => {
   }
 
   try {
-    const attendanceToSave = {
-      groupId: selectedGroup.groupId,
-      date: format(selectedDate, 'yyyy-MM-dd'),
-      note: note || '',
-      attendanceRecords: Object.keys(attendanceData).map(studentId => {
-        const student = students.find(s => s.studentId === parseInt(studentId));
-        return {
-          studentId: parseInt(studentId),
-          wasPresent: attendanceData[studentId],
-          studentName: student?.studentName || '',
-          note: ''
-        };
-      })
-    };
+    const currentUserId = currentUser?.id || currentUser?.userId || currentUser?.IdentityCard || currentUser?.identityCard || 'Unknown';
+    const now = new Date();
+    const updateDatetime = format(now, 'yyyy-MM-dd HH:mm:ss');
+    const reportDate = format(selectedDate, 'yyyy-MM-dd');
+    const existingAttendance = attendanceRecords[reportDate] || [];
 
-    console.log('💾 Saving attendance:', attendanceToSave);
-    await dispatch(saveAttendance(attendanceToSave)).unwrap();
+    const attendanceRecordsPayload = Object.keys(attendanceData).map(studentId => {
+      const parsedStudentId = parseInt(studentId, 10);
+      const existingRecord = existingAttendance.find(record => getAttendanceStudentId(record) === parsedStudentId);
+
+      return {
+        attendanceId: getAttendanceRecordId(existingRecord),
+        studentId: parsedStudentId,
+        lessonId: selectedLessonId,
+        dateReport: reportDate,
+        statusReport: '',
+        updateDate: updateDatetime,
+        updateBy: String(currentUserId),
+        healthFundReport: '',
+        wasPresent: attendanceData[studentId]
+      };
+    });
+
+    console.log('📤 Sending attendanceRecords to server:', attendanceRecordsPayload);
+
+    await dispatch(batchUpdateAttendances(attendanceRecordsPayload)).unwrap();
 
     setAttendanceDialogOpen(false);
     setNotification({
@@ -914,6 +900,7 @@ const handleSaveAttendance = async (note = '') => {
     setSelectedCourse(null);
     setSelectedBranch(null);
     setSelectedGroup(null);
+    setSelectedLessonId(null);
     setAttendanceData({});
     setSelectedDate(null);
     setStudentsLoaded(false);
@@ -921,17 +908,8 @@ const handleSaveAttendance = async (note = '') => {
   };
 
   useEffect(() => {
-  console.log('------------------📊 State updated:', {
-    selectedCourse: selectedCourse?.courseId,
-    selectedBranch: selectedBranch?.branchId,
-    selectedGroup: selectedGroup?.groupName,
-    attendanceDialogOpen
-  });
-}, [selectedCourse, selectedBranch, selectedGroup, attendanceDialogOpen]);
-
-  useEffect(() => {
     const loadMonthlyAttendance = async () => {
-      if (groups.length > 0 && viewMode === 'month') {
+      if (groups.length > 0) {
         const startDate = format(startOfMonth(currentDate), 'yyyy-MM-dd');
         const endDate = format(endOfMonth(currentDate), 'yyyy-MM-dd');
 
@@ -952,22 +930,47 @@ const handleSaveAttendance = async (note = '') => {
     };
 
     loadMonthlyAttendance();
-  }, [currentDate, viewMode, groups, dispatch]);
+  }, [currentDate, groups, dispatch]);
+
+  useEffect(() => {
+    const loadMonthLessons = async () => {
+      const start = startOfMonth(currentDate);
+      const end = endOfMonth(currentDate);
+
+      const startDate = format(start, 'yyyy-MM-dd');
+      const endDate = format(end, 'yyyy-MM-dd');
+
+      try {
+        await dispatch(getLessonsByDateRange({ startDate, endDate })).unwrap();
+      } catch (rangeError) {
+        const days = eachDayOfInterval({ start, end });
+        const missingDates = days
+          .map(day => format(day, 'yyyy-MM-dd'))
+          .filter(dateKey => !lessonsByDate[dateKey]);
+
+        if (!missingDates.length) return;
+
+        await Promise.allSettled(
+          missingDates.map(dateKey => dispatch(getLessonsByDate({ date: dateKey })))
+        );
+      }
+    };
+
+    loadMonthLessons();
+  }, [currentDate, dispatch]);
 
   useEffect(() => {
     if (students.length > 0 && selectedGroup && selectedDate && attendanceDialogOpen) {
-      console.log('Initializing attendance data for students:', students.length);
-
       const dateString = format(selectedDate, 'yyyy-MM-dd');
       const existingAttendance = attendanceRecords[dateString] || [];
 
       const initialAttendance = {};
       students.forEach(student => {
-        const existingRecord = existingAttendance.find(r => r.studentId === student.studentId);
-        initialAttendance[student.studentId] = existingRecord ? existingRecord.wasPresent : true;
+        const currentStudentId = student.studentId || student.id;
+        const existingRecord = existingAttendance.find(r => getAttendanceStudentId(r) === currentStudentId);
+        initialAttendance[currentStudentId] = existingRecord ? getAttendancePresence(existingRecord) : true;
       });
 
-      console.log('Setting initial attendance data:', initialAttendance);
       setAttendanceData(initialAttendance);
     }
   }, [students, selectedGroup, selectedDate, attendanceDialogOpen, attendanceRecords]);
@@ -979,109 +982,103 @@ const handleSaveAttendance = async (note = '') => {
 
   // Render calendar header
   const renderCalendarHeader = () => {
-    let title = '';
-
-    if (viewMode === 'month') {
-      title = format(currentDate, 'MMMM yyyy', { locale: he });
-    } else if (viewMode === 'week') {
-      const start = startOfWeek(currentDate, { weekStartsOn: 0 });
-      const end = endOfWeek(currentDate, { weekStartsOn: 0 });
-      title = `${format(start, 'd', { locale: he })}-${format(end, 'd MMMM yyyy', { locale: he })}`;
-    } else if (viewMode === 'day') {
-      title = format(currentDate, 'EEEE, d MMMM yyyy', { locale: he });
-    }
+    const title = format(currentDate, 'MMMM yyyy', { locale: he });
 
     return (
       <Box sx={styles.calendarHeader}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={4}>
-            <Box sx={styles.dateNavigation}>
-              <IconButton onClick={() => handleDateChange('prev')} color="primary">
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            gap: 1.25,
+            flexWrap: 'nowrap',
+            direction: 'rtl',
+            overflowX: 'auto',
+            py: 0.5
+          }}
+        >
+          
+            <Tabs
+              value={displayMode}
+              onChange={(_, newMode) => {
+                if (newMode) setDisplayMode(newMode);
+              }}
+              sx={{
+                minHeight: 46,
+                marginRight: '1%',
+                '& .MuiTabs-indicator': {
+                  height: 4,
+                  borderRadius: 999,
+                  backgroundColor: '#1e3a8a'
+                },
+                '& .MuiTab-root': {
+                  minHeight: 46,
+                  fontWeight: 700,
+                  color: '#475569',
+                  px: { xs: 2, sm: 2.75 },
+                  whiteSpace: 'nowrap'
+                },
+                '& .Mui-selected': {
+                  color: '#1e3a8a !important'
+                }
+              }}
+            >
+              <Tab value="calendar" label="תצוגת לוח" />
+              <Tab value="list" label="תצוגת רשימה" />
+            </Tabs>
+
+          <Paper
+            elevation={0}
+            sx={{
+              borderRadius: 2,
+              backgroundColor: '#eff4fa',
+              border: '1px solid #d7e2ef',
+              px: 0.80,
+              py: 0.40,
+              marginRight: '16%',
+              minWidth: 'fit-content'
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.15 }}>
+              <IconButton onClick={() => handleDateChange('prev')} color="primary" size="small">
                 <NavigateBefore />
               </IconButton>
-              <Typography variant="h5" sx={styles.dateTitle}>
+              <Typography
+                variant="h5"
+                sx={(theme) => ({
+                  ...styles.dateTitle(theme),
+                  mx: 0.75,
+                  fontSize: { xs: '1.25rem', sm: '1.55rem' },
+                  lineHeight: 1.2,
+                  fontFamily: 'Heebo, Assistant, sans-serif',
+                  fontWeight: 700,
+                  color: '#1e3a8a',
+                  whiteSpace: 'nowrap'
+                })}
+              >
                 {title}
               </Typography>
-              <IconButton onClick={() => handleDateChange('next')} color="primary">
+              <IconButton onClick={() => handleDateChange('next')} color="primary" size="small">
                 <NavigateNext />
               </IconButton>
               <Tooltip title="חזור להיום">
                 <IconButton
                   onClick={() => setCurrentDate(new Date())}
                   color="primary"
-                  sx={styles.todayButton}
+                  size="small"
+                  sx={{ ...styles.todayButton, ml: 0.5 }}
                 >
                   <Today />
                 </IconButton>
               </Tooltip>
             </Box>
-          </Grid>
-
-          <Grid item xs={12} md={4} sx={styles.viewModeSwitcher}>
-            <Tabs
-              value={viewMode}
-              onChange={handleViewModeChange}
-              sx={styles.tabs}
-            >
-              <Tab value="month" label="חודש" icon={<CalendarMonth />} />
-              <Tab value="week" label="שבוע" icon={<Event />} />
-              <Tab value="day" label="יום" icon={<Today />} />
-            </Tabs>
-          </Grid>
-
-          <Grid item xs={12} md={4}>
-            <Box sx={styles.searchAndFilter}>
-              <TextField
-                placeholder="חיפוש חוג או סניף..."
-                variant="outlined"
-                size="small"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Search />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={styles.searchField}
-              />
-
-              <Button
-                variant="outlined"
-                color="primary"
-                startIcon={<FilterList />}
-                sx={styles.filterButton}
-              >
-                סינון
-              </Button>
-            </Box>
-          </Grid>
-        </Grid>
+          </Paper>
+        </Box>
       </Box>
     );
   };
 
-
-  const renderCourseSelectionDialog = () => {
-    const groupsByDay = useSelector(state => state.groups.groupsByDay || []);
-    const groupsByDayLoading = useSelector(state => state.groups.groupsByDayLoading || false);
-
-    return (
-      <CourseSelectionDialog
-        open={courseSelectionOpen}
-        onClose={() => {
-          setCourseSelectionOpen(false);
-          dispatch(clearGroupsByDay());
-          setSelectedDate(null);
-        }}
-        selectedDate={selectedDate}
-        groupsByDay={groupsByDay}
-        groupsByDayLoading={groupsByDayLoading}
-        onGroupSelect={handleGroupSelect}
-      />
-    );
-  };
 
   // Render main content based on view mode
   const renderCalendarContent = () => {
@@ -1099,48 +1096,32 @@ const handleSaveAttendance = async (note = '') => {
     return (
       <AnimatePresence mode="wait">
         <motion.div
-          key={viewMode}
+          key="month"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.3 }}
         >
           <Box sx={styles.calendarContainer}>
-            {viewMode === 'month' && (
+            {displayMode === 'calendar' ? (
               <MonthlyCalendar
                 currentDate={currentDate}
                 onDateSelect={handleDateSelect}
                 groups={groups || []}
                 courses={courses || []}
                 branches={branches || []}
+                lessonsByDate={lessonsByDate || {}}
                 savedAttendanceRecords={attendanceRecords || {}}
                 hebrewHolidays={hebrewHolidays}
                 isActiveDay={isActiveDay}
                 getHebrewHolidayInfo={getHebrewHolidayInfo}
-                isMarkedForDayStatus={isMarkedForDayStatus}
               />
-            )}
-
-            {viewMode === 'week' && (
-  <WeeklyCalendar
-    currentDate={currentDate}
-    onDateSelect={handleDateSelect}
-    savedAttendanceRecords={attendanceRecords}
-    hebrewHolidays={hebrewHolidays}
-    isActiveDay={isActiveDay}
-    getHebrewHolidayInfo={getHebrewHolidayInfo}
-  />
-)}
-
-            {viewMode === 'day' && (
-              <DailyCalendar
-                currentDate={currentDate}
-                onDateSelect={handleDateSelect}
-                events={groups}
-                attendanceRecords={attendanceRecords}
-                hebrewHolidays={hebrewHolidays}
-                isActiveDay={isActiveDay}
-                getHebrewHolidayInfo={getHebrewHolidayInfo}
+            ) : (
+              <AttendanceLessonsListView
+                lessons={lessonRowsForList}
+                branches={branches}
+                loading={lessonsLoading}
+                onReportAttendance={handleListLessonSelect}
               />
             )}
           </Box>
@@ -1177,21 +1158,19 @@ const handleSaveAttendance = async (note = '') => {
         <CourseSelectionDialog
           open={courseSelectionOpen}
           onClose={() => {
-            console.log('🔄 Closing course selection dialog');
             setCourseSelectionOpen(false);
             dispatch(clearGroupsByDay());
             // אל תאפס את selectedDate כאן
           }}
           selectedDate={selectedDate}
-          groupsByDay={useSelector(state => state.groups.groupsByDay || [])}
-          groupsByDayLoading={useSelector(state => state.groups.groupsByDayLoading || false)}
+          groupsByDay={groupsForSelectedDate}
+          groupsByDayLoading={lessonsLoading && groupsForSelectedDate.length === 0}
           onGroupSelect={handleGroupSelect}
         />
         {/* Attendance Dialog */}
         <AttendanceDialog
           open={attendanceDialogOpen}
           onClose={() => {
-            console.log('🔄 Closing attendance dialog');
             setAttendanceDialogOpen(false);
             // אל תאפס את הנתונים כאן - רק סגור את הדיאלוג
           }}

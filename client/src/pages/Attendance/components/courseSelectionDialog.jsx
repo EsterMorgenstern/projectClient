@@ -10,16 +10,18 @@ import {
 } from '@mui/material';
 import {
   Close, School, LocationOn, Group, ExpandMore,
-  NavigateNext, AccessTime, EventBusy, Schedule, Today,
-  CheckCircle, Cancel, HourglassEmpty, TrendingUp,
+  NavigateNext, AccessTime, EventBusy, Today,
+  CheckCircle, Cancel, HourglassEmpty, TrendingUp, Autorenew,
   Assessment, Event
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { styles } from '../styles/dialogStyles';
-import { isMarkedForDate } from '../../../store/attendance/attendanceGetIsMarkedForGroup';
 import { useCalendarCancellations } from './useCalendarCancellations';
-import { fetchLessonCancellations } from '../../../store/lessonsCancelation/lessonsCancelationGetAll';
+import { getCanceledLessons } from '../../../store/lessons/getCanceledLessons';
+import { getCompletionLessons } from '../../../store/lessons/getCompletionLessons';
+
+const EMPTY_OBJECT = {};
 
 const CourseSelectionDialog = ({
   open,
@@ -47,13 +49,16 @@ const CourseSelectionDialog = ({
   const [attendanceChecked, setAttendanceChecked] = useState(false);
 
   // Redux selectors
-  const attendanceMarkedStatus = useSelector(state => state.attendances?.attendanceMarkedStatus || {});
-  const attendanceCheckLoading = useSelector(state => state.attendances?.attendanceCheckLoading || false);
+  const attendanceMarkedStatus = useSelector(
+    state => state.attendances?.attendanceMarkedStatus ?? EMPTY_OBJECT
+  );
 
   // Cancellation hooks
   const {
     getCancellationForGroupAndDate,
+    getCompletionForGroupAndDate,
     getCancellationsForDate,
+    getCompletionCountForDate,
     hasAnyCancellationsOnDate,
     getCancellationCountForDate
   } = useCalendarCancellations();
@@ -74,7 +79,25 @@ const CourseSelectionDialog = ({
 
   const getGroupCancellation = (groupId) => {
     if (!selectedDate) return null;
+    const lessonRow = groupsByDay.find(g => g.groupId === groupId);
+    const status = lessonRow?.lessonStatus || lessonRow?.status;
+
+    if (status === 'canceled') {
+      return {
+        reason: lessonRow?.cancellationReason || lessonRow?.reason || null,
+        source: 'lessonStatus'
+      };
+    }
+
     return getCancellationForGroupAndDate(groupId, selectedDate);
+  };
+
+  const isGroupCompletion = (groupId) => {
+    if (!selectedDate) return false;
+    const lessonRow = groupsByDay.find(g => g.groupId === groupId);
+    const status = lessonRow?.lessonStatus || lessonRow?.status;
+    if (status === 'completion') return true;
+    return !!getCompletionForGroupAndDate(groupId, selectedDate);
   };
 
   // ארגון הקבוצות לפי חוג וסניף
@@ -112,8 +135,12 @@ const CourseSelectionDialog = ({
       const attendanceStatus = getAttendanceStatus(group.groupId);
       const isChecking = isCheckingAttendanceForGroup(group.groupId);
       
+      const isCompletion = isGroupCompletion(group.groupId);
+
       if (cancellation) {
         stats.cancelled++;
+      } else if (isCompletion) {
+        stats.completion++;
       } else if (isChecking) {
         stats.checking++;
       } else if (attendanceStatus === true) {
@@ -125,7 +152,7 @@ const CourseSelectionDialog = ({
       }
       stats.total++;
       return stats;
-    }, { marked: 0, unmarked: 0, checking: 0, unknown: 0, cancelled: 0, total: 0 });
+    }, { marked: 0, unmarked: 0, checking: 0, unknown: 0, cancelled: 0, completion: 0, total: 0 });
   }, [groupsByDay, attendanceMarkedStatus, checkingAttendance, selectedDate]);
 
   // Effects
@@ -134,68 +161,18 @@ const CourseSelectionDialog = ({
       setExpandedCourse(null);
       setCheckingAttendance(new Set());
       setAttendanceChecked(false);
-      dispatch(fetchLessonCancellations());
+      dispatch(getCanceledLessons());
+      dispatch(getCompletionLessons());
     }
   }, [open, dispatch]);
 
   useEffect(() => {
     if (open && selectedDate && groupsByDay.length > 0 && !groupsByDayLoading && !attendanceChecked) {
-      console.log('🔍 Auto-checking attendance for all groups on dialog open');
-      checkAttendanceForAllGroups();
+      // Endpoint IsAttendanceMarkedForGroup לא קיים בשרת, לכן לא מריצים בדיקה מרוחקת.
+      setAttendanceChecked(true);
+      setCheckingAttendance(new Set());
     }
   }, [open, selectedDate, groupsByDay, groupsByDayLoading, attendanceChecked]);
-
-  const checkAttendanceForAllGroups = async () => {
-    if (!selectedDate || !groupsByDay.length) return;
-
-    console.log('🔄 Starting attendance check for all groups');
-    setAttendanceChecked(true);
-
-    const dateString = format(selectedDate, 'yyyy-MM-dd');
-    const newCheckingSet = new Set();
-    
-    groupsByDay.forEach(group => {
-      const groupId = group.groupId;
-      const key = `${groupId}-${dateString}`;
-      
-      if (attendanceMarkedStatus[key] === undefined) {
-        newCheckingSet.add(groupId);
-      }
-    });
-    
-    setCheckingAttendance(newCheckingSet);
-
-    const checkPromises = Array.from(newCheckingSet).map(async (groupId) => {
-      try {
-        console.log(`🔍 Checking attendance for group ${groupId} on ${dateString}`);
-        await dispatch(isMarkedForDate({ 
-          groupId, 
-          date: dateString 
-        })).unwrap();
-        
-        console.log(`✅ Attendance check completed for group ${groupId}`);
-        
-        setCheckingAttendance(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(groupId);
-          return newSet;
-        });
-        
-      } catch (error) {
-        console.error(`❌ Failed to check attendance for group ${groupId}:`, error);
-        
-        setCheckingAttendance(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(groupId);
-          return newSet;
-        });
-      }
-    });
-
-    await Promise.allSettled(checkPromises);
-    
-    console.log('✅ All attendance checks completed');
-  };
 
   const handleGroupClick = async (group) => {
     console.log('🖱️ Group card clicked:', group);
@@ -293,6 +270,7 @@ const CourseSelectionDialog = ({
     const dayName = format(selectedDate, 'EEEE', { locale: he });
     const dateHasCancellations = hasAnyCancellationsOnDate(selectedDate);
     const cancellationCount = getCancellationCountForDate(selectedDate);
+    const completionCount = getCompletionCountForDate(selectedDate);
 
     return (
       <DialogTitle sx={{
@@ -352,6 +330,19 @@ const CourseSelectionDialog = ({
                     textShadow: '0 1px 2px rgba(0,0,0,0.2)'
                   }}>
                     {cancellationCount} ביטולי שיעורים
+                  </Typography>
+                </Box>
+              )}
+
+              {completionCount > 0 && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                  <Autorenew sx={{ fontSize: 18, color: '#ffecb3' }} />
+                  <Typography variant="caption" sx={{
+                    color: '#ffecb3',
+                    fontWeight: 'bold',
+                    textShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                  }}>
+                    {completionCount} שיעורי השלמה
                   </Typography>
                 </Box>
               )}
@@ -514,7 +505,7 @@ const CourseSelectionDialog = ({
           color: '#1e293b',
           flex: 1
         }}>
-          סטטוס נוכחות
+          סטטוס שיעורים ליום זה
         </Typography>
         <Chip
           label={`${overallStats.total} קבוצות`}
@@ -528,56 +519,7 @@ const CourseSelectionDialog = ({
       </Box>
       
       <Grid container spacing={2}>
-        <Grid item xs={6} sm={2.4}>
-          <Box sx={{
-            textAlign: 'center',
-            p: 2,
-            borderRadius: 2,
-            backgroundColor: 'rgba(76, 175, 80, 0.1)',
-            border: '1px solid rgba(76, 175, 80, 0.2)',
-            transition: 'all 0.2s ease',
-            '&:hover': {
-              backgroundColor: 'rgba(76, 175, 80, 0.15)',
-              transform: 'translateY(-2px)',
-              boxShadow: '0 4px 12px rgba(76, 175, 80, 0.2)'
-            }
-          }}>
-            <CheckCircle sx={{ color: '#4caf50', fontSize: 28, mb: 1 }} />
-            <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#2e7d32' }}>
-              {overallStats.marked}
-            </Typography>
-            <Typography variant="caption" sx={{ color: '#388e3c', fontWeight: 'medium' }}>
-              נקבעה
-            </Typography>
-          </Box>
-        </Grid>
-        
-        <Grid item xs={6} sm={2.4}>
-          <Box sx={{
-            textAlign: 'center',
-            p: 2,
-            borderRadius: 2,
-            backgroundColor: 'rgba(255, 152, 0, 0.1)',
-            border: '1px solid rgba(255, 152, 0, 0.2)',
-            transition: 'all 0.2s ease',
-            '&:hover': {
-              backgroundColor: 'rgba(255, 152, 0, 0.15)',
-              transform: 'translateY(-2px)',
-              boxShadow: '0 4px 12px rgba(255, 152, 0, 0.2)'
-            }
-          }}>
-            <HourglassEmpty sx={{ color: '#ff9800', fontSize: 28, mb: 1 }} />
-            <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#f57c00' }}>
-              {overallStats.unmarked}
-            </Typography>
-            <Typography variant="caption" sx={{ color: '#ef6c00', fontWeight: 'medium' }}>
-              לא נקבעה
-            </Typography>
-          </Box>
-        </Grid>
-        
-        {overallStats.cancelled > 0 && (
-          <Grid item xs={6} sm={2.4}>
+        <Grid size={{ xs: 12, sm: 4 }}>
             <Box sx={{
               textAlign: 'center',
               p: 2,
@@ -596,39 +538,36 @@ const CourseSelectionDialog = ({
                 {overallStats.cancelled}
               </Typography>
               <Typography variant="caption" sx={{ color: '#c62828', fontWeight: 'medium' }}>
-                בוטלו
+                ביטולי שיעורים
               </Typography>
             </Box>
           </Grid>
-        )}
-        
-        {overallStats.checking > 0 && (
-          <Grid item xs={6} sm={2.4}>
+
+        <Grid size={{ xs: 12, sm: 4 }}>
             <Box sx={{
               textAlign: 'center',
               p: 2,
               borderRadius: 2,
-              backgroundColor: 'rgba(33, 150, 243, 0.1)',
-              border: '1px solid rgba(33, 150, 243, 0.2)',
+              backgroundColor: 'rgba(234, 88, 12, 0.1)',
+              border: '1px solid rgba(234, 88, 12, 0.2)',
               transition: 'all 0.2s ease',
               '&:hover': {
-                backgroundColor: 'rgba(33, 150, 243, 0.15)',
+                backgroundColor: 'rgba(234, 88, 12, 0.15)',
                 transform: 'translateY(-2px)',
-                boxShadow: '0 4px 12px rgba(33, 150, 243, 0.2)'
+                boxShadow: '0 4px 12px rgba(234, 88, 12, 0.2)'
               }
             }}>
-              <CircularProgress size={28} thickness={4} sx={{ color: '#2196f3', mb: 1 }} />
-              <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-                {overallStats.checking}
+              <Autorenew sx={{ color: '#ea580c', fontSize: 28, mb: 1 }} />
+              <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#c2410c' }}>
+                {overallStats.completion}
               </Typography>
-              <Typography variant="caption" sx={{ color: '#1565c0', fontWeight: 'medium' }}>
-                בודק
+              <Typography variant="caption" sx={{ color: '#9a3412', fontWeight: 'medium' }}>
+                השלמות
               </Typography>
             </Box>
           </Grid>
-        )}
         
-        <Grid item xs={6} sm={2.4}>
+        <Grid size={{ xs: 12, sm: 4 }}>
           <Box sx={{
             textAlign: 'center',
             p: 2,
@@ -660,17 +599,23 @@ const CourseSelectionDialog = ({
     const isChecking = isCheckingAttendanceForGroup(group.groupId);
     const cancellation = getGroupCancellation(group.groupId);
     const isCancelled = !!cancellation;
+    const isCompletion = isGroupCompletion(group.groupId);
     
     let statusColor = '#64748b';
     let statusBgColor = 'rgba(100, 116, 139, 0.1)';
-    let statusIcon = <Schedule />;
-    let statusText = 'לא נבדק';
+    let statusIcon = null;
+    let statusText = '';
     
     if (isCancelled) {
       statusColor = '#dc2626';
       statusBgColor = 'rgba(220, 38, 38, 0.1)';
       statusIcon = <Cancel />;
       statusText = 'בוטל';
+    } else if (isCompletion) {
+      statusColor = '#ea580c';
+      statusBgColor = 'rgba(234, 88, 12, 0.1)';
+      statusIcon = <Autorenew />;
+      statusText = 'שיעור השלמה';
     } else if (isChecking) {
       statusColor = '#2563eb';
       statusBgColor = 'rgba(37, 99, 235, 0.1)';
@@ -703,12 +648,16 @@ const CourseSelectionDialog = ({
           opacity: isCancelled ? 0.7 : 1,
           borderRadius: 3,
           border: '2px solid',
-          borderColor: isCancelled ? '#fca5a5' : '#e2e8f0',
+          borderColor: isCancelled ? '#fca5a5' : isCompletion ? '#fdba74' : '#e2e8f0',
           background: isCancelled 
             ? 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)'
+            : isCompletion
+            ? 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)'
             : 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
           boxShadow: isCancelled 
             ? '0 4px 12px rgba(220, 38, 38, 0.15)'
+            : isCompletion
+            ? '0 4px 12px rgba(234, 88, 12, 0.15)'
             : '0 4px 12px rgba(0, 0, 0, 0.1)',
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           position: 'relative',
@@ -722,17 +671,21 @@ const CourseSelectionDialog = ({
             height: '4px',
             background: isCancelled 
               ? 'linear-gradient(90deg, #dc2626 0%, #ef4444 100%)'
+              : isCompletion
+              ? 'linear-gradient(90deg, #ea580c 0%, #f97316 100%)'
               : `linear-gradient(90deg, ${statusColor} 0%, ${statusColor}aa 100%)`,
-            opacity: isCancelled ? 1 : 0,
+            opacity: (isCancelled || isCompletion) ? 1 : 0,
             transition: 'opacity 0.3s ease'
           },
           '&:hover::before': {
             opacity: 1
           },
           '&:hover': {
-            borderColor: isCancelled ? '#fca5a5' : statusColor,
+            borderColor: isCancelled ? '#fca5a5' : isCompletion ? '#fb923c' : statusColor,
             boxShadow: isCancelled 
               ? '0 4px 12px rgba(220, 38, 38, 0.15)'
+              : isCompletion
+              ? '0 8px 25px rgba(234, 88, 12, 0.2)'
               : `0 8px 25px ${statusColor}33`,
             transform: isCancelled ? 'none' : 'translateY(-2px)'
           }
@@ -764,26 +717,28 @@ const CourseSelectionDialog = ({
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <Typography variant="h6" sx={{
                   fontWeight: 'bold',
-                  color: isCancelled ? '#dc2626' : '#1e293b',
+                  color: isCancelled ? '#dc2626' : isCompletion ? '#c2410c' : '#1e293b',
                   textDecoration: isCancelled ? 'line-through' : 'none'
                 }}>
                   קבוצה {group.groupName}
                 </Typography>
                 
-                <Chip
-                  icon={statusIcon}
-                  label={statusText}
-                  size="small"
-                  sx={{
-                    backgroundColor: statusBgColor,
-                    color: statusColor,
-                    fontWeight: 'bold',
-                    border: `1px solid ${statusColor}33`,
-                    '& .MuiChip-icon': {
-                      color: statusColor
-                    }
-                  }}
-                />
+                {statusText && (
+                  <Chip
+                    icon={statusIcon}
+                    label={statusText}
+                    size="small"
+                    sx={{
+                      backgroundColor: statusBgColor,
+                      color: statusColor,
+                      fontWeight: 'bold',
+                      border: `1px solid ${statusColor}33`,
+                      '& .MuiChip-icon': {
+                        color: statusColor
+                      }
+                    }}
+                  />
+                )}
               </Box>
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
@@ -856,11 +811,14 @@ const CourseSelectionDialog = ({
     const courseGroups = Object.values(branches).flat();
     const courseStats = courseGroups.reduce((stats, group) => {
       const cancellation = getGroupCancellation(group.groupId);
+      const isCompletion = isGroupCompletion(group.groupId);
       const attendanceStatus = getAttendanceStatus(group.groupId);
       const isChecking = isCheckingAttendanceForGroup(group.groupId);
       
       if (cancellation) {
         stats.cancelled++;
+      } else if (isCompletion) {
+        stats.completion++;
       } else if (isChecking) {
         stats.checking++;
       } else if (attendanceStatus === true) {
@@ -872,7 +830,7 @@ const CourseSelectionDialog = ({
       }
       stats.total++;
       return stats;
-    }, { marked: 0, unmarked: 0, checking: 0, unknown: 0, cancelled: 0, total: 0 });
+    }, { marked: 0, unmarked: 0, checking: 0, unknown: 0, cancelled: 0, completion: 0, total: 0 });
 
     return (
       <Accordion
@@ -992,6 +950,20 @@ const CourseSelectionDialog = ({
                       color: '#dc2626',
                       fontWeight: 'bold',
                       border: '1px solid rgba(220, 38, 38, 0.2)'
+                    }}
+                  />
+                )}
+
+                {courseStats.completion > 0 && (
+                  <Chip
+                    icon={<Autorenew sx={{ fontSize: 14 }} />}
+                    label={`${courseStats.completion} השלמה`}
+                    size="small"
+                    sx={{
+                      backgroundColor: 'rgba(234, 88, 12, 0.1)',
+                      color: '#ea580c',
+                      fontWeight: 'bold',
+                      border: '1px solid rgba(234, 88, 12, 0.2)'
                     }}
                   />
                 )}

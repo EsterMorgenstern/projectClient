@@ -39,6 +39,7 @@ import { addStudentHealthFund } from '../../../store/studentHealthFund/studentHe
 import { fetchStudentHealthFunds } from '../../../store/studentHealthFund/studentHealthFundApi';
 import { fetchHealthFunds } from '../../../store/healthFund/fetchHealthFunds';
 import { addStudentNote } from '../../../store/studentNotes/studentNoteAddThunk';
+import { checkUserPermission } from '../../../utils/permissions';
 
 const AddStudentHealthFundDialog = ({ open, onClose, studentId, onSuccess }) => {
     // הגדרות משתנים ופונקציות חסרות
@@ -330,6 +331,13 @@ const memoizedHealthFundList = useMemo(() => {
       autoNoteCreatedOnChecklistRef.current = false;
     }
   }, [open]);
+
+  const ensurePermission = () => {
+    return checkUserPermission(
+      currentUser?.id || currentUser?.userId,
+      (message, severity) => setNotification({ open: true, message, severity })
+    );
+  };
   return (
     <Dialog
       open={open}
@@ -625,6 +633,10 @@ renderValue={selected => {
         <Button variant="outlined" color="error" onClick={() => { resetForm(); onClose(); }} sx={{ borderRadius: '8px', px: 3, py: 1 }}>ביטול</Button>
         <Button variant="contained" startIcon={<Save />} onClick={async () => {
           setSaving(true);
+          if (!ensurePermission()) {
+            setSaving(false);
+            return;
+          }
           try {
             const payload = {
               ...formData,

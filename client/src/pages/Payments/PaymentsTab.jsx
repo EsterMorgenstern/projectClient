@@ -743,10 +743,12 @@ import { updatePaymentMethod } from '../../store/payments/paymentMethodsUpdate';
 import { addPaymentMethod } from '../../store/payments/addPaymentMethod';
 import { deletePaymentMethod } from '../../store/payments/paymentMethodsDelete';
 import GrowPaymentDialog from './GrowPaymentDialog';
+import { checkUserPermission } from '../../utils/permissions';
 
 const PaymentsTab = ({ student, embedded = false }) => {
     const dispatch = useDispatch();
     const { paymentMethods, loading, error } = useSelector((state) => state.payments);
+    const currentUser = useSelector(state => state.users?.currentUser || state.auth?.currentUser || state.user?.currentUser || null);
     
     const [addDialogOpen, setAddDialogOpen] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -766,6 +768,14 @@ const PaymentsTab = ({ student, embedded = false }) => {
         accountHolderName: '',
         isDefault: false
     });
+
+    const ensurePermission = () => {
+        return checkUserPermission(currentUser?.id || currentUser?.userId, (message, severity) => {
+            setSnackbarMessage(message);
+            setSnackbarSeverity(severity || 'error');
+            setSnackbarOpen(true);
+        });
+    };
 
     useEffect(() => {
         if (student?.id) {
@@ -822,6 +832,7 @@ const PaymentsTab = ({ student, embedded = false }) => {
 
     const handleSaveMethod = async () => {
         try {
+            if (!ensurePermission()) return;
             // ולידציה בסיסית
             if (!formData.methodType) {
                 setSnackbarMessage('יש לבחור סוג אמצעי תשלום');
@@ -941,6 +952,7 @@ const PaymentsTab = ({ student, embedded = false }) => {
 
     const handleDeleteMethod = async (methodId) => {
         try {
+            if (!ensurePermission()) return;
             const result = await dispatch(deletePaymentMethod(methodId));
             
             if (deletePaymentMethod.fulfilled.match(result)) {
@@ -971,6 +983,7 @@ const PaymentsTab = ({ student, embedded = false }) => {
     };
     const handleSetDefault = async (paymentMethodId) => {
         try {
+            if (!ensurePermission()) return;
             console.log('🔄 Setting default payment method:', paymentMethodId);
             
             // מצא את אמצעי התשלום הנוכחי

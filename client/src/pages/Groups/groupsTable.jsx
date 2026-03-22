@@ -34,6 +34,7 @@ import { CourseDialog, BranchDialog, GroupDialog, DeleteConfirmDialog } from './
 import GroupDetailsPanel from './components/GroupDetailsPanel';
 import StyledTableShell from '../../components/StyledTableShell';
 import StatsCard from '../../components/StatsCard';
+import { checkUserPermission } from '../../utils/permissions';
 import '../styles/tableStyles.css';
 
 // Loading Skeleton
@@ -62,6 +63,7 @@ const GroupsTable = () => {
   const { courses = [], loading: coursesLoading } = useSelector(state => state.courses || {});
   const { branches = [], loading: branchesLoading } = useSelector(state => state.branches || {});
   const { instructors = [] } = useSelector(state => state.instructors || {});
+  const currentUser = useSelector(state => state.users?.currentUser || state.auth?.currentUser || state.user?.currentUser || null);
 
   // Loading רק בטעינה ראשונית - אם כל הנתונים עדיין ריקים
   const isInitialLoad = courses.length === 0 && branches.length === 0 && groups.length === 0;
@@ -125,6 +127,13 @@ const GroupsTable = () => {
   const lastBranchGroupsRef = useRef([]);
   const initialLoadRef = useRef(false);
 
+  const ensurePermission = useCallback(() => {
+    return checkUserPermission(
+      currentUser?.id || currentUser?.userId,
+      (message, severity) => setNotification({ open: true, message, severity })
+    );
+  }, [currentUser]);
+
   // Initial load - טעינה ראשונית אחת במקביל לכל הנתונים
   useEffect(() => {
     if (initialLoadRef.current) {
@@ -182,7 +191,7 @@ const GroupsTable = () => {
       else grouped['ראשון'].push(g);
     });
     return grouped;
-  }, []);
+  }, [ensurePermission]);
 
   // Memoized calculations - מחושבים פעם אחת בלבד ברמת הקומפוננטה
   const branchGroupsData = useMemo(() => {
@@ -240,6 +249,7 @@ const GroupsTable = () => {
   }, [navigate]);
 
   const handleOpenCourseDialog = useCallback((course = null) => {
+    if (!ensurePermission()) return;
     if (course) {
       setEditingItem(course);
       setEditType('course');
@@ -254,9 +264,10 @@ const GroupsTable = () => {
       setFormData(prev => ({ ...initialFormData, couresName: '', description: '' }));
     }
     setOpenCourseDialog(true);
-  }, []);
+  }, [ensurePermission]);
 
   const handleOpenBranchDialog = useCallback((branch = null) => {
+    if (!ensurePermission()) return;
     if (branch) {
       setEditingItem(branch);
       setEditType('branch');
@@ -275,6 +286,7 @@ const GroupsTable = () => {
   }, []);
 
   const handleOpenGroupDialog = useCallback((group = null) => {
+    if (!ensurePermission()) return;
     if (group) {
       let parsedDay = '';
       let parsedHour = '';
@@ -335,7 +347,7 @@ const GroupsTable = () => {
       });
     }
     setOpenGroupDialog(true);
-  }, [selectedCourse, selectedBranch]);
+  }, [selectedCourse, selectedBranch, instructors, ensurePermission]);
 
   const handleFormChange = useCallback((field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -380,6 +392,7 @@ const GroupsTable = () => {
 
   const handleSaveItem = async () => {
     try {
+      if (!ensurePermission()) return;
       let result;
 
       if (editType === 'course') {
@@ -533,6 +546,7 @@ const GroupsTable = () => {
   };
 
   const handleDelete = (item, type) => {
+    if (!ensurePermission()) return;
     setItemToDelete(item);
     setDeleteType(type);
     setOpenDeleteDialog(true);
@@ -542,6 +556,7 @@ const GroupsTable = () => {
     if (!itemToDelete || !deleteType) return;
 
     try {
+      if (!ensurePermission()) return;
       let result;
 
       if (deleteType === 'group') {

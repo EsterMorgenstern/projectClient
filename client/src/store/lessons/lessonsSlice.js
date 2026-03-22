@@ -10,6 +10,7 @@ import { getCompletionLessons } from './getCompletionLessons';
 import { getCompletionLessonsByGroupId } from './getCompletionLessonsByGroupId';
 import { getLessonsByGroupId } from './getLessonsByGroupId';
 import { getLessonsByDate } from './getLessonsByDate';
+import { getLessonsByDateRange } from './getLessonsByDateRange';
 import { fetchLessonsByDate } from './lessonsByDateThunk';
 import { deleteLesson } from './deleteLesson';
 
@@ -159,6 +160,37 @@ const lessonsSlice = createSlice({
         state.lessonsByDate[date] = lessons || [];
       })
       .addCase(getLessonsByDate.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      .addCase(getLessonsByDateRange.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getLessonsByDateRange.fulfilled, (state, action) => {
+        state.loading = false;
+
+        const lessons = action.payload?.lessons || [];
+        const groupedByDate = {};
+
+        lessons.forEach((lesson) => {
+          const rawDate = lesson?.lessonDate || lesson?.LessonDate || lesson?.date || lesson?.Date;
+          if (!rawDate) return;
+
+          const dateKey = String(rawDate).split('T')[0];
+          if (!groupedByDate[dateKey]) {
+            groupedByDate[dateKey] = [];
+          }
+
+          groupedByDate[dateKey].push(lesson);
+        });
+
+        Object.keys(groupedByDate).forEach((dateKey) => {
+          state.lessonsByDate[dateKey] = groupedByDate[dateKey];
+        });
+      })
+      .addCase(getLessonsByDateRange.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })

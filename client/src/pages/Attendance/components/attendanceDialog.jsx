@@ -21,6 +21,8 @@ import AddStudentNoteDialog from '../../Students/components/addStudentNoteDialog
 import { addStudentNote } from '../../../store/studentNotes/studentNoteAddThunk';
 import { checkUserPermission } from '../../../utils/permissions';
 
+const getRecordPresence = (record) => record?.wasPresent ?? record?.WasPresent ?? false;
+
 const AttendanceDialog = ({
   open,
   onClose,
@@ -43,6 +45,9 @@ const AttendanceDialog = ({
   const [note, setNote] = useState('');
   const dispatch = useDispatch();
   const attendanceRecords = useSelector(state => state.attendance?.records || {});
+  const currentUser = useSelector(state => (
+    state.users?.currentUser || state.auth?.currentUser || state.user?.currentUser || null
+  ));
 
   // סטייטים לדיאלוג הערה
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
@@ -73,11 +78,22 @@ const AttendanceDialog = ({
     });
   }, [displayCourseName, displayBranchName, displayGroupName, courseName, branchName, groupName]);
 
+  const currentUserId =
+    currentUser?.id ||
+    currentUser?.userId ||
+    currentUser?.Id ||
+    currentUser?.UserId ||
+    currentUser?.identityCard ||
+    currentUser?.IdentityCard;
+
+  const ensurePermission = () => {
+    return checkUserPermission(currentUserId, (msg) => alert(msg));
+  };
+
   // פונקציה חדשה לסימון נוכחות עם בדיקת העדרויות
   const handleAttendanceChangeWithNote = async (studentId, wasPresent) => {
     // בדיקת הרשאה לפני שינוי נוכחות
-    const userId = studentId;
-    if (!checkUserPermission(userId, (msg, type) => alert(msg))) {
+    if (!ensurePermission()) {
       return;
     }
     if (onAttendanceChange && studentId) {
@@ -89,7 +105,7 @@ const AttendanceDialog = ({
         try {
           const res = await dispatch(getAttendanceByStudent(studentId)).unwrap();
           const absences = Array.isArray(res)
-            ? res.filter(r => r.wasPresent === false).length
+            ? res.filter(r => getRecordPresence(r) === false).length
             : 0;
           if (absences == 2) {
             const studentObj = (students || []).find(s => (s.studentId || s.id) === studentId);
@@ -100,7 +116,15 @@ const AttendanceDialog = ({
             setNoteDialogOpen(true);
           }
         } catch (err) {
-          alert('אירעה שגיאה בשליפת נתוני נוכחות מהשרת');
+          const status = err?.response?.status;
+          const errorText = String(err?.response?.data || err?.message || '').toLowerCase();
+          const endpointUnavailable = status === 404 || status === 400 || errorText.includes('not implemented');
+
+          if (!endpointUnavailable) {
+            alert('אירעה שגיאה בשליפת נתוני נוכחות מהשרת');
+          } else {
+            console.warn('⚠️ GetAttendanceByStudent is unavailable. Skipping absence-history check.');
+          }
         }
         setNoteLoading(false);
       }
@@ -109,8 +133,7 @@ const AttendanceDialog = ({
 
   const handleSaveStudentNote = async (noteData) => {
     // בדיקת הרשאה לפני הוספת הערה
-    const userId = noteData.studentId;
-    if (!checkUserPermission(userId, (msg, type) => alert(msg))) {
+    if (!ensurePermission()) {
       return;
     }
     try {
@@ -124,12 +147,13 @@ const AttendanceDialog = ({
   };
 
   const markAllPresent = () => {
+    if (!ensurePermission()) {
+      return;
+    }
+
     if (students && students.length > 0) {
       students.forEach(student => {
         const studentId = student.studentId || student.id;
-        if (!checkUserPermission(studentId, (msg, type) => alert(msg))) {
-          return;
-        }
         if (studentId && onAttendanceChange) {
           onAttendanceChange(studentId, true);
         }
@@ -138,12 +162,13 @@ const AttendanceDialog = ({
   };
 
   const markAllAbsent = () => {
+    if (!ensurePermission()) {
+      return;
+    }
+
     if (students && students.length > 0) {
       students.forEach(student => {
         const studentId = student.studentId || student.id;
-        if (!checkUserPermission(studentId, (msg, type) => alert(msg))) {
-          return;
-        }
         if (studentId && onAttendanceChange) {
           onAttendanceChange(studentId, false);
         }
@@ -153,9 +178,7 @@ const AttendanceDialog = ({
 
   const handleSave = () => {
     // בדיקת הרשאה לפני שמירה
-    // כאן צריך לקבל את ה-userId של המשתמש השומר (לפי המימוש שלך)
-    const userId = (students && students.length > 0) ? (students[0].studentId || students[0].id) : null;
-    if (!checkUserPermission(userId, (msg, type) => alert(msg))) {
+    if (!ensurePermission()) {
       return;
     }
     if (onSave) {
@@ -276,7 +299,7 @@ const AttendanceDialog = ({
           border: '1px solid #e9ecef'
         }}>
           <Grid container spacing={3}>
-            <Grid item xs={12} sm={3}>
+            <Grid size={{ xs: 12, sm: 3 }}>
               <Box sx={{ textAlign: 'center' }}>
                 <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#2196f3' }}>
                   {totalStudents}
@@ -287,7 +310,7 @@ const AttendanceDialog = ({
               </Box>
             </Grid>
 
-            <Grid item xs={12} sm={3}>
+            <Grid size={{ xs: 12, sm: 3 }}>
               <Box sx={{ textAlign: 'center' }}>
                 <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#4caf50' }}>
                   {presentCount}
@@ -298,7 +321,7 @@ const AttendanceDialog = ({
               </Box>
             </Grid>
 
-            <Grid item xs={12} sm={3}>
+            <Grid size={{ xs: 12, sm: 3 }}>
               <Box sx={{ textAlign: 'center' }}>
                 <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#f44336' }}>
                   {totalStudents - presentCount}
@@ -309,7 +332,7 @@ const AttendanceDialog = ({
               </Box>
             </Grid>
 
-            <Grid item xs={12} sm={3}>
+            <Grid size={{ xs: 12, sm: 3 }}>
               <Box sx={{ textAlign: 'center' }}>
                 <Typography variant="h4" sx={{
                   fontWeight: 'bold',
@@ -338,7 +361,14 @@ const AttendanceDialog = ({
             color="success"
             startIcon={<CheckCircle />}
             onClick={markAllPresent}
-            sx={{ borderRadius: 2, px: 3 }}
+            sx={{
+              borderRadius: 2,
+              px: 3,
+              '& .MuiButton-startIcon': {
+                marginInlineStart: 0,
+                marginInlineEnd: '10px'
+              }
+            }}
           >
             סמן הכל כנוכחים
           </Button>
@@ -347,7 +377,14 @@ const AttendanceDialog = ({
             color="error"
             startIcon={<Cancel />}
             onClick={markAllAbsent}
-            sx={{ borderRadius: 2, px: 3 }}
+            sx={{
+              borderRadius: 2,
+              px: 3,
+              '& .MuiButton-startIcon': {
+                marginInlineStart: 0,
+                marginInlineEnd: '10px'
+              }
+            }}
           >
             סמן הכל כנעדרים
           </Button>
@@ -511,7 +548,11 @@ const AttendanceDialog = ({
           sx={{
             borderRadius: 2,
             px: 4,
-            fontWeight: 'bold'
+            fontWeight: 'bold',
+            '& .MuiButton-startIcon': {
+              marginInlineStart: 0,
+              marginInlineEnd: '10px'
+            }
           }}
         >
           שמור נוכחות

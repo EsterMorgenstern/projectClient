@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { exportGroupsToExcelWithData } from '../../../utils/exportGroupsToExcelWithData';
 import { exportBranchToExcel, validateGroupsDataForExport } from '../../../utils/exportBranchToExcel';
 import { getGroupsByBranch } from '../../../store/group/groupGetGroupsByBranchThunk';
+import { getGroupsWithStudentsByDay } from '../../../store/group/groupGetGroupsWithStudentsByDayThunk';
 import EditStudentDialog from '../../Students/components/EditStudentDialog';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { exportGroupStudentsToExcel } from '../../Groups/components/GroupStudentsExportExcel';
@@ -111,7 +112,7 @@ const EnrollStudent = () => {
      
       setNotification({ 
         open: true, 
-        message: 'מתחיל ייצוא קבוצות לאקסל...', 
+        message: 'מתחיל ייצוא קבוצות לאקסל', 
         severity: 'info' 
       });
 
@@ -148,7 +149,7 @@ const EnrollStudent = () => {
       // הצגת הודעה על התחלת הייצוא
       setNotification({ 
         open: true, 
-        message: `מתחיל ייצוא נתוני ${selectedBranch.name}...`, 
+        message: `מתחיל ייצוא נתונים ${selectedBranch.name}`, 
         severity: 'info' 
       });
 
@@ -192,6 +193,65 @@ const EnrollStudent = () => {
         message: `שגיאה בייצוא נתוני ${selectedBranch?.name || 'הסניף'}: ${error.message}`, 
         severity: 'error' 
       });
+    }
+  };
+
+  // כפתור יצוא יום לאקסל
+  const handleExportDayExcel = async () => {
+    if (!selectedDay) {
+      setNotification({
+        open: true,
+        message: 'יש לבחור יום לפני ביצוע ייצוא',
+        severity: 'warning'
+      });
+      return;
+    }
+
+    try {
+      setExportDayLoading(true);
+      setNotification({
+        open: true,
+        message: `מתחיל ייצוא קבוצות של יום ${selectedDay}`,
+        severity: 'info'
+      });
+
+      const result = await dispatch(getGroupsWithStudentsByDay(selectedDay));
+
+      if (result.meta.requestStatus === 'fulfilled' && Array.isArray(result.payload)) {
+        const dayData = result.payload;
+
+        if (!validateGroupsDataForExport(dayData)) {
+          setNotification({
+            open: true,
+            message: `לא נמצאו קבוצות תקינות ליום ${selectedDay}`,
+            severity: 'warning'
+          });
+          return;
+        }
+
+        const exportResult = exportBranchToExcel(dayData, `יום ${selectedDay}`);
+
+        if (exportResult?.success) {
+          setNotification({
+            open: true,
+            message: `ייצוא יום ${selectedDay} הושלם בהצלחה! ${exportResult.message}`,
+            severity: 'success'
+          });
+        } else {
+          throw new Error(exportResult?.error || 'שגיאה לא ידועה בייצוא');
+        }
+      } else {
+        throw new Error(typeof result.payload === 'string' ? result.payload : 'לא הצלחנו לקבל נתונים לפי יום מהשרת');
+      }
+    } catch (error) {
+      console.error('❌ שגיאה בייצוא יום:', error);
+      setNotification({
+        open: true,
+        message: `שגיאה בייצוא יום ${selectedDay}: ${error.message}`,
+        severity: 'error'
+      });
+    } finally {
+      setExportDayLoading(false);
     }
   };
   const dispatch = useDispatch();
@@ -256,6 +316,7 @@ const EnrollStudent = () => {
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
   const [view, setView] = useState('courses'); // courses, branches, groups, days
   const [selectedDay, setSelectedDay] = useState(null); // ליום שנבחר במיון לפי ימים
+  const [exportDayLoading, setExportDayLoading] = useState(false);
 const [selectedInstructorId, setSelectedInstructorId] = useState('');
 const [studentLessons, setStudentLessons] = useState(0);
 
@@ -2259,23 +2320,36 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
       
         <Button
           variant="contained"
-          startIcon={<AddIcon />}
+          endIcon={<AddIcon />}
           onClick={() => setAddCourseDialogOpen(true)}
           sx={{
-            bgcolor: '#3B82F6',
-            color: 'white',
-            borderRadius: '10px',
-            px: 2,
-            py: 0.5,
-            fontSize: '1rem',
-            minWidth: 120,
-            height: 36,
-            boxShadow: '0 2px 8px rgba(59, 130, 246, 0.15)',
-            '&:hover': {
-              bgcolor: '#2563eb',
-              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)',
+            background: 'linear-gradient(135deg, #eef2ff 0%, #e7ecff 100%)',
+            color: '#3730a3',
+            border: '1px solid #c2ccff',
+            borderRadius: '12px',
+            px: 2.4,
+            py: 0.85,
+            fontSize: '0.92rem',
+            fontWeight: 600,
+            minWidth: 154,
+            minHeight: 42,
+            boxShadow: '0 3px 10px rgba(79, 70, 229, 0.14)',
+            textTransform: 'none',
+            '& .MuiButton-endIcon': {
+              marginLeft: '10px',
+              marginRight: 0
             },
-            transition: 'all 0.3s ease'
+            '&:hover': {
+              background: 'linear-gradient(135deg, #e3e9ff 0%, #d3dcff 100%)',
+              borderColor: '#a5b4fc',
+              color: '#312e81',
+              boxShadow: '0 5px 14px rgba(79, 70, 229, 0.18)',
+              transform: 'translateY(-1px)'
+            },
+            '&:active': {
+              transform: 'translateY(0px)'
+            },
+            transition: 'all 0.2s ease'
           }}
         >
           הוסף חוג חדש
@@ -2396,16 +2470,31 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
             variant="contained"
             sx={{
               direction: 'ltr',
-              bgcolor: '#1E40AF',
-              color: 'white',
+              background: 'linear-gradient(135deg, #eafbf3 0%, #dff5eb 100%)',
+              color: '#065f46',
+              border: '1px solid #b9e8d3',
               borderRadius: '12px',
-              px: 3,
-              py: 1,
-              boxShadow: '0 4px 14px rgba(30, 64, 175, 0.25)',
-              transition: 'all 0.3s ease',
+              px: 2.7,
+              py: 0.9,
+              fontWeight: 600,
+              fontSize: '0.92rem',
+              minHeight: 42,
+              boxShadow: '0 3px 10px rgba(16, 185, 129, 0.14)',
+              textTransform: 'none',
+              '& .MuiButton-endIcon': {
+                marginLeft: '10px',
+                marginRight: 0
+              },
+              transition: 'all 0.2s ease',
               '&:hover': {
-                bgcolor: '#1E3A8A',
-                boxShadow: '0 6px 20px rgba(30, 64, 175, 0.35)'
+                background: 'linear-gradient(135deg, #dcf7e9 0%, #ccefdc 100%)',
+                borderColor: '#94d9bc',
+                color: '#064e3b',
+                boxShadow: '0 5px 14px rgba(5, 150, 105, 0.2)',
+                transform: 'translateY(-1px)'
+              },
+              '&:active': {
+                transform: 'translateY(0px)'
               }
             }}
           >
@@ -2413,23 +2502,36 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
           </Button>
            <Button
             variant="contained"
-            startIcon={<AddIcon />}
+            endIcon={<AddIcon />}
             onClick={() => setAddBranchDialogOpen(true)}
             sx={{
-              bgcolor: '#10B981',
-              color: 'white',
-              borderRadius: '10px',
-              px: 2,
-              py: 0.5,
-              fontSize: '1rem',
-              minWidth: 120,
-              height: 36,
-              boxShadow: '0 2px 8px rgba(16, 185, 129, 0.15)',
-              '&:hover': {
-                bgcolor: '#059669',
-                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)',
+              background: 'linear-gradient(135deg, #eef2ff 0%, #e7ecff 100%)',
+              color: '#3730a3',
+              border: '1px solid #c2ccff',
+              borderRadius: '12px',
+              px: 2.4,
+              py: 0.85,
+              fontSize: '0.92rem',
+              fontWeight: 600,
+              minWidth: 154,
+              minHeight: 42,
+              boxShadow: '0 3px 10px rgba(79, 70, 229, 0.14)',
+              textTransform: 'none',
+              '& .MuiButton-endIcon': {
+                marginLeft: '10px',
+                marginRight: 0
               },
-              transition: 'all 0.3s ease'
+              '&:hover': {
+                background: 'linear-gradient(135deg, #e3e9ff 0%, #d3dcff 100%)',
+                borderColor: '#a5b4fc',
+                color: '#312e81',
+                boxShadow: '0 5px 14px rgba(79, 70, 229, 0.18)',
+                transform: 'translateY(-1px)'
+              },
+              '&:active': {
+                transform: 'translateY(0px)'
+              },
+              transition: 'all 0.2s ease'
             }}
           >
             הוסף סניף חדש
@@ -2442,54 +2544,38 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
           variant="contained"
           onClick={handleExportGroupsExcel}
           sx={{
-            background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
-            color: '#374151',
-            border: '2px solid #e5e7eb',
-            borderRadius: '18px',
-            px: 4,
-            py: 2,
+            background: 'linear-gradient(135deg, #f3f9ff 0%, #e8f2ff 100%)',
+            color: '#0f4c81',
+            border: '1px solid #c5d9f5',
+            borderRadius: '12px',
+            px: 3.2,
+            py: 0.95,
             fontWeight: 600,
-            fontSize: '1rem',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-            minWidth: 260,
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            fontSize: '0.92rem',
+            boxShadow: '0 3px 10px rgba(14, 116, 144, 0.14)',
+            minWidth: 236,
+            minHeight: 42,
+            transition: 'all 0.2s ease',
             textTransform: 'none',
-            backdropFilter: 'blur(10px)',
-            position: 'relative',
-            overflow: 'hidden',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: '-100%',
-              width: '100%',
-              height: '100%',
-              background: 'linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.05), transparent)',
-              transition: 'left 0.6s ease-in-out'
-            },
             '&:hover': {
-              background: 'linear-gradient(135deg, #dbeafe 0%, #e0f2fe 100%)',
-              border: '2px solid #3b82f6',
-              color: '#1e40af',
-              boxShadow: '0 8px 25px rgba(59, 130, 246, 0.15)',
-              transform: 'translateY(-1px)',
-              '&::before': {
-                left: '100%'
-              }
+              background: 'linear-gradient(135deg, #e8f2ff 0%, #dbeafe 100%)',
+              borderColor: '#9ec5ef',
+              color: '#075985',
+              boxShadow: '0 5px 14px rgba(14, 116, 144, 0.18)',
+              transform: 'translateY(-1px)'
             },
             '&:active': {
-              transform: 'translateY(0px)',
-              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.2)'
+              transform: 'translateY(0px)'
             }
           }}
         >
           <Box sx={{ 
             display: 'flex', 
             alignItems: 'center', 
-            gap: 1.5,
+            gap: 1.2,
             letterSpacing: '0.01em'
           }}>
-            <Box sx={{ fontSize: '18px', opacity: 0.8 }}>📊</Box>
+            <Box sx={{ fontSize: '17px', opacity: 0.82 }}>📊</Box>
             <span>יצוא קבוצות + תלמידים לאקסל</span>
           </Box>
         </Button>
@@ -2606,17 +2692,32 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
           variant="contained"
           sx={{
             direction:'ltr',
-            bgcolor: '#10B981',
-            color: 'white',
+            background: 'linear-gradient(135deg, #eafbf3 0%, #dff5eb 100%)',
+            color: '#065f46',
+            border: '1px solid #b9e8d3',
             borderRadius: '12px',
-            px: 3,
-            py: 1,
-            boxShadow: '0 4px 14px rgba(16, 185, 129, 0.25)',
-            '&:hover': {
-              bgcolor: '#059669',
-              boxShadow: '0 6px 20px rgba(16, 185, 129, 0.35)',
+            px: 2.7,
+            py: 0.9,
+            fontWeight: 600,
+            fontSize: '0.92rem',
+            minHeight: 42,
+            boxShadow: '0 3px 10px rgba(16, 185, 129, 0.14)',
+            textTransform: 'none',
+            '& .MuiButton-endIcon': {
+              marginLeft: '10px',
+              marginRight: 0
             },
-            transition: 'all 0.3s ease'
+            '&:hover': {
+              background: 'linear-gradient(135deg, #dcf7e9 0%, #ccefdc 100%)',
+              borderColor: '#94d9bc',
+              color: '#064e3b',
+              boxShadow: '0 5px 14px rgba(5, 150, 105, 0.2)',
+              transform: 'translateY(-1px)'
+            },
+            '&:active': {
+              transform: 'translateY(0px)'
+            },
+            transition: 'all 0.2s ease'
           }}
         >
           חזרה לסניפים
@@ -2626,23 +2727,36 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Button
             variant="contained"
-            startIcon={<AddIcon />}
+            endIcon={<AddIcon />}
             onClick={() => setAddGroupDialogOpen(true)}
             sx={{
-              bgcolor: '#6366F1',
-              color: 'white',
-              borderRadius: '10px',
-              px: 2,
-              py: 0.5,
-              fontSize: '1rem',
-              minWidth: 120,
-              height: 36,
-              boxShadow: '0 2px 8px rgba(99, 102, 241, 0.15)',
-              '&:hover': {
-                bgcolor: '#4f46e5',
-                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.25)',
+              background: 'linear-gradient(135deg, #eef2ff 0%, #e7ecff 100%)',
+              color: '#3730a3',
+              border: '1px solid #c2ccff',
+              borderRadius: '12px',
+              px: 2.4,
+              py: 0.85,
+              fontSize: '0.92rem',
+              fontWeight: 600,
+              minWidth: 154,
+              minHeight: 42,
+              boxShadow: '0 3px 10px rgba(79, 70, 229, 0.14)',
+              textTransform: 'none',
+              '& .MuiButton-endIcon': {
+                marginLeft: '10px',
+                marginRight: 0
               },
-              transition: 'all 0.3s ease'
+              '&:hover': {
+                background: 'linear-gradient(135deg, #e3e9ff 0%, #d3dcff 100%)',
+                borderColor: '#a5b4fc',
+                color: '#312e81',
+                boxShadow: '0 5px 14px rgba(79, 70, 229, 0.18)',
+                transform: 'translateY(-1px)'
+              },
+              '&:active': {
+                transform: 'translateY(0px)'
+              },
+              transition: 'all 0.2s ease'
             }}
           >
             הוסף קבוצה חדשה
@@ -2655,38 +2769,43 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
             return `${courseName} - ${branchAddress} - בחר קבוצה`;
           })()}
         </Typography>
-         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mb: 2 }}>
+         <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 2, mb: 0 }}>
         {/* כפתור יצוא סניף */}
         <Button
           variant="contained"
           onClick={handleExportBranchExcel}
           disabled={groupsByBranchLoading}
           sx={{
-            background: 'linear-gradient(135deg, #4ee884ff 0%, #5036d6ff 100%)',
-            color: 'white',
-            border: '2px solid #f2f5fbff',
-            borderRadius: '18px',
-            px: 4,
-            py: 2,
+            background: 'linear-gradient(135deg, #f3f9ff 0%, #e8f2ff 100%)',
+            color: '#0f4c81',
+            border: '1px solid #c5d9f5',
+            borderRadius: '12px',
+            px: 3.5,
+            py: 0.9,
             fontWeight: 600,
-            fontSize: '1rem',
-            boxShadow: '0 4px 12px rgba(16, 120, 185, 0.25)',
-            minWidth: 240,
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            fontSize: '0.94rem',
+            boxShadow: '0 3px 10px rgba(14, 116, 144, 0.14)',
+            minWidth: 254,
+            height: 42,
+            minHeight: 42,
+            transition: 'all 0.2s ease',
             textTransform: 'none',
             position: 'relative',
             overflow: 'hidden',
             '&:hover': {
-              background: 'linear-gradient(135deg, #057496ff 0%, #045178ff 100%)',
-              border: '2px solid #056196ff',
-              boxShadow: '0 8px 25px rgba(16, 165, 185, 0.35)',
+              background: 'linear-gradient(135deg, #e8f2ff 0%, #dbeafe 100%)',
+              borderColor: '#9ec5ef',
+              color: '#075985',
+              boxShadow: '0 5px 14px rgba(14, 116, 144, 0.18)',
               transform: 'translateY(-1px)',
             },
             '&:active': {
               transform: 'translateY(0px)',
             },
             '&:disabled': {
-              opacity: 0.6,
+              opacity: 0.62,
+              background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+              color: '#8aa0b7',
               cursor: 'not-allowed'
             }
           }}
@@ -2694,13 +2813,13 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
           <Box sx={{ 
             display: 'flex', 
             alignItems: 'center', 
-            gap: 1.5,
+            gap: 1.2,
             letterSpacing: '0.01em'
           }}>
             {groupsByBranchLoading ? (
-              <CircularProgress size={16} sx={{ color: 'white' }} />
+              <CircularProgress size={16} sx={{ color: 'currentColor' }} />
             ) : (
-              <Box sx={{ fontSize: '18px' }}>🏢</Box>
+              <FileDownloadIcon sx={{ fontSize: '1.05rem', color: 'inherit' }} />
             )}
             <span>יצוא פרטי סניף לאקסל</span>
           </Box>
@@ -2769,30 +2888,32 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
         variant="text"
         onClick={() => setView('courses')}
         sx={{
-          minWidth: 110,
+          minWidth: 100,
           fontWeight: 500,
-          borderRadius: '14px',
-          py: 1.2,
-          px: 2.5,
-          fontSize: '0.9rem',
+          borderRadius: '10px',
+          py: 1,
+          px: 2,
+          fontSize: '0.85rem',
           background: view === 'courses'
             ? 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)'
             : 'transparent',
           color: view === 'courses' ? '#0284c7' : '#94a3b8',
-          border: view === 'courses' ? '1.5px solid #bae6fd' : '1.5px solid transparent',
-          boxShadow: view === 'courses' ? '0 2px 8px rgba(14, 165, 233, 0.12)' : 'none',
-          transition: 'all 0.2s ease',
+          border: view === 'courses' ? '1px solid #bae6fd' : '1px solid rgba(226, 232, 240, 0.5)',
+          boxShadow: view === 'courses' ? '0 1px 4px rgba(14, 165, 233, 0.08)' : 'none',
+          transition: 'all 0.15s ease',
           '&:hover': {
             background: view === 'courses'
               ? 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)'
-              : 'rgba(241, 245, 249, 0.6)',
+              : 'rgba(241, 245, 249, 0.4)',
             color: view === 'courses' ? '#0369a1' : '#64748b',
-            borderColor: view === 'courses' ? '#7dd3fc' : '#e2e8f0',
-            transform: 'translateY(-1px)'
+            borderColor: '#7dd3fc',
+            transform: 'translateY(-0.5px)'
           }
         }}
       >
-לפי חוג   </Button>
+         לפי חוג
+      </Button>
+      
       <Button
         variant="text"
         onClick={() => {
@@ -2801,30 +2922,30 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
           setSelectedBranch(null);
         }}
         sx={{
-          minWidth: 110,
+          minWidth: 100,
           fontWeight: 500,
-          borderRadius: '14px',
-          py: 1.2,
-          px: 2.5,
-          fontSize: '0.9rem',
+          borderRadius: '10px',
+          py: 1,
+          px: 2,
+          fontSize: '0.85rem',
           background: view === 'days'
-            ? 'linear-gradient(135deg, #f0f9ff 0%, #cdeafc 100%)'
+            ? 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)'
             : 'transparent',
           color: view === 'days' ? '#0284c7' : '#94a3b8',
-          border: view === 'days' ? '1.5px solid #bae6fd' : '1.5px solid transparent',
-          boxShadow: view === 'days' ? '0 2px 8px rgba(14, 165, 233, 0.12)' : 'none',
-          transition: 'all 0.2s ease',
+          border: view === 'days' ? '1px solid #bae6fd' : '1px solid rgba(226, 232, 240, 0.5)',
+          boxShadow: view === 'days' ? '0 1px 4px rgba(14, 165, 233, 0.08)' : 'none',
+          transition: 'all 0.15s ease',
           '&:hover': {
             background: view === 'days'
               ? 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)'
-              : 'rgba(241, 245, 249, 0.6)',
+              : 'rgba(241, 245, 249, 0.4)',
             color: view === 'days' ? '#0369a1' : '#64748b',
-            borderColor: view === 'days' ? '#7dd3fc' : '#e2e8f0',
-            transform: 'translateY(-1px)'
+            borderColor: '#7dd3fc',
+            transform: 'translateY(-0.5px)'
           }
         }}
       >
-         לפי יום 
+         לפי יום
       </Button>
     </Box>
   );
@@ -2899,24 +3020,29 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
               הנתונים נשמרים אוטומטית
             </Typography>
             {/* כפתור ניקוי נתונים */}
-            <Box sx={{ mt: 1 }}>
+            <Box sx={{ mt: 1.5 }}>
               <Button
                 onClick={resetForm}
                 variant="text"
                 size="small"
-                startIcon={<DeleteSweep sx={{ fontSize: '1rem' }} />}
+                startIcon={<DeleteSweep sx={{ fontSize: '0.8rem' }} />}
                 sx={{
-                  borderRadius: '12px',
-                  px: 2,
-                  py: 0.8,
-                  fontSize: '0.75rem',
-                  fontWeight: 500,
-                  color: '#64748b',
+                  borderRadius: '8px',
+                  px: 1.4,
+                  py: 0.45,
+                  minHeight: 28,
+                  fontSize: '0.72rem',
+                  fontWeight: 400,
+                  color: '#9aa7b8',
                   textTransform: 'none',
-                  transition: 'all 0.2s ease',
+                  background: 'transparent',
+                  border: '1px solid rgba(203, 213, 225, 0.3)',
+                  transition: 'all 0.15s ease',
                   '&:hover': {
-                    background: '#fee2e2',
-                    color: '#dc2626'
+                    background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(229, 62, 62, 0.03) 100%)',
+                    color: '#dc2626',
+                    border: '1px solid rgba(220, 38, 38, 0.2)',
+                    boxShadow: '0 1px 3px rgba(220, 38, 38, 0.08)'
                   }
                 }}
               >
@@ -2936,6 +3062,65 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
         {view === 'days' && (
           <>
             {renderDaysFilter()}
+            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+              <Tooltip 
+                title={!selectedDay ? 'בחר יום כדי לייצא קבוצות' : `יצוא קבוצות של יום ${selectedDay}`} 
+                arrow
+              >
+                <span>
+                  <Button
+                    variant="contained"
+                    onClick={handleExportDayExcel}
+                    disabled={!selectedDay || exportDayLoading}
+                    sx={{
+                      background: 'linear-gradient(135deg, #f3f9ff 0%, #e8f2ff 100%)',
+                      color: '#0f4c81',
+                      border: '1px solid #c5d9f5',
+                      borderRadius: '12px',
+                      px: 3.2,
+                      py: 0.95,
+                      fontWeight: 600,
+                      fontSize: '0.92rem',
+                      boxShadow: '0 3px 10px rgba(14, 116, 144, 0.14)',
+                      textTransform: 'none',
+                      minWidth: 236,
+                      minHeight: 42,
+                      transition: 'all 0.2s ease',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #e8f2ff 0%, #dbeafe 100%)',
+                        borderColor: '#9ec5ef',
+                        color: '#075985',
+                        boxShadow: '0 5px 14px rgba(14, 116, 144, 0.18)',
+                        transform: 'translateY(-1px)',
+                      },
+                      '&:active': {
+                        transform: 'translateY(0px)',
+                      },
+                      '&:disabled': {
+                        opacity: 0.62,
+                        background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                        color: '#8aa0b7',
+                        cursor: 'not-allowed'
+                      }
+                    }}
+                  >
+                    {exportDayLoading ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, letterSpacing: '0.01em' }}>
+                        <CircularProgress size={16} sx={{ color: 'currentColor' }} />
+                        <span>...מייצא</span>
+                      </Box>
+                    ) : (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, letterSpacing: '0.01em' }}>
+                        <FileDownloadIcon sx={{ fontSize: '1.05rem', color: 'inherit' }} />
+                        <span>יצוא לאקסל</span>
+                      </Box>
+                    )}
+                  </Button>
+                </span>
+              </Tooltip>
+            </Box>
             {renderGroupsByDay()}
           </>
         )}
@@ -3802,7 +3987,7 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
               
               <Button
                 variant="contained"
-                startIcon={<AddIcon />}
+                endIcon={<AddIcon />}
                 sx={{
                   borderRadius: '8px',
                   px: 3,
@@ -3969,7 +4154,7 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
               
               <Button
                 variant="contained"
-                startIcon={<AddIcon />}
+                endIcon={<AddIcon />}
                 sx={{
                   borderRadius: '8px',
                   px: 3,
@@ -4240,7 +4425,7 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
               
               <Button
                 variant="contained"
-                startIcon={<AddIcon />}
+                endIcon={<AddIcon />}
                 sx={{
                   borderRadius: '8px',
                   px: 3,

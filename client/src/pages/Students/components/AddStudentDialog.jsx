@@ -335,6 +335,7 @@ const AddStudentDialog = ({
         updatedDate: new Date().toISOString()
       };
       console.log('📝 Creating automatic note:', noteData);
+      if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
       const result = await dispatch(addStudentNote(noteData));
       if (addStudentNote.fulfilled.match(result)) {
         console.log('✅ Automatic note created successfully');
@@ -597,6 +598,7 @@ const AddStudentDialog = ({
   const handleNoteSubmit = (noteData) => {
     console.log('✅ Note added for student:', noteData);
     // שמור את ההערה הידנית לשרת
+    if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
     dispatch(addStudentNote({
       ...noteData,
       studentId: savedStudentData?.id || noteData.studentId

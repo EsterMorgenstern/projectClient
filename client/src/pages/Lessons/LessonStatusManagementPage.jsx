@@ -36,6 +36,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import RestoreIcon from '@mui/icons-material/Restore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
+import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowBack from '@mui/icons-material/ArrowBack';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -54,7 +55,9 @@ import { markLessonAsCompletion } from '../../store/lessons/markLessonAsCompleti
 import { getCompletionLessons } from '../../store/lessons/getCompletionLessons';
 import { getCompletionLessonsByGroupId } from '../../store/lessons/getCompletionLessonsByGroupId';
 import { getLessonsByDate } from '../../store/lessons/getLessonsByDate';
+import { deleteLesson } from '../../store/lessons/deleteLesson';
 import { fetchInstructors } from '../../store/instructor/instructorGetAllThunk';
+import { checkUserPermission } from '../../utils/permissions';
 import { useNavigate } from 'react-router-dom';
 
 const LessonStatusManagementPage = () => {
@@ -85,6 +88,9 @@ const LessonStatusManagementPage = () => {
   const [completionGroupFilter, setCompletionGroupFilter] = useState('');
   const [undoConfirmOpen, setUndoConfirmOpen] = useState(false);
   const [undoLessonData, setUndoLessonData] = useState(null);
+  const [deleteCompletionOpen, setDeleteCompletionOpen] = useState(false);
+  const [deleteCompletionData, setDeleteCompletionData] = useState(null);
+  const [permissionAlert, setPermissionAlert] = useState({ open: false, message: '', severity: 'error' });
 
   const groupMap = useMemo(() => {
     const map = new Map();
@@ -150,7 +156,6 @@ const LessonStatusManagementPage = () => {
     dispatch(fetchGroups());
     dispatch(getCanceledLessons());
     dispatch(getCompletionLessons());
-    console.log('📊 סטייט מדריכים בעמוד:', instructors);
   }, [dispatch]);
 
   // Load instructors if empty
@@ -178,6 +183,13 @@ const LessonStatusManagementPage = () => {
 
   const debounceTimerRef = useRef(null);
 
+  const ensurePermission = useCallback(() => {
+    return checkUserPermission(
+      user?.id || user?.userId,
+      (message, severity) => setPermissionAlert({ open: true, message, severity: severity || 'error' })
+    );
+  }, [user]);
+
   const handleRefreshCanceled = useCallback(() => {
     setCanceledDateFilter(null);
     dispatch(getCanceledLessons());
@@ -201,6 +213,7 @@ const LessonStatusManagementPage = () => {
 
   const handleCancelLesson = useCallback(async () => {
     if (!cancelForm.lessonId || !cancelForm.reason.trim()) return;
+    if (!ensurePermission()) return;
     await dispatch(cancelLesson({
       id: Number(cancelForm.lessonId),
       reason: cancelForm.reason.trim(),
@@ -209,7 +222,7 @@ const LessonStatusManagementPage = () => {
     setCancelDialogOpen(false);
     setCancelForm({ lessonId: '', lessonDate: null, reason: '', canceledBy: userName });
     dispatch(getCanceledLessons());
-  }, [cancelForm, userName, dispatch]);
+  }, [cancelForm, userName, dispatch, ensurePermission]);
 
   const handleCancelDateChange = useCallback((dateValue) => {
     setCancelForm(prev => ({ ...prev, lessonDate: dateValue, lessonId: '' }));
@@ -244,6 +257,7 @@ const LessonStatusManagementPage = () => {
 
   const handleBulkCancel = useCallback(async () => {
     if (!bulkCancelForm.dayOfWeek || !bulkCancelForm.reason.trim()) return;
+    if (!ensurePermission()) return;
     const date = format(bulkCancelForm.date, 'yyyy-MM-dd');
     await dispatch(cancelAllGroupsForDay({
       dayOfWeek: bulkCancelForm.dayOfWeek,
@@ -254,12 +268,13 @@ const LessonStatusManagementPage = () => {
     setBulkCancelDialogOpen(false);
     setBulkCancelForm({ dayOfWeek: '', date: new Date(), reason: '', createdBy: userName });
     dispatch(getCanceledLessons());
-  }, [bulkCancelForm, userName, dispatch]);
+  }, [bulkCancelForm, userName, dispatch, ensurePermission]);
 
   const handleUndoCancel = useCallback(async (lessonId) => {
+    if (!ensurePermission()) return;
     await dispatch(undoCancelLesson({ id: lessonId, undoBy: userName }));
     dispatch(getCanceledLessons());
-  }, [userName, dispatch]);
+  }, [userName, dispatch, ensurePermission]);
 
   const handleOpenUndoConfirm = useCallback((lesson) => {
     setUndoLessonData(lesson);
@@ -274,8 +289,24 @@ const LessonStatusManagementPage = () => {
     }
   }, [undoLessonData, handleUndoCancel]);
 
+  const handleOpenDeleteCompletion = useCallback((lesson) => {
+    setDeleteCompletionData(lesson);
+    setDeleteCompletionOpen(true);
+  }, []);
+
+  const handleConfirmDeleteCompletion = useCallback(async () => {
+    if (!deleteCompletionData) return;
+    if (!ensurePermission()) return;
+    const lessonId = deleteCompletionData.lessonId || deleteCompletionData.id;
+    await dispatch(deleteLesson({ id: lessonId }));
+    setDeleteCompletionOpen(false);
+    setDeleteCompletionData(null);
+    dispatch(getCompletionLessons());
+  }, [deleteCompletionData, dispatch, ensurePermission]);
+
   const handleCreateCompletion = useCallback(async () => {
     if (!completionForm.groupId) return;
+    if (!ensurePermission()) return;
     const completionDate = format(completionForm.completionDate, 'yyyy-MM-dd');
     await dispatch(createCompletionLesson({
       groupId: Number(completionForm.groupId),
@@ -287,10 +318,11 @@ const LessonStatusManagementPage = () => {
     setCompletionDialogOpen(false);
     setCompletionForm({ groupId: '', completionDate: new Date(), completionHour: '18:00', instructorId: '', createdBy: userName });
     dispatch(getCompletionLessons());
-  }, [completionForm, userName, dispatch]);
+  }, [completionForm, userName, dispatch, ensurePermission]);
 
   const handleMarkCompletion = useCallback(async () => {
     if (!markCompletionForm.lessonId) return;
+    if (!ensurePermission()) return;
     await dispatch(markLessonAsCompletion({
       id: Number(markCompletionForm.lessonId),
       markedBy: markCompletionForm.markedBy || userName
@@ -298,7 +330,7 @@ const LessonStatusManagementPage = () => {
     setMarkCompletionDialogOpen(false);
     setMarkCompletionForm({ lessonId: '', lessonDate: null, markedBy: userName });
     dispatch(getCompletionLessons());
-  }, [markCompletionForm, userName, dispatch]);
+  }, [markCompletionForm, userName, dispatch, ensurePermission]);
 
   const handleMarkDateChange = useCallback((dateValue) => {
     setMarkCompletionForm(prev => ({ ...prev, lessonDate: dateValue, lessonId: '' }));
@@ -564,6 +596,16 @@ const LessonStatusManagementPage = () => {
         </Alert>
       )}
 
+      {permissionAlert.open && (
+        <Alert
+          severity={permissionAlert.severity || 'error'}
+          sx={{ mb: 2 }}
+          onClose={() => setPermissionAlert(prev => ({ ...prev, open: false }))}
+        >
+          {permissionAlert.message}
+        </Alert>
+      )}
+
       {loading && (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
           <CircularProgress size={22} />
@@ -769,6 +811,7 @@ const LessonStatusManagementPage = () => {
                     <TableCell align="right">מדריך</TableCell>
                     <TableCell align="right">סטטוס</TableCell>
                     <TableCell align="right">נוצר על ידי</TableCell>
+                    <TableCell align="right">פעולות</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -781,7 +824,7 @@ const LessonStatusManagementPage = () => {
                       return (
                         <TableRow key={lesson.lessonId || lesson.id || idx}>
                           <TableCell align="right">{lesson.lessonId || lesson.id || '---'}</TableCell>
-                          <TableCell align="right">{groupMap.get(lesson.groupId) || lesson.groupId || '---'}</TableCell>
+                          <TableCell align="right">{lesson.groupName || groupMap.get(Number(lesson.groupId)) || lesson.groupId || '---'}</TableCell>
                           <TableCell align="right">{formatDate(lesson.lessonDate)}</TableCell>
                           <TableCell align="right">{lesson.lessonHour || '---'}</TableCell>
                           <TableCell align="right">{instructorName}</TableCell>
@@ -789,12 +832,22 @@ const LessonStatusManagementPage = () => {
                             <Chip label="השלמה" color="warning" size="small" variant="outlined" />
                           </TableCell>
                           <TableCell align="right">{lesson.createdBy || '---'}</TableCell>
+                          <TableCell align="right">
+                            <IconButton
+                              onClick={() => handleOpenDeleteCompletion(lesson)}
+                              size="small"
+                              sx={{ p: 0.5, color: '#dc2626', '&:hover': { bgcolor: 'rgba(220, 38, 38, 0.08)' } }}
+                              title="מחיקת השלמה"
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </TableCell>
                         </TableRow>
                       );
                     })
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                      <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
                         אין שיעורים בסטטוס השלמה
                       </TableCell>
                     </TableRow>
@@ -834,6 +887,13 @@ const LessonStatusManagementPage = () => {
         onMarkCompletion={handleMarkCompletion}
         onMarkDateChange={handleMarkDateChange}
         markCompletionLessonOptions={markCompletionLessonOptions}
+        deleteCompletionOpen={deleteCompletionOpen}
+        onCloseDeleteCompletion={() => setDeleteCompletionOpen(false)}
+        onConfirmDeleteCompletion={handleConfirmDeleteCompletion}
+        deleteCompletionData={deleteCompletionData}
+        groupMap={groupMap}
+        formatDate={formatDate}
+        outlinedButtonSx={outlinedButtonSx}
         dangerButtonSx={dangerButtonSx}
         warnButtonSx={warnButtonSx}
       />

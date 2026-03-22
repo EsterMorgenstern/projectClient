@@ -64,11 +64,11 @@ const MonthlyCalendar = ({
   groups,
   courses,
   branches,
+  lessonsByDate = {},
   savedAttendanceRecords,
   hebrewHolidays,
   isActiveDay,
   getHebrewHolidayInfo,
-   isMarkedForDayStatus = {} 
 }) => {
   const theme = useTheme();
   const [calendarDays, setCalendarDays] = useState([]);
@@ -83,7 +83,9 @@ const MonthlyCalendar = ({
   // Generate calendar days
   useEffect(() => {
     generateCalendarDays();
-  }, [currentDate, groups, savedAttendanceRecords]);
+  }, [currentDate, groups, savedAttendanceRecords, lessonsByDate]);
+
+ const getLessonStatus = (lesson) => lesson?.lessonStatus || lesson?.status || lesson?.Status || 'future';
 
  const generateCalendarDays = () => {
   const monthStart = startOfMonth(currentDate);
@@ -116,8 +118,6 @@ const MonthlyCalendar = ({
 
   const allDays = [...prevMonthDays, ...daysInMonth, ...nextMonthDays];
   
-  console.log(`Total days: ${allDays.length}, should be divisible by 7: ${allDays.length % 7 === 0}`);
-  console.log(`First day of month: ${format(monthStart, 'EEEE')}, day number: ${firstDayOfWeek}`);
     const days = allDays.map((date,index )=> {
       const dayEvents = getEventsForDay(date);
       const hasAttendance = dayEvents.some(event => {
@@ -143,7 +143,13 @@ const MonthlyCalendar = ({
       }
 
       const dateStr = format(date, 'yyyy-MM-dd');
-      const isDayFullyMarked = isMarkedForDayStatus[dateStr] === true;
+      const isDayFullyMarked = dayEvents.length > 0 && dayEvents.every((event) => {
+        const attendanceKey = `${dateStr}-${event.groupId}`;
+        return !!savedAttendanceRecords[attendanceKey];
+      });
+      const lessonsForDay = lessonsByDate[dateStr] || [];
+      const canceledCount = lessonsForDay.filter((lesson) => getLessonStatus(lesson) === 'canceled').length;
+      const completionCount = lessonsForDay.filter((lesson) => getLessonStatus(lesson) === 'completion').length;
 
       return {
         id: `${format(date, 'yyyy-MM-dd')}-${index}`,
@@ -160,6 +166,8 @@ const MonthlyCalendar = ({
         holidayInfo: holidayInfo,
         groupsCount: dayEvents.length,
         hasGroups: dayEvents.length > 0,
+        canceledCount,
+        completionCount,
         pieChartData: createPieChartData(dayEvents),
         isDayFullyMarked
       };
@@ -251,30 +259,45 @@ const MonthlyCalendar = ({
   };
 
   const getEventsForDay = (date) => {
-    const dayOfWeek = date.getDay();
-    const hebrewDays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
-    const hebrewDayName = hebrewDays[dayOfWeek];
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const lessonsForDay = lessonsByDate[dateStr] || [];
 
-    if (!groups) return [];
+    if (!lessonsForDay.length) return [];
 
-    return groups.filter(group => {
-      return group.dayOfWeek === hebrewDayName;
-    }).map(group => {
-      const course = courses.find(c => c.courseId === group.courseId);
-      const branch = branches.find(b => b.branchId === group.branchId);
-      const dateStr = format(date, 'yyyy-MM-dd');
-      const attendanceKey = `${dateStr}-${group.groupId}`;
-      const attendanceRecord = savedAttendanceRecords[attendanceKey];
+    return lessonsForDay
+      .filter((lesson) => {
+        const status = getLessonStatus(lesson);
+        return status !== 'canceled' && status !== 'completion';
+      })
+      .map((lesson) => {
+        const lessonGroupId = lesson.groupId || lesson.GroupId;
+        const lessonGroupName = lesson.groupName || lesson.GroupName;
+        const group = (groups || []).find(g => g.groupId === lessonGroupId)
+          || (groups || []).find(g => g.groupName === lessonGroupName);
+        const resolvedGroupId = group?.groupId || lessonGroupId;
 
-      return {
-        ...group,
-        courseName: course ? course.couresName : 'חוג לא ידוע',
-        branchName: branch ? branch.name : 'סניף לא ידוע',
-        attendanceRecorded: !!attendanceRecord,
-        presentCount: attendanceRecord ? attendanceRecord.presentCount : 0,
-        totalCount: attendanceRecord ? attendanceRecord.totalCount : 0
-      };
-    });
+        if (!resolvedGroupId) return null;
+
+        const course = (courses || []).find(c => c.courseId === (group?.courseId || lesson.courseId || lesson.CourseId));
+        const branch = (branches || []).find(b => b.branchId === (group?.branchId || lesson.branchId || lesson.BranchId));
+        const attendanceKey = `${dateStr}-${resolvedGroupId}`;
+        const attendanceRecord = savedAttendanceRecords[attendanceKey];
+
+        return {
+          ...group,
+          groupId: resolvedGroupId,
+          groupName: group?.groupName || lessonGroupName || 'קבוצה לא ידועה',
+          lessonId: lesson.lessonId || lesson.LessonId || lesson.id,
+          lessonStatus: getLessonStatus(lesson),
+          courseName: lesson.courseName || lesson.CourseName || (course ? (course.couresName || course.courseName) : 'חוג לא ידוע'),
+          branchName: lesson.branchName || lesson.BranchName || lesson.city || lesson.City || (branch ? (branch.name || branch.city) : 'סניף לא ידוע'),
+          hour: lesson.lessonHour || lesson.LessonHour || group?.hour,
+          attendanceRecorded: !!attendanceRecord,
+          presentCount: attendanceRecord ? attendanceRecord.presentCount : 0,
+          totalCount: attendanceRecord ? attendanceRecord.totalCount : 0
+        };
+      })
+      .filter(Boolean);
   };
 
   // כותרת החודש 
@@ -603,17 +626,27 @@ const renderMonthHeader = () => {
               </Typography>
               {day.pieChartData.map((branch, index) => (
                 <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5, direction: 'rtl' }}>
-                  <Typography variant="body2">
-                    {branch.value} {branch.value === 1 ? 'קבוצה' : 'קבוצות'} - {branch.name}
-                  </Typography>
                   <Box sx={{
                     width: 12,
                     height: 12,
                     backgroundColor: branch.color,
                     borderRadius: '50%'
                   }} />
+                  <Typography variant="body2">
+                    {branch.value} {branch.value === 1 ? 'קבוצה' : 'קבוצות'} - {branch.name}
+                  </Typography>
                 </Box>
               ))}
+              {(day.canceledCount > 0 || day.completionCount > 0) && (
+                <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid rgba(255,255,255,0.3)', direction: 'rtl' }}>
+                  {day.canceledCount > 0 && (
+                    <Typography variant="body2">בוטלו: {day.canceledCount}</Typography>
+                  )}
+                  {day.completionCount > 0 && (
+                    <Typography variant="body2">השלמות: {day.completionCount}</Typography>
+                  )}
+                </Box>
+              )}
               {hasAttendance && day.attendanceStats && (
                 <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid rgba(255,255,255,0.3)', direction: 'rtl' }}>
                   <Typography variant="body2">
@@ -668,6 +701,37 @@ const renderMonthHeader = () => {
         {formatGroupsCountText(groupsCount)}
       </Typography>
 
+      {(day.canceledCount > 0 || day.completionCount > 0) && (
+        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', justifyContent: 'center' }}>
+          {day.canceledCount > 0 && (
+            <Chip
+              size="small"
+              label={`בוטלו ${day.canceledCount}`}
+              sx={{
+                height: 20,
+                fontSize: '0.65rem',
+                backgroundColor: 'rgba(220, 38, 38, 0.12)',
+                color: '#b91c1c',
+                border: '1px solid rgba(220, 38, 38, 0.25)'
+              }}
+            />
+          )}
+          {day.completionCount > 0 && (
+            <Chip
+              size="small"
+              label={`השלמות ${day.completionCount}`}
+              sx={{
+                height: 20,
+                fontSize: '0.65rem',
+                backgroundColor: 'rgba(234, 88, 12, 0.12)',
+                color: '#c2410c',
+                border: '1px solid rgba(234, 88, 12, 0.25)'
+              }}
+            />
+          )}
+        </Box>
+      )}
+
       {/* עדכן את הצגת הסטטוס */}
       {day.isDayFullyMarked ? (
         <Typography
@@ -708,10 +772,6 @@ const renderMonthHeader = () => {
   const handleDayClick = (day) => {
     if (day.isActiveDay && day.events.length > 0) {
       onDateSelect(day.date);
-    } else if (!day.isActiveDay) {
-      console.log('Day is not active for events:', day.holidayInfo?.name || 'Weekend/Holiday');
-    } else if (day.events.length === 0) {
-      console.log('No events scheduled for this day');
     }
   };
 
@@ -926,7 +986,7 @@ const renderMonthHeader = () => {
         </Typography>
         
         <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 'bold', color: '#4A5568' }}>
               סוגי ימים:
             </Typography>
@@ -948,9 +1008,9 @@ const renderMonthHeader = () => {
             </Box>
           </Grid>
 
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 'bold', color: '#4A5568' }}>
-              גרף עוגה - חלוקת סניפים:
+             גרף עוגה - חלוקה לפי ערים:
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -962,7 +1022,7 @@ const renderMonthHeader = () => {
                   border: '2px solid white',
                   boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                 }} />
-                <Typography variant="body2">כל צבע מייצג סניף שונה</Typography>
+                <Typography variant="body2">כל צבע מייצג עיר שונה</Typography>
               </Box>
               
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -1010,13 +1070,13 @@ const renderMonthHeader = () => {
         {/* דוגמאות צבעים לחוגים */}
         <Box sx={{ mt: 3, pt: 3, borderTop: '1px solid #E2E8F0' }}>
           <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 'bold', color: '#4A5568' }}>
-            צבעי הסניפים:
+            צבעי הערים:
           </Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
             {COURSE_COLORS.slice(0, 8).map((color, index) => (
               <Chip
                 key={index}
-                label={`סניף ${index + 1}`}
+                label={`עיר ${index + 1}`}
                 size="small"
                 sx={{
                   backgroundColor: color,
@@ -1064,8 +1124,7 @@ MonthlyCalendar.defaultProps = {
   savedAttendanceRecords: {},
   hebrewHolidays: new Map(),
   isActiveDay: () => true,
-  getHebrewHolidayInfo: () => null,
-  isMarkedForDayStatus: {}
+  getHebrewHolidayInfo: () => null
 };
 
 export default MonthlyCalendar;

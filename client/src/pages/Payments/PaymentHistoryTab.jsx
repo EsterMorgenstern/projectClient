@@ -47,10 +47,12 @@ import { fetchPaymentHistory } from '../../store/payments/fetchPaymentHistory';
 import { updatePayment } from '../../store/payments/paymentsUpdate';
 import { deletePaymentMethod } from '../../store/payments/paymentMethodsDelete';
 import { addPayment } from '../../store/payments/paymentsAdd';
+import { checkUserPermission } from '../../utils/permissions';
 
 const PaymentHistoryTab = ({ student, embedded = false }) => {
     const dispatch = useDispatch();
     const { paymentHistory, loading, error } = useSelector((state) => state.payments);
+    const currentUser = useSelector(state => state.users?.currentUser || state.auth?.currentUser || state.user?.currentUser || null);
     
     const [addDialogOpen, setAddDialogOpen] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -145,6 +147,7 @@ const PaymentHistoryTab = ({ student, embedded = false }) => {
 
     const handleSavePayment = async () => {
         try {
+            if (!checkUserPermission(currentUser?.id || currentUser?.userId, (message) => alert(message))) return;
             const paymentData = {
                 ...formData,
                 studentId: student.id,
@@ -175,6 +178,7 @@ const PaymentHistoryTab = ({ student, embedded = false }) => {
 
     const handleDeletePayment = async (paymentId) => {
         try {
+            if (!checkUserPermission(currentUser?.id || currentUser?.userId, (message) => alert(message))) return;
             await dispatch(deletePaymentMethod(paymentId));
             dispatch(fetchPaymentHistory(student.id));
         } catch (error) {

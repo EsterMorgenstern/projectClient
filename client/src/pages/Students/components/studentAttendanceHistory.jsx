@@ -25,7 +25,9 @@ import {
   CardContent,
   CircularProgress,
   Avatar,
-  Divider
+  Divider,
+  Snackbar,
+  Alert
 } from '@mui/material';
 import {
   CalendarToday,
@@ -45,6 +47,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 
 import { motion } from 'framer-motion';
 import { deleteAttendance } from '../../../store/attendance/attendanceDeleteThunk';
+import { checkUserPermission } from '../../../utils/permissions';
 
 const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) => {
   console.log('👤 StudentAttendanceHistory rendered with:', { 
@@ -54,8 +57,10 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
   });
   
   const dispatch = useDispatch();
+  const currentUser = useSelector(state => state.users?.currentUser || state.auth?.currentUser || state.user?.currentUser || null);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedAttendanceId, setSelectedAttendanceId] = useState(null);
+  const [notification, setNotification] = useState({ open: false, message: '', severity: 'error' });
 
   const attendanceData = useSelector((state) => state.attendances.attendanceData);
   const attendanceSummary = useSelector((state) => state.attendances.attendanceSummary);
@@ -125,6 +130,7 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
   };
 
   const handleConfirmDelete = () => {
+    if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
     dispatch(deleteAttendance(selectedAttendanceId));
     setOpenDialog(false);
     setSelectedAttendanceId(null);
@@ -866,6 +872,20 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
           סגור
         </Button>
       </DialogActions>
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={4000}
+        onClose={() => setNotification(prev => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setNotification(prev => ({ ...prev, open: false }))}
+          severity={notification.severity}
+          sx={{ borderRadius: 2 }}
+        >
+          {notification.message}
+        </Alert>
+      </Snackbar>
     </Dialog>
 
   );

@@ -1,9 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
   Typography,
   Box,
@@ -25,9 +21,8 @@ import {
   InputLabel,
   Select,
   Alert,
-  IconButton,
-  Divider,
-  Slide
+  Tab,
+  Tabs
 } from '@mui/material';
 import {
   Assessment,
@@ -39,25 +34,23 @@ import {
   School,
   Analytics,
   BarChart,
-  Close as CloseIcon,
-  Refresh
+  Refresh,
+  ArrowBack
 } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { fetchAttendanceReportsMonthly } from '../../../store/attendance/fetchAttendenceReportsMonthly';
 import { fetchAttendanceReportsOverall } from '../../../store/attendance/fetchAttendanceReportsOverall';
 import { fetchCourses } from '../../../store/course/CoursesGetAllThunk';
 import { fetchBranches } from '../../../store/branch/branchGetAllThunk';
 import { fetchGroups } from '../../../store/group/groupGellAllThunk';
 
-const Transition = React.forwardRef(function Transition(props, ref) {
-  return <Slide direction="left" ref={ref} {...props} />;
-});
-
-const AttendanceReports = ({ open, onClose }) => {
+const AttendanceReports = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   // Redux state
   const attendanceState = useSelector((state) => state.attendances);
@@ -66,7 +59,7 @@ const AttendanceReports = ({ open, onClose }) => {
   const groupsState = useSelector((state) => state.groups);
 
   // Local state
-  const [reportType, setReportType] = useState('monthly');
+  const [reportTab, setReportTab] = useState(1);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedCourse, setSelectedCourse] = useState('');
@@ -75,6 +68,7 @@ const AttendanceReports = ({ open, onClose }) => {
   const [dataLoading, setDataLoading] = useState(false);
 
   // Derived state
+  const reportType = reportTab === 0 ? 'overall' : 'monthly';
   const reportData = reportType === 'monthly'
     ? attendanceState?.attendanceReportsMonthly
     : attendanceState?.attendanceReportsOverall;
@@ -127,10 +121,10 @@ const AttendanceReports = ({ open, onClose }) => {
 
   // Load basic data on mount
   useEffect(() => {
-    if (open && (courses.length === 0 || branches.length === 0 || groups.length === 0)) {
+    if (courses.length === 0 || branches.length === 0 || groups.length === 0) {
       loadBasicData();
     }
-  }, [open]);
+  }, []);
 
   // Handle course change
   const handleCourseChange = (courseId) => {
@@ -147,28 +141,28 @@ const AttendanceReports = ({ open, onClose }) => {
 
   // Fetch report data
   const fetchReportData = async () => {
-  try {
-    if (reportType === 'monthly') {
-      const params = {
-        selectedMonth,
-        selectedYear
-      };
-      if (selectedGroup) {
-        params.groupId = selectedGroup;
+    try {
+      if (reportType === 'monthly') {
+        const params = {
+          selectedMonth,
+          selectedYear
+        };
+        if (selectedGroup) {
+          params.groupId = selectedGroup;
+        }
+        await dispatch(fetchAttendanceReportsMonthly(params));
+      } else if (reportType === 'overall') {
+        await dispatch(fetchAttendanceReportsOverall({
+          selectedMonth,
+          selectedYear
+        }));
       }
-      await dispatch(fetchAttendanceReportsMonthly(params));
-    } else if (reportType === 'overall') {
-      await dispatch(fetchAttendanceReportsOverall({
-        selectedMonth,
-        selectedYear
-      }));
+    } catch (error) {
+      console.error('Error fetching report data:', error);
     }
-  } catch (error) {
-    console.error('Error fetching report data:', error);
-  }
-};
-//
-const exportToExcel = () => {
+  };
+
+  const exportToExcel = () => {
   if (!reportData) {
     console.warn('אין נתונים לייצוא');
     return;
@@ -228,7 +222,7 @@ const exportToExcel = () => {
   } catch (error) {
     console.error('שגיאה בייצוא לאקסל:', error);
   }
-};
+  };
   const renderMonthlyReport = () => {
     if (!reportData) return null;
 
@@ -800,481 +794,509 @@ const exportToExcel = () => {
   };
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="xl"
-      fullWidth
-      TransitionComponent={Transition}
+    <Box
+      dir="rtl"
       sx={{
-        direction: 'rtl',
-        '& .MuiDialog-paper': {
-          borderRadius: '16px',
-          minHeight: '80vh',
-          maxHeight: '95vh',
-          background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
-        }
+        background: 'linear-gradient(to right, #e0f2fe, #f8fafc)',
+        minHeight: '100vh',
+        borderRadius: 8,
+        py: 4
       }}
     >
-      <DialogTitle
-        sx={{
-          background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-          color: 'white',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          py: 2.5,
-          px: 3,
-          position: 'relative',
-          overflow: 'hidden'
-        }}
-      >
-        {/* Background pattern */}
-        <Box sx={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='20' cy='20' r='2'/%3E%3C/g%3E%3C/svg%3E")`,
-          opacity: 0.3
-        }} />
-
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, position: 'relative', zIndex: 1 }}>
-          <Assessment sx={{ fontSize: 32 }} />
-          <Box>
-            <Typography variant="h5" fontWeight="bold">
-              דוחות נוכחות
-            </Typography>
-            <Typography variant="subtitle2" sx={{ opacity: 0.9 }}>
-              ניתוח וסטטיסטיקות מתקדמות
-            </Typography>
+      <Box sx={{ maxWidth: 1400, mx: 'auto', px: 3, direction: 'rtl' }}>
+        <Box sx={{ mt: 1, mb: 2, position: 'relative', minHeight: 44 }}>
+          <Box sx={{ position: 'absolute', top: 0, right: 0 }}>
+            <Button
+              variant="outlined"
+              startIcon={<ArrowBack />}
+              onClick={() => navigate('/lesson-management')}
+              sx={{
+                borderRadius: 3,
+                borderColor: '#64748B',
+                color: '#475569',
+                '& .MuiButton-startIcon': {
+                  marginLeft: 8,
+                  marginRight: 0
+                },
+                '&:hover': {
+                  borderColor: '#1E3A8A',
+                  color: '#1E3A8A',
+                  background: 'rgba(30, 58, 138, 0.05)'
+                }
+              }}
+            >
+               ניהול שיעורים
+            </Button>
           </Box>
         </Box>
-
-        <IconButton
-          onClick={onClose}
-          sx={{
-            color: 'white',
-            background: 'rgba(255, 255, 255, 0.2)',
-            '&:hover': {
-              background: 'rgba(255, 255, 255, 0.3)',
-              transform: 'rotate(90deg)'
-            },
-            transition: 'all 0.3s ease',
-            position: 'relative',
-            zIndex: 1
-          }}
-        >
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-
-      <DialogContent sx={{ p: 0, background: '#f8fafc' }}>
-        <Box sx={{ p: 3 }}>
-          {/* הודעת שגיאה אם יש */}
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <Alert
-                severity="error"
-                sx={{
-                  mb: 3,
-                  borderRadius: 2,
-                  '& .MuiAlert-message': {
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    width: '100%'
-                  }
-                }}
-              >
-                <Box>
-                  <Typography variant="subtitle1" fontWeight="bold">
-                    שגיאה בטעינת הנתונים
-                  </Typography>
-                  <Typography variant="body2">
-                    {typeof error === 'string' ? error : 'אירעה שגיאה לא צפויה'}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Button
-                    onClick={loadBasicData}
-                    disabled={dataLoading}
-                    variant="contained"
-                    color="warning"
-                    size="small"
-                    startIcon={dataLoading ? <CircularProgress size={16} /> : <Refresh />}
-                    sx={{ borderRadius: 2 }}
-                  >
-                    {dataLoading ? 'טוען...' : 'נסה שוב'}
-                  </Button>
-                </Box>
-              </Alert>
-            </motion.div>
-          )}
-
-          {/* פילטרים מעוצבים */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+        <Box sx={{ mb: 3, textAlign: 'center' }}>
+          <Typography
+            variant="h3"
+            sx={{
+              fontWeight: 'bold',
+              color: '#1E3A8A',
+              mb: 1,
+              fontFamily: 'Heebo, sans-serif'
+            }}
           >
-            <Card sx={{
-              mb: 3,
-              borderRadius: 3,
-              background: 'linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%)',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
-            }}>
-              <CardContent sx={{ p: 3 }}>
-                <Typography variant="h6" gutterBottom sx={{
-                  color: '#1e293b',
-                  fontWeight: 'bold',
-                  mb: 2,
+            דוחות נוכחות
+          </Typography>
+          <Typography
+            variant="h6"
+            sx={{
+              color: '#334155',
+              fontSize: { xs: '1rem', md: '1.25rem' }
+            }}
+          >
+            ניתוח וסטטיסטיקות מתקדמות
+          </Typography>
+        </Box>
+
+        <Box sx={{ mb: 3 }}>
+          <Tabs
+            value={reportTab}
+            onChange={(_, value) => setReportTab(value)}
+            variant="scrollable"
+            allowScrollButtonsMobile
+            TabIndicatorProps={{
+              sx: {
+                height: 3,
+                borderRadius: 2,
+                background: '#1E3A8A'
+              }
+            }}
+            sx={{
+              bgcolor: '#FFFFFF',
+              borderRadius: 2,
+              px: 2,
+              py: 0.5,
+              minHeight: 56,
+              border: '1px solid rgba(226, 232, 240, 0.9)',
+              '& .MuiTab-root': {
+                outline: 'none',
+                boxShadow: 'none'
+              },
+              '& .MuiTab-root:focus': {
+                outline: 'none',
+                boxShadow: 'none'
+              },
+              '& .MuiTab-root:focus-visible': {
+                outline: 'none'
+              },
+              '& .MuiTab-root.Mui-focusVisible': {
+                outline: 'none',
+                boxShadow: 'none'
+              },
+              '& .MuiTabs-flexContainer': {
+                gap: 1,
+                justifyContent: 'flex-start',
+                width: '100%'
+              }
+            }}
+          >
+            <Tab
+              label="סטטיסטיקות כלליות"
+              disableRipple
+              sx={{
+                textTransform: 'none',
+                fontWeight: 700,
+                minHeight: 44,
+                px: 3,
+                color: '#475569',
+                transition: 'background-color 0.1s ease',
+                '&:hover': {
+                  bgcolor: 'transparent'
+                },
+                '&:focus': {
+                  outline: 'none',
+                  boxShadow: 'none'
+                },
+                '&:focus-visible': {
+                  outline: 'none'
+                },
+                '&.Mui-focusVisible': {
+                  outline: 'none',
+                  boxShadow: 'none'
+                },
+                '&.Mui-selected': {
+                  color: '#1E3A8A'
+                }
+              }}
+            />
+            <Tab
+              label="דוח חודשי"
+              disableRipple
+              sx={{
+                textTransform: 'none',
+                fontWeight: 700,
+                minHeight: 44,
+                px: 3,
+                color: '#475569',
+                transition: 'background-color 0.1s ease',
+                '&:hover': {
+                  bgcolor: 'transparent'
+                },
+                '&:focus': {
+                  outline: 'none',
+                  boxShadow: 'none'
+                },
+                '&:focus-visible': {
+                  outline: 'none'
+                },
+                '&.Mui-focusVisible': {
+                  outline: 'none',
+                  boxShadow: 'none'
+                },
+                '&.Mui-selected': {
+                  color: '#1E3A8A'
+                }
+              }}
+            />
+          </Tabs>
+        </Box>
+
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Alert
+              severity="error"
+              sx={{
+                mb: 3,
+                borderRadius: 2,
+                '& .MuiAlert-message': {
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 1
-                }}>
-                  <BarChart sx={{ color: '#667eea' }} />
-                  פילטרים ובחירת נתונים
+                  justifyContent: 'space-between',
+                  width: '100%'
+                }
+              }}
+            >
+              <Box>
+                <Typography variant="subtitle1" fontWeight="bold">
+                  שגיאה בטעינת הנתונים
                 </Typography>
+                <Typography variant="body2">
+                  {typeof error === 'string' ? error : 'אירעה שגיאה לא צפויה'}
+                </Typography>
+              </Box>
+              <Box>
+                <Button
+                  onClick={loadBasicData}
+                  disabled={dataLoading}
+                  variant="contained"
+                  color="warning"
+                  size="small"
+                  startIcon={dataLoading ? <CircularProgress size={16} /> : <Refresh />}
+                  sx={{ borderRadius: 2 }}
+                >
+                  {dataLoading ? 'טוען...' : 'נסה שוב'}
+                </Button>
+              </Box>
+            </Alert>
+          </motion.div>
+        )}
 
-                <Grid container spacing={2}>
-                  <Grid item xs={12} md={2}>
-                    <TextField
-                      select
-                      fullWidth
-                      size="small"
-                      label="סוג דוח"
-                      value={reportType}
-                      onChange={(e) => setReportType(e.target.value)}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: 2,
-                          background: 'white',
-                          '&:hover fieldset': {
-                            borderColor: '#667eea',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#667eea',
-                          },
-                        },
-                      }}
-                    >
-                      <MenuItem value="monthly">דוח חודשי</MenuItem>
-                      <MenuItem value="overall">סטטיסטיקות כלליות</MenuItem>
-                    </TextField>
-                  </Grid>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <Card sx={{
+            mb: 3,
+            borderRadius: 3,
+            background: 'linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%)',
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+          }}>
+            <CardContent sx={{ p: 3 }}>
+              <Typography variant="h6" gutterBottom sx={{
+                color: '#1e293b',
+                fontWeight: 'bold',
+                mb: 2,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <BarChart sx={{ color: '#667eea' }} />
+                פילטרים ובחירת נתונים
+              </Typography>
 
-                  <Grid item xs={12} md={2}>
-                    <TextField
-                      select
-                      fullWidth
-                      size="small"
-                      label="שנה"
-                      value={selectedYear}
-                      onChange={(e) => setSelectedYear(e.target.value)}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: 2,
-                          background: 'white',
-                          '&:hover fieldset': {
-                            borderColor: '#667eea',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#667eea',
-                          },
-                        },
-                      }}
-                    >
-                      {years.map(year => (
-                        <MenuItem key={year} value={year}>
-                          {year}
-                        </MenuItem>
-                      ))}
-                    </TextField>
-                  </Grid>
-
-                  <Grid item xs={12} md={2}>
-                    <TextField
-                      select
-                      fullWidth
-                     
-                      size="small"
-                      label="חודש"
-                      value={selectedMonth}
-                      onChange={(e) => setSelectedMonth(e.target.value)}
-                      sx={{
-                        minWidth: 120,
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: 2,
-                          background: 'white',
-                          '&:hover fieldset': {
-                            borderColor: '#667eea',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#667eea',
-                          },
-                        },
-                      }}
-                    >
-                      {monthNames.map((month, index) => (
-                        <MenuItem key={index + 1} value={index + 1}>
-                          {month}
-                        </MenuItem>
-                      ))}
-                    </TextField>
-                  </Grid>
-
-                  {/* בחירת חוג */}
-                  {reportType === 'monthly' && (
-                    <>
-                      <Grid item xs={12} md={2} sx={{minWidth: 70}}>
-                        <FormControl fullWidth size="small">
-                          <InputLabel>חוג</InputLabel>
-                          <Select
-                            value={selectedCourse}
-                            onChange={(e) => handleCourseChange(e.target.value)}
-                            label="חוג"
-                            sx={{
-                              borderRadius: 2,
-                              background: 'white',
-                              '&:hover .MuiOutlinedInput-notchedOutline': {
-                                borderColor: '#667eea',
-                              },
-                              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                borderColor: '#667eea',
-                              },
-                            }}
-                          >
-                            <MenuItem value="">כל החוגים</MenuItem>
-                            {courses.map(course => (
-                              <MenuItem key={course.courseId} value={course.courseId}>
-                            {course.couresName}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      </Grid>
-
-                      {/* בחירת סניף */}
-                      <Grid item xs={12} md={2} sx={{minWidth: 80}}>
-                        <FormControl fullWidth size="small" disabled={!selectedCourse}>
-                          <InputLabel>סניף</InputLabel>
-                          <Select
-                            value={selectedBranch}
-                            onChange={(e) => handleBranchChange(e.target.value)}
-                            label="סניף"
-                            sx={{
-                              borderRadius: 2,
-                              background: selectedCourse ? 'white' : '#f1f5f9',
-                              '&:hover .MuiOutlinedInput-notchedOutline': {
-                                borderColor: selectedCourse ? '#667eea' : '#cbd5e1',
-                              },
-                              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                borderColor: selectedCourse ? '#667eea' : '#cbd5e1',
-                              },
-                            }}
-                          >
-                            <MenuItem value="">כל הסניפים</MenuItem>
-                            {filteredBranches.map(branch => (
-                              <MenuItem key={branch.branchId} value={branch.branchId}>
-                                {branch.name}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      </Grid>
-
-                      {/* בחירת קבוצה */}
-                      <Grid item xs={12} md={2} sx={{minWidth: 80}}>
-                        <FormControl fullWidth size="small" disabled={!selectedCourse}>
-                          <InputLabel>קבוצה</InputLabel>
-                          <Select
-                            value={selectedGroup}
-                            onChange={(e) => setSelectedGroup(e.target.value)}
-                            label="קבוצה"
-                            sx={{
-                              borderRadius: 2,
-                              background: selectedCourse ? 'white' : '#f1f5f9',
-                              '&:hover .MuiOutlinedInput-notchedOutline': {
-                                borderColor: selectedCourse ? '#667eea' : '#cbd5e1',
-                              },
-                              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                borderColor: selectedCourse ? '#667eea' : '#cbd5e1',
-                              },
-                            }}
-                          >
-                            <MenuItem value="">כל הקבוצות</MenuItem>
-                            {filteredGroups.map(group => (
-                              <MenuItem key={group.groupId} value={group.groupId}>
-                                {group.groupName}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      </Grid>
-                    </>
-                  )}
-                </Grid>
-
-                {/* כפתור עדכון דוח */}
-                <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
-                  <Button
-                    variant="contained"
-                    onClick={fetchReportData}
-                    disabled={Boolean(loading)}
-                    startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <Assessment />}
+              <Grid container spacing={2}>
+                <Grid item xs={12} md={2}>
+                  <TextField
+                    select
+                    fullWidth
+                    size="small"
+                    label="שנה"
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(e.target.value)}
                     sx={{
-                      direction: 'ltr',
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      borderRadius: '12px',
-                      px: 3,
-                      py: 1,
-                      fontSize: '0.95rem',
-                      fontWeight: '600',
-                      boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
-                      '&:hover': {
-                        background: 'linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)',
-                        boxShadow: '0 6px 16px rgba(102, 126, 234, 0.4)',
-                        transform: 'translateY(-1px)'
-                      },
-                      '&:disabled': {
-                        background: '#e2e8f0',
-                        color: '#94a3b8',
-                        boxShadow: 'none'
-                      },
-                      transition: 'all 0.2s ease'
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        background: 'white',
+                        '&:hover fieldset': {
+                          borderColor: '#667eea'
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: '#667eea'
+                        }
+                      }
                     }}
                   >
-                    {loading ? '... טוען נתונים' : 'עדכן דוח'}
-                  </Button>
-                </Box>
-              </CardContent>
-            </Card>
-          </motion.div>
+                    {years.map(year => (
+                      <MenuItem key={year} value={year}>
+                        {year}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
 
-          {/* תוכן הדוח */}
-          <AnimatePresence mode="wait">
-            {loading ? (
-              <motion.div
-                key="loading"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                <Box sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  py: 6,
-                  background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-                  borderRadius: 3,
-                  border: '2px dashed #cbd5e1'
-                }}>
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                <Grid item xs={12} md={2}>
+                  <TextField
+                    select
+                    fullWidth
+                    size="small"
+                    label="חודש"
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(e.target.value)}
+                    sx={{
+                      minWidth: 120,
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        background: 'white',
+                        '&:hover fieldset': {
+                          borderColor: '#667eea'
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: '#667eea'
+                        }
+                      }
+                    }}
                   >
-                    <CircularProgress size={48} sx={{ color: '#667eea', mb: 2 }} />
-                  </motion.div>
-                  <Typography variant="h6" sx={{ color: '#475569', fontWeight: '600' }}>
-                    טוען נתונים...
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: '#64748b', mt: 0.5 }}>
-                    אנא המתן בזמן שאנחנו מכינים את הדוח עבורך
-                  </Typography>
-                </Box>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="content"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.5 }}
-              >
-                {reportType === 'monthly' && renderMonthlyReport()}
-                {reportType === 'overall' && renderOverallReport()}
-              </motion.div>
-            )}
-          </AnimatePresence>
+                    {monthNames.map((month, index) => (
+                      <MenuItem key={index + 1} value={index + 1}>
+                        {month}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+
+                {reportType === 'monthly' && (
+                  <>
+                    <Grid item xs={12} md={2} sx={{ minWidth: 70 }}>
+                      <FormControl fullWidth size="small">
+                        <InputLabel>חוג</InputLabel>
+                        <Select
+                          value={selectedCourse}
+                          onChange={(e) => handleCourseChange(e.target.value)}
+                          label="חוג"
+                          sx={{
+                            borderRadius: 2,
+                            background: 'white',
+                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                              borderColor: '#667eea'
+                            },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                              borderColor: '#667eea'
+                            }
+                          }}
+                        >
+                          <MenuItem value="">כל החוגים</MenuItem>
+                          {courses.map(course => (
+                            <MenuItem key={course.courseId} value={course.courseId}>
+                              {course.couresName}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Grid>
+
+                    <Grid item xs={12} md={2} sx={{ minWidth: 80 }}>
+                      <FormControl fullWidth size="small" disabled={!selectedCourse}>
+                        <InputLabel>סניף</InputLabel>
+                        <Select
+                          value={selectedBranch}
+                          onChange={(e) => handleBranchChange(e.target.value)}
+                          label="סניף"
+                          sx={{
+                            borderRadius: 2,
+                            background: selectedCourse ? 'white' : '#f1f5f9',
+                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                              borderColor: selectedCourse ? '#667eea' : '#cbd5e1'
+                            },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                              borderColor: selectedCourse ? '#667eea' : '#cbd5e1'
+                            }
+                          }}
+                        >
+                          <MenuItem value="">כל הסניפים</MenuItem>
+                          {filteredBranches.map(branch => (
+                            <MenuItem key={branch.branchId} value={branch.branchId}>
+                              {branch.name}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Grid>
+
+                    <Grid item xs={12} md={2} sx={{ minWidth: 80 }}>
+                      <FormControl fullWidth size="small" disabled={!selectedCourse}>
+                        <InputLabel>קבוצה</InputLabel>
+                        <Select
+                          value={selectedGroup}
+                          onChange={(e) => setSelectedGroup(e.target.value)}
+                          label="קבוצה"
+                          sx={{
+                            borderRadius: 2,
+                            background: selectedCourse ? 'white' : '#f1f5f9',
+                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                              borderColor: selectedCourse ? '#667eea' : '#cbd5e1'
+                            },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                              borderColor: selectedCourse ? '#667eea' : '#cbd5e1'
+                            }
+                          }}
+                        >
+                          <MenuItem value="">כל הקבוצות</MenuItem>
+                          {filteredGroups.map(group => (
+                            <MenuItem key={group.groupId} value={group.groupId}>
+                              {group.groupName}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                  </>
+                )}
+              </Grid>
+
+              <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
+                <Button
+                  variant="contained"
+                  onClick={fetchReportData}
+                  disabled={Boolean(loading)}
+                  startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <Assessment />}
+                  sx={{
+                    direction: 'ltr',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    borderRadius: '12px',
+                    px: 3,
+                    py: 1,
+                    fontSize: '0.95rem',
+                    fontWeight: '600',
+                    boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)',
+                      boxShadow: '0 6px 16px rgba(102, 126, 234, 0.4)',
+                      transform: 'translateY(-1px)'
+                    },
+                    '&:disabled': {
+                      background: '#e2e8f0',
+                      color: '#94a3b8',
+                      boxShadow: 'none'
+                    },
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {loading ? '... טוען נתונים' : 'עדכן דוח'}
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <AnimatePresence mode="wait">
+          {loading ? (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Box sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                py: 6,
+                background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                borderRadius: 3,
+                border: '2px dashed #cbd5e1'
+              }}>
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                >
+                  <CircularProgress size={48} sx={{ color: '#667eea', mb: 2 }} />
+                </motion.div>
+                <Typography variant="h6" sx={{ color: '#475569', fontWeight: '600' }}>
+                  טוען נתונים...
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#64748b', mt: 0.5 }}>
+                  אנא המתן בזמן שאנחנו מכינים את הדוח עבורך
+                </Typography>
+              </Box>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="content"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.5 }}
+            >
+              {reportType === 'monthly' && renderMonthlyReport()}
+              {reportType === 'overall' && renderOverallReport()}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <Box sx={{
+          mt: 4,
+          p: 2.5,
+          background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+          borderRadius: 3,
+          border: '1px solid #e2e8f0',
+          display: 'flex',
+          justifyContent: 'center'
+        }}>
+          <Button
+            startIcon={<Download />}
+            variant="contained"
+            color="success"
+            disabled={!reportData || Boolean(loading)}
+            onClick={exportToExcel}
+            sx={{
+              direction: 'ltr',
+              borderRadius: '12px',
+              px: 3,
+              py: 1,
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                boxShadow: '0 6px 16px rgba(16, 185, 129, 0.4)',
+                transform: 'translateY(-1px)'
+              },
+              '&:disabled': {
+                background: '#e2e8f0',
+                color: '#94a3b8',
+                boxShadow: 'none'
+              },
+              transition: 'all 0.2s ease'
+            }}
+          >
+            ייצא לאקסל
+          </Button>
         </Box>
-      </DialogContent>
-
-      <Divider sx={{ background: 'linear-gradient(90deg, transparent, #e2e8f0, transparent)' }} />
-
-      <DialogActions sx={{
-        p: 3,
-        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-        justifyContent: 'center',
-        gap: 2
-      }}>
-        <Button
-          startIcon={<Download />}
-          variant="contained"
-          color="success"
-          disabled={!reportData || Boolean(loading)}
-          onClick={exportToExcel}
-          sx={{
-            direction: 'ltr',
-            borderRadius: '12px',
-            px: 3,
-            py: 1,
-            fontSize: '0.9rem',
-            fontWeight: '600',
-            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
-            '&:hover': {
-              background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-              boxShadow: '0 6px 16px rgba(16, 185, 129, 0.4)',
-              transform: 'translateY(-1px)'
-            },
-            '&:disabled': {
-              background: '#e2e8f0',
-              color: '#94a3b8',
-              boxShadow: 'none'
-            },
-            transition: 'all 0.2s ease'
-          }}
-        >
-          ייצא לאקסל
-        </Button>
-
-        <Button
-          onClick={onClose}
-          variant="outlined"
-          color="primary"
-          sx={{
-            borderRadius: '12px',
-            px: 3,
-            py: 1,
-            fontSize: '0.9rem',
-            fontWeight: '600',
-            borderWidth: '2px',
-            borderColor: '#667eea',
-            color: '#667eea',
-            '&:hover': {
-              borderWidth: '2px',
-              borderColor: '#5a67d8',
-              background: 'rgba(102, 126, 234, 0.05)',
-              boxShadow: '0 4px 12px rgba(102, 126, 234, 0.2)',
-              transform: 'translateY(-1px)'
-            },
-            transition: 'all 0.2s ease'
-          }}
-        >
-          סגור
-        </Button>
-      </DialogActions>
-    </Dialog>
+      </Box>
+    </Box>
   );
 };
 

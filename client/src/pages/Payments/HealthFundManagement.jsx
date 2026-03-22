@@ -10,6 +10,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { AddCircle, LocalHospital, AssignmentTurnedIn, Healing, Description, Note, Person, Save, Close } from '@mui/icons-material';
 import { Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Grid, IconButton } from '@mui/material';
 import DraggablePaper, { DragHandle } from '../../components/DraggablePaper';
+import { checkUserPermission } from '../../utils/permissions';
 import {
   TableContainer,
   Paper,
@@ -72,6 +73,10 @@ const HealthFundManagement = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
+      if (!checkUserPermission(currentUser?.id || currentUser?.userId, (message) => alert(message))) {
+        setSaving(false);
+        return;
+      }
       await dispatch(addHealthFund(formData)).unwrap();
       handleCloseAddDialog();
       dispatch(fetchHealthFunds());
@@ -99,6 +104,10 @@ const HealthFundManagement = () => {
   const handleEditSave = async () => {
     setEditSaving(true);
     try {
+      if (!checkUserPermission(currentUser?.id || currentUser?.userId, (message) => alert(message))) {
+        setEditSaving(false);
+        return;
+      }
       await dispatch(updateHealthFund(editFormData)).unwrap();
       handleCloseEditDialog();
       dispatch(fetchHealthFunds());
@@ -122,6 +131,10 @@ const HealthFundManagement = () => {
   const handleDeleteConfirm = async () => {
     setDeleteSaving(true);
     try {
+      if (!checkUserPermission(currentUser?.id || currentUser?.userId, (message) => alert(message))) {
+        setDeleteSaving(false);
+        return;
+      }
       await dispatch(deleteHealthFund(deleteId)).unwrap();
       handleCloseDeleteDialog();
       dispatch(fetchHealthFunds());
@@ -132,6 +145,7 @@ const HealthFundManagement = () => {
   };
   const dispatch = useDispatch();
   const { items, loading, error } = useSelector(state => state.healthFunds);
+  const currentUser = useSelector(state => state.users?.currentUser || state.auth?.currentUser || state.user?.currentUser || null);
 
   useEffect(() => {
     dispatch(fetchHealthFunds());
