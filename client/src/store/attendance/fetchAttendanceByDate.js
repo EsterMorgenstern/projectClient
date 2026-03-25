@@ -11,8 +11,6 @@ export const fetchAttendanceByDate = createAsyncThunk(
   'attendance/fetchAttendanceByDate',
   async ({ groupId, date }, { rejectWithValue }) => {
     try {
-      console.log('📅 Fetching attendance for group:', groupId, 'date:', date);
-
       const response = await fetch(`${API_BASE_URL}/Attendance/GetAttendanceByGroupAndDate/${groupId}/${date}`, {
         method: 'GET',
         headers: {
@@ -25,7 +23,6 @@ export const fetchAttendanceByDate = createAsyncThunk(
 
         // Some backend environments return 400/404 or "not implemented" when no data API is unavailable.
         if (isEndpointNotAvailable(response.status, errorText)) {
-          console.warn('⚠️ Attendance endpoint unavailable or no data for date, continuing with empty attendance.');
           return { date, attendance: [] };
         }
 
@@ -34,7 +31,6 @@ export const fetchAttendanceByDate = createAsyncThunk(
 
       const data = await response.json();
       const normalizedAttendance = normalizeAttendanceList(data);
-      console.log('✅ Attendance fetched successfully:', data);
 
       return { date, attendance: normalizedAttendance };
     } catch (error) {

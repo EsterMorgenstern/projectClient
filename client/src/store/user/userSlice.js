@@ -1,6 +1,7 @@
 import { createSlice, createSelector } from '@reduxjs/toolkit';
 import { getUserById } from './userGetByIdThunk';
 import { addUser } from './userAddThunk';
+import { getAllUsers } from './userGetAllThunk';
 
 const usersSlice = createSlice({
   name: 'users',
@@ -99,6 +100,19 @@ const usersSlice = createSlice({
         state.loading = false;
         state.error = action.payload || 'Failed to add user';
         state.registrationSuccess = false;
+      })
+
+      .addCase(getAllUsers.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getAllUsers.fulfilled, (state, action) => {
+        state.loading = false;
+        state.users = Array.isArray(action.payload) ? action.payload : [];
+      })
+      .addCase(getAllUsers.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });

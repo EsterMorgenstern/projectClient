@@ -175,17 +175,13 @@ const CourseSelectionDialog = ({
   }, [open, selectedDate, groupsByDay, groupsByDayLoading, attendanceChecked]);
 
   const handleGroupClick = async (group) => {
-    console.log('🖱️ Group card clicked:', group);
-    
     const cancellation = getGroupCancellation(group.groupId);
     if (cancellation) {
-      console.log('⚠️ Cannot select cancelled lesson:', cancellation);
       return;
     }
     
     if (onGroupSelect && typeof onGroupSelect === 'function') {
       try {
-        console.log('✅ Calling onGroupSelect with group:', group);
         await onGroupSelect(group);
         
         if (onClose && typeof onClose === 'function') {

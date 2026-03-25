@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchAttendanceHistory } from '../../../store/attendance/fetchAttendanceHistory';
 import { fetchStudentAttendanceSummary } from '../../../store/attendance/fetchStudentAttendanceSummary';
+import { getAllUsers } from '../../../store/user/userGetAllThunk';
 import {
   Dialog,
   DialogTitle,
@@ -47,76 +48,210 @@ import DeleteIcon from '@mui/icons-material/Delete';
 
 import { motion } from 'framer-motion';
 import { deleteAttendance } from '../../../store/attendance/attendanceDeleteThunk';
+import { batchUpdateAttendances } from '../../../store/attendance/batchUpdateAttendances';
 import { checkUserPermission } from '../../../utils/permissions';
 
+const getRecordValue = (record, keys) => {
+  for (const key of keys) {
+    if (record?.[key] !== undefined && record?.[key] !== null && record?.[key] !== '') {
+      return record[key];
+    }
+  }
+  return null;
+};
+
+const formatColumnLabel = (key) => {
+  const labels = {
+    attendanceId: 'מזהה נוכחות',
+    AttendanceId: 'מזהה נוכחות',
+    studentId: 'מזהה תלמיד',
+    StudentId: 'מזהה תלמיד',
+    lessonId: 'מזהה שיעור',
+    LessonId: 'מזהה שיעור',
+    date: 'תאריך',
+    Date: 'תאריך',
+    dateReport: 'תאריך דיווח',
+    DateReport: 'תאריך דיווח',
+    lessonDate: 'תאריך שיעור',
+    LessonDate: 'תאריך שיעור',
+    courseName: 'קורס',
+    CourseName: 'קורס',
+    groupName: 'קבוצה',
+    GroupName: 'קבוצה',
+    branchName: 'סניף',
+    BranchName: 'סניף',
+    instructorName: 'מדריך',
+    InstructorName: 'מדריך',
+    lessonTime: 'שעה',
+    LessonTime: 'שעה',
+    wasPresent: 'נוכחות',
+    WasPresent: 'נוכחות',
+    isPresent: 'נוכחות',
+    IsPresent: 'נוכחות',
+    statusReport: 'סטטוס דיווח',
+    StatusReport: 'סטטוס דיווח',
+    healthFundReport: 'קופת חולים',
+    HealthFundReport: 'קופת חולים',
+    updateDate: 'תאריך עדכון',
+    UpdateDate: 'תאריך עדכון',
+    updateBy: 'עודכן על ידי',
+    UpdateBy: 'עודכן על ידי',
+    groupId: 'מזהה קבוצה',
+    GroupId: 'מזהה קבוצה'
+  };
+
+  if (labels[key]) {
+    return labels[key];
+  }
+
+  return key
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/_/g, ' ')
+    .trim();
+};
+
+const isDateLikeKey = (key) => /^date|date$/i.test(key);
+
+const parseStatusReport = (value) => {
+  const numeric = Number(value);
+  return Number.isInteger(numeric) ? numeric : null;
+};
+
+const getStatusLabel = (status) => {
+  if (status === 1) return 'דווח';
+  if (status === 2) return 'לא לדיווח';
+  if (status === 3) return 'ממתין לדיווח';
+  return 'לא ידוע';
+};
+
+const parsePresenceValue = (value) => {
+  if (value === undefined || value === null || value === '') {
+    return null;
+  }
+
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'number') {
+    if (value === 1) return true;
+    if (value === 0) return false;
+    return null;
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (['true', '1', 'yes', 'present', 'כן'].includes(normalized)) return true;
+    if (['false', '0', 'no', 'absent', 'לא'].includes(normalized)) return false;
+  }
+
+  return null;
+};
+
+const renderPresenceChip = (isPresent, embedded) => (
+  <Chip
+    icon={isPresent ? <CheckCircle sx={{ fontSize: embedded ? 16 : 18 }} /> : <Cancel sx={{ fontSize: embedded ? 16 : 18 }} />}
+    label={isPresent ? 'נוכח' : 'נעדר'}
+    color={isPresent ? 'success' : 'error'}
+    size={embedded ? 'small' : 'medium'}
+    variant="outlined"
+    sx={{
+      fontSize: embedded ? '0.75rem' : '0.875rem',
+      fontWeight: 'medium'
+    }}
+  />
+);
+
+const formatAttendanceValue = (key, value, embedded) => {
+  if (value === undefined || value === null || value === '') {
+    return '---';
+  }
+
+  if (key === 'isPresent' || key === 'wasPresent' || key === 'WasPresent' || key === 'IsPresent') {
+    const parsedPresence = parsePresenceValue(value);
+    if (parsedPresence === null) {
+      return '---';
+    }
+    return renderPresenceChip(parsedPresence, embedded);
+  }
+
+  if (typeof value === 'boolean') {
+    return renderPresenceChip(value, embedded);
+  }
+
+  if (key === 'statusReport' || key === 'StatusReport') {
+    const status = parseStatusReport(value);
+    const statusMap = {
+      1: { color: 'success', icon: <CheckCircle sx={{ fontSize: embedded ? 16 : 18 }} /> },
+      2: { color: 'default', icon: <Cancel sx={{ fontSize: embedded ? 16 : 18 }} /> },
+      3: { color: 'warning', icon: <ScheduleIcon sx={{ fontSize: embedded ? 16 : 18 }} /> }
+    };
+    const style = statusMap[status] || { color: 'default', icon: <ScheduleIcon sx={{ fontSize: embedded ? 16 : 18 }} /> };
+
+    return (
+      <Chip
+        icon={style.icon}
+        label={getStatusLabel(status)}
+        color={style.color}
+        size={embedded ? 'small' : 'medium'}
+        variant="outlined"
+        sx={{
+          fontSize: embedded ? '0.75rem' : '0.875rem',
+          fontWeight: 'medium'
+        }}
+      />
+    );
+  }
+
+  if (isDateLikeKey(key)) {
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) {
+      return date.toLocaleDateString('he-IL');
+    }
+  }
+
+  if (typeof value === 'object') {
+    return JSON.stringify(value);
+  }
+
+  return String(value);
+};
+
 const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) => {
-  console.log('👤 StudentAttendanceHistory rendered with:', { 
-    open, 
-    embedded, 
-    student: student ? { id: student.id, name: `${student.firstName} ${student.lastName}` } : null 
-  });
-  
   const dispatch = useDispatch();
   const currentUser = useSelector(state => state.users?.currentUser || state.auth?.currentUser || state.user?.currentUser || null);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedAttendanceId, setSelectedAttendanceId] = useState(null);
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [selectedStatusRecord, setSelectedStatusRecord] = useState(null);
+  const [selectedStatusValue, setSelectedStatusValue] = useState('');
+  const [savingStatus, setSavingStatus] = useState(false);
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'error' });
 
   const attendanceData = useSelector((state) => state.attendances.attendanceData);
-  const attendanceSummary = useSelector((state) => state.attendances.attendanceSummary);
   const loading = useSelector((state) => state.attendances.loading);
-
-  // הוסף לוגים לבדיקת מצב Redux
-  console.log('🔍 Redux state:', {
-    attendanceDataType: typeof attendanceData,
-    attendanceDataLength: Array.isArray(attendanceData) ? attendanceData.length : 'Not array',
-    attendanceData: attendanceData,
-    attendanceDataKeys: typeof attendanceData === 'object' && attendanceData ? Object.keys(attendanceData) : 'N/A',
-    attendanceSummary,
-    loading
-  });
+  const allUsers = useSelector((state) => state.users?.users || []);
 
   const [filteredData, setFilteredData] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState('');
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState('');
   const [selectedCourse, setSelectedCourse] = useState('');
+  const studentId = student?.id;
 
   // פונקציה לטעינת נתוני נוכחות
   const fetchAttendanceHistoryData = async () => {
-    if (!student?.id) {
-      console.log('❌ No student ID available');
+    if (!studentId) {
       return;
     }
 
-    console.log('🔄 Fetching attendance history for:', {
-      studentId: student.id,
-      selectedMonth: selectedMonth || 'כל החודשים',
-      selectedYear,
-      actualParams: { studentId: student.id, selectedMonth, selectedYear }
-    });
-
     try {
-      // בואו ננסה גם בלי פרמטרים - אולי השרת מחזיר הכל ברירת מחדל
       const params = {
-        studentId: student.id,
-        selectedMonth: selectedMonth || undefined, // undefined במקום null
-        selectedYear: selectedYear
+        studentId,
+        month: selectedMonth || undefined,
+        year: selectedYear || undefined
       };
-      
-      console.log('🚀 About to dispatch with params:', params);
-      
-      const result = await dispatch(fetchAttendanceHistory(params)).unwrap();
-      console.log('✅ Attendance history result:', result);
-      console.log('📊 Data received:', Array.isArray(result) ? `${result.length} records` : typeof result);
-      
-      // אם אין נתונים, בואו ננסה בלי פילטרים
-      if (Array.isArray(result) && result.length === 0 && (selectedMonth || selectedYear !== new Date().getFullYear())) {
-        console.log('🔄 No data with filters, trying without filters...');
-        const resultNoFilters = await dispatch(fetchAttendanceHistory({
-          studentId: student.id
-        })).unwrap();
-        console.log('🔄 Result without filters:', resultNoFilters);
-      }
+
+      await dispatch(fetchAttendanceHistory(params)).unwrap();
     } catch (error) {
       console.error('❌ Error fetching attendance history:', error);
       console.error('❌ Error details:', error.message || error);
@@ -141,26 +276,76 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
     setSelectedAttendanceId(null);
   };
 
-  // פונקציה לטעינת סיכום נוכחות
-  const fetchAttendanceSummaryData = async () => {
-    if (!student?.id) {
-      console.log('❌ No student ID for summary');
+  const handleOpenStatusDialog = (record) => {
+    const currentStatus = parseStatusReport(getRecordValue(record, ['statusReport', 'StatusReport']));
+    setSelectedStatusRecord(record);
+    setSelectedStatusValue(currentStatus ? String(currentStatus) : '3');
+    setStatusDialogOpen(true);
+  };
+
+  const handleCloseStatusDialog = () => {
+    setStatusDialogOpen(false);
+    setSelectedStatusRecord(null);
+    setSelectedStatusValue('');
+  };
+
+  const handleSaveStatusReport = async () => {
+    const attendanceId = getRecordValue(selectedStatusRecord, ['attendanceId', 'AttendanceId', 'id', 'Id']);
+    if (!attendanceId) {
+      setNotification({ open: true, message: 'לא נמצא מזהה נוכחות לעדכון', severity: 'error' });
       return;
     }
 
-    console.log('📊 Fetching student attendance summary:', {
-      studentId: student.id,
-      month: selectedMonth || 'כל החודשים',
-      year: selectedYear
-    });
+    const canEdit = checkUserPermission(
+      currentUser?.id || currentUser?.userId,
+      (msg, severity) => setNotification({ open: true, message: msg, severity })
+    );
+
+    if (!canEdit) {
+      return;
+    }
+
+    setSavingStatus(true);
 
     try {
-      const result = await dispatch(fetchStudentAttendanceSummary({
-        studentId: student.id,
+      const rawPresence = getRecordValue(selectedStatusRecord, ['isPresent', 'wasPresent', 'WasPresent', 'IsPresent']);
+      const parsedPresence = parsePresenceValue(rawPresence);
+      const updatePayload = {
+        attendanceId: Number(attendanceId),
+        studentId: Number(getRecordValue(selectedStatusRecord, ['studentId', 'StudentId'])) || Number(studentId),
+        lessonId: Number(getRecordValue(selectedStatusRecord, ['lessonId', 'LessonId'])) || 0,
+        dateReport: getRecordValue(selectedStatusRecord, ['dateReport', 'DateReport', 'date', 'Date']) || null,
+        statusReport: Number(selectedStatusValue),
+        updateDate: new Date().toISOString(),
+        updateBy: Number(currentUser?.id || currentUser?.userId || currentUser?.IdentityCard || currentUser?.identityCard || 0),
+        healthFundReport: Number(getRecordValue(selectedStatusRecord, ['healthFundReport', 'HealthFundReport'])) || 0,
+        wasPresent: parsedPresence === null ? false : parsedPresence
+      };
+
+      await dispatch(batchUpdateAttendances([updatePayload])).unwrap();
+      await Promise.all([fetchAttendanceHistoryData(), fetchAttendanceSummaryData()]);
+
+      setNotification({ open: true, message: 'סטטוס הדיווח עודכן בהצלחה', severity: 'success' });
+      handleCloseStatusDialog();
+    } catch (error) {
+      setNotification({ open: true, message: 'עדכון סטטוס הדיווח נכשל', severity: 'error' });
+    } finally {
+      setSavingStatus(false);
+    }
+  };
+
+  // פונקציה לטעינת סיכום נוכחות
+  const fetchAttendanceSummaryData = async () => {
+    if (!studentId) {
+      return;
+    }
+
+    try {
+      await dispatch(fetchStudentAttendanceSummary({
+        studentId,
         month: selectedMonth || null,
-        year: selectedYear
+        year: selectedYear || null
       })).unwrap();
-      console.log('✅ Student attendance summary fetched:', result);
     } catch (error) {
       console.error('❌ Error fetching attendance summary:', error);
       console.error('❌ Summary error details:', error.message || error);
@@ -168,55 +353,125 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
   };
 
   useEffect(() => {
-    console.log('🔄 useEffect triggered:', {
-      hasStudentId: !!student?.id,
-      studentId: student?.id,
-      open,
-      embedded,
-      selectedMonth,
-      selectedYear,
-      shouldFetch: !!(student?.id && (open || embedded))
-    });
-    
-    if (student?.id && (open || embedded)) {
-      console.log('✅ Conditions met, fetching data...');
+    if (studentId && (open || embedded)) {
       fetchAttendanceHistoryData();
       fetchAttendanceSummaryData();
-    } else {
-      console.log('❌ Conditions not met for fetching data');
     }
-  }, [student, open, embedded, selectedMonth, selectedYear]);
+  }, [studentId, open, embedded, selectedMonth, selectedYear]);
+
+  useEffect(() => {
+    if (allUsers.length === 0) {
+      dispatch(getAllUsers());
+    }
+  }, [dispatch, allUsers.length]);
 
   // סינון לפי קורס
   useEffect(() => {
-    console.log('🔄 Filtering data:', {
-      attendanceDataType: typeof attendanceData,
-      isArray: Array.isArray(attendanceData),
-      dataLength: Array.isArray(attendanceData) ? attendanceData.length : 'N/A',
-      selectedCourse,
-      rawData: attendanceData
-    });
-    
     let filtered = Array.isArray(attendanceData) ? attendanceData : [];
 
     if (selectedCourse) {
-      filtered = filtered.filter(record =>
-        record.courseName === selectedCourse
+      filtered = filtered.filter((record) =>
+        getRecordValue(record, ['courseName', 'CourseName']) === selectedCourse
       );
-      console.log('🔍 Filtered by course:', { selectedCourse, filteredCount: filtered.length });
     }
 
-    console.log('📊 Final filtered data:', { count: filtered.length, data: filtered });
     setFilteredData(filtered);
   }, [selectedCourse, attendanceData]);
 
-  // חישוב סטטיסטיקות מהנתונים המסוננים
-  const totalLessons = filteredData.length;
-  const attendedLessons = filteredData.filter(record => record.isPresent).length;
-  const attendanceRate = totalLessons > 0 ? ((attendedLessons / totalLessons) * 100).toFixed(1) : 0;
+  // חישוב סטטיסטיקות ישירות מהשורות שמוצגות בטבלה
+  const summaryStats = useMemo(() => {
+    const rows = Array.isArray(filteredData) ? filteredData : [];
+
+    const statusCount = rows.reduce((acc, record) => {
+      const status = parseStatusReport(getRecordValue(record, ['statusReport', 'StatusReport']));
+      if (status === 1) acc.reported += 1;
+      if (status === 2) acc.notForReport += 1;
+      if (status === 3) acc.pending += 1;
+      return acc;
+    }, { reported: 0, notForReport: 0, pending: 0 });
+
+    const presenceStates = rows
+      .map((record) => parsePresenceValue(getRecordValue(record, ['isPresent', 'wasPresent', 'WasPresent', 'IsPresent'])))
+      .filter((state) => state !== null);
+
+    const present = presenceStates.filter((state) => state === true).length;
+    const absent = presenceStates.filter((state) => state === false).length;
+    const totalWithPresence = present + absent;
+
+    const attendanceRate = totalWithPresence > 0
+      ? ((present / totalWithPresence) * 100).toFixed(1)
+      : 0;
+
+    return {
+      totalRows: rows.length,
+      present,
+      absent,
+      attendanceRate,
+      ...statusCount
+    };
+  }, [filteredData]);
 
   // קבלת רשימת קורסים ייחודיים
-  const uniqueCourses = [...new Set((Array.isArray(attendanceData) ? attendanceData : []).map(record => record.courseName))];
+  const resolveUserName = (idValue) => {
+    if (!idValue && idValue !== 0) return '---';
+    const numericId = Number(idValue);
+    if (allUsers.length > 0) {
+      const found = allUsers.find((u) =>
+        Number(u?.id ?? u?.Id ?? u?.userId ?? u?.UserId ?? u?.IdentityCard ?? u?.identityCard) === numericId
+      );
+      if (found) {
+        const first = found.firstName ?? found.FirstName ?? '';
+        const last = found.lastName ?? found.LastName ?? '';
+        const fullName = `${first} ${last}`.trim();
+        if (fullName) return fullName;
+      }
+    }
+    return String(idValue);
+  };
+
+  const uniqueCourses = [...new Set(
+    (Array.isArray(attendanceData) ? attendanceData : [])
+      .map((record) => getRecordValue(record, ['courseName', 'CourseName']))
+      .filter(Boolean)
+  )];
+
+  const attendanceColumns = useMemo(() => {
+    const records = Array.isArray(filteredData) && filteredData.length > 0
+      ? filteredData
+      : Array.isArray(attendanceData)
+        ? attendanceData
+        : [];
+
+    const keys = new Set();
+    records.forEach((record) => {
+      Object.keys(record || {}).forEach((key) => keys.add(key));
+    });
+
+    const preferredOrder = [
+      'AttendanceId', 'attendanceId',
+      'StudentId', 'studentId',
+      'LessonId', 'lessonId',
+      'DateReport', 'dateReport',
+      'LessonDate', 'lessonDate', 'Date', 'date',
+      'CourseName', 'courseName',
+      'GroupName', 'groupName',
+      'BranchName', 'branchName',
+      'InstructorName', 'instructorName',
+      'LessonTime', 'lessonTime',
+      'WasPresent', 'wasPresent', 'IsPresent', 'isPresent',
+      'StatusReport', 'statusReport',
+      'HealthFundReport', 'healthFundReport',
+      'UpdateDate', 'updateDate',
+      'UpdateBy', 'updateBy',
+      'GroupId', 'groupId'
+    ];
+
+    const keyList = Array.from(keys).filter((key) => typeof key === 'string' && key.trim().length > 0);
+    return [
+      ...preferredOrder.filter((key) => keyList.includes(key)),
+      ...keyList.filter((key) => !preferredOrder.includes(key))
+    ];
+  }, [attendanceData, filteredData]);
 
   const monthNames = [
     'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
@@ -227,35 +482,39 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
   const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
 
   const handleRefreshData = () => {
-    console.log('🔄 Manual refresh triggered');
-    console.log('🔄 Current state:', { 
-      studentId: student?.id, 
-      selectedMonth, 
-      selectedYear, 
-      attendanceDataLength: Array.isArray(attendanceData) ? attendanceData.length : 'Not array' 
-    });
     fetchAttendanceHistoryData();
     fetchAttendanceSummaryData();
   };
 
   // פונקציה לרינדור התוכן
   const renderAttendanceContent = () => {
+    const summaryTotal = summaryStats.totalRows;
+    const summaryPresent = summaryStats.present;
+    const summaryAbsent = summaryStats.absent;
+    const summaryRate = summaryStats.attendanceRate;
+    const summaryCards = [
+      { label: 'סה"כ שיעורים', value: summaryTotal, bg: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', text: '#065f46', border: '#a7f3d0' },
+      { label: 'נוכח', value: summaryPresent, bg: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', text: '#1e3a8a', border: '#bfdbfe' },
+      { label: 'נעדר', value: summaryAbsent, bg: 'linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%)', text: '#9f1239', border: '#fecdd3' },
+      { label: 'דווח', value: summaryStats.reported, bg: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', text: '#14532d', border: '#bbf7d0' },
+      { label: 'לא לדיווח', value: summaryStats.notForReport, bg: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)', text: '#1e293b', border: '#cbd5e1' },
+      { label: 'ממתין לדיווח', value: summaryStats.pending, bg: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)', text: '#9a3412', border: '#fed7aa' },
+      { label: 'אחוז נוכחות', value: `${Number(summaryRate).toFixed(1)}%`, bg: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)', text: '#5b21b6', border: '#ddd6fe' }
+    ];
+
     return (
       <Box sx={{ width: '100%' }}>
-        {/* פילטרים */}
-        <Box sx={{ mb: 3 }}>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={3}>
+        <Box sx={{ mb: 2.2 }}>
+          <Grid container sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 1, rowGap: 1, alignItems: 'flex-end' }}>
+            <Grid size="auto">
               <TextField
                 select
-                fullWidth
-
                 label="בחר שנה"
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
-                size={embedded ? "small" : "medium"}
+                size={embedded ? 'small' : 'medium'}
                 sx={{
-                  width: '110px',
+                  width: 128,
                   '& .MuiOutlinedInput-root': {
                     borderRadius: '12px',
                     '&.Mui-focused fieldset': {
@@ -267,24 +526,24 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
                   }
                 }}
               >
-                {years.map(year => (
+                <MenuItem value="">כל השנים</MenuItem>
+                {years.map((year) => (
                   <MenuItem key={year} value={year}>
                     {year}
                   </MenuItem>
                 ))}
               </TextField>
             </Grid>
-            <Grid item xs={12} md={3}>
+
+            <Grid size="auto">
               <TextField
                 select
-                fullWidth
                 label="בחר חודש"
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                size={embedded ? "small" : "medium"}
+                size={embedded ? 'small' : 'medium'}
                 sx={{
-                  width: '110px',
-
+                  width: 128,
                   '& .MuiOutlinedInput-root': {
                     borderRadius: '12px',
                     '&.Mui-focused fieldset': {
@@ -304,17 +563,16 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
                 ))}
               </TextField>
             </Grid>
-            <Grid item xs={12} md={3}>
+
+            <Grid size="auto">
               <TextField
                 select
-                fullWidth
                 label="בחר קורס"
                 value={selectedCourse}
                 onChange={(e) => setSelectedCourse(e.target.value)}
-                size={embedded ? "small" : "medium"}
+                size={embedded ? 'small' : 'medium'}
                 sx={{
-                  width: '110px',
-
+                  width: 146,
                   '& .MuiOutlinedInput-root': {
                     borderRadius: '12px',
                     '&.Mui-focused fieldset': {
@@ -327,28 +585,29 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
                 }}
               >
                 <MenuItem value="">כל הקורסים</MenuItem>
-                {uniqueCourses.map(course => (
+                {uniqueCourses.map((course) => (
                   <MenuItem key={course} value={course}>
                     {course}
                   </MenuItem>
                 ))}
               </TextField>
             </Grid>
-            <Grid item xs={12} md={3}>
+
+            <Grid size="auto">
               <Button
-                fullWidth
                 variant="contained"
                 onClick={handleRefreshData}
                 disabled={loading}
                 startIcon={loading ? <CircularProgress size={16} color="inherit" /> : <RefreshIcon />}
                 sx={{
+                  minWidth: 132,
                   height: embedded ? '40px' : '56px',
-                  background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)', // ✅ סגול במקום כתום
+                  background: 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)',
                   borderRadius: '12px',
                   fontWeight: 'medium',
-                  boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)',
+                  boxShadow: '0 3px 12px rgba(139, 92, 246, 0.22)',
                   '&:hover': {
-                    boxShadow: '0 8px 25px rgba(139, 92, 246, 0.4)',
+                    boxShadow: '0 5px 15px rgba(139, 92, 246, 0.28)',
                     transform: 'translateY(-1px)'
                   },
                   '&:disabled': {
@@ -361,7 +620,6 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
               </Button>
             </Grid>
           </Grid>
-
         </Box>
 
         {loading ? (
@@ -370,237 +628,88 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
           </Box>
         ) : (
           <>
-            {/* סטטיסטיקות - עיצוב אחיד */}
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 2, mb: 3 }}>
-              <Card sx={{
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', // ✅ ירוק
-                color: 'white',
-                borderRadius: '16px',
-                boxShadow: '0 8px 25px rgba(16, 185, 129, 0.3)',
-                border: '1px solid rgba(255, 255, 255, 0.2)'
-              }}>
-                <CardContent sx={{ textAlign: 'center', py: embedded ? 1.5 : 2 }}>
-                  <School sx={{ fontSize: embedded ? 32 : 40, mb: 1 }} />
-                  <Typography variant={embedded ? "h5" : "h4"} fontWeight="bold">
-                    {totalLessons}
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    סה״כ שיעורים
-                  </Typography>
-                </CardContent>
-              </Card>
-
-              <Card sx={{
-                background: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)', // ✅ כחול
-                color: 'white',
-                borderRadius: '16px',
-                boxShadow: '0 8px 25px rgba(59, 130, 246, 0.3)',
-                border: '1px solid rgba(255, 255, 255, 0.2)'
-              }}>
-                <CardContent sx={{ textAlign: 'center', py: embedded ? 1.5 : 2 }}>
-                  <CheckCircle sx={{ fontSize: embedded ? 32 : 40, mb: 1 }} />
-                  <Typography variant={embedded ? "h5" : "h4"} fontWeight="bold">
-                    {attendedLessons}
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    נוכחות
-                  </Typography>
-                </CardContent>
-              </Card>
-
-              <Card sx={{
-                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)', // ✅ סגול
-                color: 'white',
-                borderRadius: '16px',
-                boxShadow: '0 8px 25px rgba(139, 92, 246, 0.3)',
-                border: '1px solid rgba(255, 255, 255, 0.2)'
-              }}>
-                <CardContent sx={{ textAlign: 'center', py: embedded ? 1.5 : 2 }}>
-                  <Person sx={{ fontSize: embedded ? 32 : 40, mb: 1 }} />
-                  <Typography variant={embedded ? "h5" : "h4"} fontWeight="bold">
-                    {attendanceRate}%
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    אחוז נוכחות
-                  </Typography>
-                </CardContent>
-              </Card>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: 'repeat(2, minmax(0, 1fr))',
+                  sm: 'repeat(3, minmax(0, 1fr))',
+                  md: 'repeat(4, minmax(0, 1fr))',
+                  lg: `repeat(${summaryCards.length}, minmax(0, 1fr))`
+                },
+                gap: 1.4,
+                mb: 2.4,
+                width: '100%'
+              }}
+            >
+              {summaryCards.map((item) => (
+                <Card
+                  key={item.label}
+                  sx={{
+                    background: item.bg,
+                    color: item.text,
+                    borderRadius: '16px',
+                    border: `1px solid ${item.border}`,
+                    boxShadow: '0 4px 14px rgba(15, 23, 42, 0.08)'
+                  }}
+                >
+                  <CardContent
+                    sx={{
+                      minHeight: embedded ? 86 : 98,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      textAlign: 'center',
+                      py: embedded ? 1.2 : 1.6
+                    }}
+                  >
+                    <Typography
+                      variant={embedded ? 'h5' : 'h4'}
+                      fontWeight="bold"
+                      sx={{ lineHeight: 1.05, mb: 0.35 }}
+                    >
+                      {item.value}
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.92, fontWeight: 600 }}>
+                      {item.label}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              ))}
             </Box>
 
-            {/* טבלת נוכחות - עיצוב אחיד עם טבלת החוגים */}
-            <Card sx={{
-              borderRadius: '16px',
-              overflow: 'hidden',
-              boxShadow: '0 8px 25px rgba(0,0,0,0.08)',
-              background: 'white',
-              border: '1px solid rgba(0,0,0,0.08)'
-            }}>
+            <Card
+              sx={{
+                borderRadius: '16px',
+                overflow: 'hidden',
+                boxShadow: '0 8px 25px rgba(0,0,0,0.08)',
+                background: 'white',
+                border: '1px solid rgba(0,0,0,0.08)'
+              }}
+            >
               <TableContainer sx={{ maxHeight: embedded ? '300px' : '400px' }}>
-                <Table stickyHeader size={embedded ? "small" : "medium"}>
+                <Table stickyHeader size={embedded ? 'small' : 'medium'}>
                   <TableHead>
                     <TableRow>
-                      <TableCell
-                        align="right"
-                        sx={{
-                          fontWeight: 'bold',
-                          fontSize: embedded ? '0.9rem' : '1rem',
-                          background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-                          py: 2,
-                          textAlign: 'right',
-                          direction: 'rtl',
-                          borderBottom: '2px solid #8b5cf6' // ✅ גבול סגול
-                        }}
-                      >
-                        <Box sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'flex-start',
-                          gap: 1,
-                          direction: 'rtl'
-                        }}>
-                          <CalendarToday sx={{ color: '#8b5cf6', fontSize: 18 }} />
-                          <Typography sx={{ fontWeight: 'bold' }}>תאריך</Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell
-                        align="right"
-                        sx={{
-                          fontWeight: 'bold',
-                          fontSize: embedded ? '0.9rem' : '1rem',
-                          background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-                          py: 2,
-                          textAlign: 'right',
-                          direction: 'rtl',
-                          borderBottom: '2px solid #8b5cf6'
-                        }}
-                      >
-                        <Box sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'flex-start',
-                          gap: 1,
-                          direction: 'rtl'
-                        }}>
-                          <School sx={{ color: '#8b5cf6', fontSize: 18 }} />
-                          <Typography sx={{ fontWeight: 'bold' }}>קורס</Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell
-                        align="right"
-                        sx={{
-                          fontWeight: 'bold',
-                          fontSize: embedded ? '0.9rem' : '1rem',
-                          background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-                          py: 2,
-                          textAlign: 'right',
-                          direction: 'rtl',
-                          borderBottom: '2px solid #8b5cf6'
-                        }}
-                      >
-                        <Box sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'flex-start',
-                          gap: 1,
-                          direction: 'rtl'
-                        }}>
-                          <GroupIcon sx={{ color: '#8b5cf6', fontSize: 18 }} />
-                          <Typography sx={{ fontWeight: 'bold' }}>קבוצה</Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell
-                        align="right"
-                        sx={{
-                          fontWeight: 'bold',
-                          fontSize: embedded ? '0.9rem' : '1rem',
-                          background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-                          py: 2,
-                          textAlign: 'right',
-                          direction: 'rtl',
-                          borderBottom: '2px solid #8b5cf6'
-                        }}
-                      >
-                        <Box sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'flex-start',
-                          gap: 1,
-                          direction: 'rtl'
-                        }}>
-                          <LocationIcon sx={{ color: '#8b5cf6', fontSize: 18 }} />
-                          <Typography sx={{ fontWeight: 'bold' }}>סניף</Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell
-                        align="right"
-                        sx={{
-                          fontWeight: 'bold',
-                          fontSize: embedded ? '0.9rem' : '1rem',
-                          background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-                          py: 2,
-                          textAlign: 'right',
-                          direction: 'rtl',
-                          borderBottom: '2px solid #8b5cf6'
-                        }}
-                      >
-                        <Box sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'flex-start',
-                          gap: 1,
-                          direction: 'rtl'
-                        }}>
-                          <Person sx={{ color: '#8b5cf6', fontSize: 18 }} />
-                          <Typography sx={{ fontWeight: 'bold' }}>מדריך</Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell
-                        align="right"
-                        sx={{
-                          fontWeight: 'bold',
-                          fontSize: embedded ? '0.9rem' : '1rem',
-                          background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-                          py: 2,
-                          textAlign: 'right',
-                          direction: 'rtl',
-                          borderBottom: '2px solid #8b5cf6'
-                        }}
-                      >
-                        <Box sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'flex-start',
-                          gap: 1,
-                          direction: 'rtl'
-                        }}>
-                          <ScheduleIcon sx={{ color: '#8b5cf6', fontSize: 18 }} />
-                          <Typography sx={{ fontWeight: 'bold' }}>שעה</Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell
-                        align="right"
-                        sx={{
-                          fontWeight: 'bold',
-                          fontSize: embedded ? '0.9rem' : '1rem',
-                          background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-                          py: 2,
-                          textAlign: 'right',
-                          direction: 'rtl',
-                          borderBottom: '2px solid #8b5cf6'
-                        }}
-                      >
-                        <Box sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'flex-start',
-                          gap: 1,
-                          direction: 'rtl'
-                        }}>
-                          <CheckCircle sx={{ color: '#8b5cf6', fontSize: 18 }} />
-                          <Typography sx={{ fontWeight: 'bold' }}>נוכחות</Typography>
-                        </Box>
-                      </TableCell>
-
+                      {attendanceColumns.map((column) => (
+                        <TableCell
+                          key={column}
+                          align="right"
+                          sx={{
+                            fontWeight: 'bold',
+                            fontSize: embedded ? '0.9rem' : '1rem',
+                            background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                            py: 2,
+                            textAlign: 'right',
+                            direction: 'rtl',
+                            borderBottom: '2px solid #8b5cf6',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          <Typography sx={{ fontWeight: 'bold' }}>{formatColumnLabel(column)}</Typography>
+                        </TableCell>
+                      ))}
                       <TableCell
                         align="center"
                         sx={{
@@ -613,10 +722,7 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
                           borderBottom: '2px solid #8b5cf6'
                         }}
                       >
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                          <DeleteIcon sx={{ color: '#8b5cf6', fontSize: 18 }} />
-                          <Typography sx={{ fontWeight: 'bold' }}>מחיקה</Typography>
-                        </Box>
+                        <Typography sx={{ fontWeight: 'bold' }}>פעולות</Typography>
                       </TableCell>
                     </TableRow>
                   </TableHead>
@@ -624,13 +730,13 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
                     {filteredData.length > 0 ? (
                       filteredData.map((record, index) => (
                         <TableRow
-                          key={record.attendanceId || index}
+                          key={getRecordValue(record, ['attendanceId', 'AttendanceId', 'id', 'Id']) || index}
                           component={motion.tr}
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.05 }}
                           sx={{
-                            '&:nth-of-type(even)': { backgroundColor: 'rgba(139, 92, 246, 0.03)' }, // ✅ סגול עדין
+                            '&:nth-of-type(even)': { backgroundColor: 'rgba(139, 92, 246, 0.03)' },
                             '&:hover': {
                               backgroundColor: 'rgba(139, 92, 246, 0.08)',
                               transform: 'translateY(-1px)',
@@ -639,101 +745,56 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
                             transition: 'all 0.2s ease'
                           }}
                         >
-                          <TableCell align="right" sx={{ py: embedded ? 1.5 : 2 }}>
-                            <Typography sx={{
-                              fontWeight: 'medium',
-                              fontSize: embedded ? '0.85rem' : '1rem',
-                              color: '#1e293b'
-                            }}>
-                              {new Date(record.date).toLocaleDateString('he-IL')}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="right" sx={{ py: embedded ? 1.5 : 2 }}>
-                            <Typography sx={{
-                              fontWeight: 'medium',
-                              fontSize: embedded ? '0.85rem' : '1rem',
-                              color: '#1e293b'
-                            }}>
-                              {record.courseName}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="right" sx={{ py: embedded ? 1.5 : 2 }}>
-                            <Chip
-                              label={record.groupName}
-                              size={embedded ? "small" : "medium"}
-                              sx={{
-                                background: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)', // ✅ כחול
-                                color: 'white',
-                                fontWeight: 'medium',
-                                borderRadius: '12px',
-                                fontSize: embedded ? '0.75rem' : '0.875rem'
-                              }}
-                            />
-                          </TableCell>
-                          <TableCell align="right" sx={{ py: embedded ? 1.5 : 2 }}>
-                            <Typography sx={{ fontSize: embedded ? '0.85rem' : '1rem' }}>
-                              {record.branchName}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="right" sx={{ py: embedded ? 1.5 : 2 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 1 }}>
-                              <Avatar sx={{
-                                width: embedded ? 28 : 32,
-                                height: embedded ? 28 : 32,
-                                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', // ✅ ירוק
-                                color: 'white',
-                                fontSize: embedded ? '0.75rem' : '0.875rem',
-                                fontWeight: 'bold'
-                              }}>
-                                {record.instructorName?.charAt(0)}
-                              </Avatar>
-                              <Typography sx={{ fontSize: embedded ? '0.8rem' : '0.9rem' }}>
-                                {record.instructorName}
-                              </Typography>
-                            </Box>
-                          </TableCell>
-                          <TableCell align="right" sx={{ py: embedded ? 1.5 : 2 }}>
-                            <Box sx={{
-                              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', // ✅ כתום לשעות
-                              borderRadius: '8px',
-                              p: embedded ? 0.8 : 1,
-                              textAlign: 'center',
-                              color: 'white',
-                              minWidth: '60px'
-                            }}>
-                              <Typography sx={{
-                                fontWeight: 'bold',
-                                fontSize: embedded ? '0.75rem' : '0.85rem'
-                              }}>
-                                {record.lessonTime}
-                              </Typography>
-                            </Box>
-                          </TableCell>
+                          {attendanceColumns.map((column) => {
+                            const isUpdateByColumn = column === 'updateBy' || column === 'UpdateBy';
+                            const rawValue = record?.[column];
+                            const formattedValue = isUpdateByColumn
+                              ? resolveUserName(rawValue)
+                              : formatAttendanceValue(column, rawValue, embedded);
+                            return (
+                              <TableCell key={column} align="right" sx={{ py: embedded ? 1.5 : 2 }}>
+                                {React.isValidElement(formattedValue) ? (
+                                  formattedValue
+                                ) : (
+                                  <Typography
+                                    sx={{
+                                      fontWeight: 'medium',
+                                      fontSize: embedded ? '0.85rem' : '1rem',
+                                      color: '#1e293b',
+                                      whiteSpace: 'nowrap'
+                                    }}
+                                  >
+                                    {formattedValue}
+                                  </Typography>
+                                )}
+                              </TableCell>
+                            );
+                          })}
                           <TableCell align="center" sx={{ py: embedded ? 1.5 : 2 }}>
-                            <Chip
-                              icon={record.isPresent ? <CheckCircle sx={{ fontSize: embedded ? 16 : 18 }} /> : <Cancel sx={{ fontSize: embedded ? 16 : 18 }} />}
-                              label={record.isPresent ? 'נוכח' : 'נעדר'}
-                              color={record.isPresent ? 'success' : 'error'}
-                              size={embedded ? "small" : "medium"}
+                            <Button
+                              size="small"
                               variant="outlined"
+                              onClick={() => handleOpenStatusDialog(record)}
                               sx={{
-                                fontSize: embedded ? '0.75rem' : '0.875rem',
-                                fontWeight: 'medium'
+                                borderRadius: 999,
+                                minWidth: 96,
+                                borderColor: '#8b5cf6',
+                                color: '#7c3aed',
+                                fontWeight: 700,
+                                '&:hover': {
+                                  borderColor: '#7c3aed',
+                                  bgcolor: 'rgba(139, 92, 246, 0.08)'
+                                }
                               }}
-                            />
+                            >
+                              שנה סטטוס
+                            </Button>
                           </TableCell>
-                           <TableCell align="center" sx={{ py: embedded ? 1.5 : 2 }}>
-          <DeleteIcon
-            color="error"
-            sx={{ cursor: 'pointer', fontSize: embedded ? 20 : 24 }}
-            onClick={() => handleDeleteClick(record.attendanceId)}
-          />
-        </TableCell>
                         </TableRow>
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                        <TableCell colSpan={attendanceColumns.length + 1} align="center" sx={{ py: 4 }}>
                           <Box sx={{ textAlign: 'center' }}>
                             <HistoryIcon sx={{ fontSize: 60, color: '#8b5cf6', mb: 2, opacity: 0.5 }} />
                             <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
@@ -744,13 +805,6 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
                             </Typography>
                           </Box>
                         </TableCell>
-                        <TableCell align="center" sx={{ py: embedded ? 1.5 : 2 }}>
-                          <DeleteIcon
-                            color="error"
-                            sx={{ cursor: 'pointer', fontSize: embedded ? 20 : 24 }}
-                            onClick={() => handleDeleteClick(record.attendanceId)}
-                          />
-                        </TableCell>
                       </TableRow>
                     )}
                   </TableBody>
@@ -759,13 +813,50 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
             </Card>
           </>
         )}
-        {/* דיאלוג אישור מחיקה */}
+
         <Dialog open={openDialog} onClose={handleCancel} sx={{ direction: 'rtl' }}>
           <DialogTitle>האם למחוק את הנוכחות בתאריך זה?</DialogTitle>
           <DialogActions>
             <Button onClick={handleCancel}>ביטול</Button>
             <Button onClick={handleConfirmDelete} color="error" variant="contained">
               מחק
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog open={statusDialogOpen} onClose={handleCloseStatusDialog} sx={{ direction: 'rtl' }}>
+          <DialogTitle>עדכון סטטוס דיווח</DialogTitle>
+          <DialogContent sx={{ minWidth: 320, pt: '10px !important' }}>
+            <TextField
+              select
+              fullWidth
+              label="סטטוס דיווח"
+              value={selectedStatusValue}
+              onChange={(event) => setSelectedStatusValue(event.target.value)}
+              inputProps={{ dir: 'rtl' }}
+              SelectProps={{
+                MenuProps: {
+                  PaperProps: {
+                    sx: { direction: 'rtl' }
+                  }
+                }
+              }}
+              sx={{ direction: 'rtl' }}
+            >
+              <MenuItem value="1" sx={{ direction: 'rtl', justifyContent: 'flex-start' }}>1 - דווח</MenuItem>
+              <MenuItem value="2" sx={{ direction: 'rtl', justifyContent: 'flex-start' }}>2 - לא לדיווח</MenuItem>
+              <MenuItem value="3" sx={{ direction: 'rtl', justifyContent: 'flex-start' }}>3 - ממתין לדיווח</MenuItem>
+            </TextField>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseStatusDialog}>ביטול</Button>
+            <Button
+              onClick={handleSaveStatusReport}
+              variant="contained"
+              disabled={savingStatus || !selectedStatusValue}
+              startIcon={savingStatus ? <CircularProgress size={16} color="inherit" /> : null}
+            >
+              שמור
             </Button>
           </DialogActions>
         </Dialog>

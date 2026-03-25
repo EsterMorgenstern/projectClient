@@ -205,7 +205,7 @@ const GroupDetailsPanel = ({ groupId: propGroupId } = {}) => {
               onClick={() => navigate('/classes-management')}
               sx={{ color: '#1976d2', fontWeight: 'bold', textTransform: 'none', fontSize: 16 }}
             >
-              חזור לקבוצות
+              חזרה לקבוצות
             </Button>
           </Box>
         )}

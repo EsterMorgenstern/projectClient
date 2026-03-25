@@ -16,7 +16,7 @@ import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { styles } from '../styles/dialogStyles';
 import React, { useEffect, useState } from 'react';
-import { getAttendanceByStudent } from '../../../store/attendance/attensanceGetByStudent';
+import { getAttendanceByStudent } from '../../../store/attendance/attendanceGetByStudent';
 import AddStudentNoteDialog from '../../Students/components/addStudentNoteDialog';
 import { addStudentNote } from '../../../store/studentNotes/studentNoteAddThunk';
 import { checkUserPermission } from '../../../utils/permissions';
@@ -67,17 +67,6 @@ const AttendanceDialog = ({
   const displayBranchName = branchName || selectedBranch?.branchName || selectedBranch?.name || 'סניף לא זמין';
   const displayGroupName = groupName || selectedGroup?.groupName || selectedGroup?.name || 'קבוצה לא זמינה';
 
-  useEffect(() => {
-    console.log('📋 AttendanceDialog - Display names:', {
-      displayCourseName,
-      displayBranchName,
-      displayGroupName,
-      courseName,
-      branchName,
-      groupName
-    });
-  }, [displayCourseName, displayBranchName, displayGroupName, courseName, branchName, groupName]);
-
   const currentUserId =
     currentUser?.id ||
     currentUser?.userId ||
@@ -118,7 +107,14 @@ const AttendanceDialog = ({
         } catch (err) {
           const status = err?.response?.status;
           const errorText = String(err?.response?.data || err?.message || '').toLowerCase();
-          const endpointUnavailable = status === 404 || status === 400 || errorText.includes('not implemented');
+          const endpointUnavailable =
+            status === 404 ||
+            status === 400 ||
+            !err?.response ||
+            errorText.includes('not implemented') ||
+            errorText.includes('network error') ||
+            errorText.includes('err_failed') ||
+            errorText.includes('cors');
 
           if (!endpointUnavailable) {
             alert('אירעה שגיאה בשליפת נתוני נוכחות מהשרת');

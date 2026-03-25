@@ -7,7 +7,7 @@ export const batchUpdateAttendances = createAsyncThunk(
     async (attendances, { rejectWithValue }) => {
         try {
             const response = await axios.post(
-               `${API_BASE_URL}/Attendance/BatchUpdateAttendances`, attendances
+               `${API_BASE_URL}/Attendance/batch-update`, attendances
              
             );
             return response.data;

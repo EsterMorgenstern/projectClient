@@ -13,7 +13,9 @@ import {
   Add, Edit, Delete, Info as InfoIcon, Check as CheckIcon,
   Close as CloseIcon, School as CourseIcon, Search as SearchIcon,
   PersonAdd, Visibility, History as HistoryIcon,
-  PeopleAltRounded, CheckCircleRounded, LocationCityRounded, SchoolRounded
+  PeopleAltRounded, CheckCircleRounded, LocationCityRounded, SchoolRounded,
+  FilterAlt as FilterIcon,
+  Download as DownloadIcon
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
@@ -21,11 +23,14 @@ import StudentAttendanceHistory from './components/studentAttendanceHistory'
 import { fetchStudents } from '../../store/student/studentGetAllThunk';
 import { editStudent } from '../../store/student/studentEditThunk';
 import { deleteStudent } from '../../store/student/studentDeleteThunk';
+import { fetchStudentsWithoutActiveGroupWithNotes } from '../../store/student/studentGetWithoutActiveGroupWithNotesThunk';
+import { getgroupStudentByStudentId } from '../../store/groupStudent/groupStudentGetByStudentIdThunk';
 import { useNavigate } from 'react-router-dom';
 import { PersonStandingIcon } from 'lucide-react';
 import StudentCoursesDialog from './components/studentCoursesDialog';
 import StyledTableShell from '../../components/StyledTableShell';
 import StatsCard from '../../components/StatsCard';
+import { exportStudentsWithoutGroupToExcel } from '../../utils/exportStudentsWithoutGroupToExcel';
 import '../styles/tableStyles.css';
 
 // קומפוננטת Loading Skeleton מתקדמת
@@ -71,6 +76,9 @@ const EmptyState = ({ searchTerm }) => (
 
 export default function StudentsTable() {
   const students = useSelector((state) => state.students.students);
+  const studentsWithoutActiveGroupWithNotes = useSelector((state) => state.students.studentsWithoutActiveGroupWithNotes || []);
+  const loadingWithoutGroup = useSelector((state) => state.students.loadingWithoutGroup);
+  const errorWithoutGroup = useSelector((state) => state.students.errorWithoutGroup);
   const studentCourses = useSelector((state) => state.groupStudents.groupStudentById);
   const loading = useSelector((state) => state.students.loading);
   const error = useSelector((state) => state.students.error);
@@ -123,6 +131,7 @@ export default function StudentsTable() {
 
   const [coursesDialogOpen, setCoursesDialogOpen] = useState(false);
   const [selectedStudentForCourses, setSelectedStudentForCourses] = useState(null);
+  const [isWithoutGroupFilterActive, setIsWithoutGroupFilterActive] = useState(false);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -202,10 +211,19 @@ export default function StudentsTable() {
   useEffect(() => {
     // בדיקת בטיחות שהסטודנטים הם מערך
     const studentsArray = Array.isArray(students) ? students : [];
-    const filtered = smartSearch(studentsArray, searchTerm);
+    let filtered = smartSearch(studentsArray, searchTerm);
+
+    if (isWithoutGroupFilterActive) {
+      const idsSet = new Set(
+        (Array.isArray(studentsWithoutActiveGroupWithNotes) ? studentsWithoutActiveGroupWithNotes : [])
+          .map((student) => String(student?.id))
+      );
+      filtered = filtered.filter((student) => idsSet.has(String(student?.id)));
+    }
+
     setFilteredStudents(Array.isArray(filtered) ? filtered : []);
     setCurrentPage(1); // איפוס לעמוד הראשון בחיפוש חדש
-  }, [students, searchTerm]);
+  }, [students, searchTerm, isWithoutGroupFilterActive, studentsWithoutActiveGroupWithNotes]);
 
   // עדכון pagination
   useEffect(() => {
@@ -250,6 +268,29 @@ export default function StudentsTable() {
     setSelectedStudentForCourses(student);
     setCoursesDialogOpen(true);
     await dispatch(getgroupStudentByStudentId(student.id));
+  };
+
+  const handleToggleWithoutGroupFilter = async () => {
+    if (isWithoutGroupFilterActive) {
+      setIsWithoutGroupFilterActive(false);
+      return;
+    }
+
+    const result = await dispatch(fetchStudentsWithoutActiveGroupWithNotes());
+    if (fetchStudentsWithoutActiveGroupWithNotes.fulfilled.match(result)) {
+      setIsWithoutGroupFilterActive(true);
+      return;
+    }
+
+    setNotification({
+      open: true,
+      message: `שגיאה בטעינת סינון תלמידים ללא קבוצה: ${errorWithoutGroup || 'נסה שוב'}`,
+      severity: 'error'
+    });
+  };
+
+  const handleExportFilteredStudents = () => {
+    exportStudentsWithoutGroupToExcel(studentsWithoutActiveGroupWithNotes);
   };
 
   const totalStudents = Array.isArray(students) ? students.length : 0;
@@ -371,7 +412,70 @@ export default function StudentsTable() {
               {searchTerm && ` (מסונן מתוך ${students.length} סה"כ)`}
             </Typography>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                <Tooltip title="סינון הטבלה לפי תלמידים ללא קבוצה פעילה">
+                  <Button
+                    variant={isWithoutGroupFilterActive ? 'contained' : 'outlined'}
+                    startIcon={<FilterIcon />}
+                    onClick={handleToggleWithoutGroupFilter}
+                    disabled={loadingWithoutGroup}
+                    sx={{
+                      borderColor: '#1d4ed8',
+                      borderWidth: '2px',
+                      color: '#1e3a8a',
+                      bgcolor: isWithoutGroupFilterActive ? '#dbeafe' : '#eff6ff',
+                      '&:hover': {
+                        bgcolor: isWithoutGroupFilterActive ? '#bfdbfe' : '#dbeafe',
+                        borderColor: '#1d4ed8'
+                      },
+                      fontWeight: 700,
+                      letterSpacing: '0.2px',
+                      borderRadius: '10px',
+                      px: 2,
+                      textTransform: 'none'
+                    }}
+                  >
+                    {isWithoutGroupFilterActive ? 'הסר סינון ללא קבוצה' : 'סנן: ללא קבוצה עם הערות'}
+                  </Button>
+                </Tooltip>
+
+                {isWithoutGroupFilterActive && (
+                  <Tooltip title="ייצוא כל התלמידים שחזרו מהשרת בסינון זה">
+                    <span>
+                      <Button
+                        variant="contained"
+                        color="success"
+                        startIcon={<DownloadIcon />}
+                        onClick={handleExportFilteredStudents}
+                        disabled={loadingWithoutGroup || !studentsWithoutActiveGroupWithNotes?.length}
+                        sx={{
+                          bgcolor: '#dcfce7',
+                          color: '#166534',
+                          border: '2px solid #16a34a',
+                          fontWeight: 700,
+                          letterSpacing: '0.2px',
+                          borderRadius: '10px',
+                          px: 2.25,
+                          textTransform: 'none',
+                          boxShadow: '0 8px 24px rgba(22, 163, 74, 0.18)',
+                          '&:hover': {
+                            bgcolor: '#bbf7d0',
+                            borderColor: '#15803d',
+                            boxShadow: '0 10px 28px rgba(22, 163, 74, 0.26)'
+                          },
+                          '&.Mui-disabled': {
+                            bgcolor: '#f0fdf4',
+                            color: '#86efac',
+                            borderColor: '#86efac'
+                          }
+                        }}
+                      >
+                      יצא לאקסל את רשימת הסינון
+                      </Button>
+                    </span>
+                  </Tooltip>
+                )}
+
               <FormControl size="small" className="page-size-selector">
                 <InputLabel >תוצאות בעמוד</InputLabel>
                 <Select
@@ -418,6 +522,8 @@ export default function StudentsTable() {
                           key={student.id}
                           component={TableRow}
                           className="table-row"
+                          onClick={() => navigate(`/students/${student.id}`, { state: { student } })}
+                          style={{ cursor: 'pointer' }}
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: 20 }}
@@ -431,8 +537,70 @@ export default function StudentsTable() {
                         >
                           <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.id}</TableCell>
                           <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.identityCard || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}</TableCell>
-                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.firstName}</TableCell>
-                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.lastName}</TableCell>
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>
+                            <Tooltip
+                              title="👈 לחץ כדי להציג את פרטי התלמיד"
+                              placement="top"
+                              followCursor
+                              disableInteractive
+                              arrow
+                              componentsProps={{
+                                tooltip: {
+                                  sx: {
+                                    bgcolor: '#5f6368',
+                                    color: 'white',
+                                    borderRadius: 1,
+                                    fontSize: '0.8rem',
+                                    fontWeight: 600,
+                                    px: 1.5,
+                                    py: 0.75,
+                                    boxShadow: '0 4px 10px rgba(0,0,0,0.18)'
+                                  }
+                                },
+                                arrow: {
+                                  sx: {
+                                    color: '#5f6368'
+                                  }
+                                }
+                              }}
+                            >
+                              <Box component="span" sx={{ fontWeight: 600, color: '#1e40af' }}>
+                                {student.firstName}
+                              </Box>
+                            </Tooltip>
+                          </TableCell>
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>
+                            <Tooltip
+                              title="👈 לחץ כדי להציג את פרטי התלמיד"
+                              placement="top"
+                              followCursor
+                              disableInteractive
+                              arrow
+                              componentsProps={{
+                                tooltip: {
+                                  sx: {
+                                    bgcolor: '#5f6368',
+                                    color: 'white',
+                                    borderRadius: 1,
+                                    fontSize: '0.8rem',
+                                    fontWeight: 600,
+                                    px: 1.5,
+                                    py: 0.75,
+                                    boxShadow: '0 4px 10px rgba(0,0,0,0.18)'
+                                  }
+                                },
+                                arrow: {
+                                  sx: {
+                                    color: '#5f6368'
+                                  }
+                                }
+                              }}
+                            >
+                              <Box component="span" sx={{ fontWeight: 600, color: '#1e40af' }}>
+                                {student.lastName}
+                              </Box>
+                            </Tooltip>
+                          </TableCell>
                           <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.phone}</TableCell>
                           <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>
                             {student.secondaryPhone && student.secondaryPhone.trim() ? (
@@ -463,7 +631,10 @@ export default function StudentsTable() {
                                     textDecoration: 'underline',
                                     '&:hover': { color: '#1565c0' }
                                   }}
-                                  onClick={() => window.open(`mailto:${student.email}`, '_self')}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    window.open(`mailto:${student.email}`, '_self');
+                                  }}
                                 >
                                   {student.email || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}
                                 </Box>
@@ -530,7 +701,10 @@ export default function StudentsTable() {
                                 <IconButton
                                   size="small"
                                   className="action-button info"
-                                  onClick={() => handleViewCourses(student)}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    handleViewCourses(student);
+                                  }}
                                   sx={{
                                     color: '#60A5FA',
                                     '&:hover': {
@@ -546,7 +720,8 @@ export default function StudentsTable() {
                                 <IconButton
                                   size="small"
                                   className="action-button edit"
-                                  onClick={() => {
+                                  onClick={(event) => {
+                                    event.stopPropagation();
                                     setSelectedStudentForEdit(student);
                                     setEditStudentDialogOpen(true);
                                   }}
@@ -565,7 +740,8 @@ export default function StudentsTable() {
                                 <IconButton
                                   size="small"
                                   className="action-button delete"
-                                  onClick={() => {
+                                  onClick={(event) => {
+                                    event.stopPropagation();
                                     setCurrentStudent({
                                       id: student.id,
                                       firstName: student.firstName,

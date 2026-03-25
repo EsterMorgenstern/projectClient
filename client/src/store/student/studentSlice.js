@@ -5,6 +5,7 @@ import { deleteStudent } from './studentDeleteThunk';
 import { editStudent } from './studentEditThunk';
 import { getStudentById } from './studentGetByIdThunk';
 import { getStudentsByGroupId } from './studentGetByGroup';
+import { fetchStudentsWithoutActiveGroupWithNotes } from './studentGetWithoutActiveGroupWithNotesThunk';
 
 const studentsSlice = createSlice({
   name: 'students',
@@ -21,7 +22,11 @@ const studentsSlice = createSlice({
     totalPages: 0,
     // Search state
     searchTerm: '',
-    isSearching: false
+    isSearching: false,
+    // Students without active group with notes
+    studentsWithoutActiveGroupWithNotes: [],
+    loadingWithoutGroup: false,
+    errorWithoutGroup: null
   },
   reducers: {
     setPageSize: (state, action) => {
@@ -151,6 +156,19 @@ const studentsSlice = createSlice({
       .addCase(getStudentsByGroupId.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      
+      .addCase(fetchStudentsWithoutActiveGroupWithNotes.pending, (state) => {
+        state.loadingWithoutGroup = true;
+        state.errorWithoutGroup = null;
+      })
+      .addCase(fetchStudentsWithoutActiveGroupWithNotes.fulfilled, (state, action) => {
+        state.loadingWithoutGroup = false;
+        state.studentsWithoutActiveGroupWithNotes = action.payload;
+      })
+      .addCase(fetchStudentsWithoutActiveGroupWithNotes.rejected, (state, action) => {
+        state.loadingWithoutGroup = false;
+        state.errorWithoutGroup = action.payload;
       });
   },
 });

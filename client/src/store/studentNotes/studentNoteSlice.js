@@ -41,7 +41,7 @@ const studentNotesSlice = createSlice({
       })
       .addCase(getNotesByStudentId.fulfilled, (state, action) => {
         state.loading = false;
-        state.studentNotes = action.payload;
+        state.studentNotes = Array.isArray(action.payload) ? action.payload : [];
       })
       .addCase(getNotesByStudentId.rejected, (state, action) => {
         state.loading = false;

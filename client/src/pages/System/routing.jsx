@@ -17,6 +17,7 @@ import HealthFundManagement from '../Payments/HealthFundManagement';
 import GroupsTable from '../Groups/groupsTable';
 import GroupDetailsPage from '../Groups/groupDetailsPage';
 import LessonStatusManagementPage from '../Lessons/LessonStatusManagementPage';
+import StudentDetailsPage from '../Students/studentDetailsPage';
 
 const Routing = () => {
   return (
@@ -27,6 +28,7 @@ const Routing = () => {
         <Route path="/about-system" element={<HomeLayout><AboutSystem /></HomeLayout>} />
         <Route path="/registration-tracking" element={<Layout><RegistrationTracking /></Layout>} />
         <Route path="/students" element={<Layout><StudentsTable /></Layout>} />
+        <Route path="/students/:studentId" element={<Layout><StudentDetailsPage /></Layout>} />
         <Route path="/instructors" element={<Layout><InstructorsTable /></Layout>} />
         <Route path="/attendance-calendar" element={<Layout><AttendanceCalendar /></Layout>} />
         <Route path="/attendance-reports" element={<Layout><AttendanceReports /></Layout>} />

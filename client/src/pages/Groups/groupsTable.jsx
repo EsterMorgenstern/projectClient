@@ -4,7 +4,7 @@ import {
   Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField,
   Box, Typography, Chip, InputAdornment,
   Skeleton, Tooltip, Snackbar, Alert, IconButton,
-  Grid, Divider, Paper,
+  Grid, Divider, Paper, Tabs, Tab,
   TableBody, TableRow, TableCell
 } from '@mui/material';
 import {
@@ -721,7 +721,48 @@ const GroupsTable = () => {
     );
   }, [groups, displayedGroups, searchTerm, getCourseName, getBranchName]);
 
+  const renderViewModeTabs = () => (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        direction: 'rtl',
+        mb: 3
+      }}
+    >
+      <Tabs
+        value={viewMode}
+        onChange={(_, newMode) => {
+          if (newMode) setViewMode(newMode);
+        }}
+        sx={{
+          minHeight: 46,
+          '& .MuiTabs-indicator': {
+            height: 4,
+            borderRadius: 999,
+            backgroundColor: '#1e3a8a'
+          },
+          '& .MuiTab-root': {
+            minHeight: 46,
+            fontWeight: 700,
+            color: '#475569',
+            px: { xs: 2, sm: 2.75 },
+            whiteSpace: 'nowrap'
+          },
+          '& .Mui-selected': {
+            color: '#1e3a8a !important'
+          }
+        }}
+      >
+        <Tab value="cards" label="תצוגת כרטיסים" />
+        <Tab value="table" label="תצוגת טבלה" />
+      </Tabs>
+    </Box>
+  );
+
   const renderTableView = () => {
+
     const tableHeaders = [
       { label: 'שם החוג' },
       { label: 'סניף' },
@@ -743,26 +784,7 @@ const GroupsTable = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
               >
-        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
-          <Button
-            variant="outlined"
-            onClick={() => setViewMode('cards')}
-            sx={{
-              borderRadius: 2,
-              borderWidth: 2,
-              borderColor: '#3B82F6',
-              color: '#3B82F6',
-              fontWeight: 'bold',
-              '&:hover': {
-                borderWidth: 2,
-                borderColor: '#2563EB',
-                bgcolor: 'rgba(59, 130, 246, 0.08)'
-              }
-            }}
-          >
-            תצוגת כרטיסים
-          </Button>
-        </Box>
+        {renderViewModeTabs()}
 
         <TextField
           fullWidth
@@ -963,25 +985,7 @@ const GroupsTable = () => {
         dir="rtl"
       >
         {/* כפתורים למעבר בין תצוגות */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Button
-            variant="outlined"
-            onClick={() => setViewMode('table')}
-            sx={{
-              borderRadius: 2,
-              borderWidth: 2,
-              borderColor: '#3B82F6',
-              color: '#3B82F6',
-              fontWeight: 'bold',
-              '&:hover': {
-                borderWidth: 2,
-                borderColor: '#2563EB',
-                bgcolor: 'rgba(59, 130, 246, 0.08)'
-              }
-            }}>
-            תצוגת טבלה
-          </Button>
-        </Box>
+        {renderViewModeTabs()}
 
         {/* כפתורי הוספה */}
         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 3 }}>

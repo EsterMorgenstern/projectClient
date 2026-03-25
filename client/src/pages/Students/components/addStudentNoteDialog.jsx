@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions,
     TextField, Button, Box, Typography, MenuItem,
@@ -26,17 +26,10 @@ const AddStudentNoteDialog = ({
     noteData = null,
     studentNotes = [] // הוסף prop שמכיל את כל ההערות של התלמיד
 }) => {
-    console.log('AddStudentNoteDialog props:', { student, editMode, noteData, open });
-
-    const dispatch = useDispatch();
-
     // קבל את המשתמש הנוכחי מה-Redux עם fallback
-    const currentUser = useSelector(state => {
-        console.log('Redux state:', state); // 🔍 Debug
-        return state.users?.currentUser || state.auth?.currentUser || state.user?.currentUser || null;
-    });
-
-    console.log('Current user from Redux:', currentUser); // 🔍 Debug
+    const currentUser = useSelector(state =>
+        state.users?.currentUser || state.auth?.currentUser || state.user?.currentUser || null
+    );
 
     // ערכי ברירת מחדל למקרה שאין משתמש מחובר
     const defaultUser = {
@@ -117,7 +110,6 @@ const AddStudentNoteDialog = ({
     
     useEffect(() => {
         if (open) {
-            console.log('Setting initial form data:', initialFormData); // 🔍 Debug
             setFormData(initialFormData);
             setErrors({});
         }
@@ -127,7 +119,6 @@ const AddStudentNoteDialog = ({
     useEffect(() => {
         if (currentUser && !editMode) {
             const userDetails = getUserDetails(currentUser);
-            console.log('Updating user details:', userDetails); // 🔍 Debug
             
             setFormData(prev => ({
                 ...prev,
@@ -281,7 +272,6 @@ const AddStudentNoteDialog = ({
     ];
 
     const handleInputChange = (field, value) => {
-        console.log(`Changing ${field} to:`, value); // 🔍 Debug
         setFormData(prev => ({
             ...prev,
             [field]: value
@@ -315,9 +305,7 @@ const AddStudentNoteDialog = ({
         }
 
         setErrors(newErrors);
-        const isValid = Object.keys(newErrors).length === 0;
-        console.log('🔍 Validation result:', isValid, newErrors);
-        return isValid;
+        return Object.keys(newErrors).length === 0;
     };
 
    const handleSave = async () => {

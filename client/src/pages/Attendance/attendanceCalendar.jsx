@@ -48,10 +48,13 @@ import { getLessonsByDateRange } from '../../store/lessons/getLessonsByDateRange
 
 const EMPTY_ARRAY = [];
 const EMPTY_OBJECT = {};
+const SHOULD_PREFETCH_ATTENDANCE = false;
 
 const getAttendanceStudentId = (record) => record?.studentId ?? record?.StudentId ?? null;
 const getAttendancePresence = (record) => record?.wasPresent ?? record?.WasPresent ?? true;
 const getAttendanceRecordId = (record) => record?.attendanceId ?? record?.AttendanceId ?? 0;
+const getAttendanceStatusReport = (record) => record?.statusReport ?? record?.StatusReport ?? 3;
+const getAttendanceHealthFundReport = (record) => record?.healthFundReport ?? record?.HealthFundReport ?? 0;
 
 const AttendanceCalendar = () => {
   const dispatch = useDispatch();
@@ -795,16 +798,14 @@ const handleGroupSelect = async (group, dateOverride = null) => {
     // טען תלמידים
     await dispatch(getStudentsByGroupId(group.groupId)).unwrap();
     setStudentsLoaded(true); // חשוב!
-    
-    // טען נוכחות קיימת
-    const dateString = format(effectiveDate, 'yyyy-MM-dd');
-    try {
+
+    // בסביבות שבהן endpoint זה מחזיר 400, מדלגים כדי למנוע שגיאות קונסול ורעש מיותר.
+    if (SHOULD_PREFETCH_ATTENDANCE) {
+      const dateString = format(effectiveDate, 'yyyy-MM-dd');
       await dispatch(fetchAttendanceByDate({
         groupId: group.groupId,
         date: dateString
       })).unwrap();
-    } catch (error) {
-      console.warn('⚠️ No existing attendance found');
     }
 
     // סגור דיאלוג בחירה ופתח דיאלוג נוכחות
@@ -848,25 +849,29 @@ const handleSaveAttendance = async () => {
   }
 
   try {
-    const currentUserId = currentUser?.id || currentUser?.userId || currentUser?.IdentityCard || currentUser?.identityCard || 'Unknown';
+    const currentUserId = Number(currentUser?.id || currentUser?.userId || currentUser?.IdentityCard || currentUser?.identityCard) || 0;
     const now = new Date();
-    const updateDatetime = format(now, 'yyyy-MM-dd HH:mm:ss');
+    const updateDatetime = now.toISOString();
     const reportDate = format(selectedDate, 'yyyy-MM-dd');
     const existingAttendance = attendanceRecords[reportDate] || [];
 
     const attendanceRecordsPayload = Object.keys(attendanceData).map(studentId => {
       const parsedStudentId = parseInt(studentId, 10);
+      const student = students.find(s => (s.studentId || s.id) === parsedStudentId);
       const existingRecord = existingAttendance.find(record => getAttendanceStudentId(record) === parsedStudentId);
+      const studentHealthFundId = Number(student?.healthFundId ?? student?.HealthFundId);
 
       return {
         attendanceId: getAttendanceRecordId(existingRecord),
         studentId: parsedStudentId,
         lessonId: selectedLessonId,
         dateReport: reportDate,
-        statusReport: '',
+        statusReport: Number(getAttendanceStatusReport(existingRecord)) || 3,
         updateDate: updateDatetime,
-        updateBy: String(currentUserId),
-        healthFundReport: '',
+        updateBy: currentUserId,
+        healthFundReport: Number.isFinite(studentHealthFundId)
+          ? studentHealthFundId
+          : Number(getAttendanceHealthFundReport(existingRecord)) || 0,
         wasPresent: attendanceData[studentId]
       };
     });
@@ -887,9 +892,13 @@ const handleSaveAttendance = async () => {
 
   } catch (error) {
     console.error('❌ Save attendance error:', error);
+    const serverValidation = error?.errors
+      ? Object.values(error.errors).flat().join(' | ')
+      : null;
+
     setNotification({
       open: true,
-      message: 'שגיאה בשמירת נתוני הנוכחות',
+      message: serverValidation || error?.title || 'שגיאה בשמירת נתוני הנוכחות',
       severity: 'error'
     });
   }

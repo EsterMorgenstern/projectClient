@@ -9,7 +9,7 @@ import { fetchAttendanceReportsOverall } from './fetchAttendanceReportsOverall';
 import { clearGroupsByDay } from '../group/groupSlice';
 import { isMarkedForDate } from './attendanceGetIsMarkedForGroup';
 import { isMarkedForDay } from './attendanceGetIsMarkedForDay';
-import { getAttendanceByStudent } from './attensanceGetByStudent';
+import { getAttendanceByStudent } from './attendanceGetByStudent';
 import { deleteAttendance } from './attendanceDeleteThunk';
 
 const attendanceSlice = createSlice({
