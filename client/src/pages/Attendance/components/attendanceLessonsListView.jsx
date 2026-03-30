@@ -405,6 +405,14 @@ const AttendanceLessonsListView = ({
                       <Typography sx={{ fontWeight: 700, color: '#1e293b', mb: 0.25 }}>
                         {lesson.groupName || 'קבוצה לא ידועה'}
                       </Typography>
+                      {(lesson.notes || lesson.Notes) && (
+                        <Typography
+                          variant="caption"
+                          sx={{ color: '#475569', display: 'block', mb: 0.25, whiteSpace: 'pre-wrap' }}
+                        >
+                          {lesson.notes || lesson.Notes}
+                        </Typography>
+                      )}
                       <Typography variant="caption" sx={{ color: '#475569' }}>
                         {format(new Date(lesson.lessonDate), 'EEEE, d MMMM yyyy', { locale: he })} | שעה: {lesson.hour || 'לא צוינה'}
                       </Typography>

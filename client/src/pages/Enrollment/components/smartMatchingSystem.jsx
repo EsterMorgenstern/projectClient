@@ -290,6 +290,11 @@ const SmartMatchingSystem = ({ studentData, onEnrollSuccess, onClose }) => {
                   {/* פרטי הקבוצה */}
                   <div className="group-info">
                     <h4>קבוצה: {group.groupName} </h4>
+                    {(group.notes || group.Notes) && (
+                      <p style={{ margin: '0 0 8px 0', whiteSpace: 'pre-wrap' }}>
+                        {group.notes || group.Notes}
+                      </p>
+                    )}
                     <div className="group-details">
                       <div className="detail-item">
                         <i className="fas fa-graduation-cap"></i>

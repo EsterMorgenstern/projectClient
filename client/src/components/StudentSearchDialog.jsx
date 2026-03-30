@@ -35,6 +35,30 @@ import { getGroupStudentByStudentName } from '../store/groupStudent/groupStudent
 import { getStudentsByGroupId } from '../store/group/groupGetStudentsByGroupId';
 import DraggablePaper from './DraggablePaper';
 
+const normalizeGroupStudentStatus = (value) => {
+  if (value === 1 || value === '1' || value === true) {
+    return 1;
+  }
+  if (value === 2 || value === '2') {
+    return 2;
+  }
+  if (value === 3 || value === '3' || value === false) {
+    return 3;
+  }
+  return 3;
+};
+
+const getGroupStudentStatusMeta = (value) => {
+  const statusCode = normalizeGroupStudentStatus(value);
+  if (statusCode === 1) {
+    return { label: 'פעיל', color: 'success' };
+  }
+  if (statusCode === 2) {
+    return { label: 'עזב', color: 'error' };
+  }
+  return { label: 'ליד', color: 'warning' };
+};
+
 const StudentSearchDialog = ({ open, onClose }) => {
   const dispatch = useDispatch();
   
@@ -165,7 +189,7 @@ const StudentSearchDialog = ({ open, onClose }) => {
       groupId: groupStudent.groupId,
       groupName: groupStudent.groupName,
       startDate: groupStudent.enrollmentDate,
-      isActive: groupStudent.isActive,
+      isActive: normalizeGroupStudentStatus(groupStudent.isActive),
       lessonsRemaining: groupStudent.lessonsRemaining,
       // פרטי הקבוצה המורחבים מהנתונים השטוחים
       courseName: groupStudent.courseName,
@@ -173,6 +197,7 @@ const StudentSearchDialog = ({ open, onClose }) => {
       instructorName: groupStudent.instructorName,
       dayOfWeek: groupStudent.dayOfWeek,
       hour: groupStudent.hour,
+      notes: groupStudent.notes || groupStudent.Notes,
       // נתונים נוספים אם קיימים
       groupType: groupStudent.groupType,
       ageGroup: groupStudent.ageGroup,
@@ -459,6 +484,7 @@ const StudentSearchDialog = ({ open, onClose }) => {
                 {searchResults.map((result, index) => {
                   const studentInfo = formatStudentInfo(result.student);
                   const groupInfo = formatGroupInfo(result);
+                  const groupStatusMeta = getGroupStudentStatusMeta(groupInfo.isActive);
                   
                   return (
                     <Grid item xs={12} key={index}>
@@ -610,6 +636,15 @@ const StudentSearchDialog = ({ open, onClose }) => {
                                   {groupInfo.groupName || 'לא זמין'}
                                 </Typography>
                               </Grid>
+
+                              {(groupInfo.notes || groupInfo.Notes) && (
+                                <Grid item xs={12} sm={6} md={3}>
+                                  <Typography variant="body2" sx={{ textAlign: 'right', fontWeight: 'bold', color: '#1976d2', mb: 0.5 }}>הערות:</Typography>
+                                  <Typography variant="body2" fontWeight="500" sx={{ textAlign: 'right', whiteSpace: 'pre-wrap' }}>
+                                    {groupInfo.notes || groupInfo.Notes}
+                                  </Typography>
+                                </Grid>
+                              )}
                               
                               <Grid item xs={12} sm={6} md={3}>
                                 <Typography variant="body2" sx={{ textAlign: 'right', fontWeight: 'bold', color: '#1976d2', mb: 0.5 }}>קורס:</Typography>
@@ -685,8 +720,8 @@ const StudentSearchDialog = ({ open, onClose }) => {
                             
                             <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end', direction: 'rtl' }}>
                               <Chip 
-                                label={groupInfo.isActive ? 'פעיל' : 'לא פעיל'}
-                                color={groupInfo.isActive ? 'success' : 'error'}
+                                label={groupStatusMeta.label}
+                                color={groupStatusMeta.color}
                                 variant="outlined"
                                 size="small"
                                 sx={{ direction: 'rtl' }}
@@ -785,9 +820,9 @@ const StudentSearchDialog = ({ open, onClose }) => {
                                             }}
                                           />
                                           <Chip 
-                                            label={groupMember.isActive ? 'פעיל' : 'לא פעיל'}
+                                            label={getGroupStudentStatusMeta(groupMember.isActive).label}
                                             size="small"
-                                            color={groupMember.isActive ? 'success' : 'default'}
+                                            color={getGroupStudentStatusMeta(groupMember.isActive).color}
                                             variant="outlined"
                                             sx={{ 
                                               height: 20, 

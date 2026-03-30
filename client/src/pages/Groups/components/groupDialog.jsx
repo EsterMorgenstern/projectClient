@@ -53,6 +53,11 @@ import AddIcon from '@mui/icons-material/Add';
           </Box>
         </DialogTitle>
         <Box sx={{ px: 3, pt: 1 }}>
+          {(group.notes || group.Notes) && (
+            <Typography variant="body2" sx={{ color: '#6366f1', mt: 1, textAlign: 'center', whiteSpace: 'pre-wrap', fontWeight: 600 }}>
+              {group.notes || group.Notes}
+            </Typography>
+          )}
           <Typography variant="subtitle1" sx={{ color: '#6366f1', mt: 1, textAlign: 'center' }}>
             חוג: {group.courseName} • סניף: {group.branchName}
           </Typography>

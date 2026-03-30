@@ -513,6 +513,11 @@ const AttendanceReports = () => {
                           <Typography fontWeight="medium" color="#1e293b">
                             {group.groupName}
                           </Typography>
+                          {(group.notes || group.Notes) && (
+                            <Typography variant="caption" sx={{ color: '#475569', display: 'block', whiteSpace: 'pre-wrap' }}>
+                              {group.notes || group.Notes}
+                            </Typography>
+                          )}
                         </TableCell>
                         <TableCell align="right" sx={{ py: 2 }}>
                           <Typography color="#475569">
@@ -1164,6 +1169,7 @@ const AttendanceReports = () => {
                           {filteredGroups.map(group => (
                             <MenuItem key={group.groupId} value={group.groupId}>
                               {group.groupName}
+                              {(group.notes || group.Notes) ? ` - ${group.notes || group.Notes}` : ''}
                             </MenuItem>
                           ))}
                         </Select>

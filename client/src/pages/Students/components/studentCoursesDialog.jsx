@@ -40,6 +40,36 @@ import { updateGroupStudent } from '../../../store/groupStudent/groupStudentUpda
 import { getGroupWithStudentsById } from '../../../store/group/groupGetGroupWithStudentsByIdThunk';
 import GroupDialog from '../../Groups/components/groupDialog';
 
+const normalizeCourseStatus = (value) => {
+  if (value === 1 || value === '1' || value === true) {
+    return 1;
+  }
+  if (value === 2 || value === '2') {
+    return 2;
+  }
+  if (value === 3 || value === '3' || value === false) {
+    return 3;
+  }
+  return 3;
+};
+
+const getCourseStatusMeta = (value) => {
+  const statusCode = normalizeCourseStatus(value);
+  if (statusCode === 1) {
+    return { code: 1, label: 'פעיל', color: 'success', chipIcon: CheckIcon };
+  }
+  if (statusCode === 2) {
+    return { code: 2, label: 'עזב', color: 'error', chipIcon: CloseIcon };
+  }
+  return { code: 3, label: 'ליד', color: 'warning', chipIcon: WarningIcon };
+};
+
+const normalizeCoursesList = (list) =>
+  (Array.isArray(list) ? list : []).map((course) => ({
+    ...course,
+    isActive: normalizeCourseStatus(course?.isActive)
+  }));
+
 const StudentCoursesDialog = ({
   open,
   onClose,
@@ -91,9 +121,9 @@ const StudentCoursesDialog = ({
   // כל ה-useEffect hooks בסוף
   useEffect(() => {
     if (groupStudentById && groupStudentById.length > 0) {
-      setLocalStudentCourses(groupStudentById);
+      setLocalStudentCourses(normalizeCoursesList(groupStudentById));
     } else {
-      setLocalStudentCourses(studentCourses);
+      setLocalStudentCourses(normalizeCoursesList(studentCourses));
     }
   }, [studentCourses, groupStudentById]);
 
@@ -196,7 +226,10 @@ const StudentCoursesDialog = ({
   };
 
   const handleEditCourse = (course) => {
-    setEditingCourse(course);
+    setEditingCourse({
+      ...course,
+      isActive: normalizeCourseStatus(course?.isActive)
+    });
     setEditCourseDialogOpen(true);
     handleCourseMenuClose();
   };
@@ -630,7 +663,7 @@ const StudentCoursesDialog = ({
                           <CardContent sx={{ textAlign: 'center', py: 2 }}>
                             <CheckIcon sx={{ fontSize: 36, mb: 1 }} />
                             <Typography variant="h4" fontWeight="bold">
-                              {localStudentCourses.filter(c => c.isActive).length}
+                              {localStudentCourses.filter(c => c.isActive === 1).length}
                             </Typography>
                             <Typography variant="body1" sx={{ opacity: 0.9 }}>
                               חוגים פעילים
@@ -867,6 +900,10 @@ const StudentCoursesDialog = ({
                               <TableBody>
                                 <AnimatePresence>
                                   {localStudentCourses.map((course, index) => (
+                                    (() => {
+                                      const statusMeta = getCourseStatusMeta(course.isActive);
+                                      const StatusIcon = statusMeta.chipIcon;
+                                      return (
                                     <TableRow
                                       key={course.groupStudentId || index}
                                       component={motion.tr}
@@ -965,9 +1002,9 @@ const StudentCoursesDialog = ({
 
                                       <TableCell align="right" sx={{ py: 2 }}>
                                         <Chip
-                                          icon={course.isActive === true ? <CheckIcon sx={{ fontSize: 18 }} /> : <CloseIcon sx={{ fontSize: 18 }} />}
-                                          label={course.isActive ? 'פעיל' : 'לא פעיל'}
-                                          color={course.isActive === true ? "success" : "error"}
+                                          icon={<StatusIcon sx={{ fontSize: 18 }} />}
+                                          label={statusMeta.label}
+                                          color={statusMeta.color}
                                           variant="outlined"
                                           size="medium"
                                           sx={{ fontSize: '0.875rem' }}
@@ -1014,6 +1051,8 @@ const StudentCoursesDialog = ({
                                         </IconButton>
                                       </TableCell>
                                     </TableRow>
+                                      );
+                                    })()
                                   ))}
                                 </AnimatePresence>
                               </TableBody>
@@ -1422,14 +1461,29 @@ const StudentCoursesDialog = ({
                   </Typography>
                   <Box>
                     <Typography variant="subtitle2">סטטוס</Typography>
-                    <Button
-                      variant={editingCourse.isActive ? 'contained' : 'outlined'}
-                      color={editingCourse.isActive ? 'success' : 'error'}
-                      sx={{ mr: 2 }}
-                      onClick={() => setEditingCourse({ ...editingCourse, isActive: !editingCourse.isActive })}
-                    >
-                      {editingCourse.isActive ? 'פעיל' : 'לא פעיל'}
-                    </Button>
+                    <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                      <Button
+                        variant={editingCourse.isActive === 1 ? 'contained' : 'outlined'}
+                        color="success"
+                        onClick={() => setEditingCourse({ ...editingCourse, isActive: 1 })}
+                      >
+                        פעיל
+                      </Button>
+                      <Button
+                        variant={editingCourse.isActive === 2 ? 'contained' : 'outlined'}
+                        color="error"
+                        onClick={() => setEditingCourse({ ...editingCourse, isActive: 2 })}
+                      >
+                        עזב
+                      </Button>
+                      <Button
+                        variant={editingCourse.isActive === 3 ? 'contained' : 'outlined'}
+                        color="warning"
+                        onClick={() => setEditingCourse({ ...editingCourse, isActive: 3 })}
+                      >
+                        ליד
+                      </Button>
+                    </Box>
                   </Box>
                   <Box>
                     <Typography variant="subtitle2">תאריך התחלה</Typography>

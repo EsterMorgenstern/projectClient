@@ -51,7 +51,6 @@ import { editStudent } from '../../../store/student/studentEditThunk';
 import { getgroupStudentByStudentId } from '../../../store/groupStudent/groupStudentGetByStudentIdThunk';
 import { deleteGroupStudent } from '../../../store/groupStudent/groupStudentDeleteThunk';
 import { getAttendanceByStudent } from '../../../store/attendance/attendanceGetByStudent';
-import { deleteAttendance } from '../../../store/attendance/attendanceDeleteThunk';
 import { fetchPaymentHistory } from '../../../store/payments/fetchPaymentHistory';
 import { fetchPaymentMethods } from '../../../store/payments/fetchPaymentMethods';
 import { getNotesByStudentId } from '../../../store/studentNotes/studentNotesGetById';
@@ -63,19 +62,6 @@ import StudentAttendanceHistory from './studentAttendanceHistory';
 import AddStudentNoteDialog from './addStudentNoteDialog';
 import PaymentsTab from '../../Payments/PaymentsTab';
 import PaymentHistoryTab from '../../Payments/PaymentHistoryTab';
-
-const isFutureDate = (rawDate) => {
-  if (!rawDate) {
-    return false;
-  }
-  const date = new Date(rawDate);
-  if (Number.isNaN(date.getTime())) {
-    return false;
-  }
-  const now = new Date();
-  const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  return date >= startToday;
-};
 
 const endIconButtonSx = {
   gap: 0.75,
@@ -95,50 +81,42 @@ const normalizeDate = (value) => {
   return date.toLocaleDateString('he-IL');
 };
 
-const getAttendanceId = (record) => record?.attendanceId ?? record?.AttendanceId ?? record?.id ?? record?.Id;
-
-const getAttendanceDate = (record) =>
-  record?.dateReport ??
-  record?.DateReport ??
-  record?.lessonDate ??
-  record?.LessonDate ??
-  record?.date ??
-  record?.Date;
-
-const courseField = (entity, keys) => {
-  for (const key of keys) {
-    if (entity?.[key] !== undefined && entity?.[key] !== null && entity?.[key] !== '') {
-      return entity[key];
-    }
+const normalizeCourseStatus = (value) => {
+  if (value === 1 || value === '1' || value === true) {
+    return 1;
   }
-  return null;
+  if (value === 2 || value === '2') {
+    return 2;
+  }
+  if (value === 3 || value === '3' || value === false) {
+    return 3;
+  }
+  return 3;
 };
 
-const isAttendanceRelatedToCourse = (attendance, course) => {
-  const attendanceGroupStudentId = courseField(attendance, ['groupStudentId', 'GroupStudentId']);
-  const attendanceGroupId = courseField(attendance, ['groupId', 'GroupId']);
-  const attendanceCourseId = courseField(attendance, ['courseId', 'CourseId']);
-  const attendanceCourseName = courseField(attendance, ['courseName', 'CourseName']);
-
-  const courseGroupStudentId = courseField(course, ['groupStudentId']);
-  const courseGroupId = courseField(course, ['groupId', 'GroupId']);
-  const courseCourseId = courseField(course, ['courseId', 'CourseId']);
-  const courseCourseName = courseField(course, ['courseName', 'course', 'groupName']);
-
-  if (attendanceGroupStudentId && courseGroupStudentId) {
-    return String(attendanceGroupStudentId) === String(courseGroupStudentId);
+const getCourseStatusMeta = (statusCode) => {
+  if (statusCode === 1) {
+    return {
+      label: 'פעיל',
+      bg: '#f0fdf4',
+      color: '#166534',
+      border: '#86efac'
+    };
   }
-  if (attendanceGroupId && courseGroupId) {
-    return String(attendanceGroupId) === String(courseGroupId);
+  if (statusCode === 3) {
+    return {
+      label: 'ליד',
+      bg: '#fff7ed',
+      color: '#9a3412',
+      border: '#fdba74'
+    };
   }
-  if (attendanceCourseId && courseCourseId) {
-    return String(attendanceCourseId) === String(courseCourseId);
-  }
-  if (attendanceCourseName && courseCourseName) {
-    return String(attendanceCourseName).trim() === String(courseCourseName).trim();
-  }
-
-  return false;
+  return {
+    label: 'עזב',
+    bg: '#eef2ff',
+    color: '#3730a3',
+    border: '#a5b4fc'
+  };
 };
 
 const pick = (obj, keys, fallback = '') => {
@@ -318,12 +296,16 @@ const StudentDetailsPanel = () => {
       groupId: pick(course, ['groupId', 'GroupId']),
       courseName: pick(course, ['courseName', 'CourseName']),
       groupName: pick(course, ['groupName', 'GroupName']),
+      notes: pick(course, ['notes', 'Notes']),
       branchName: pick(course, ['branchName', 'BranchName']),
       instructorName: pick(course, ['instructorName', 'InstructorName']),
       dayOfWeek: pick(course, ['dayOfWeek', 'DayOfWeek']),
       hour: pick(course, ['hour', 'Hour']),
+      ageRange: pick(course, ['ageRange', 'AgeRange']),
+      lessonsCompleted: pick(course, ['lessonsCompleted', 'LessonsCompleted']),
+      numOfLessons: pick(course, ['numOfLessons', 'NumOfLessons']),
       enrollmentDate: pick(course, ['enrollmentDate', 'EnrollmentDate']),
-      isActive: pick(course, ['isActive', 'IsActive'], false) === true
+      statusCode: normalizeCourseStatus(pick(course, ['isActive', 'IsActive'], 3))
     })),
     [courses]
   );
@@ -334,7 +316,7 @@ const StudentDetailsPanel = () => {
     return `${first} ${last}`.trim() || 'תלמיד';
   }, [student]);
 
-  const activeCoursesCount = normalizedCourses.filter((item) => item.isActive).length;
+  const activeCoursesCount = normalizedCourses.filter((item) => item.statusCode === 1).length;
   const attendanceLessonsCount = attendanceByStudent.length;
 
   const refreshAll = async () => {
@@ -463,17 +445,6 @@ const StudentDetailsPanel = () => {
     setErrorMessage('');
 
     try {
-      const futureRelatedAttendances = attendanceByStudent.filter((record) => {
-        const recordDate = getAttendanceDate(record);
-        return isFutureDate(recordDate) && isAttendanceRelatedToCourse(record, course);
-      });
-
-      const deleteOperations = futureRelatedAttendances
-        .map((record) => getAttendanceId(record))
-        .filter(Boolean)
-        .map((attendanceId) => dispatch(deleteAttendance(attendanceId)));
-
-      await Promise.all(deleteOperations);
       if (course.groupStudentId) {
         await dispatch(deleteGroupStudent(course.groupStudentId));
       }
@@ -842,10 +813,13 @@ const StudentDetailsPanel = () => {
               <TableRow sx={{ backgroundColor: '#f8fafc' }}>
                 <TableCell align="right" sx={{ fontWeight: 700, color: '#334155', fontSize: '0.9rem' }}>חוג</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 700, color: '#334155', fontSize: '0.9rem' }}>קבוצה</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, color: '#334155', fontSize: '0.9rem' }}>הערות</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 700, color: '#334155', fontSize: '0.9rem' }}>סניף</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 700, color: '#334155', fontSize: '0.9rem' }}>מדריך</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 700, color: '#334155', fontSize: '0.9rem' }}>יום ושעה</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, color: '#334155', fontSize: '0.9rem' }}>תאריך הרשמה</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, color: '#334155', fontSize: '0.9rem' }}>גילאים</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, color: '#334155', fontSize: '0.9rem' }}>שיעורים</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, color: '#334155', fontSize: '0.9rem' }}>תאריך התחלה</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 700, color: '#334155', fontSize: '0.9rem' }}>סטטוס</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 700, color: '#334155', fontSize: '0.9rem' }}>פעולות</TableCell>
               </TableRow>
@@ -853,12 +827,15 @@ const StudentDetailsPanel = () => {
             <TableBody>
               {normalizedCourses.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 3, color: '#6b7280', fontWeight: 500 }}>
+                  <TableCell colSpan={11} align="center" sx={{ py: 3, color: '#6b7280', fontWeight: 500 }}>
                     אין קורסים לתלמיד
                   </TableCell>
                 </TableRow>
               )}
               {normalizedCourses.map((course, index) => (
+                (() => {
+                  const statusMeta = getCourseStatusMeta(course.statusCode);
+                  return (
                 <TableRow
                   key={course.key}
                   hover
@@ -871,22 +848,33 @@ const StudentDetailsPanel = () => {
                 >
                   <TableCell align="right" sx={{ color: '#334155', fontWeight: 500 }}>{course.courseName || '---'}</TableCell>
                   <TableCell align="right" sx={{ color: '#334155', fontWeight: 500 }}>{course.groupName || '---'}</TableCell>
+                  <TableCell align="right" sx={{ color: '#334155', fontWeight: 500, maxWidth: 260 }}>
+                    <Typography sx={{ fontSize: '0.9rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                      {course.notes || '---'}
+                    </Typography>
+                  </TableCell>
                   <TableCell align="right" sx={{ color: '#334155', fontWeight: 500 }}>{course.branchName || '---'}</TableCell>
                   <TableCell align="right" sx={{ color: '#475569', fontWeight: 500 }}>{course.instructorName || '---'}</TableCell>
                   <TableCell align="right" sx={{ color: '#475569', fontWeight: 500 }}>{[course.dayOfWeek, course.hour].filter(Boolean).join(' • ') || '---'}</TableCell>
+                  <TableCell align="right" sx={{ color: '#475569', fontWeight: 500 }}>{course.ageRange || '---'}</TableCell>
+                  <TableCell align="right" sx={{ color: '#475569', fontWeight: 500 }}>
+                    {(course.lessonsCompleted !== '' && course.lessonsCompleted !== null && course.lessonsCompleted !== undefined)
+                      ? `${course.lessonsCompleted}/${course.numOfLessons || '-'}`
+                      : `-/${course.numOfLessons || '-'}`}
+                  </TableCell>
                   <TableCell align="right" sx={{ color: '#64748b', fontWeight: 500 }}>{normalizeDate(course.enrollmentDate)}</TableCell>
                   <TableCell align="right">
                     <Chip
                       size="small"
-                      label={course.isActive ? 'פעיל' : 'לא פעיל'}
+                      label={statusMeta.label}
                       sx={{
                         fontWeight: 500,
                         fontSize: '0.78rem',
                         borderRadius: 999,
                         height: 26,
-                        bgcolor: course.isActive ? '#f0fdf4' : '#f8fafc',
-                        color: course.isActive ? '#166534' : '#475569',
-                        border: `1px solid ${course.isActive ? '#86efac' : '#d1d5db'}`,
+                        bgcolor: statusMeta.bg,
+                        color: statusMeta.color,
+                        border: `1px solid ${statusMeta.border}`,
                         '& .MuiChip-label': {
                           px: 1.1,
                           py: 0
@@ -900,7 +888,7 @@ const StudentDetailsPanel = () => {
                       variant="contained"
                       endIcon={<ExitToApp />}
                       onClick={() => handleExitCourse(course)}
-                      disabled={operationLoading}
+                      disabled={operationLoading || course.statusCode !== 1}
                       sx={{
                         ...endIconButtonSx,
                         borderRadius: 999,
@@ -927,6 +915,8 @@ const StudentDetailsPanel = () => {
                     </Button>
                   </TableCell>
                 </TableRow>
+                  );
+                })()
               ))}
             </TableBody>
           </Table>

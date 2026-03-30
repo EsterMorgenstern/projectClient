@@ -358,7 +358,7 @@ export const BranchDialog = ({ open, values, onChange, onSubmit, onClose, onRese
   </Dialog>
 );
 
-export const GroupDialog = ({ open, values, onChange, onSubmit, onClose, onReset, isEdit, instructors = [] }) => {
+export const GroupDialog = ({ open, values, groupNamePreview = '', onChange, onSubmit, onClose, onReset, isEdit, instructors = [] }) => {
   // State למעקב אחר שינויים בסטטוס
   const [initialIsActive, setInitialIsActive] = React.useState(null);
   const [statusChanged, setStatusChanged] = React.useState(false);
@@ -484,7 +484,7 @@ export const GroupDialog = ({ open, values, onChange, onSubmit, onClose, onReset
           <TextField
             autoFocus
             margin="dense"
-            label="שם הקבוצה"
+            label="שם הקבוצה (אוטומטי)"
             type="text"
             fullWidth
             variant="outlined"
@@ -495,8 +495,9 @@ export const GroupDialog = ({ open, values, onChange, onSubmit, onClose, onReset
             }}
             inputProps={{ dir: 'rtl' }}
             InputLabelProps={{ sx: { right: 24, left: 'auto', transformOrigin: 'top right' } }}
-            value={values.groupName}
-            onChange={(e) => onChange('groupName', e.target.value)}
+            value={groupNamePreview || values.groupName || ''}
+            helperText="תצוגה מקדימה אוטומטית: סניף, יום, שעה, גיל ומגזר"
+            InputProps={{ readOnly: true }}
           />
         </Grid>
         <Grid item xs={12} sm={6}>
@@ -649,6 +650,64 @@ export const GroupDialog = ({ open, values, onChange, onSubmit, onClose, onReset
             InputLabelProps={{ sx: { right: 24, left: 'auto', transformOrigin: 'top right' } }}
             value={values.numOfLessons}
             onChange={(e) => onChange('numOfLessons', e.target.value)}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <FormControl
+            fullWidth
+            margin="dense"
+            variant="outlined"
+            sx={{
+              minWidth: '100%',
+              '& .MuiOutlinedInput-notchedOutline legend': {
+                textAlign: 'right'
+              }
+            }}
+          >
+            <InputLabel id="instructor-select-label" sx={{ right: 24, left: 'auto', transformOrigin: 'top right' }}>
+              מדריך
+            </InputLabel>
+            <Select
+              labelId="instructor-select-label"
+              value={resolvedInstructorId}
+              onChange={(e) => handleInstructorChange(e.target.value)}
+              label="מדריך"
+              inputProps={{ dir: 'rtl' }}
+            >
+              <MenuItem value="">
+                <em>בחר מדריך</em>
+              </MenuItem>
+              {instructors.map((inst, idx) => {
+                const instId = inst.instructorId ?? inst.id ?? '';
+                const instName = inst.instructorName || `${inst.firstName || ''} ${inst.lastName || ''}`.trim() || `מדריך ${idx + 1}`;
+                return (
+                  <MenuItem key={`${instId}-${idx}`} value={instId}>
+                    {instName}
+                  </MenuItem>
+                );
+              })}
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12}>
+          <TextField
+            margin="dense"
+            label="הערות (אופציונלי)"
+            type="text"
+            fullWidth
+            multiline
+            rows={3}
+            variant="outlined"
+            sx={{
+              '& .MuiOutlinedInput-notchedOutline legend': {
+                textAlign: 'right'
+              }
+            }}
+            inputProps={{ dir: 'rtl' }}
+            InputLabelProps={{ sx: { right: 24, left: 'auto', transformOrigin: 'top right' } }}
+            value={values.notes || ''}
+            onChange={(e) => onChange('notes', e.target.value)}
+            placeholder="אפשר להוסיף הערות כלליות על הקבוצה"
           />
         </Grid>
         <Grid item xs={12}>

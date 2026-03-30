@@ -116,6 +116,21 @@ const GroupCard = ({
           </span>
         </Typography>
       </Box>
+      {(group.notes || group.Notes) && (
+        <Typography
+          variant="subtitle1"
+          sx={{
+            color: '#334155',
+            fontWeight: 700,
+            lineHeight: 1.45,
+            mb: 2,
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word'
+          }}
+        >
+          {group.notes || group.Notes}
+        </Typography>
+      )}
       {/* סטטוס פעיל/לא פעיל - מתחת לשם הקבוצה */}
       {!group.isActive && (
         <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>

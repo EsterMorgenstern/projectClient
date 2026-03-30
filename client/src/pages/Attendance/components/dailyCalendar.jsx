@@ -142,9 +142,16 @@ const DailyCalendar = ({ currentDate, onDateSelect, events, attendanceRecords })
                               >
                                 <CardContent sx={styles.dailyEventCardContent}>
                                   <Box sx={styles.dailyEventHeader}>
-                                    <Typography variant="subtitle1" sx={styles.dailyEventTitle}>
-                                      {event.courseName || 'חוג'} - קבוצה {event.groupName}
-                                    </Typography>
+                                    <Box>
+                                      <Typography variant="subtitle1" sx={styles.dailyEventTitle}>
+                                        {event.courseName || 'חוג'} - קבוצה {event.groupName}
+                                      </Typography>
+                                      {(event.notes || event.Notes) && (
+                                        <Typography variant="caption" sx={{ color: '#475569', whiteSpace: 'pre-wrap' }}>
+                                          {event.notes || event.Notes}
+                                        </Typography>
+                                      )}
+                                    </Box>
                                     {event.hasAttendance && (
                                       <CheckCircle color="success" fontSize="small" />
                                     )}

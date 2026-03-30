@@ -723,16 +723,23 @@ const WeeklyCalendar = ({
                                   alignItems: 'flex-start',
                                   marginBottom: '6px'
                                 }}>
-                                  <Typography
-                                    variant="subtitle2"
-                                    sx={{
-                                      fontWeight: 'bold',
-                                      color: hasAttendance ? '#065F46' : courseColor,
-                                      fontSize: '0.85rem'
-                                    }}
-                                  >
-                                    {event.courseName || 'חוג'} - {event.groupName}
-                                  </Typography>
+                                  <Box>
+                                    <Typography
+                                      variant="subtitle2"
+                                      sx={{
+                                        fontWeight: 'bold',
+                                        color: hasAttendance ? '#065F46' : courseColor,
+                                        fontSize: '0.85rem'
+                                      }}
+                                    >
+                                      {event.courseName || 'חוג'} - {event.groupName}
+                                    </Typography>
+                                    {(event.notes || event.Notes) && (
+                                      <Typography variant="caption" sx={{ color: '#475569', whiteSpace: 'pre-wrap' }}>
+                                        {event.notes || event.Notes}
+                                      </Typography>
+                                    )}
+                                  </Box>
 
                                   {hasAttendance && (
                                     <Badge

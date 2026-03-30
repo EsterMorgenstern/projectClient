@@ -30,9 +30,16 @@ const CalendarCancellationDisplay = ({
                             ביטול שיעור
                         </Typography>
                         {showGroupName && group && (
-                            <Typography variant="caption" sx={{ display: 'block' }}>
-                                קבוצה: {group.groupName || group.name}
-                            </Typography>
+                            <>
+                                <Typography variant="caption" sx={{ display: 'block' }}>
+                                    קבוצה: {group.groupName || group.name}
+                                </Typography>
+                                {(group.notes || group.Notes) && (
+                                    <Typography variant="caption" sx={{ display: 'block', whiteSpace: 'pre-wrap' }}>
+                                        {group.notes || group.Notes}
+                                    </Typography>
+                                )}
+                            </>
                         )}
                         {showDate && (
                             <Typography variant="caption" sx={{ display: 'block' }}>
@@ -71,9 +78,16 @@ const CalendarCancellationDisplay = ({
                 >
                     <Cancel sx={{ fontSize: '0.8rem' }} />
                     {showGroupName && group ? (
-                        <Typography variant="caption" sx={{ fontSize: '0.65rem' }}>
-                            {group.groupName || group.name} - בוטל
-                        </Typography>
+                        <Box>
+                            <Typography variant="caption" sx={{ fontSize: '0.65rem', display: 'block' }}>
+                                {group.groupName || group.name} - בוטל
+                            </Typography>
+                            {(group.notes || group.Notes) && (
+                                <Typography variant="caption" sx={{ fontSize: '0.65rem', display: 'block', whiteSpace: 'pre-wrap' }}>
+                                    {group.notes || group.Notes}
+                                </Typography>
+                            )}
+                        </Box>
                     ) : (
                         <Typography variant="caption" sx={{ fontSize: '0.65rem' }}>
                             בוטל
@@ -112,9 +126,16 @@ const CalendarCancellationDisplay = ({
             </Box>
 
             {showGroupName && group && (
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                    <strong>קבוצה:</strong> {group.groupName || group.name}
-                </Typography>
+                <Box sx={{ mb: 1 }}>
+                    <Typography variant="body2">
+                        <strong>קבוצה:</strong> {group.groupName || group.name}
+                    </Typography>
+                    {(group.notes || group.Notes) && (
+                        <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                            {group.notes || group.Notes}
+                        </Typography>
+                    )}
+                </Box>
             )}
 
             <Typography variant="body2" sx={{ mb: 1 }}>

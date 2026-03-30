@@ -49,7 +49,7 @@ const AddStudentDialog = ({
   keepOpenAfterSubmit = false,
   selectedGroup = null, // הוספת prop חדש
   lessonInfo = null, // מידע על שיעורים מחושב מראש
-  groupStatus = true, // סטטוס בקבוצה (פעיל/לא פעיל)
+  groupStatus = 1, // סטטוס בקבוצה: 1 פעיל, 2 עזב, 3 ליד
   onGroupStatusChange = null // פונקציה לשינוי סטטוס קבוצה
 }) => {
   // Debug: show selectedGroup prop
@@ -1009,21 +1009,21 @@ useEffect(() => {
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
                   <Button
-                    variant={localGroupStatus === true ? 'contained' : 'outlined'}
+                    variant={localGroupStatus === 1 ? 'contained' : 'outlined'}
                     onClick={() => {
-                      setLocalGroupStatus(true);
-                      if (onGroupStatusChange) onGroupStatusChange(true);
+                      setLocalGroupStatus(1);
+                      if (onGroupStatusChange) onGroupStatusChange(1);
                     }}
                     sx={{
                       borderRadius: '12px',
                       px: 3,
                       py: 1,
                       fontWeight: 'bold',
-                      bgcolor: localGroupStatus === true ? '#10B981' : 'transparent',
+                      bgcolor: localGroupStatus === 1 ? '#10B981' : 'transparent',
                       borderColor: '#10B981',
-                      color: localGroupStatus === true ? 'white' : '#10B981',
+                      color: localGroupStatus === 1 ? 'white' : '#10B981',
                       '&:hover': {
-                        bgcolor: localGroupStatus === true ? '#059669' : 'rgba(16, 185, 129, 0.1)',
+                        bgcolor: localGroupStatus === 1 ? '#059669' : 'rgba(16, 185, 129, 0.1)',
                         borderColor: '#10B981'
                       }
                     }}
@@ -1031,26 +1031,49 @@ useEffect(() => {
                     ✅ פעיל
                   </Button>
                   <Button
-                    variant={localGroupStatus === false ? 'contained' : 'outlined'}
+                    variant={localGroupStatus === 3 ? 'contained' : 'outlined'}
                     onClick={() => {
-                      setLocalGroupStatus(false);
-                      if (onGroupStatusChange) onGroupStatusChange(false);
+                      setLocalGroupStatus(3);
+                      if (onGroupStatusChange) onGroupStatusChange(3);
                     }}
                     sx={{
                       borderRadius: '12px',
                       px: 3,
                       py: 1,
                       fontWeight: 'bold',
-                      bgcolor: localGroupStatus === false ? '##efa544ff' : 'transparent',
-                      borderColor: '##efa544ff',
-                      color: localGroupStatus === false ? 'white' : '#efa544ff',
+                      bgcolor: localGroupStatus === 3 ? '#efa544ff' : 'transparent',
+                      borderColor: '#efa544ff',
+                      color: localGroupStatus === 3 ? 'white' : '#efa544ff',
                       '&:hover': {
-                        bgcolor: localGroupStatus === false ? '#ed992cff' : 'rgba(239, 68, 68, 0.1)',
+                        bgcolor: localGroupStatus === 3 ? '#ed992cff' : 'rgba(239, 68, 68, 0.1)',
                         borderColor: '#efa544ff'
                       }
                     }}
                   >
-🤝 ליד                  </Button>
+                    🤝 ליד
+                  </Button>
+                  <Button
+                    variant={localGroupStatus === 2 ? 'contained' : 'outlined'}
+                    onClick={() => {
+                      setLocalGroupStatus(2);
+                      if (onGroupStatusChange) onGroupStatusChange(2);
+                    }}
+                    sx={{
+                      borderRadius: '12px',
+                      px: 3,
+                      py: 1,
+                      fontWeight: 'bold',
+                      bgcolor: localGroupStatus === 2 ? '#6366F1' : 'transparent',
+                      borderColor: '#6366F1',
+                      color: localGroupStatus === 2 ? 'white' : '#6366F1',
+                      '&:hover': {
+                        bgcolor: localGroupStatus === 2 ? '#4F46E5' : 'rgba(99, 102, 241, 0.1)',
+                        borderColor: '#6366F1'
+                      }
+                    }}
+                  >
+                    🚪 עזב
+                  </Button>
                 </Box>
                 <Typography variant="caption" sx={{ 
                   display: 'block', 
@@ -1058,7 +1081,11 @@ useEffect(() => {
                   mt: 1, 
                   color: '#6B7280' 
                 }}>
-                  {localGroupStatus ? 'התלמיד יהיה פעיל בקבוצה ותירשם נוכחות' : 'התלמיד יהיה רשום כליד בקבוצה'}
+                  {localGroupStatus === 1
+                    ? 'התלמיד יהיה פעיל בקבוצה ותירשם נוכחות'
+                    : localGroupStatus === 2
+                      ? 'התלמיד יסומן כעזב בקבוצה'
+                      : 'התלמיד יהיה רשום כליד בקבוצה'}
                 </Typography>
               </Box>
             </Grid>

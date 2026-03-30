@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { exportGroupsToExcelWithData } from '../../../utils/exportGroupsToExcelWithData';
 import { exportBranchToExcel, validateGroupsDataForExport } from '../../../utils/exportBranchToExcel';
@@ -305,6 +305,30 @@ const EnrollStudent = () => {
     };
   };
 
+  const normalizeGroupStudentStatus = (value) => {
+    if (value === 1 || value === '1' || value === true) {
+      return 1;
+    }
+    if (value === 2 || value === '2') {
+      return 2;
+    }
+    if (value === 3 || value === '3' || value === false) {
+      return 3;
+    }
+    return 3;
+  };
+
+  const getGroupStudentStatusMeta = (value) => {
+    const statusCode = normalizeGroupStudentStatus(value);
+    if (statusCode === 1) {
+      return { code: 1, label: 'פעיל', color: 'success', icon: '✅' };
+    }
+    if (statusCode === 2) {
+      return { code: 2, label: 'עזב', color: 'error', icon: '🚪' };
+    }
+    return { code: 3, label: 'ליד', color: 'warning', icon: '🤝' };
+  };
+
   // Local state - כל המשתנים במקום אחד
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedBranch, setSelectedBranch] = useState(null);
@@ -312,7 +336,7 @@ const EnrollStudent = () => {
   const [enrollDialogOpen, setEnrollDialogOpen] = useState(false);
   const [studentId, setStudentId] = useState('');
   const [enrollDate, setEnrollDate] = useState('');
-  const [groupStatus, setGroupStatus] = useState(true); // סטטוס קבוצה - פעיל/לא פעיל
+  const [groupStatus, setGroupStatus] = useState(1); // סטטוס תלמיד בקבוצה: 1 פעיל, 2 עזב, 3 ליד
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
   const [view, setView] = useState('courses'); // courses, branches, groups, days
   const [selectedDay, setSelectedDay] = useState(null); // ליום שנבחר במיון לפי ימים
@@ -383,7 +407,7 @@ const [studentLessons, setStudentLessons] = useState(0);
     studentId: 0,
     groupId: null,
     entrollmentDate: '',
-    isActive: true
+    isActive: 1
   });
 
   // New item states
@@ -398,10 +422,76 @@ const [studentLessons, setStudentLessons] = useState(0);
     sector: '',
     numOfLessons: '',
     startDate: '',
+    notes: '',
     instructorId: 0,
     courseId: '',
     branchId: '',
   });
+
+  const buildAutoGroupName = useCallback((parts) => {
+    return parts
+      .map((part) => String(part || '').trim())
+      .filter(Boolean)
+      .join(' ');
+  }, []);
+
+  const resolvedInstructorName = useMemo(() => {
+    const selectedId = String(selectedInstructorId || '');
+    if (!selectedId) return '';
+
+    const selectedInstructor = instructors.find((inst) => {
+      const id = inst.instructorId ?? inst.id;
+      return String(id) === selectedId;
+    });
+
+    if (!selectedInstructor) return '';
+    return selectedInstructor.instructorName || `${selectedInstructor.firstName || ''} ${selectedInstructor.lastName || ''}`.trim();
+  }, [selectedInstructorId, instructors]);
+
+  const autoGroupNameForSave = useMemo(() => {
+    const courseName = selectedCourse?.couresName || selectedCourse?.name || '';
+    const branchName = selectedBranch?.name || selectedBranch?.branchName || '';
+
+    return buildAutoGroupName([
+      courseName,
+      branchName,
+      newGroup.dayOfWeek,
+      newGroup.hour,
+      resolvedInstructorName,
+      newGroup.ageRange,
+      newGroup.sector
+    ]);
+  }, [
+    selectedCourse,
+    selectedBranch,
+    newGroup.dayOfWeek,
+    newGroup.hour,
+    newGroup.ageRange,
+    newGroup.sector,
+    resolvedInstructorName,
+    buildAutoGroupName
+  ]);
+
+  const autoGroupNamePreview = useMemo(() => {
+    const branchName = selectedBranch?.name || selectedBranch?.branchName || '';
+
+    return buildAutoGroupName([
+      branchName,
+      newGroup.dayOfWeek,
+      newGroup.hour,
+      resolvedInstructorName,
+      newGroup.ageRange,
+      newGroup.sector
+    ]);
+  }, [
+    selectedBranch,
+    newGroup.dayOfWeek,
+    newGroup.hour,
+    newGroup.ageRange,
+    newGroup.sector,
+    resolvedInstructorName,
+    buildAutoGroupName
+  ]);
 
   // Constants
   const allowedSectors = ['כללי', 'חסידי', 'גור', 'ליטאי'];
@@ -660,7 +750,7 @@ const sortedGroups = groups
     };
     
     // שמור רק אם יש נתונים בטופס
-    const hasData = newGroup.groupName || newGroup.dayOfWeek || newGroup.hour ||
+    const hasData = newGroup.groupName || newGroup.dayOfWeek || newGroup.hour || newGroup.notes ||
                    newBranch.name || newBranch.address ||
                    newCourse.couresName || newCourse.description;
     
@@ -750,6 +840,7 @@ useEffect(() => {
       sector: '',
       numOfLessons: '',
       startDate: '',
+      notes: '',
       instructorId: 0,
       courseId: '',
       branchId: '',
@@ -959,7 +1050,7 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
     console.log('🔍 handleGroupSelect called with group:', group);
     setSelectedGroup(group);
     setStudentGroupData({ ...studentGroupData, groupId: group.groupId });
-    setGroupStatus(true); // איפוס הסטטוס לפעיל כברירת מחדל
+    setGroupStatus(1); // איפוס הסטטוס לפעיל כברירת מחדל
     
     // עדכון הקורס והסניף בהתאם לקבוצה שנבחרה (עם fallback מתוך הנתונים של הקבוצה)
     const courseFromStore = courses.find(c => c.courseId === group.courseId);
@@ -1204,7 +1295,7 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
           studentId: studentData.id, // אותו טיפוס כמו בפונקציה הרגילה
           groupId: selectedGroup.groupId,
           enrollmentDate: studentData.enrollDate, 
-          isActive: studentData.groupStatus !== undefined ? studentData.groupStatus : groupStatus
+          isActive: normalizeGroupStudentStatus(studentData.groupStatus !== undefined ? studentData.groupStatus : groupStatus)
         };
 if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
         console.log('🔍 Enrollment data to send:', entrollmentData);
@@ -1357,7 +1448,7 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
       studentId: studentId,
       groupId: groupId,
       enrollmentDate: enrollDate ? new Date(enrollDate).toISOString().split('T')[0] : '',
-      isActive: groupStatus
+      isActive: normalizeGroupStudentStatus(groupStatus)
     };
 if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
     await dispatch(groupStudentAddThunk(entrollmentDate));
@@ -1548,7 +1639,7 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
                 item.instructorName ||
                 item.Instructor?.name ||
                 "לא צוין",
-              isActive: item.isActive !== undefined ? item.isActive : true,
+              isActive: normalizeGroupStudentStatus(item.isActive),
               enrollmentDate: item.enrollmentDate ?
                 new Date(item.enrollmentDate).toLocaleDateString('he-IL') :
                 item.entrollmentDate ?
@@ -1817,7 +1908,6 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
   const handleAddGroup = async () => {
     // בדיקת שדות חובה
     const requiredFields = [
-      { field: 'groupName', name: 'שם הקבוצה' },
       { field: 'dayOfWeek', name: 'יום בשבוע' },
       { field: 'hour', name: 'שעה' },
       { field: 'ageRange', name: 'טווח גילאים' },
@@ -1840,6 +1930,15 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
       setNotification({
         open: true,
         message: `חייבים למלא את כל הנתונים הבאים: ${missingFieldNames}`,
+        severity: 'error'
+      });
+      return;
+    }
+
+    if (!selectedInstructorId) {
+      setNotification({
+        open: true,
+        message: 'חייבים לבחור מדריך',
         severity: 'error'
       });
       return;
@@ -1869,9 +1968,11 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
 
     const groupData = {
       ...newGroup,
-       instructorId: selectedInstructorId,
+      groupName: autoGroupNameForSave || newGroup.groupName,
+      instructorId: selectedInstructorId,
       courseId: selectedCourse?.courseId,
-      branchId: selectedBranch?.branchId
+      branchId: selectedBranch?.branchId,
+      notes: newGroup.notes || ''
     };
 
     try {
@@ -1897,7 +1998,7 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
 
         setNotification({
           open: true,
-          message: `✅ הקבוצה "${newGroup.groupName}" נוספה בהצלחה לסניף ${selectedBranch?.branchName || 'הנבחר'}`,
+          message: `✅ הקבוצה "${groupData.groupName}" נוספה בהצלחה לסניף ${selectedBranch?.name || selectedBranch?.branchName || 'הנבחר'}`,
           severity: 'success'
         });
       } else {
@@ -3519,6 +3620,13 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
                     <strong>קבוצה:</strong> {selectedGroup?.groupName}
                   </Typography>
                 </Grid>
+                {(selectedGroup?.notes || selectedGroup?.Notes) && (
+                  <Grid item xs={12}>
+                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                      <strong>הערות:</strong> {selectedGroup?.notes || selectedGroup?.Notes}
+                    </Typography>
+                  </Grid>
+                )}
                 <Grid item xs={6}>
                   <Typography variant="body2">
                     <strong>מגזר:</strong> {selectedGroup?.sector || 'כללי'}
@@ -3655,18 +3763,18 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
   </Typography>
   <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
     <Button
-      variant={groupStatus === true ? 'contained' : 'outlined'}
-      onClick={() => setGroupStatus(true)}
+      variant={groupStatus === 1 ? 'contained' : 'outlined'}
+      onClick={() => setGroupStatus(1)}
       sx={{
         borderRadius: '12px',
         px: 3,
         py: 1,
         fontWeight: 'bold',
-        bgcolor: groupStatus === true ? '#10B981' : 'transparent',
+        bgcolor: groupStatus === 1 ? '#10B981' : 'transparent',
         borderColor: '#10B981',
-        color: groupStatus === true ? 'white' : '#10B981',
+        color: groupStatus === 1 ? 'white' : '#10B981',
         '&:hover': {
-          bgcolor: groupStatus === true ? '#059669' : 'rgba(16, 185, 129, 0.1)',
+          bgcolor: groupStatus === 1 ? '#059669' : 'rgba(16, 185, 129, 0.1)',
           borderColor: '#10B981'
         }
       }}
@@ -3674,23 +3782,42 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
       ✅ פעיל
     </Button>
     <Button
-      variant={groupStatus === false ? 'contained' : 'outlined'}
-      onClick={() => setGroupStatus(false)}
+      variant={groupStatus === 3 ? 'contained' : 'outlined'}
+      onClick={() => setGroupStatus(3)}
       sx={{
         borderRadius: '12px',
         px: 3,
         py: 1,
         fontWeight: 'bold',
-        bgcolor: groupStatus === false ? '#efa544ff' : 'transparent',
+        bgcolor: groupStatus === 3 ? '#efa544ff' : 'transparent',
         borderColor: '#efa544ff',
-        color: groupStatus === false ? 'white' : '#efa544ff',
+        color: groupStatus === 3 ? 'white' : '#efa544ff',
         '&:hover': {
-          bgcolor: groupStatus === false ? '#ed992cff' : 'rgba(239, 68, 68, 0.1)',
+          bgcolor: groupStatus === 3 ? '#ed992cff' : 'rgba(239, 68, 68, 0.1)',
           borderColor: '#efa544ff'
         }
       }}
     >
       🤝 ליד 
+    </Button>
+    <Button
+      variant={groupStatus === 2 ? 'contained' : 'outlined'}
+      onClick={() => setGroupStatus(2)}
+      sx={{
+        borderRadius: '12px',
+        px: 3,
+        py: 1,
+        fontWeight: 'bold',
+        bgcolor: groupStatus === 2 ? '#6366F1' : 'transparent',
+        borderColor: '#6366F1',
+        color: groupStatus === 2 ? 'white' : '#6366F1',
+        '&:hover': {
+          bgcolor: groupStatus === 2 ? '#4F46E5' : 'rgba(99, 102, 241, 0.1)',
+          borderColor: '#6366F1'
+        }
+      }}
+    >
+      🚪 עזב
     </Button>
   </Box>
   <Typography variant="caption" sx={{ 
@@ -3699,7 +3826,11 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
     mt: 1, 
     color: '#6B7280' 
   }}>
-    {groupStatus ? 'התלמיד יהיה פעיל בקבוצה ותירשם נוכחות' : 'התלמיד יהיה רשום אך לא פעיל בקבוצה'}
+    {groupStatus === 1
+      ? 'התלמיד יהיה פעיל בקבוצה ותירשם נוכחות'
+      : groupStatus === 2
+        ? 'התלמיד יסומן כעזב בקבוצה'
+        : 'התלמיד יהיה רשום כליד בקבוצה'}
   </Typography>
 </Box>
 
@@ -4247,13 +4378,14 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
                 <TextField
                   autoFocus
                   margin="dense"
-                  label="שם הקבוצה"
+                  label="שם הקבוצה (אוטומטי)"
                   type="text"
                   fullWidth
                   variant="outlined"
                   inputProps={{ dir: 'rtl' }}
-                  value={newGroup.groupName}
-                  onChange={(e) => setNewGroup({ ...newGroup, groupName: e.target.value })}
+                  value={autoGroupNamePreview || newGroup.groupName || ''}
+                  helperText="תצוגה מקדימה אוטומטית: סניף, יום, שעה, גיל ומגזר"
+                  InputProps={{ readOnly: true }}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -4361,6 +4493,21 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
                   inputProps={{ dir: 'rtl' }}
                   value={newGroup.numOfLessons}
                   onChange={(e) => setNewGroup({ ...newGroup, numOfLessons: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  margin="dense"
+                  label="הערות (אופציונלי)"
+                  type="text"
+                  fullWidth
+                  multiline
+                  rows={3}
+                  variant="outlined"
+                  inputProps={{ dir: 'rtl' }}
+                  value={newGroup.notes || ''}
+                  onChange={(e) => setNewGroup({ ...newGroup, notes: e.target.value })}
+                  placeholder="אפשר להוסיף הערות כלליות על הקבוצה"
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -4482,6 +4629,11 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
                 <Typography variant="body1" fontWeight="bold" color="#065f46" gutterBottom>
                   {bestGroup.groupName}
                 </Typography>
+                {(bestGroup.notes || bestGroup.Notes) && (
+                  <Typography variant="body2" sx={{ mb: 1, whiteSpace: 'pre-wrap' }}>
+                    <strong>הערות:</strong> {bestGroup.notes || bestGroup.Notes}
+                  </Typography>
+                )}
                 <Divider sx={{ mb: 2 }} />
                 <Typography variant="body2"><strong>חוג:</strong> {bestGroup.groupName}</Typography>
                 <Typography variant="body2"><strong>מגזר:</strong> {bestGroup.sector || 'כללי'}</Typography>
@@ -4849,6 +5001,20 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
               inputProps={{ dir: 'rtl' }}
               value={editingItem?.groupName || ''}
               onChange={(e) => setEditingItem({ ...editingItem, groupName: e.target.value })}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              margin="dense"
+              label="הערות (אופציונלי)"
+              type="text"
+              fullWidth
+              multiline
+              rows={2}
+              variant="outlined"
+              inputProps={{ dir: 'rtl' }}
+              value={editingItem?.notes || editingItem?.Notes || ''}
+              onChange={(e) => setEditingItem({ ...editingItem, notes: e.target.value })}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
@@ -5272,8 +5438,8 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
   }}
 >
   <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-    {student.isActive ? '✅' : '❌'}
-    סטטוס בחוג: {student.isActive ? 'פעיל' : 'לא פעיל'}
+    {getGroupStudentStatusMeta(student.isActive).icon}
+    סטטוס בחוג: {getGroupStudentStatusMeta(student.isActive).label}
   </span>
 </Typography>
 
@@ -5380,6 +5546,11 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
           <Box sx={{ mb: 2, bgcolor: '#F3F4F6', p: 2, borderRadius: 2 }}>
             <Typography variant="body2" sx={{ color: '#374151' }}>
               <strong>קבוצה:</strong> {selectedGroup.groupName}<br />
+              {(selectedGroup.notes || selectedGroup.Notes) ? (
+                <>
+                  <strong>הערות:</strong> {selectedGroup.notes || selectedGroup.Notes}<br />
+                </>
+              ) : null}
               <strong>יום בשבוע:</strong> {selectedGroup.dayOfWeek}<br />
               <strong>תאריך התחלה:</strong> {selectedGroup.startDate}<br />
               <strong>מספר שיעורים בקבוצה:</strong> {selectedGroup.numOfLessons}
@@ -5787,7 +5958,7 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
                     maxWidth: 320,
                     display: 'flex',
                     flexDirection: 'column',
-                    background: groupStudent.isActive 
+                    background: normalizeGroupStudentStatus(groupStudent.isActive) === 1 
                       ? 'linear-gradient(135deg, #ffffff 0%, #f0fff4 100%)'
                       : 'linear-gradient(135deg, #ffffff 0%, #fff0f0 100%)',
                     transition: 'all 0.3s ease',
@@ -5801,7 +5972,7 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
                     }
                   }}
                 >
-                  {!groupStudent.isActive && (
+                  {normalizeGroupStudentStatus(groupStudent.isActive) !== 1 && (
                     <Box
                       sx={{
                         position: 'absolute',
@@ -5817,7 +5988,7 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
                         zIndex: 1
                       }}
                     >
-                      לא פעיל
+                      {getGroupStudentStatusMeta(groupStudent.isActive).label}
                     </Box>
                   )}
                   
@@ -5829,6 +6000,21 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
                       </span>
                     </Typography>
                   </Box>
+                  {(groupStudent.notes || groupStudent.Notes) && (
+                    <Typography
+                      variant="subtitle1"
+                      sx={{
+                        color: '#334155',
+                        fontWeight: 700,
+                        lineHeight: 1.45,
+                        mb: 2,
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word'
+                      }}
+                    >
+                      {groupStudent.notes || groupStudent.Notes}
+                    </Typography>
+                  )}
                   
                   <Divider sx={{ width: '100%', mb: 2 }} />
                   
@@ -5892,9 +6078,9 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
                     {/* שורה שנייה: סטטוס */}
                     <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2, direction:'ltr'}}>
                       <Chip
-                        icon={groupStudent.isActive ? <AvailableIcon /> : <FullIcon />}
-                        label={groupStudent.isActive ? 'פעיל' : 'לא פעיל'}
-                        color={groupStudent.isActive ? "success" : "error"}
+                        icon={normalizeGroupStudentStatus(groupStudent.isActive) === 1 ? <AvailableIcon /> : <FullIcon />}
+                        label={getGroupStudentStatusMeta(groupStudent.isActive).label}
+                        color={getGroupStudentStatusMeta(groupStudent.isActive).color}
                         variant="filled"
                         size="small"
                         sx={{

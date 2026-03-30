@@ -111,6 +111,7 @@ const GroupsTable = () => {
     numOfLessons: '',
     startDate: '',
     lessonsCompleted: '',
+    notes: '',
     isActive: true
   }), []);
 
@@ -126,6 +127,13 @@ const GroupsTable = () => {
   const optimisticVersionRef = useRef(0); // הגרסה בעת העדכון האופטימי
   const lastBranchGroupsRef = useRef([]);
   const initialLoadRef = useRef(false);
+
+  const buildAutoGroupName = useCallback((parts) => {
+    return parts
+      .map((part) => String(part || '').trim())
+      .filter(Boolean)
+      .join(' ');
+  }, []);
 
   const ensurePermission = useCallback(() => {
     return checkUserPermission(
@@ -170,6 +178,100 @@ const GroupsTable = () => {
   const getBranchName = useCallback((branchId) => {
     return branches.find(b => b.branchId === branchId || b.id === branchId || b.BranchId === branchId)?.name || '-';
   }, [branches]);
+
+  const autoGroupNameForSave = useMemo(() => {
+    if (editType !== 'group') {
+      return '';
+    }
+
+    const courseName = courses.find(c =>
+      c.courseId === formData.CourseId ||
+      c.id === formData.CourseId ||
+      c.CourseId === formData.CourseId ||
+      String(c.courseId) === String(formData.CourseId) ||
+      String(c.id) === String(formData.CourseId) ||
+      String(c.CourseId) === String(formData.CourseId)
+    )?.couresName || '';
+    const branchName = branches.find(b =>
+      b.branchId === formData.BranchId ||
+      b.id === formData.BranchId ||
+      b.BranchId === formData.BranchId ||
+      String(b.branchId) === String(formData.BranchId) ||
+      String(b.id) === String(formData.BranchId) ||
+      String(b.BranchId) === String(formData.BranchId)
+    )?.name || '';
+    const instructorName = instructors.find(i =>
+      i.instructorId === formData.instructorId ||
+      i.id === formData.instructorId ||
+      String(i.instructorId) === String(formData.instructorId) ||
+      String(i.id) === String(formData.instructorId)
+    )?.instructorName || '';
+
+    return buildAutoGroupName([
+      courseName,
+      branchName,
+      formData.dayOfWeek,
+      formData.hour,
+      instructorName,
+      formData.ageRange,
+      formData.sector
+    ]);
+  }, [
+    editType,
+    formData.CourseId,
+    formData.BranchId,
+    formData.instructorId,
+    formData.dayOfWeek,
+    formData.hour,
+    formData.ageRange,
+    formData.sector,
+    courses,
+    branches,
+    instructors,
+    buildAutoGroupName
+  ]);
+
+  const autoGroupNamePreview = useMemo(() => {
+    if (editType !== 'group') {
+      return '';
+    }
+
+    const branchName = branches.find(b =>
+      b.branchId === formData.BranchId ||
+      b.id === formData.BranchId ||
+      b.BranchId === formData.BranchId ||
+      String(b.branchId) === String(formData.BranchId) ||
+      String(b.id) === String(formData.BranchId) ||
+      String(b.BranchId) === String(formData.BranchId)
+    )?.name || '';
+
+    const instructorName = instructors.find(i =>
+      i.instructorId === formData.instructorId ||
+      i.id === formData.instructorId ||
+      String(i.instructorId) === String(formData.instructorId) ||
+      String(i.id) === String(formData.instructorId)
+    )?.instructorName || '';
+
+    return buildAutoGroupName([
+      branchName,
+      formData.dayOfWeek,
+      formData.hour,
+      instructorName,
+      formData.ageRange,
+      formData.sector
+    ]);
+  }, [
+    editType,
+    formData.BranchId,
+    formData.instructorId,
+    formData.dayOfWeek,
+    formData.hour,
+    formData.ageRange,
+    formData.sector,
+    branches,
+    instructors,
+    buildAutoGroupName
+  ]);
 
   const getGroupsForBranch = useCallback((branchId) => {
     // Use groupsByCourseId if available (when a course is selected), otherwise use all groups
@@ -334,6 +436,7 @@ const GroupsTable = () => {
         numOfLessons: group.numOfLessons || '',
         startDate: group.startDate || '',
         lessonsCompleted: group.lessonsCompleted || '',
+        notes: group.notes || group.Notes || '',
         isActive: group.isActive !== undefined ? group.isActive : true
       });
     } else {
@@ -431,13 +534,15 @@ const GroupsTable = () => {
         }
         setOpenBranchDialog(false);
       } else if (editType === 'group') {
-        if (!formData.groupName || !formData.instructorId) {
-          setNotification({ open: true, message: 'אנא מלא שם קבוצה ומדריך', severity: 'warning' });
+        if (!formData.instructorId) {
+          setNotification({ open: true, message: 'אנא בחר מדריך', severity: 'warning' });
           return;
         }
+
+        const groupNameToSave = autoGroupNameForSave || formData.groupName;
         const groupData = {
           GroupId: editingItem?.id || editingItem?.groupId || editingItem?.GroupId || 0,
-          GroupName: formData.groupName,
+          GroupName: groupNameToSave,
           CourseId: formData.CourseId,
           BranchId: formData.BranchId,
           InstructorId: formData.instructorId,
@@ -449,6 +554,7 @@ const GroupsTable = () => {
           NumOfLessons: parseInt(formData.numOfLessons) || 0,
           StartDate: formData.startDate || '',
           LessonsCompleted: parseInt(formData.lessonsCompleted) || 0,
+          Notes: formData.notes || '',
           IsActive: formData.isActive !== undefined ? formData.isActive : true
         };
         console.log('📤 Sending group data:', groupData);
@@ -463,7 +569,7 @@ const GroupsTable = () => {
 
           const updatedGroupData = {
             ...editingItem,
-            groupName: formData.groupName,
+            groupName: groupNameToSave,
             dayOfWeek: formData.dayOfWeek,
             hour: formData.hour,
             ageRange: formData.ageRange,
@@ -471,6 +577,7 @@ const GroupsTable = () => {
             sector: formData.sector,
             numOfLessons: formData.numOfLessons,
             lessonsCompleted: formData.lessonsCompleted,
+            notes: formData.notes,
             location: formData.location,
             instructorId: formData.instructorId,
             instructorName: instructorName,
@@ -707,6 +814,7 @@ const GroupsTable = () => {
       branchName: getBranchName(g.branchId || g.BranchId),
       day: g.dayOfWeek || g.day || '-',
       groupName: g.groupName,
+      notes: g.notes || g.Notes || '',
       instructor: g.instructorName || '-',
       hour: g.hour,
       ageRange: g.ageRange,
@@ -716,6 +824,7 @@ const GroupsTable = () => {
       isActive: g.isActive !== undefined ? g.isActive : true,
     })).filter(row =>
       row.groupName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      row.notes?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       row.courseName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       row.branchName?.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -763,11 +872,23 @@ const GroupsTable = () => {
 
   const renderTableView = () => {
 
+    const clampThreeLinesSx = {
+      display: '-webkit-box',
+      WebkitLineClamp: 3,
+      WebkitBoxOrient: 'vertical',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'normal',
+      lineHeight: 1.35,
+      wordBreak: 'break-word'
+    };
+
     const tableHeaders = [
       { label: 'שם החוג' },
       { label: 'סניף' },
       { label: 'יום' },
       { label: 'שם הקבוצה' },
+      { label: 'הערות' },
       { label: 'מדריך' },
       { label: 'שעות' },
       { label: 'טווח גילאים' },
@@ -837,7 +958,7 @@ const GroupsTable = () => {
           }}
         />
 
-        <StyledTableShell headers={tableHeaders}>
+        <StyledTableShell headers={tableHeaders} enableHorizontalScroll={true} tableMinWidth={1650}>
           <TableBody>
             {flatRows.map((row) => (
               <TableRow
@@ -845,6 +966,11 @@ const GroupsTable = () => {
                 hover
                 onDoubleClick={() => handleOpenGroupDetails(row.group)}
                 sx={{
+                  '& .MuiTableCell-root': {
+                    height: 'auto !important',
+                    minHeight: 'unset !important',
+                    verticalAlign: 'top !important'
+                  },
                   '&:nth-of-type(odd)': { backgroundColor: 'rgba(219,234,254,0.35)' },
                   '&:hover': {
                     backgroundColor: 'rgba(59, 130, 246, 0.08)',
@@ -855,9 +981,15 @@ const GroupsTable = () => {
                   transition: 'all 0.2s ease'
                 }}
               >
-                <TableCell align="right" sx={{ py: 2, fontSize: '0.9rem' }}>{row.courseName}</TableCell>
-                <TableCell align="right" sx={{ py: 2, fontSize: '0.9rem' }}>{row.branchName}</TableCell>
-                <TableCell align="right" sx={{ py: 2, fontSize: '0.9rem', fontWeight: 500 }}>{row.day}</TableCell>
+                <TableCell align="right" sx={{ py: 2, fontSize: '0.9rem' }}>
+                  <Box sx={clampThreeLinesSx}>{row.courseName}</Box>
+                </TableCell>
+                <TableCell align="right" sx={{ py: 2, fontSize: '0.9rem' }}>
+                  <Box sx={clampThreeLinesSx}>{row.branchName}</Box>
+                </TableCell>
+                <TableCell align="right" sx={{ py: 2, fontSize: '0.9rem', fontWeight: 500 }}>
+                  <Box sx={clampThreeLinesSx}>{row.day}</Box>
+                </TableCell>
                 <TableCell align="right" sx={{ py: 2, fontSize: '0.9rem', fontWeight: 600, color: '#1e40af' }}>
                   <Tooltip
                     title="👈 לחץ פעמיים כדי להציג את פרטי הקבוצה"
@@ -883,17 +1015,42 @@ const GroupsTable = () => {
                       }
                     }}
                   >
-                    <Box component="span" sx={{ display: 'inline-block', cursor: 'pointer' }}>
+                    <Box component="span" sx={{ ...clampThreeLinesSx, display: '-webkit-box', cursor: 'pointer' }}>
                       {row.groupName}
                     </Box>
                   </Tooltip>
                 </TableCell>
-                <TableCell align="right" sx={{ py: 2, fontSize: '0.9rem' }}>{row.instructor || '-'}</TableCell>
-                <TableCell align="right" sx={{ py: 2, fontSize: '0.9rem' }}>{row.hour}</TableCell>
-                <TableCell align="right" sx={{ py: 2, fontSize: '0.9rem', whiteSpace: 'nowrap' }}>{row.ageRange || '-'}</TableCell>
-                <TableCell align="right" sx={{ py: 2, fontSize: '0.9rem' }}>{row.maxStudents || '-'}</TableCell>
-                <TableCell align="right" sx={{ py: 2, fontSize: '0.9rem' }}>{row.lessons}</TableCell>
-                <TableCell align="right" sx={{ py: 2, fontSize: '0.9rem' }}>{row.sector || '-'}</TableCell>
+                <TableCell align="right" sx={{ py: 2, fontSize: '0.9rem', maxWidth: 220 }}>
+                  {row.notes ? (
+                    <Tooltip title={row.notes} placement="top" arrow>
+                      <Box sx={{
+                        ...clampThreeLinesSx,
+                        direction: 'rtl',
+                        textAlign: 'right'
+                      }}>
+                        {row.notes}
+                      </Box>
+                    </Tooltip>
+                  ) : '-'}
+                </TableCell>
+                <TableCell align="right" sx={{ py: 2, fontSize: '0.9rem' }}>
+                  <Box sx={clampThreeLinesSx}>{row.instructor || '-'}</Box>
+                </TableCell>
+                <TableCell align="right" sx={{ py: 2, fontSize: '0.9rem' }}>
+                  <Box sx={clampThreeLinesSx}>{row.hour}</Box>
+                </TableCell>
+                <TableCell align="right" sx={{ py: 2, fontSize: '0.9rem' }}>
+                  <Box sx={clampThreeLinesSx}>{row.ageRange || '-'}</Box>
+                </TableCell>
+                <TableCell align="right" sx={{ py: 2, fontSize: '0.9rem' }}>
+                  <Box sx={clampThreeLinesSx}>{row.maxStudents || '-'}</Box>
+                </TableCell>
+                <TableCell align="right" sx={{ py: 2, fontSize: '0.9rem' }}>
+                  <Box sx={clampThreeLinesSx}>{row.lessons}</Box>
+                </TableCell>
+                <TableCell align="right" sx={{ py: 2, fontSize: '0.9rem' }}>
+                  <Box sx={clampThreeLinesSx}>{row.sector || '-'}</Box>
+                </TableCell>
                 <TableCell align="right" sx={{ py: 2, fontSize: '0.9rem' }}>
                   <Chip
                     label={row.isActive ? '✅ פעיל' : '⏸️ לא פעיל'}
@@ -944,7 +1101,7 @@ const GroupsTable = () => {
             ))}
             {flatRows.length === 0 && (
               <TableRow key="empty-row">
-                <TableCell colSpan={11} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                <TableCell colSpan={tableHeaders.length} align="center" sx={{ py: 4, color: 'text.secondary' }}>
                   אין נתונים להצגה
                 </TableCell>
               </TableRow>
@@ -1457,6 +1614,21 @@ const GroupsTable = () => {
                           </span>
                         </Typography>
                       </Box>
+                      {(group.notes || group.Notes) && (
+                        <Typography
+                          variant="subtitle1"
+                          sx={{
+                            color: '#334155',
+                            fontWeight: 700,
+                            lineHeight: 1.45,
+                            mb: 2,
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word'
+                          }}
+                        >
+                          {group.notes || group.Notes}
+                        </Typography>
+                      )}
                       {/* סטטוס פעיל/לא פעיל - מתחת לשם הקבוצה */}
                       {!group.isActive && (
                         <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
@@ -1623,6 +1795,7 @@ const GroupsTable = () => {
       <GroupDialog
         open={openGroupDialog}
         values={formData}
+        groupNamePreview={autoGroupNamePreview}
         onChange={handleFormChange}
         onSubmit={handleSaveItem}
         onClose={() => setOpenGroupDialog(false)}
@@ -1665,6 +1838,16 @@ const GroupsTable = () => {
                   {selectedItem.groupName}
                 </Typography>
               </Box>
+              {(selectedItem.notes || selectedItem.Notes) && (
+                <Box sx={{ background: 'rgba(99, 102, 241, 0.1)', p: 2, borderRadius: 2 }}>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 'bold' }}>
+                    הערות
+                  </Typography>
+                  <Typography variant="body2" sx={{ textAlign: 'right', whiteSpace: 'pre-wrap' }}>
+                    {selectedItem.notes || selectedItem.Notes}
+                  </Typography>
+                </Box>
+              )}
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                 <Box sx={{ background: 'rgba(99, 102, 241, 0.1)', p: 2, borderRadius: 2 }}>
                   <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 'bold' }}>
@@ -1764,7 +1947,15 @@ const GroupsTable = () => {
       py: 4,
                             borderRadius: 8
     }}>
-      <Box sx={{ maxWidth: 1400, mx: 'auto', px: 3, direction: 'rtl' }}>
+      <Box
+        sx={{
+          maxWidth: viewMode === 'table' ? '100%' : 1400,
+          width: '100%',
+          mx: 'auto',
+          px: viewMode === 'table' ? 1.5 : 3,
+          direction: 'rtl'
+        }}
+      >
         {renderHeaderAndStats()}
 
         {viewMode === 'table' ? (

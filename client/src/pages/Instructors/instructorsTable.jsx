@@ -333,6 +333,11 @@ const InstructorGroupsDialog = ({ open, onClose, instructor, groups, loading }) 
                           }}
                         />
                       </Box>
+                      {(group.notes || group.Notes) && (
+                        <Typography variant="body2" sx={{ opacity: 0.95, mb: 1, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                          {group.notes || group.Notes}
+                        </Typography>
+                      )}
                       <Typography variant="body2" sx={{ opacity: 0.9 }}>
                         📚 {group.courseName}
                       </Typography>

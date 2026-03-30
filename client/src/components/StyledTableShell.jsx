@@ -22,6 +22,7 @@ const StyledTableShell = ({
   headers = [], 
   children, 
   enableHorizontalScroll = false,
+  tableMinWidth = null,
   enableSort = false,
   onSort = null,
   sortField = '',
@@ -56,6 +57,7 @@ const StyledTableShell = ({
       }}
     >
       <Table sx={{
+        ...(tableMinWidth ? { minWidth: tableMinWidth } : {}),
         '& tbody tr': {
           minHeight: '56px !important',
           height: '56px !important'

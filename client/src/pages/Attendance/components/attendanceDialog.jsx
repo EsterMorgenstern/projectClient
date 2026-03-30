@@ -66,6 +66,7 @@ const AttendanceDialog = ({
   const displayCourseName = courseName || selectedCourse?.courseName || selectedCourse?.couresName || selectedCourse?.name || 'חוג לא זמין';
   const displayBranchName = branchName || selectedBranch?.branchName || selectedBranch?.name || 'סניף לא זמין';
   const displayGroupName = groupName || selectedGroup?.groupName || selectedGroup?.name || 'קבוצה לא זמינה';
+  const displayGroupNotes = selectedGroup?.notes || selectedGroup?.Notes || '';
 
   const currentUserId =
     currentUser?.id ||
@@ -243,6 +244,11 @@ const AttendanceDialog = ({
               <Typography variant="subtitle2" color="textSecondary">
                 {displayCourseName} - קבוצה {displayGroupName}
               </Typography>
+              {displayGroupNotes && (
+                <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 0.5, whiteSpace: 'pre-wrap' }}>
+                  {displayGroupNotes}
+                </Typography>
+              )}
             </Box>
           </Box>
 

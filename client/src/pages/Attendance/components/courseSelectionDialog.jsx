@@ -718,6 +718,11 @@ const CourseSelectionDialog = ({
                 }}>
                   קבוצה {group.groupName}
                 </Typography>
+                {(group.notes || group.Notes) && (
+                  <Typography variant="caption" sx={{ color: '#475569', whiteSpace: 'pre-wrap' }}>
+                    {group.notes || group.Notes}
+                  </Typography>
+                )}
                 
                 {statusText && (
                   <Chip
