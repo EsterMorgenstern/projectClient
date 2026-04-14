@@ -16,14 +16,12 @@ const usersSlice = createSlice({
   
   reducers: {
     setCurrentUser: (state, action) => {
-      console.log('🔄 Setting current user:', action.payload);
       state.currentUser = action.payload;
       state.userById = action.payload;
       state.error = null; // ✅ נקה שגיאות
     },
     
     clearCurrentUser: (state) => {
-      console.log('🚪 Clearing current user');
       state.currentUser = null;
       state.userById = null;
       state.error = null;
@@ -31,7 +29,6 @@ const usersSlice = createSlice({
     
     // ✅ הוסף action להרשמה מוצלחת
     setRegistrationSuccess: (state, action) => {
-      console.log('🎉 Registration successful:', action.payload);
       state.registrationSuccess = true;
       state.error = null;
       
@@ -52,12 +49,10 @@ const usersSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(getUserById.pending, (state) => {
-        console.log('⏳ getUserById pending');
         state.loading = true;
         state.error = null;
       })
       .addCase(getUserById.fulfilled, (state, action) => {
-        console.log('✅ getUserById fulfilled:', action.payload);
         state.loading = false;
         
         if (action.payload && typeof action.payload === 'object') {
@@ -78,13 +73,11 @@ const usersSlice = createSlice({
       })
       
       .addCase(addUser.pending, (state) => {
-        console.log('⏳ addUser pending');
         state.loading = true;
         state.error = null;
         state.registrationSuccess = false;
       })
       .addCase(addUser.fulfilled, (state, action) => {
-        console.log('✅ addUser fulfilled:', action.payload);
         state.loading = false;
         state.registrationSuccess = true;
         state.error = null;

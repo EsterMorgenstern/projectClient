@@ -1,4 +1,4 @@
-// import React, { useState, useEffect } from 'react';
+﻿// import React, { useState, useEffect } from 'react';
 // import {
 //     Box,
 //     Typography,
@@ -832,7 +832,7 @@ const PaymentsTab = ({ student, embedded = false }) => {
 
     const handleSaveMethod = async () => {
         try {
-            if (!ensurePermission()) return;
+            if (!(ensurePermission())) return;
             // ולידציה בסיסית
             if (!formData.methodType) {
                 setSnackbarMessage('יש לבחור סוג אמצעי תשלום');
@@ -952,7 +952,7 @@ const PaymentsTab = ({ student, embedded = false }) => {
 
     const handleDeleteMethod = async (methodId) => {
         try {
-            if (!ensurePermission()) return;
+            if (!(ensurePermission())) return;
             const result = await dispatch(deletePaymentMethod(methodId));
             
             if (deletePaymentMethod.fulfilled.match(result)) {
@@ -983,7 +983,7 @@ const PaymentsTab = ({ student, embedded = false }) => {
     };
     const handleSetDefault = async (paymentMethodId) => {
         try {
-            if (!ensurePermission()) return;
+            if (!(ensurePermission())) return;
             console.log('🔄 Setting default payment method:', paymentMethodId);
             
             // מצא את אמצעי התשלום הנוכחי

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions,
@@ -309,7 +309,7 @@ const AddStudentNoteDialog = ({
     };
 
    const handleSave = async () => {
-        if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setErrors({ permission: msg }))) return;
+        if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setErrors({ permission: msg })))) return;
         // מניעת שמירה כפולה של "מעקב רישום" או הערה עם אותו תוכן
         if (
             (

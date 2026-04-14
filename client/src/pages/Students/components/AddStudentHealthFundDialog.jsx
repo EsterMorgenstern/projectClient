@@ -1,4 +1,4 @@
-import {
+﻿import {
   Dialog,
   DialogTitle,
   DialogContent,
@@ -633,7 +633,7 @@ renderValue={selected => {
         <Button variant="outlined" color="error" onClick={() => { resetForm(); onClose(); }} sx={{ borderRadius: '8px', px: 3, py: 1 }}>ביטול</Button>
         <Button variant="contained" startIcon={<Save />} onClick={async () => {
           setSaving(true);
-          if (!ensurePermission()) {
+          if (!(ensurePermission())) {
             setSaving(false);
             return;
           }

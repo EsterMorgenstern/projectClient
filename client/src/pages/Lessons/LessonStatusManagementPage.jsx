@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+﻿import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Box,
@@ -213,7 +213,7 @@ const LessonStatusManagementPage = () => {
 
   const handleCancelLesson = useCallback(async () => {
     if (!cancelForm.lessonId || !cancelForm.reason.trim()) return;
-    if (!ensurePermission()) return;
+    if (!(ensurePermission())) return;
     await dispatch(cancelLesson({
       id: Number(cancelForm.lessonId),
       reason: cancelForm.reason.trim(),
@@ -257,7 +257,7 @@ const LessonStatusManagementPage = () => {
 
   const handleBulkCancel = useCallback(async () => {
     if (!bulkCancelForm.dayOfWeek || !bulkCancelForm.reason.trim()) return;
-    if (!ensurePermission()) return;
+    if (!(ensurePermission())) return;
     const date = format(bulkCancelForm.date, 'yyyy-MM-dd');
     await dispatch(cancelAllGroupsForDay({
       dayOfWeek: bulkCancelForm.dayOfWeek,
@@ -271,7 +271,7 @@ const LessonStatusManagementPage = () => {
   }, [bulkCancelForm, userName, dispatch, ensurePermission]);
 
   const handleUndoCancel = useCallback(async (lessonId) => {
-    if (!ensurePermission()) return;
+    if (!(ensurePermission())) return;
     await dispatch(undoCancelLesson({ id: lessonId, undoBy: userName }));
     dispatch(getCanceledLessons());
   }, [userName, dispatch, ensurePermission]);
@@ -296,7 +296,7 @@ const LessonStatusManagementPage = () => {
 
   const handleConfirmDeleteCompletion = useCallback(async () => {
     if (!deleteCompletionData) return;
-    if (!ensurePermission()) return;
+    if (!(ensurePermission())) return;
     const lessonId = deleteCompletionData.lessonId || deleteCompletionData.id;
     await dispatch(deleteLesson({ id: lessonId }));
     setDeleteCompletionOpen(false);
@@ -306,7 +306,7 @@ const LessonStatusManagementPage = () => {
 
   const handleCreateCompletion = useCallback(async () => {
     if (!completionForm.groupId) return;
-    if (!ensurePermission()) return;
+    if (!(ensurePermission())) return;
     const completionDate = format(completionForm.completionDate, 'yyyy-MM-dd');
     await dispatch(createCompletionLesson({
       groupId: Number(completionForm.groupId),
@@ -322,7 +322,7 @@ const LessonStatusManagementPage = () => {
 
   const handleMarkCompletion = useCallback(async () => {
     if (!markCompletionForm.lessonId) return;
-    if (!ensurePermission()) return;
+    if (!(ensurePermission())) return;
     await dispatch(markLessonAsCompletion({
       id: Number(markCompletionForm.lessonId),
       markedBy: markCompletionForm.markedBy || userName

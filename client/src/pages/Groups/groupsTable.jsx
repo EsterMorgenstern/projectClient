@@ -135,7 +135,7 @@ const GroupsTable = () => {
       .join(' ');
   }, []);
 
-  const ensurePermission = useCallback(() => {
+const ensurePermission = useCallback(() => {
     return checkUserPermission(
       currentUser?.id || currentUser?.userId,
       (message, severity) => setNotification({ open: true, message, severity })
@@ -495,7 +495,7 @@ const GroupsTable = () => {
 
   const handleSaveItem = async () => {
     try {
-      if (!ensurePermission()) return;
+      if (!(ensurePermission())) return;
       let result;
 
       if (editType === 'course') {
@@ -663,7 +663,7 @@ const GroupsTable = () => {
     if (!itemToDelete || !deleteType) return;
 
     try {
-      if (!ensurePermission()) return;
+      if (!(ensurePermission())) return;
       let result;
 
       if (deleteType === 'group') {

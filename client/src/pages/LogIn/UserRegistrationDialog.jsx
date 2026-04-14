@@ -31,7 +31,8 @@ import {
   Work as WorkIcon
 } from '@mui/icons-material';
 import { addUser } from '../../store/user/userAddThunk';
-import { checkUserPermission, allowedUserIds } from '../../utils/permissions';
+import { getUserById } from '../../store/user/userGetByIdThunk';
+import { checkUserPermission } from '../../utils/permissions';
 
 const UserRegistrationDialog = ({ open, onClose, onRegistrationSuccess }) => {
   const dispatch = useDispatch();
@@ -46,7 +47,7 @@ const UserRegistrationDialog = ({ open, onClose, onRegistrationSuccess }) => {
     lastName: '',
     email: '',
     phone: '',
-    role: 'Student',
+    role: 'תלמיד',
     adminCode: ''
   });
 
@@ -70,7 +71,7 @@ const UserRegistrationDialog = ({ open, onClose, onRegistrationSuccess }) => {
       lastName: '',
       email: '',
       phone: '',
-      role: 'Student',
+      role: 'תלמיד',
       adminCode: ''
     });
     setErrors({});
@@ -145,8 +146,6 @@ const UserRegistrationDialog = ({ open, onClose, onRegistrationSuccess }) => {
 
     if (!formData.adminCode?.toString().trim()) {
       newErrors.adminCode = 'יש להזין קוד מנהל';
-    } else if (!allowedUserIds.includes(Number(formData.adminCode))) {
-      newErrors.adminCode = 'קוד מנהל אינו מורשה';
     }
 
     setErrors(newErrors);
@@ -157,10 +156,16 @@ const UserRegistrationDialog = ({ open, onClose, onRegistrationSuccess }) => {
  
 // ✅ תיקון מושלם - נטפל בכל סוג תגובה מהשרת
 const handleSubmit = async () => {
-  // הסר בדיקת הרשאות
   if (!validateForm()) return;
 
  
+  // בדיקת קוד מנהל מול השרת
+  const adminCheckResult = await dispatch(getUserById(Number(formData.adminCode)));
+  if (!adminCheckResult.payload?.id) {
+    setErrors(prev => ({ ...prev, adminCode: 'קוד מנהל אינו מורשה' }));
+    return;
+  }
+
     setIsSubmitting(true);
     setRegistrationStep('loading');
     setErrors({});
@@ -548,6 +553,7 @@ const handleSubmit = async () => {
       <Dialog
         open={open}
         onClose={registrationStep === 'loading' ? undefined : onClose}
+        disableRestoreFocus
         maxWidth="md"
         fullWidth
         fullScreen={isMobile}

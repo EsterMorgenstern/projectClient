@@ -28,68 +28,29 @@ import {
   School as SchoolIcon
 } from '@mui/icons-material';
 import { getUserById } from '../../store/user/userGetByIdThunk';
-import { selectUserData, setCurrentUser } from '../../store/user/userSlice';
 
 const LoginDialog = ({ open, onClose, onLoginSuccess }) => {
   const dispatch = useDispatch();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
-  // ✅ שינוי הסלקטור
-  const { loading, error } = useSelector(state => state.users);
-  const { userById, currentUser } = useSelector(selectUserData);
+  const { loading } = useSelector(state => state.users);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [loginStep, setLoginStep] = useState('input'); // 'input', 'loading', 'success'
+  const [authenticatedUser, setAuthenticatedUser] = useState(null);
 
   // איפוס הטופס כשהדיאלוג נפתח
   useEffect(() => {
     if (open) {
       setPassword('');
+      setShowPassword(false);
       setErrors({});
       setLoginStep('input');
+      setAuthenticatedUser(null);
     }
   }, [open]);
-
-  // ✅ טיפול משופר בתגובה מהשרת
-  useEffect(() => {
-   
-    if (loginStep === 'loading') {
-      // בדוק אם יש נתוני משתמש תקינים
-      const validUser = userById || currentUser;
-      
-      if (validUser && typeof validUser === 'object' && !Array.isArray(validUser)) {
-        setLoginStep('success');
-        
-        setTimeout(() => {
-          onLoginSuccess(validUser);
-          onClose();
-          setLoginStep('input');
-        }, 1500);
-      } else if (validUser && Array.isArray(validUser) && validUser.length > 0) {
-        const user = validUser[0];
-        setLoginStep('success');
-        
-        setTimeout(() => {
-          onLoginSuccess(user);
-          onClose();
-          setLoginStep('input');
-        }, 1500);
-      }
-    }
-  }, [userById, currentUser, loginStep, onLoginSuccess, onClose]);
-
-  // ✅ טיפול משופר בשגיאות
-  useEffect(() => {
-    if (error && loginStep === 'loading') {
-      console.log('Login error occurred:', error);
-      setErrors({ 
-        password: typeof error === 'string' ? error : 'סיסמה שגויה או שגיאה בהתחברות' 
-      });
-      setLoginStep('input');
-    }
-  }, [error, loginStep]);
 
   const handlePasswordChange = (event) => {
     setPassword(event.target.value);
@@ -113,46 +74,44 @@ const LoginDialog = ({ open, onClose, onLoginSuccess }) => {
 
   const handleLogin = async () => {
     if (!validateForm()) return;
-    
-    console.log("Attempting login with password:", password);
-    
+
     try {
       setLoginStep('loading');
       setErrors({});
-      
-      // ✅ שליחת הבקשה ובדיקת התגובה
-      const result = await dispatch(getUserById(password)).unwrap();
-      console.log("Login API result:", result);
-      
-      // אם הגענו לכאן, הבקשה הצליחה
-      // ה-useEffect יטפל בהמשך
-      
-    } catch (error) {
-      console.error('Login error:', error);
-      
-      // ✅ טיפול משופר בשגיאות
-      let errorMessage = 'סיסמה שגויה. אנא נסה שוב.';
-      
-      if (error.message) {
-        errorMessage = error.message;
-      } else if (typeof error === 'string') {
-        errorMessage = error;
+
+      const result = await dispatch(getUserById(password.trim())).unwrap();
+      const validUser = Array.isArray(result) ? result[0] : result;
+
+      if (!validUser || typeof validUser !== 'object') {
+        throw new Error('לא נמצאו נתוני משתמש תקינים');
       }
-      
+
+      setAuthenticatedUser(validUser);
+      setLoginStep('success');
+
+      setTimeout(() => {
+        onLoginSuccess(validUser);
+        onClose();
+        setLoginStep('input');
+        setAuthenticatedUser(null);
+      }, 400);
+    } catch (error) {
+      let errorMessage = 'סיסמה שגויה. אנא נסה שוב.';
+
+      if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
       setErrors({ password: errorMessage });
       setLoginStep('input');
     }
   };
 
-  const handleKeyPress = (event) => {
-    if (event.key === 'Enter') {
-      handleLogin();
-    }
-  };
-
   // ✅ פונקציה לקבלת שם המשתמש
   const getUserDisplayName = () => {
-    const user = userById || currentUser;
+    const user = authenticatedUser;
     if (!user) return 'משתמש';
     
     if (user.FirstName || user.LastName) {
@@ -171,11 +130,18 @@ const LoginDialog = ({ open, onClose, onLoginSuccess }) => {
   };
 
   const renderLoginForm = () => (
-    <motion.div
+    <motion.form
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3 }}
+      noValidate
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (loginStep === 'input' && !loading) {
+          handleLogin();
+        }
+      }}
     >
       <Box sx={{ textAlign: 'center', mb: 3 }}>
         <motion.div
@@ -226,11 +192,12 @@ const LoginDialog = ({ open, onClose, onLoginSuccess }) => {
       <Box sx={{ mb: 3 }}>
         <TextField
           fullWidth
+          name="password"
+          autoComplete="current-password"
           type={showPassword ? 'text' : 'password'}
           placeholder="הכנס סיסמה"
           value={password}
           onChange={handlePasswordChange}
-          onKeyPress={handleKeyPress}
           error={!!errors.password}
           helperText={errors.password}
           autoFocus
@@ -263,10 +230,10 @@ const LoginDialog = ({ open, onClose, onLoginSuccess }) => {
       </Box>
 
       <Button
+        type="submit"
         fullWidth
         variant="contained"
         size="large"
-        onClick={handleLogin}
         disabled={loading} // ✅ השבת כפתור בזמן טעינה
         startIcon={loading ? <CircularProgress size={20} /> : <LoginIcon />}
         sx={{
@@ -305,7 +272,7 @@ const LoginDialog = ({ open, onClose, onLoginSuccess }) => {
           }}
         />
       </Box>
-    </motion.div>
+    </motion.form>
   );
 
   const renderLoadingState = () => (
@@ -372,6 +339,7 @@ const LoginDialog = ({ open, onClose, onLoginSuccess }) => {
     <Dialog
       open={open}
       onClose={loginStep === 'loading' ? undefined : onClose} // ✅ מנע סגירה בזמן טעינה
+      disableRestoreFocus
       maxWidth="sm"
       fullWidth
       fullScreen={isMobile}
@@ -418,7 +386,8 @@ const LoginDialog = ({ open, onClose, onLoginSuccess }) => {
         </IconButton>
       )}
 
-      <DialogContent sx={{ 
+      <DialogContent
+        sx={{ 
         p: 4,
         position: 'relative',
         minHeight: 300,

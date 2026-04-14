@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import AddStudentHealthFundDialog from './AddStudentHealthFundDialog';
 import {
   Dialog,
@@ -335,7 +335,7 @@ const AddStudentDialog = ({
         updatedDate: new Date().toISOString()
       };
       console.log('📝 Creating automatic note:', noteData);
-      if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+      if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
       const result = await dispatch(addStudentNote(noteData));
       if (addStudentNote.fulfilled.match(result)) {
         console.log('✅ Automatic note created successfully');
@@ -456,7 +456,7 @@ const AddStudentDialog = ({
       console.log('   - Created By:', studentData.CreatedBy);
       console.log('⚠️ Checking payload keys:', Object.keys(studentData));
       console.log('⚠️ Is healthFundName in payload?', 'healthFundName' in studentData ? '❌ YES - WRONG!' : '✅ NO - CORRECT!');
-  if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+  if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
   let result = await dispatch(addStudent(studentData));
       
       console.log('🔍 AddStudent result:', result);
@@ -485,7 +485,7 @@ const AddStudentDialog = ({
           
           if (shouldUpdate) {
             console.log('👤 User chose to update existing student');
-            if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+            if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
             result = await dispatch(editStudent(studentData));
             console.log('🔍 EditStudent result:', result);
           } else {
@@ -598,7 +598,7 @@ const AddStudentDialog = ({
   const handleNoteSubmit = (noteData) => {
     console.log('✅ Note added for student:', noteData);
     // שמור את ההערה הידנית לשרת
-    if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+    if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
     dispatch(addStudentNote({
       ...noteData,
       studentId: savedStudentData?.id || noteData.studentId

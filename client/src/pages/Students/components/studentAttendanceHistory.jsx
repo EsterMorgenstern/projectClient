@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchAttendanceHistory } from '../../../store/attendance/fetchAttendanceHistory';
 import { fetchStudentAttendanceSummary } from '../../../store/attendance/fetchStudentAttendanceSummary';
@@ -265,7 +265,7 @@ const StudentAttendanceHistory = ({ open, onClose, student, embedded = false }) 
   };
 
   const handleConfirmDelete = () => {
-    if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+    if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
     dispatch(deleteAttendance(selectedAttendanceId));
     setOpenDialog(false);
     setSelectedAttendanceId(null);

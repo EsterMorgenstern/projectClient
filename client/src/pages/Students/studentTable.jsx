@@ -250,7 +250,7 @@ export default function StudentsTable() {
   };
 
   const handleEdit = async () => {
-    if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+    if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
     if (await dispatch(editStudent(currentStudent))) {
       setOpenEdit(false);
       refreshTable();
@@ -258,7 +258,7 @@ export default function StudentsTable() {
   };
 
   const handleDelete = async (id) => {
-    if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+    if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
     if (await dispatch(deleteStudent(id))) {
       refreshTable();
     }

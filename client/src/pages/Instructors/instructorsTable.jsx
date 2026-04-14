@@ -774,7 +774,7 @@ export default function InstructorsTable() {
   };
 
   const handleAdd = async () => {
-    if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+    if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;       
     await dispatch(addInstructor(newInstructor));
     refreshTable();
     setOpen(false);
@@ -784,14 +784,14 @@ export default function InstructorsTable() {
   };
 
   const handleEdit = async () => {
-    if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+    if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;       
     await dispatch(editInstructor(currentInstructor));
     setOpenEdit(false);
     refreshTable();
   };
 
   const handleDelete = async (id) => {
-    if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+    if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;       
     if (await dispatch(deleteInstructor(id))) {
       refreshTable();
     }

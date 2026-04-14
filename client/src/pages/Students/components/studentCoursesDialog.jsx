@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import {
   Dialog, DialogActions, DialogContent, DialogTitle, Button,
   Box, Typography, TableContainer, Paper, Table, TableHead,
@@ -157,7 +157,7 @@ const StudentCoursesDialog = ({
       return;
     }
     try {
-      if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+      if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
       const result = await dispatch(addStudentNote(noteData));
       if (result.type === 'studentNotes/add/fulfilled') {
         await dispatch(getNotesByStudentId(student.id));
@@ -171,7 +171,7 @@ const StudentCoursesDialog = ({
 
   const handleUpdateNote = async (noteData) => {
     try {
-      if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+      if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
       await dispatch(updateStudentNote({
         noteId: selectedNote.noteId,
         ...noteData
@@ -186,7 +186,7 @@ const StudentCoursesDialog = ({
 
   const handleDeleteNote = async () => {
     try {
-      if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+      if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
       await dispatch(deleteStudentNote(noteToDelete.noteId));
       dispatch(getNotesByStudentId(student.id));
       setDeleteConfirmOpen(false);
@@ -237,7 +237,7 @@ const StudentCoursesDialog = ({
   const handleEditCourseSave = async (updatedFields) => {
     setEditCourseLoading(true);
     try {
-      if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+      if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
       const payload = {
         groupStudentId: editingCourse.groupStudentId,
         studentId: editingCourse.studentId,
@@ -275,7 +275,7 @@ const StudentCoursesDialog = ({
 
     setDeletingCourse(true);
     try {
-      if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+      if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
       console.log('🗑️ Deleting course with groupStudentId:', courseToDelete.groupStudentId);
 
       const result = await dispatch(deleteGroupStudent(courseToDelete.groupStudentId));

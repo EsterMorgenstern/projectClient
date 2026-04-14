@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+﻿import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { exportGroupsToExcelWithData } from '../../../utils/exportGroupsToExcelWithData';
 import { exportBranchToExcel, validateGroupsDataForExport } from '../../../utils/exportBranchToExcel';
@@ -966,7 +966,7 @@ function calculateStudentLessons(groupStartDate, enrollDate, lessonDayOfWeek, nu
         default:
           throw new Error('Invalid delete type');
       }
-if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
       console.log(`Deleting ${deleteType} with ID:`, itemId);
 
       await dispatch(deleteAction(itemId));
@@ -1234,7 +1234,7 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
         createdDate: new Date().toISOString(),
         updatedDate: new Date().toISOString()
       };
-if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
       console.log('📝 Creating automatic registration note:', noteData);
       
       const result = await dispatch(addStudentNote(noteData));
@@ -1297,7 +1297,7 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
           enrollmentDate: studentData.enrollDate, 
           isActive: normalizeGroupStudentStatus(studentData.groupStatus !== undefined ? studentData.groupStatus : groupStatus)
         };
-if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
         console.log('🔍 Enrollment data to send:', entrollmentData);
 
         const enrollResult = await dispatch(groupStudentAddThunk(entrollmentData));
@@ -1450,7 +1450,7 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
       enrollmentDate: enrollDate ? new Date(enrollDate).toISOString().split('T')[0] : '',
       isActive: normalizeGroupStudentStatus(groupStatus)
     };
-if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
     await dispatch(groupStudentAddThunk(entrollmentDate));
 
     setEnrollDialogOpen(false);
@@ -1775,7 +1775,7 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
     }
 
     try {
-      if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+      if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
       console.log('🔄 Adding course:', newCourse);
       const result = await dispatch(addCourse(newCourse));
       
@@ -1853,7 +1853,7 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
         ...newBranch,
         courseId: selectedCourse.courseId || selectedCourse.id
       };
-if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
       console.log('🔄 Adding branch:', branchToAdd);
       const result = await dispatch(addBranch(branchToAdd));
       
@@ -1976,7 +1976,7 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
     };
 
     try {
-      if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+      if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
       console.log('🔄 Adding group:', groupData);
       const result = await dispatch(addGroup(groupData));
       
@@ -2042,7 +2042,7 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
     }
 
     try {
-      if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+      if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
       await dispatch(updateCourse(editingItem));
       setEditCourseDialogOpen(false);
       setEditingItem(null);
@@ -2086,7 +2086,7 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
     }
 
     try {
-      if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+      if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
       await dispatch(updateBranch(editingItem));
       setEditBranchDialogOpen(false);
       setEditingItem(null);
@@ -2158,7 +2158,7 @@ if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity)
     }
 
     try {
-      if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+      if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
       await dispatch(updateGroup(editingItem));
       setEditGroupDialogOpen(false);
       setEditingItem(null);
@@ -5732,7 +5732,7 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
           onClick={async () => {
             if (selectedStudentForEdit) {
               try {
-                if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+                if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
                 // Use editStudent thunk to update student
                 const result = await dispatch(editStudent(selectedStudentForEdit));
                 if (result.type === 'students/editStudent/fulfilled') {

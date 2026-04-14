@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -229,15 +229,13 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
     const missingFields = required.filter(field => !formData[field] || formData[field].toString().trim() === '');
     
     if (missingFields.length > 0) {
-      console.log('Missing fields:', missingFields);
-      console.log('Current form data:', formData);
       return false;
     }
     return true;
   };
 
   const handleSave = async () => {
-    if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setError(msg))) return;
+    if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setError(msg)))) return;
 
     if (!validateForm()) {
       const required = ['id', 'firstName', 'lastName', 'phone', 'age', 'city'];
@@ -278,7 +276,7 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
       console.log('FormData before send:', formData);
       console.log('StudentData keys:', Object.keys(studentData));
 
-      if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setError(msg))) return;
+      if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setError(msg)))) return;
       const result = await dispatch(editStudent({
         studentId: formData.id,
         ...studentData

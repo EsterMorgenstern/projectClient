@@ -6,9 +6,7 @@ export const fetchCourses = createAsyncThunk(
     'courses/fetchCourses',
     async (_, { rejectWithValue }) => {
         try {
-            console.log('Fetching courses from API...');
             const response = await axios.get(`${API_BASE_URL}/Course/GetAll`);
-            console.log('Courses response:', response.data);
             return response.data;
         } catch (error) {
             console.error('Error fetching courses:', error);

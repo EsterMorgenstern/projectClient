@@ -140,12 +140,10 @@ const Navbar = () => {
         userById.id;
 
       if (hasUserData) {
-        console.log('✅ User is logged in via userById');
         return true;
       }
     }
 
-    console.log('❌ User is not logged in');
     return false;
   };
   // עדכן את navigationItems (שורה ~80 בערך) עם צבעים חמים יותר:
@@ -291,7 +289,6 @@ const Navbar = () => {
     handleUserMenuClose();
   };
   const handleRegistrationSuccess = (userData) => {
-    console.log('Registration success:', userData);
     setRegistrationOpen(false);
     dispatch(setCurrentUser(userData));
     setNotification({
@@ -312,8 +309,6 @@ const Navbar = () => {
   };
 
   const handleUserMenuOpen = (event) => {
-    console.log('Opening user menu, current user:', currentUser);
-    console.log('Is user logged in:', isUserLoggedIn());
     setUserMenuAnchor(event.currentTarget);
   };
 
@@ -322,20 +317,16 @@ const Navbar = () => {
   };
 
   const handleOpenLogin = () => {
-    console.log('Opening login dialog');
-    setLoginDialogOpen(true);
     handleUserMenuClose();
+    setLoginDialogOpen(true);
   };
 
   const handleOpenRegistration = () => {
-    console.log('Opening registration dialog');
-    setRegistrationOpen(true);
     handleUserMenuClose();
+    setRegistrationOpen(true);
   };
 
   const handleLoginSuccess = (userData) => {
-    console.log('🎉 Login successful! User data:', userData);
-
     try {
       // עדכן את ה-Redux state
       dispatch(setCurrentUser(userData));
@@ -350,8 +341,6 @@ const Navbar = () => {
         severity: 'success'
       });
 
-      console.log('✅ Login success handled successfully');
-
     } catch (error) {
       console.error('❌ Error handling login success:', error);
       setNotification({
@@ -362,16 +351,11 @@ const Navbar = () => {
     }
   };
   useEffect(() => {
-    console.log('🔄 Checking for saved user in localStorage...');
-
     try {
       const savedUser = localStorage.getItem('currentUser');
       if (savedUser) {
         const userData = JSON.parse(savedUser);
-        console.log('📦 Found saved user:', userData);
         dispatch(setCurrentUser(userData));
-      } else {
-        console.log('📭 No saved user found');
       }
     } catch (error) {
       console.error('❌ Error loading saved user:', error);
@@ -380,7 +364,6 @@ const Navbar = () => {
   }, [dispatch]);
 
   const handleLogout = () => {
-    console.log('Logging out user');
     dispatch(clearCurrentUser());
     handleUserMenuClose();
     navigate('/');
@@ -427,7 +410,6 @@ const Navbar = () => {
     const user = currentUser || userById;
 
     if (!user) {
-      console.log('⚠️ No user data for display name');
       return 'משתמש';
     }
 
@@ -450,18 +432,14 @@ const Navbar = () => {
     if (user.Email || user.email) {
       const email = user.Email || user.email;
       const emailName = email.split('@')[0];
-      console.log('✅ Display name from email:', emailName);
       return emailName;
     }
 
     // נסה לחלץ מטלפון
     if (user.Phone || user.phone) {
       const phone = user.Phone || user.phone;
-      console.log('✅ Display name from phone:', phone);
       return phone;
     }
-
-    console.log('⚠️ Using default display name');
     return 'משתמש';
   };
 

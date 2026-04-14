@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useRef } from 'react';
+﻿import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, Typography, Box, Skeleton, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Grid, IconButton, Tooltip, Divider, MenuItem, ListItemIcon, ListItemText, FormControlLabel, Checkbox, InputAdornment, Select, FormControl, InputLabel, CircularProgress, TablePagination, Snackbar, Alert } from '@mui/material';
 import { motion } from 'framer-motion';
@@ -190,7 +190,7 @@ const StudentHealthFundTable = () => {
   };
   const handleSaveNote = async (note) => {
     try {
-      if (!ensurePermission()) return;
+      if (!(ensurePermission())) return;
       if (note.noteId) {
         await dispatch(updateStudentNote(note)).unwrap();
       } else {
@@ -799,7 +799,7 @@ const StudentHealthFundTable = () => {
     
     setSaving(true);
 
-    if (!ensurePermission()) {
+    if (!(ensurePermission())) {
       setSaving(false);
       return;
     }
@@ -905,7 +905,7 @@ const StudentHealthFundTable = () => {
 
   // פונקציה ליצירת הערה אוטומטית כאשר קופה מאוחדת וטיפולים נמוכים
   const createAutomaticInsufficientTreatmentsNote = async (studentId, healthFundName) => {
-    if (!ensurePermission()) return null;
+    if (!(ensurePermission())) return null;
     const userDetails = getUserDetails(currentUser);
     
     if (!userDetails || !userDetails.id) {
@@ -944,7 +944,7 @@ const StudentHealthFundTable = () => {
     console.log('🔍 צ\'קליסט נוכחי:', healthFundChecklist);
     console.log('🔍 משתמש נוכחי:', currentUser);
 
-    if (!ensurePermission()) return null;
+    if (!(ensurePermission())) return null;
     
     const userDetails = getUserDetails(currentUser);
     console.log('🔍 פרטי משתמש אחרי getUserDetails:', userDetails);
@@ -1083,7 +1083,7 @@ const StudentHealthFundTable = () => {
   const handleEditSave = async () => {
     setEditSaving(true);
     try {
-      if (!ensurePermission()) {
+      if (!(ensurePermission())) {
         setEditSaving(false);
         return;
       }
@@ -1110,7 +1110,7 @@ const StudentHealthFundTable = () => {
   const handleDeleteConfirm = async () => {
     setDeleteSaving(true);
     try {
-      if (!ensurePermission()) {
+      if (!(ensurePermission())) {
         setDeleteSaving(false);
         return;
       }
@@ -1171,7 +1171,7 @@ const StudentHealthFundTable = () => {
       return;
     }
 
-    if (!ensurePermission()) return;
+    if (!(ensurePermission())) return;
 
     setReportingInProgress(true);
     try {
@@ -2447,7 +2447,7 @@ const StudentHealthFundTable = () => {
         }}
         onDeleteNote={async (note) => {
           try {
-            if (!ensurePermission()) return;
+            if (!(ensurePermission())) return;
             if (note.noteId) {
               console.log('מחיקת הערה: שולח לשרת noteId', note.noteId);
               const deleteResult = await dispatch(deleteStudentNote(note.noteId)).unwrap();

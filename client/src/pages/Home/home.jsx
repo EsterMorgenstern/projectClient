@@ -48,13 +48,13 @@ import { fetchStudents } from "../../store/student/studentGetAllThunk";
 import { fetchCourses } from "../../store/course/CoursesGetAllThunk";
 import { fetchGroups } from "../../store/group/groupGellAllThunk";
 
+const EMPTY_ARRAY = [];
+
 // Animated components with framer-motion
 const MotionBox = ({ children, ...props }) => {
   const controls = useAnimation();
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, threshold: 0.2 });
-  const dispatch = useDispatch();
-
 
   useEffect(() => {
     if (inView) {
@@ -62,13 +62,6 @@ const MotionBox = ({ children, ...props }) => {
     }
   }, [controls, inView]);
 
-  useEffect(() => {
-    // טעינת נתונים בסיסיים
-    dispatch(fetchStudents());
-    dispatch(fetchCourses());
-    dispatch(fetchInstructors());
-    dispatch(fetchGroups());
-  }, [dispatch]);
   return (
     <Box
       ref={ref}
@@ -181,13 +174,26 @@ export const Home = () => {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const dispatch = useDispatch();
+  const hasFetchedRef = useRef(false);
+
+  useEffect(() => {
+    // Prevent duplicate bootstrap fetches in React StrictMode (dev).
+    if (hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
+
+    dispatch(fetchStudents());
+    dispatch(fetchCourses());
+    dispatch(fetchInstructors());
+    dispatch(fetchGroups());
+  }, [dispatch]);
 
   // Redux selectors for real data
-  const students = useSelector((state) => state.students.students || []);
-  const instructors = useSelector((state) => state.instructors.instructors || []);
-  const courses = useSelector((state) => state.courses.courses || []);
-  const groups = useSelector((state) => state.groups.groups || []);
-  const attendance = useSelector((state) => state.attendances.attendances || []);
+  const students = useSelector((state) => state.students.students ?? EMPTY_ARRAY);
+  const instructors = useSelector((state) => state.instructors.instructors ?? EMPTY_ARRAY);
+  const courses = useSelector((state) => state.courses.courses ?? EMPTY_ARRAY);
+  const groups = useSelector((state) => state.groups.groups ?? EMPTY_ARRAY);
+  const attendance = useSelector((state) => state.attendances.attendances ?? EMPTY_ARRAY);
 
 
 
