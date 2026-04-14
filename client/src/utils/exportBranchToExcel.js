@@ -52,6 +52,7 @@ export const exportBranchToExcel = (groupsData, branchName = 'סניף') => {
       'שיעורים שהתקיימו',
       'שם מדריך',
       'סטטוס הקבוצה',
+      'הערות',
       'מזהה תלמיד',
       'שם תלמיד',
       'טלפון',
@@ -80,6 +81,7 @@ export const exportBranchToExcel = (groupsData, branchName = 'סניף') => {
             group.lessonsCompleted || 0,
             group.instructorName || '',
             group.isActive !== undefined ? (group.isActive ? '✅ פעיל' : '⏸️ לא פעיל') : '✅ פעיל',
+            group.notes || group.Notes || '',
             student.studentId || '',
             student.studentName || '',
             student.phone || '',
@@ -104,6 +106,7 @@ export const exportBranchToExcel = (groupsData, branchName = 'סניף') => {
           group.lessonsCompleted || 0,
           group.instructorName || '',
           group.isActive !== undefined ? (group.isActive ? '✅ פעיל' : '⏸️ לא פעיל') : '✅ פעיל',
+          group.notes || group.Notes || '',
           '', // מזהה תלמיד ריק
           '', // שם תלמיד ריק
           '', // טלפון ריק
@@ -136,6 +139,7 @@ export const exportBranchToExcel = (groupsData, branchName = 'סניף') => {
       { wch: 15 }, // שיעורים שהתקיימו
       { wch: 20 }, // שם מדריך
       { wch: 15 }, // סטטוס
+      { wch: 35 }, // הערות
       { wch: 15 }, // מזהה תלמיד
       { wch: 25 }, // שם תלמיד
       { wch: 15 }, // טלפון

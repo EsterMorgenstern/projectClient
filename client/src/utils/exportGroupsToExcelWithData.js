@@ -35,6 +35,7 @@ export async function exportGroupsToExcelWithData() {
             'יום ושעה': group.schedule,
             'מדריך': group.instructorName,
             'סטטוס הקבוצה': groupStatus,
+            'הערות': group.notes || group.Notes || '',
             'קוד תלמיד': student.studentId,
             'שם תלמיד': student.studentName,
             'טלפון': student.phone,
@@ -50,6 +51,7 @@ export async function exportGroupsToExcelWithData() {
           'יום ושעה': group.schedule,
           'מדריך': group.instructorName,
           'סטטוס הקבוצה': groupStatus,
+          'הערות': group.notes || group.Notes || '',
           'קוד תלמיד': '',
           'שם תלמיד': '',
           'טלפון': '',
@@ -64,7 +66,7 @@ export async function exportGroupsToExcelWithData() {
     // יצירת workbook ו-worksheet
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.json_to_sheet(rows, { header: [
-      'שם קבוצה', 'חוג', 'סניף', 'יום ושעה', 'מדריך', 'סטטוס הקבוצה', 'קוד תלמיד', 'שם תלמיד', 'טלפון', 'עיר', 'קופת חולים'
+      'שם קבוצה', 'חוג', 'סניף', 'יום ושעה', 'מדריך', 'סטטוס הקבוצה', 'הערות', 'קוד תלמיד', 'שם תלמיד', 'טלפון', 'עיר', 'קופת חולים'
     ] });
     worksheet['!cols'] = [
       { wch: 30 }, // שם קבוצה
@@ -73,6 +75,7 @@ export async function exportGroupsToExcelWithData() {
       { wch: 10 }, // יום ושעה
       { wch: 18 }, // מדריך
       { wch: 15 }, // סטטוס
+      { wch: 35 }, // הערות
       { wch: 20 }, // קוד תלמיד
       { wch: 20 }, // שם תלמיד
       { wch: 15 }, // טלפון

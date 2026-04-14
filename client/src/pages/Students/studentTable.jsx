@@ -15,7 +15,8 @@ import {
   PersonAdd, Visibility, History as HistoryIcon,
   PeopleAltRounded, CheckCircleRounded, LocationCityRounded, SchoolRounded,
   FilterAlt as FilterIcon,
-  Download as DownloadIcon
+  Download as DownloadIcon,
+  Person as PersonIcon
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
@@ -98,6 +99,7 @@ export default function StudentsTable() {
     { label: 'כיתה', align: 'center' },
     { label: 'מגזר', align: 'center' },
     { label: 'סטטוס', align: 'center' },
+    { label: 'נרשם על ידי', align: 'center' },
     { label: 'פעולות', align: 'center' }
   ];
 
@@ -132,9 +134,54 @@ export default function StudentsTable() {
   const [coursesDialogOpen, setCoursesDialogOpen] = useState(false);
   const [selectedStudentForCourses, setSelectedStudentForCourses] = useState(null);
   const [isWithoutGroupFilterActive, setIsWithoutGroupFilterActive] = useState(false);
+  const [createdByFilter, setCreatedByFilter] = useState('');
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  const formatCreatedByDisplayName = (value) => String(value || '')
+    .normalize('NFKC')
+    .replace(/[\u200B-\u200F\uFEFF]/g, '')
+    .replace(/[“”"]/g, '״')
+    .replace(/[‘’']/g, '׳')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const normalizeCreatedByName = (value) => formatCreatedByDisplayName(value)
+    .replace(/[״׳]/g, '');
+
+  const createdByColorPalettes = [
+    { bg: '#eff6ff', border: '#93c5fd', text: '#1d4ed8' },
+    { bg: '#f5f3ff', border: '#c4b5fd', text: '#6d28d9' },
+    { bg: '#ecfeff', border: '#67e8f9', text: '#0f766e' },
+    { bg: '#fdf2f8', border: '#f9a8d4', text: '#be185d' },
+    { bg: '#fff7ed', border: '#fdba74', text: '#c2410c' }
+  ];
+
+  const getCreatedByPalette = (value) => {
+    const name = formatCreatedByDisplayName(value);
+    if (!name) {
+      return { bg: '#f8fafc', border: '#cbd5e1', text: '#475569' };
+    }
+
+    const hash = Array.from(name).reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    return createdByColorPalettes[hash % createdByColorPalettes.length];
+  };
+
+  const getCreatedByName = (student) => formatCreatedByDisplayName(student?.createdBy || student?.CreatedBy || '') || 'מערכת';
+
+  const createdByOptions = Array.from(
+    new Map(
+      (Array.isArray(students) ? students : [])
+        .map((student) => {
+          const rawName = student?.createdBy || student?.CreatedBy || '';
+          const displayName = formatCreatedByDisplayName(rawName);
+          const normalizedName = normalizeCreatedByName(rawName);
+          return normalizedName ? [normalizedName, displayName] : null;
+        })
+        .filter(Boolean)
+    ).values()
+  ).sort((a, b) => a.localeCompare(b, 'he'));
 
   const healthFundOptions = [
     { value: 'מכבי', label: '🏥 מכבי', icon: '🏥' },
@@ -198,7 +245,8 @@ export default function StudentsTable() {
       const secondaryPhoneMatch = student.secondaryPhone?.toString().includes(term);
       const cityMatch = student.city?.toLowerCase().includes(term);
       const statusMatch = (student.status || '').toLowerCase().includes(term);
-      return firstNameMatch || lastNameMatch || fullNameMatch || idMatch || identityCardMatch || phoneMatch || secondaryPhoneMatch || cityMatch || statusMatch;
+      const createdByMatch = formatCreatedByDisplayName(student.createdBy || student.CreatedBy || '').toLowerCase().includes(term);
+      return firstNameMatch || lastNameMatch || fullNameMatch || idMatch || identityCardMatch || phoneMatch || secondaryPhoneMatch || cityMatch || statusMatch || createdByMatch;
     });
   };
 
@@ -221,9 +269,15 @@ export default function StudentsTable() {
       filtered = filtered.filter((student) => idsSet.has(String(student?.id)));
     }
 
+    if (createdByFilter) {
+      filtered = filtered.filter(
+        (student) => normalizeCreatedByName(student?.createdBy || student?.CreatedBy || '') === normalizeCreatedByName(createdByFilter)
+      );
+    }
+
     setFilteredStudents(Array.isArray(filtered) ? filtered : []);
     setCurrentPage(1); // איפוס לעמוד הראשון בחיפוש חדש
-  }, [students, searchTerm, isWithoutGroupFilterActive, studentsWithoutActiveGroupWithNotes]);
+  }, [students, searchTerm, isWithoutGroupFilterActive, studentsWithoutActiveGroupWithNotes, createdByFilter]);
 
   // עדכון pagination
   useEffect(() => {
@@ -476,6 +530,173 @@ export default function StudentsTable() {
                   </Tooltip>
                 )}
 
+              <FormControl
+                size="small"
+                sx={{
+                  minWidth: 190,
+                  '& .MuiOutlinedInput-root': {
+                    height: 40,
+                    borderRadius: '10px',
+                    bgcolor: '#eff6ff',
+                    color: '#1e3a8a',
+                    fontWeight: 600,
+                    transition: 'all 0.2s ease',
+                    '& fieldset': {
+                      borderColor: '#93c5fd',
+                      borderWidth: '2px'
+                    },
+                    '&:hover fieldset': {
+                      borderColor: '#60a5fa'
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#2563eb'
+                    }
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontWeight: 600,
+                    fontSize: '0.84rem',
+                    color: '#2563eb'
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': {
+                    color: '#2563eb'
+                  },
+                  '& .MuiInputLabel-shrink': {
+                    fontSize: '0.99rem'
+                  }
+                }}
+              >
+                <InputLabel>נרשם על ידי</InputLabel>
+                <Select
+                  value={createdByFilter}
+                  onChange={(event) => setCreatedByFilter(event.target.value)}
+                  label="נרשם על ידי"
+                  renderValue={(selected) => {
+                    if (!selected) {
+                      return (
+                        <Box component="span" sx={{ color: '#4b5563', fontSize: '0.88rem', fontWeight: 500 }}>
+                          כל המשתמשים
+                        </Box>
+                      );
+                    }
+
+                    const palette = getCreatedByPalette(selected);
+                    return (
+                      <Box
+                        component="span"
+                        sx={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 0.75,
+                          color: '#1f2937',
+                          fontSize: '0.9rem',
+                          fontWeight: 500,
+                          maxWidth: '100%'
+                        }}
+                      >
+                        <Box
+                          component="span"
+                          sx={{
+                            width: 20,
+                            height: 20,
+                            borderRadius: '50%',
+                            bgcolor: palette.bg,
+                            color: palette.text,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: `0 0 0 1px ${palette.border}`,
+                            flexShrink: 0
+                          }}
+                        >
+                          <PersonIcon sx={{ fontSize: 13 }} />
+                        </Box>
+                        <Box
+                          component="span"
+                          sx={{
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          {selected}
+                        </Box>
+                      </Box>
+                    );
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        direction: 'rtl',
+                        textAlign: 'right',
+                        borderRadius: '12px',
+                        mt: 0.5,
+                        p: 0.5,
+                        boxShadow: '0 12px 32px rgba(15, 23, 42, 0.16)'
+                      }
+                    }
+                  }}
+                  sx={{
+                    direction: 'rtl',
+                    fontWeight: 600,
+                    fontSize: '0.95rem',
+                    color: '#1e3a8a',
+                    bgcolor: 'transparent',
+                    '& .MuiSelect-select': {
+                      textAlign: 'right',
+                      display: 'flex',
+                      alignItems: 'center',
+                      py: 0.5
+                    }
+                  }}
+                >
+                  <MenuItem value="" sx={{ borderRadius: '10px', my: 0.25, fontWeight: 600 }}>
+                    כל המשתמשים
+                  </MenuItem>
+                  {createdByOptions.map((createdBy) => {
+                    const palette = getCreatedByPalette(createdBy);
+                    return (
+                      <MenuItem
+                        key={createdBy}
+                        value={createdBy}
+                        sx={{
+                          borderRadius: '10px',
+                          my: 0.3,
+                          mx: 0.2,
+                          color: '#1f2937',
+                          bgcolor: 'transparent',
+                          fontWeight: 500,
+                          transition: 'all 0.18s ease',
+                          '&:hover': {
+                            bgcolor: '#f8fafc'
+                          }
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                          <Box
+                            component="span"
+                            sx={{
+                              width: 20,
+                              height: 20,
+                              borderRadius: '50%',
+                              bgcolor: palette.bg,
+                              color: palette.text,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              boxShadow: `0 0 0 1px ${palette.border}`,
+                              flexShrink: 0
+                            }}
+                          >
+                            <PersonIcon sx={{ fontSize: 13 }} />
+                          </Box>
+                          <Box component="span" sx={{ fontWeight: 500, color: '#111827' }}>{createdBy}</Box>
+                        </Box>
+                      </MenuItem>
+                    );
+                  })}
+                </Select>
+              </FormControl>
+
               <FormControl size="small" className="page-size-selector">
                 <InputLabel >תוצאות בעמוד</InputLabel>
                 <Select
@@ -522,7 +743,7 @@ export default function StudentsTable() {
                           key={student.id}
                           component={TableRow}
                           className="table-row"
-                          onClick={() => navigate(`/students/${student.id}`, { state: { student } })}
+                          onDoubleClick={() => navigate(`/students/${student.id}`, { state: { student } })}
                           style={{ cursor: 'pointer' }}
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
@@ -539,7 +760,7 @@ export default function StudentsTable() {
                           <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.identityCard || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}</TableCell>
                           <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>
                             <Tooltip
-                              title="👈 לחץ כדי להציג את פרטי התלמיד"
+                              title="👈 לחיצה כפולה להצגת פרטי התלמיד"
                               placement="top"
                               followCursor
                               disableInteractive
@@ -564,14 +785,14 @@ export default function StudentsTable() {
                                 }
                               }}
                             >
-                              <Box component="span" sx={{ fontWeight: 600, color: '#1e40af' }}>
+                              <Box component="span" sx={{ fontWeight: 550, color: '#1e40af' }}>
                                 {student.firstName}
                               </Box>
                             </Tooltip>
                           </TableCell>
                           <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>
                             <Tooltip
-                              title="👈 לחץ כדי להציג את פרטי התלמיד"
+                              title="👈 לחיצה כפולה להצגת פרטי התלמיד"
                               placement="top"
                               followCursor
                               disableInteractive
@@ -596,7 +817,7 @@ export default function StudentsTable() {
                                 }
                               }}
                             >
-                              <Box component="span" sx={{ fontWeight: 600, color: '#1e40af' }}>
+                              <Box component="span" sx={{ fontWeight: 550, color: '#1e40af' }}>
                                 {student.lastName}
                               </Box>
                             </Tooltip>
@@ -687,6 +908,54 @@ export default function StudentsTable() {
                                       student.status === 'לא רלוונטי' ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(107, 114, 128, 0.3)'
                               }}
                             />
+                          </TableCell>
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5, minWidth: '150px' }}>
+                            {(() => {
+                              const createdByName = getCreatedByName(student);
+                              const palette = getCreatedByPalette(createdByName);
+                              return (
+                                <Box
+                                  sx={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 0.8,
+                                    justifyContent: 'center',
+                                    color: '#111827',
+                                    fontSize: '0.88rem',
+                                    fontWeight: 500,
+                                    maxWidth: '100%'
+                                  }}
+                                >
+                                  <Box
+                                    component="span"
+                                    sx={{
+                                      width: 20,
+                                      height: 20,
+                                      borderRadius: '50%',
+                                      bgcolor: palette.bg,
+                                      color: palette.text,
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      boxShadow: `0 0 0 1px ${palette.border}`,
+                                      flexShrink: 0
+                                    }}
+                                  >
+                                    <PersonIcon sx={{ fontSize: 13 }} />
+                                  </Box>
+                                  <Box
+                                    component="span"
+                                    sx={{
+                                      whiteSpace: 'nowrap',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis'
+                                    }}
+                                  >
+                                    {createdByName}
+                                  </Box>
+                                </Box>
+                              );
+                            })()}
                           </TableCell>
                           <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5, minWidth: '180px' }}>
                             <Box className="action-buttons" sx={{

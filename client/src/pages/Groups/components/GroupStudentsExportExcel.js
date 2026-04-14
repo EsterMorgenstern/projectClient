@@ -15,6 +15,7 @@ export async function exportGroupStudentsToExcel(groupId, groupName, dispatch) {
     const data = students.map(student => ({
       'שם קבוצה': groupData.groupName || '',
       'סטטוס הקבוצה': groupStatus,
+      'הערות': groupData.notes || groupData.Notes || '',
       'טלפון': student.phone || '',
       'שם פרטי': student.studentName?.split(' ')[0] || '',
       'שם משפחה': student.studentName?.split(' ').slice(1).join(' ') || '',
@@ -29,6 +30,7 @@ export async function exportGroupStudentsToExcel(groupId, groupName, dispatch) {
     worksheet['!cols'] = [
       { wch: 25 }, // שם קבוצה
       { wch: 15 }, // סטטוס
+      { wch: 35 }, // הערות
       { wch: 12 }, // טלפון
       { wch: 15 }, // שם פרטי
       { wch: 15 }, // שם משפחה
