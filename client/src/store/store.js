@@ -14,6 +14,7 @@ import paymentsReducer from './payments/paymentsSlice';
 
 import healthFundReducer from './healthFund/healthFundSlice';
 import studentHealthFundReducer from './studentHealthFund/studentHealthFundSlice';
+import healthFundCommitmentReducer from './healthFundCommitment/healthFundCommitmentSlice';
 
 const store = configureStore({
   reducer: {
@@ -31,6 +32,7 @@ const store = configureStore({
 
     healthFunds: healthFundReducer,
     studentHealthFunds: studentHealthFundReducer,
+    healthFundCommitments: healthFundCommitmentReducer,
 
 
   },

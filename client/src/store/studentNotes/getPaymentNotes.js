@@ -8,18 +8,6 @@ export const getPaymentNotes = createAsyncThunk(
     try {
       const response = await axios.get(`${API_BASE_URL}/StudentNotes/getByPaymentsNotes`);
       
-      // Debug log - מפורט יותר
-      
-      if (Array.isArray(response.data) && response.data.length > 0) {
-        console.log('🔍 First payment note example:', response.data[0]);
-        const sampleNotes = response.data.slice(0, 5);
-        console.log('🔍 Sample notes structure:', sampleNotes.map(note => ({
-          studentId: note.studentId,
-          noteType: note.noteType,
-          noteContent: note.noteContent ? note.noteContent.substring(0, 100) : 'No content'
-        })));
-      }
-      
       if (response.status === 200) {
         return response.data;
       } else {
@@ -59,29 +47,15 @@ export const extractStudentIdsByNoteContent = (paymentNotes, searchTerm) => {
 
 // פונקציה עזר לחילוץ studentIds מהערות גביה לפי הערות אוטומטיות
 export const extractStudentIdsByAutomaticBillingNotes = (paymentNotes, selectedAutomaticNotes) => {
-  console.log('🔍 extractStudentIdsByAutomaticBillingNotes - Input:', { 
-    paymentNotesCount: paymentNotes?.length, 
-    selectedAutomaticNotes: selectedAutomaticNotes
-  });
-  
   if (!Array.isArray(paymentNotes) || !Array.isArray(selectedAutomaticNotes) || selectedAutomaticNotes.length === 0) {
-    console.log('🔍 Invalid input - returning empty array', {
-      paymentNotesIsArray: Array.isArray(paymentNotes),
-      selectedAutomaticNotesIsArray: Array.isArray(selectedAutomaticNotes),
-      selectedAutomaticNotesLength: selectedAutomaticNotes?.length
-    });
     return [];
   }
   
   const studentIds = new Set();
   
-
-  
   selectedAutomaticNotes.forEach(noteType => {
-    console.log(`🔍 Searching for noteType: ${noteType}`);
-    
     // חיפוש בהערות - נחפש בצורה גמישה יותר
-    paymentNotes.forEach((note, index) => {
+    paymentNotes.forEach((note) => {
       let isMatch = false;
       
       if (note.noteContent) {
@@ -117,6 +91,8 @@ export const extractStudentIdsByAutomaticBillingNotes = (paymentNotes, selectedA
                      content.includes('סיים את הטיפולים') ||
                      content.includes('הטיפולים נגמרו') ||
                      content.includes('אין עוד טיפולים') ||
+                     content.includes('סיים התחייבות') ||
+                     content.includes('✅ סיים התחייבות') ||
                      content.includes('🔚 נגמרו הטיפולים');
             break;
           case 'authorizationCancelled':
@@ -130,21 +106,13 @@ export const extractStudentIdsByAutomaticBillingNotes = (paymentNotes, selectedA
             isMatch = content.includes(noteType.toLowerCase());
         }
         
-        // דיבוג נוסף
-        if (index < 3 || isMatch) {
-          console.log(`🔍 Note check: StudentId=${note.studentId}, Match=${isMatch}, NoteType=${noteType}, Content="${content.substring(0, 100)}..."`);
-        }
       }
       
       if (isMatch) {
-        console.log(`🔍 Found match! StudentId: ${note.studentId} (${typeof note.studentId}), Content: ${note.noteContent}`);
-        // נוסיף רק את הערך המקורי
         studentIds.add(note.studentId);
       }
     });
   });
   
-  const result = Array.from(studentIds);
-  console.log('🔍 Final student IDs:', result);
-  return result;
+  return Array.from(studentIds);
 };

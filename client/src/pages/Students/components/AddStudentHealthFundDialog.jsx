@@ -257,14 +257,12 @@ const AddStudentHealthFundDialog = ({ open, onClose, studentId, onSuccess }) => 
   }
 }, [open, dispatch]);
   
-  // קבלת רשימת קופות חולים מהסטייט עם לוג
+  // קבלת רשימת קופות חולים מהסטייט
 const healthFundList = useSelector(state => {
   const list = (state.healthFunds && state.healthFunds.items) ? state.healthFunds.items : [];
-  console.log('🔍 Redux healthFunds.items:', list);
   return list;
 });
 const memoizedHealthFundList = useMemo(() => {
-  console.log('🔍 memoizedHealthFundList:', healthFundList);
   return Array.isArray(healthFundList) ? healthFundList : [];
 }, [healthFundList]);
   // קבלת המשתמש הנוכחי

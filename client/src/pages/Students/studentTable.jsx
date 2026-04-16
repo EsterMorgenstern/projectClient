@@ -15,8 +15,7 @@ import {
   PersonAdd, Visibility, History as HistoryIcon,
   PeopleAltRounded, CheckCircleRounded, LocationCityRounded, SchoolRounded,
   FilterAlt as FilterIcon,
-  Download as DownloadIcon,
-  Person as PersonIcon
+  Download as DownloadIcon
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
@@ -149,24 +148,6 @@ export default function StudentsTable() {
 
   const normalizeCreatedByName = (value) => formatCreatedByDisplayName(value)
     .replace(/[״׳]/g, '');
-
-  const createdByColorPalettes = [
-    { bg: '#eff6ff', border: '#93c5fd', text: '#1d4ed8' },
-    { bg: '#f5f3ff', border: '#c4b5fd', text: '#6d28d9' },
-    { bg: '#ecfeff', border: '#67e8f9', text: '#0f766e' },
-    { bg: '#fdf2f8', border: '#f9a8d4', text: '#be185d' },
-    { bg: '#fff7ed', border: '#fdba74', text: '#c2410c' }
-  ];
-
-  const getCreatedByPalette = (value) => {
-    const name = formatCreatedByDisplayName(value);
-    if (!name) {
-      return { bg: '#f8fafc', border: '#cbd5e1', text: '#475569' };
-    }
-
-    const hash = Array.from(name).reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    return createdByColorPalettes[hash % createdByColorPalettes.length];
-  };
 
   const getCreatedByName = (student) => formatCreatedByDisplayName(student?.createdBy || student?.CreatedBy || '') || 'מערכת';
 
@@ -570,59 +551,11 @@ export default function StudentsTable() {
                   value={createdByFilter}
                   onChange={(event) => setCreatedByFilter(event.target.value)}
                   label="נרשם על ידי"
-                  renderValue={(selected) => {
-                    if (!selected) {
-                      return (
-                        <Box component="span" sx={{ color: '#4b5563', fontSize: '0.88rem', fontWeight: 500 }}>
-                          כל המשתמשים
-                        </Box>
-                      );
-                    }
-
-                    const palette = getCreatedByPalette(selected);
-                    return (
-                      <Box
-                        component="span"
-                        sx={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 0.75,
-                          color: '#1f2937',
-                          fontSize: '0.9rem',
-                          fontWeight: 500,
-                          maxWidth: '100%'
-                        }}
-                      >
-                        <Box
-                          component="span"
-                          sx={{
-                            width: 20,
-                            height: 20,
-                            borderRadius: '50%',
-                            bgcolor: palette.bg,
-                            color: palette.text,
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            boxShadow: `0 0 0 1px ${palette.border}`,
-                            flexShrink: 0
-                          }}
-                        >
-                          <PersonIcon sx={{ fontSize: 13 }} />
-                        </Box>
-                        <Box
-                          component="span"
-                          sx={{
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
-                          }}
-                        >
-                          {selected}
-                        </Box>
-                      </Box>
-                    );
-                  }}
+                  renderValue={(selected) => (
+                    <Box component="span" sx={{ color: selected ? '#1f2937' : '#4b5563', fontSize: '0.9rem', fontWeight: 500 }}>
+                      {selected || 'כל המשתמשים'}
+                    </Box>
+                  )}
                   MenuProps={{
                     PaperProps: {
                       sx: {
@@ -652,48 +585,26 @@ export default function StudentsTable() {
                   <MenuItem value="" sx={{ borderRadius: '10px', my: 0.25, fontWeight: 600 }}>
                     כל המשתמשים
                   </MenuItem>
-                  {createdByOptions.map((createdBy) => {
-                    const palette = getCreatedByPalette(createdBy);
-                    return (
-                      <MenuItem
-                        key={createdBy}
-                        value={createdBy}
-                        sx={{
-                          borderRadius: '10px',
-                          my: 0.3,
-                          mx: 0.2,
-                          color: '#1f2937',
-                          bgcolor: 'transparent',
-                          fontWeight: 500,
-                          transition: 'all 0.18s ease',
-                          '&:hover': {
-                            bgcolor: '#f8fafc'
-                          }
-                        }}
-                      >
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-                          <Box
-                            component="span"
-                            sx={{
-                              width: 20,
-                              height: 20,
-                              borderRadius: '50%',
-                              bgcolor: palette.bg,
-                              color: palette.text,
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              boxShadow: `0 0 0 1px ${palette.border}`,
-                              flexShrink: 0
-                            }}
-                          >
-                            <PersonIcon sx={{ fontSize: 13 }} />
-                          </Box>
-                          <Box component="span" sx={{ fontWeight: 500, color: '#111827' }}>{createdBy}</Box>
-                        </Box>
-                      </MenuItem>
-                    );
-                  })}
+                  {createdByOptions.map((createdBy) => (
+                    <MenuItem
+                      key={createdBy}
+                      value={createdBy}
+                      sx={{
+                        borderRadius: '10px',
+                        my: 0.3,
+                        mx: 0.2,
+                        color: '#1f2937',
+                        bgcolor: 'transparent',
+                        fontWeight: 500,
+                        transition: 'all 0.18s ease',
+                        '&:hover': {
+                          bgcolor: '#f8fafc'
+                        }
+                      }}
+                    >
+                      <Box component="span" sx={{ fontWeight: 500, color: '#111827' }}>{createdBy}</Box>
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
 
@@ -909,53 +820,17 @@ export default function StudentsTable() {
                               }}
                             />
                           </TableCell>
-                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5, minWidth: '150px' }}>
-                            {(() => {
-                              const createdByName = getCreatedByName(student);
-                              const palette = getCreatedByPalette(createdByName);
-                              return (
-                                <Box
-                                  sx={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: 0.8,
-                                    justifyContent: 'center',
-                                    color: '#111827',
-                                    fontSize: '0.88rem',
-                                    fontWeight: 500,
-                                    maxWidth: '100%'
-                                  }}
-                                >
-                                  <Box
-                                    component="span"
-                                    sx={{
-                                      width: 20,
-                                      height: 20,
-                                      borderRadius: '50%',
-                                      bgcolor: palette.bg,
-                                      color: palette.text,
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      boxShadow: `0 0 0 1px ${palette.border}`,
-                                      flexShrink: 0
-                                    }}
-                                  >
-                                    <PersonIcon sx={{ fontSize: 13 }} />
-                                  </Box>
-                                  <Box
-                                    component="span"
-                                    sx={{
-                                      whiteSpace: 'nowrap',
-                                      overflow: 'hidden',
-                                      textOverflow: 'ellipsis'
-                                    }}
-                                  >
-                                    {createdByName}
-                                  </Box>
-                                </Box>
-                              );
-                            })()}
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5, minWidth: '150px', color: '#111827', fontSize: '0.88rem', fontWeight: 500 }}>
+                            <Box
+                              component="span"
+                              sx={{
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis'
+                              }}
+                            >
+                              {getCreatedByName(student)}
+                            </Box>
                           </TableCell>
                           <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5, minWidth: '180px' }}>
                             <Box className="action-buttons" sx={{

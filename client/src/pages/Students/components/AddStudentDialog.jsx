@@ -52,8 +52,6 @@ const AddStudentDialog = ({
   groupStatus = 1, // סטטוס בקבוצה: 1 פעיל, 2 עזב, 3 ליד
   onGroupStatusChange = null // פונקציה לשינוי סטטוס קבוצה
 }) => {
-  // Debug: show selectedGroup prop
-  console.log('AddStudentDialog selectedGroup:', selectedGroup);
   const dispatch = useDispatch();
   
   // קבלת המשתמש הנוכחי

@@ -125,17 +125,19 @@ const StudentSearchDialog = ({ open, onClose }) => {
   // פונקציה לקבלת תלמידים בקבוצה
   const fetchGroupStudents = async (groupId) => {
     if (groupStudents[groupId]) return; // כבר קיים
-    
+
     try {
-      const result = await dispatch(getStudentsByGroupId(groupId));
-      if (result.payload) {
-        setGroupStudents(prev => ({
-          ...prev,
-          [groupId]: result.payload
-        }));
-      }
+      const students = await dispatch(getStudentsByGroupId(groupId)).unwrap();
+      setGroupStudents(prev => ({
+        ...prev,
+        [groupId]: Array.isArray(students) ? students : []
+      }));
     } catch (error) {
       console.error('Error fetching group students:', error);
+      setGroupStudents(prev => ({
+        ...prev,
+        [groupId]: []
+      }));
     }
   };
 

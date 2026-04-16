@@ -6,7 +6,6 @@ import {
     DialogActions,
     Button,
     TextField,
-    Grid,
     Typography,
     Box,
     Alert,
@@ -18,6 +17,7 @@ import {
     Snackbar
 } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
+import Grid from '@mui/material/GridLegacy';
 import { createGrowPayment } from '../../store/payments/createGrowPayment';
 import { useGrowSDK, openGrowWallet } from '../../utils/growSDK';
 import { usePaymentCallback, pollPaymentStatus } from '../../utils/paymentCallback';

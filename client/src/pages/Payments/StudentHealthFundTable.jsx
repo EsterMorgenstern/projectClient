@@ -1,18 +1,21 @@
 ﻿import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, Typography, Box, Skeleton, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Grid, IconButton, Tooltip, Divider, MenuItem, ListItemIcon, ListItemText, FormControlLabel, Checkbox, InputAdornment, Select, FormControl, InputLabel, CircularProgress, TablePagination, Snackbar, Alert } from '@mui/material';
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, Typography, Box, Skeleton, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, IconButton, Tooltip, Divider, MenuItem, ListItemIcon, ListItemText, FormControlLabel, Checkbox, InputAdornment, Select, FormControl, InputLabel, CircularProgress, TablePagination, Snackbar, Alert } from '@mui/material';
+import Grid from '@mui/material/GridLegacy';
 import { motion } from 'framer-motion';
 import { AddCircle, Person, LocalHospital, CalendarMonth, Healing, AssignmentTurnedIn, Description, Note, Save, Close, Face, LocationCity, Groups, Event, Check as CheckIcon, AttachMoney as AttachMoneyIcon, Info as InfoIcon, FileDownload, Search as SearchIcon, Clear as ClearIcon, ArrowUpward, ArrowDownward, Sort, DragIndicator as DragIndicatorIcon } from '@mui/icons-material';
 import ExcelExportDialog from '../../components/ExcelExportDialog';
 import NotesIcon from '@mui/icons-material/Notes';
 import StudentNotesDialog from '../Students/components/StudentNotesDialog';
-import { fetchStudentHealthFunds } from '../../store/studentHealthFund/fetchStudentHealthFunds';
-import { addStudentHealthFund } from '../../store/studentHealthFund/addStudentHealthFund';
-import { updateStudentHealthFund } from '../../store/studentHealthFund/updateStudentHealthFund';
-import { deleteStudentHealthFund } from '../../store/studentHealthFund/deleteStudentHealthFund';
-import { fetchUnreportedDates } from '../../store/studentHealthFund/fetchUnreportedDates';
-import { fetchReportedDates } from '../../store/studentHealthFund/fetchReportedDates';
-import { reportUnreportedDate } from '../../store/studentHealthFund/reportUnreportedDate';
+import {
+  fetchStudentHealthFunds,
+  addStudentHealthFund,
+  updateStudentHealthFund,
+  deleteStudentHealthFund,
+  fetchUnreportedDates,
+  fetchReportedDates,
+  reportUnreportedDate,
+} from '../../store/studentHealthFund/studentHealthFundApi';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddStudentNoteDialog from '../Students/components/addStudentNoteDialog';
@@ -27,6 +30,18 @@ import { selectPaymentNotes, selectPaymentNotesLoading } from '../../store/stude
 import DraggablePaper, { DragHandle } from '../../components/DraggablePaper';
 import StudentCoursesDialog from '../Students/components/studentCoursesDialog';
 import { getgroupStudentByStudentId } from '../../store/groupStudent/groupStudentGetByStudentIdThunk';
+import { getAttendanceByStudent } from '../../store/attendance/attendanceGetByStudent';
+import { batchUpdateAttendances } from '../../store/attendance/batchUpdateAttendances';
+import {
+  fetchCommitmentsByStudentHealthFund,
+  addHealthFundCommitment,
+  updateHealthFundCommitment,
+  deleteHealthFundCommitment,
+} from '../../store/healthFundCommitment/healthFundCommitmentApi';
+import {
+  selectHealthFundCommitments,
+  selectHealthFundCommitmentsLoading,
+} from '../../store/healthFundCommitment/healthFundCommitmentSlice';
 
 // Styled table container inspired by instructorsTable and Home
 
@@ -114,15 +129,38 @@ const StudentHealthFundTable = () => {
   // דיאלוג תאריכים לא מדווחים
   const [unreportedDatesDialogOpen, setUnreportedDatesDialogOpen] = useState(false);
   const [selectedStudentForDates, setSelectedStudentForDates] = useState(null);
+  const [fallbackUnreportedDates, setFallbackUnreportedDates] = useState([]);
+  const [fallbackUnreportedEntries, setFallbackUnreportedEntries] = useState([]);
   // State לבחירת תאריכים לדיווח
   const [selectedDatesForReporting, setSelectedDatesForReporting] = useState([]);
   const [reportingInProgress, setReportingInProgress] = useState(false);
   // דיאלוג תאריכים שדווחו
   const [reportedDatesDialogOpen, setReportedDatesDialogOpen] = useState(false);
   const [selectedStudentForReportedDates, setSelectedStudentForReportedDates] = useState(null);
+  const [fallbackReportedDates, setFallbackReportedDates] = useState([]);
+  const [fallbackReportedEntries, setFallbackReportedEntries] = useState([]);
   
   // דיאלוג ייצוא אקסל
   const [excelExportDialogOpen, setExcelExportDialogOpen] = useState(false);
+
+  // דיאלוג התחייבויות
+  const [commitmentsDialogOpen, setCommitmentsDialogOpen] = useState(false);
+  const [selectedStudentForCommitments, setSelectedStudentForCommitments] = useState(null);
+  const [commitmentFormOpen, setCommitmentFormOpen] = useState(false);
+  const [commitmentFormMode, setCommitmentFormMode] = useState('add');
+  const [commitmentSaving, setCommitmentSaving] = useState(false);
+  const [commitmentFormData, setCommitmentFormData] = useState({
+    id: null,
+    studentHealthFundId: '',
+    commitmentNumber: '',
+    commitmentTreatments: '',
+    usedTreatments: 0,
+    startDate: '',
+    endDate: '',
+    filePath: '',
+    notes: '',
+    isActive: true,
+  });
 
   // Student details dialog states
   const [studentDetailsDialogOpen, setStudentDetailsDialogOpen] = useState(false);
@@ -208,15 +246,145 @@ const StudentHealthFundTable = () => {
   };
   const dispatch = useDispatch();
   const studentHealthFundState = useSelector(state => state.studentHealthFunds || {});
-  const healthFunds = Array.isArray(studentHealthFundState.items) ? studentHealthFundState.items : [];
+  const rawHealthFunds = Array.isArray(studentHealthFundState.items) ? studentHealthFundState.items : [];
+  const [attendanceCountsByRecordId, setAttendanceCountsByRecordId] = useState({});
   const loading = studentHealthFundState.loading;
   const error = studentHealthFundState.error;
+
+  useEffect(() => {
+    const rowsNeedingCountsSync = rawHealthFunds.filter((row) => {
+      const recordId = row?.id ?? row?.Id;
+      const studentId = row?.studentId ?? row?.StudentId;
+
+      if (!recordId || !studentId || attendanceCountsByRecordId[recordId]) {
+        return false;
+      }
+
+      const pendingFromServer = Number(row?.treatmentsUsed ?? row?.TreatmentsUsed ?? 0);
+      const reportedFromServer = Number(row?.reportedTreatments ?? row?.ReportedTreatments ?? 0);
+
+      return pendingFromServer === 0 && reportedFromServer === 0;
+    });
+
+    if (!rowsNeedingCountsSync.length) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const loadAttendanceCounts = async () => {
+      const results = await Promise.allSettled(
+        rowsNeedingCountsSync.map(async (row) => {
+          const recordId = row?.id ?? row?.Id;
+          const studentId = row?.studentId ?? row?.StudentId;
+          const healthFundId = row?.healthFundId ?? row?.HealthFundId;
+          const attendanceResult = await dispatch(getAttendanceByStudent(studentId)).unwrap();
+
+          const relevantAttendances = (Array.isArray(attendanceResult) ? attendanceResult : []).filter((attendanceRow) => {
+            const isPresent = attendanceRow?.wasPresent ?? attendanceRow?.WasPresent;
+            const reportedHealthFundId = attendanceRow?.healthFundReport ?? attendanceRow?.HealthFundReport;
+
+            return Boolean(isPresent) && (!healthFundId || Number(reportedHealthFundId) === Number(healthFundId));
+          });
+
+          return {
+            recordId,
+            treatmentsUsed: relevantAttendances.filter((attendanceRow) => Number(attendanceRow?.statusReport ?? attendanceRow?.StatusReport) === 3).length,
+            reportedTreatments: relevantAttendances.filter((attendanceRow) => Number(attendanceRow?.statusReport ?? attendanceRow?.StatusReport) === 1).length,
+          };
+        })
+      );
+
+      if (isCancelled) {
+        return;
+      }
+
+      const nextCounts = {};
+      results.forEach((result) => {
+        if (result.status === 'fulfilled' && result.value?.recordId) {
+          nextCounts[result.value.recordId] = {
+            treatmentsUsed: result.value.treatmentsUsed,
+            reportedTreatments: result.value.reportedTreatments,
+          };
+        }
+      });
+
+      if (Object.keys(nextCounts).length > 0) {
+        setAttendanceCountsByRecordId((prev) => ({ ...prev, ...nextCounts }));
+      }
+    };
+
+    loadAttendanceCounts();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [dispatch, rawHealthFunds, attendanceCountsByRecordId]);
+
+  const healthFunds = useMemo(() => (
+    rawHealthFunds.map((row) => {
+      const recordId = row?.id ?? row?.Id;
+      const computedCounts = attendanceCountsByRecordId[recordId];
+
+      return {
+        ...row,
+        id: recordId,
+        studentId: row?.studentId ?? row?.StudentId ?? '',
+        studentName: row?.studentName ?? row?.StudentName ?? '',
+        healthFundId: row?.healthFundId ?? row?.HealthFundId ?? '',
+        age: row?.age ?? row?.Age ?? '',
+        city: row?.city ?? row?.City ?? '',
+        groupName: row?.groupName ?? row?.GroupName ?? '',
+        startDate: row?.startDate ?? row?.StartDate ?? null,
+        startDateGroup: row?.startDateGroup ?? row?.StartDateGroup ?? null,
+        referralFilePath: row?.referralFilePath ?? row?.ReferralFilePath ?? null,
+        commitmentFilePath: row?.commitmentFilePath ?? row?.CommitmentFilePath ?? null,
+        notes: row?.notes ?? row?.Notes ?? '',
+        treatmentsUsed: computedCounts?.treatmentsUsed ?? Number(row?.treatmentsUsed ?? row?.TreatmentsUsed ?? 0),
+        reportedTreatments: computedCounts?.reportedTreatments ?? Number(row?.reportedTreatments ?? row?.ReportedTreatments ?? 0),
+        commitmentTreatments: Number(row?.commitmentTreatments ?? row?.CommitmentTreatments ?? 0),
+        registeredTreatments: Number(row?.registeredTreatments ?? row?.RegisteredTreatments ?? 0),
+      };
+    })
+  ), [rawHealthFunds, attendanceCountsByRecordId]);
   // קופות החולים מהסטייט
   const healthFundList = useSelector(state => (state.healthFunds && state.healthFunds.items) ? state.healthFunds.items : []);
   
   // הערות גביה מהסטייט
   const paymentNotes = useSelector(selectPaymentNotes);
   const paymentNotesLoading = useSelector(selectPaymentNotesLoading);
+  const commitments = useSelector(selectHealthFundCommitments);
+  const commitmentsLoading = useSelector(selectHealthFundCommitmentsLoading);
+
+  const paymentNotesByStudentId = useMemo(() => {
+    const notesMap = new Map();
+
+    if (!Array.isArray(paymentNotes)) {
+      return notesMap;
+    }
+
+    paymentNotes.forEach(note => {
+      const studentKey = String(note?.studentId ?? '').trim();
+      const noteContent = String(note?.noteContent ?? '').trim();
+
+      if (!studentKey || !noteContent) {
+        return;
+      }
+
+      if (!notesMap.has(studentKey)) {
+        notesMap.set(studentKey, []);
+      }
+
+      const existingNotes = notesMap.get(studentKey);
+      if (!existingNotes.includes(noteContent)) {
+        existingNotes.push(noteContent);
+      }
+    });
+
+    return new Map(
+      Array.from(notesMap.entries()).map(([studentKey, notes]) => [studentKey, notes.join(' | ')])
+    );
+  }, [paymentNotes]);
 
   // יצירת מפה של קופות חולים לביצועים טובים יותר
   const healthFundMap = useMemo(() => {
@@ -238,6 +406,8 @@ const StudentHealthFundTable = () => {
       const searchLower = debouncedSearchTerm.toLowerCase().trim();
       
       filtered = filtered.filter(row => {
+        const billingNotesText = paymentNotesByStudentId.get(String(row.studentId)) || '';
+
         // יצירת מחרוזת חיפוש אחת לכל השדות
         const searchableText = [
           row.studentId,
@@ -249,7 +419,8 @@ const StudentHealthFundTable = () => {
           row.reportedTreatments,
           row.commitmentTreatments,
           row.registeredTreatments,
-          row.notes
+          row.notes,
+          billingNotesText
         ].filter(Boolean).join(' ').toLowerCase();
         
         // חיפוש בקופת חולים - שימוש במפה לביצועים טובים
@@ -348,22 +519,20 @@ const StudentHealthFundTable = () => {
     // סינון לפי הערות
     if (advancedFilters.hasNotes !== 'all') {
       filtered = filtered.filter(row => {
-        const hasNotes = row.notes && row.notes.trim().length > 0;
+        const combinedNotes = [row.notes, paymentNotesByStudentId.get(String(row.studentId))]
+          .filter(Boolean)
+          .join(' ')
+          .trim();
+        const hasNotes = combinedNotes.length > 0;
         return advancedFilters.hasNotes === 'yes' ? hasNotes : !hasNotes;
       });
     }
 
     // סינון לפי הערות גביה אוטומטיות
     if (advancedFilters.billingNotesFilter && advancedFilters.billingNotesFilter.length > 0) {
-
-      
       // וודא שהנתונים זמינים לפני שנקרא לפונקציה
-      if (!Array.isArray(paymentNotes)) {
-        console.log('🔍 Payment notes not available, ignoring billing filter');
-        // אם אין נתונים כלל, נתעלם מהפילטר ונמשיך עם התוצאות הקיימות
-      } else if (paymentNotesLoading) {
-        console.log('🔍 Payment notes still loading, ignoring billing filter for now');
-        // אם הנתונים עדיין נטענים, נתעלם מהפילטר זמנית
+      if (!Array.isArray(paymentNotes) || paymentNotesLoading) {
+        // אם הנתונים לא זמינים עדיין, לא מחילים זמנית את פילטר הערות הגביה
       } else {
         const filteredStudentIds = extractStudentIdsByAutomaticBillingNotes(paymentNotes, advancedFilters.billingNotesFilter);
       
@@ -446,7 +615,7 @@ const StudentHealthFundTable = () => {
     }
 
     return filtered;
-  }, [healthFunds, debouncedSearchTerm, advancedFilters, healthFundMap, sortConfig, paymentNotes, paymentNotesLoading]);
+  }, [healthFunds, debouncedSearchTerm, advancedFilters, healthFundMap, sortConfig, paymentNotes, paymentNotesLoading, paymentNotesByStudentId]);
 
   // פונקציה לניקוי החיפוש
   const handleClearSearch = () => {
@@ -492,6 +661,64 @@ const StudentHealthFundTable = () => {
     }
     return value && value !== 'all';
   });
+
+  const activeFiltersCount = Object.entries(advancedFilters).reduce((count, [key, value]) => {
+    if (key === 'billingNotesFilter') {
+      return count + (Array.isArray(value) && value.length > 0 ? 1 : 0);
+    }
+
+    return value && value !== 'all' ? count + 1 : count;
+  }, 0);
+
+  const billingOverview = useMemo(() => {
+    const totalStudents = filteredHealthFunds.length;
+    const withBillingNotes = filteredHealthFunds.filter((row) => Boolean(paymentNotesByStudentId.get(String(row.studentId)) || row.notes)).length;
+    const pendingReports = filteredHealthFunds.reduce((sum, row) => sum + Number(row.treatmentsUsed || 0), 0);
+    const totalCommitments = filteredHealthFunds.reduce((sum, row) => sum + Number(row.commitmentTreatments || 0), 0);
+
+    return [
+      { label: 'תלמידים להצגה', value: totalStudents, color: '#1d4ed8', bg: '#eff6ff' },
+      { label: 'עם הערות גביה', value: withBillingNotes, color: '#b45309', bg: '#fff7ed' },
+      { label: 'ממתינים לדיווח', value: pendingReports, color: '#0f766e', bg: '#ecfeff' },
+      { label: 'סה״כ התחייבויות', value: totalCommitments, color: '#6d28d9', bg: '#f5f3ff' },
+    ];
+  }, [filteredHealthFunds, paymentNotesByStudentId]);
+
+  const compactFilterFieldSx = {
+    '& .MuiOutlinedInput-root': {
+      direction: 'rtl',
+      minHeight: '46px',
+      borderRadius: '12px',
+      bgcolor: '#ffffff',
+      boxShadow: '0 1px 4px rgba(15,23,42,0.04)',
+      '& fieldset': {
+        borderColor: '#d7e3f3'
+      },
+      '&:hover fieldset': {
+        borderColor: '#93c5fd'
+      },
+      '&.Mui-focused fieldset': {
+        borderColor: '#2563EB'
+      }
+    },
+    '& .MuiSelect-select': {
+      display: 'flex',
+      alignItems: 'center',
+      minHeight: '46px !important',
+      paddingTop: '0 !important',
+      paddingBottom: '0 !important'
+    },
+    '& input': {
+      textAlign: 'right',
+      fontSize: '0.88rem',
+      paddingTop: 0,
+      paddingBottom: 0
+    },
+    '& .MuiInputLabel-root': {
+      fontSize: '0.88rem',
+      fontWeight: 600
+    }
+  };
 
   // פונקציות pagination
   const handleChangePage = (event, newPage) => {
@@ -589,31 +816,11 @@ const StudentHealthFundTable = () => {
   
   // קבלת המשתמש הנוכחי
   const currentUser = useSelector(state => {
-    console.log('🔍 Redux state במלואו:', state);
-    
-    // נסה כמה מקומות שונים למצוא את המשתמש
-    if (state.user && state.user.userDetails) {
-      console.log('🔍 נמצא ב-state.user.userDetails:', state.user.userDetails);
-      return state.user.userDetails;
-    }
-    if (state.user && state.user.user) {
-      console.log('🔍 נמצא ב-state.user.user:', state.user.user);
-      return state.user.user;
-    }
-    if (state.users && state.users.currentUser) {
-      console.log('🔍 נמצא ב-state.users.currentUser:', state.users.currentUser);
-      return state.users.currentUser;
-    }
-    if (state.auth && state.auth.user) {
-      console.log('🔍 נמצא ב-state.auth.user:', state.auth.user);
-      return state.auth.user;
-    }
-    if (state.user) {
-      console.log('🔍 נמצא ב-state.user:', state.user);
-      return state.user;
-    }
-    
-    console.log('⚠️ לא נמצא משתמש נוכחי ב-Redux');
+    if (state.user?.userDetails) return state.user.userDetails;
+    if (state.user?.user) return state.user.user;
+    if (state.users?.currentUser) return state.users.currentUser;
+    if (state.auth?.user) return state.auth.user;
+    if (state.user) return state.user;
     return null;
   });
 
@@ -661,8 +868,8 @@ const StudentHealthFundTable = () => {
     },
     {
       key: 'treatmentsFinished',
-      label: '🔚 נגמרו הטיפולים',
-      description: 'התלמיד סיים את כל הטיפולים הזמינים לו'
+      label: '✅ סיים התחייבות',
+      description: 'הילד סיים את ההתחייבות הנוכחית וצריך טיפול המשך'
     },
     {
       key: 'authorizationCancelled',
@@ -773,30 +980,8 @@ const StudentHealthFundTable = () => {
   };
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    
-    // אם נבחרה קופת חולים, מלא אוטומטית את השדות הרלוונטיים
-    if (field === 'healthFundId' && value) {
-      const selectedHealthFund = healthFundList.find(fund => fund.healthFundId === parseInt(value));
-      if (selectedHealthFund) {
-        console.log('🏥 נבחרה קופת חולים:', selectedHealthFund);
-        console.log('📊 מקסימום טיפולים בשנה:', selectedHealthFund.maxTreatmentsPerYear);
-        
-        // מלא אוטומטית את מס' הטיפולים בהתחייבות ומקסימום טיפולים
-        setFormData(prev => ({
-          ...prev,
-          [field]: value,
-          commitmentTreatments: selectedHealthFund.maxTreatmentsPerYear ? String(selectedHealthFund.maxTreatmentsPerYear) : '',
-          registeredTreatments: selectedHealthFund.maxTreatmentsPerYear ? String(selectedHealthFund.maxTreatmentsPerYear) : ''
-        }));
-        return; // יצא מהפונקציה כדי למנוע עדכון כפול
-      }
-    }
   };
   const handleSave = async () => {
-    console.log('🔍 התחלת שמירה...');
-    console.log('🔍 נתוני טופס:', formData);
-    console.log('🔍 צ\'קליסט גביה:', healthFundChecklist);
-    
     setSaving(true);
 
     if (!(ensurePermission())) {
@@ -816,12 +1001,6 @@ const StudentHealthFundTable = () => {
     if (!formData.startDate) {
       requiredFields.push('תאריך התחלה');
     }
-    if (!formData.treatmentsUsed && formData.treatmentsUsed !== 0) {
-      requiredFields.push('טיפולים שכבר דווחו');
-    }
-    if (!formData.commitmentTreatments) {
-      requiredFields.push('התחייבות טיפולים');
-    }
     
     // אם יש שדות חובה שלא מולאו
     if (requiredFields.length > 0) {
@@ -833,69 +1012,20 @@ const StudentHealthFundTable = () => {
     }
     
     try {
-      // שמירת נתוני קופת החולים
-      console.log('🔍 שולח לשרת נתוני קופת חולים...');
-      const result = await dispatch(addStudentHealthFund(formData)).unwrap();
-      console.log('✅ נתוני קופת חולים נשמרו בהצלחה:', result);
-      
-      // בדיקה אוטומטית לקופת חולים מאוחדת
-      const selectedHealthFund = healthFundList.find(fund => fund.healthFundId == formData.healthFundId);
-      const isUnited = selectedHealthFund?.name?.includes('מאוחדת') || selectedHealthFund?.name?.includes('מאוחד');
-      const registeredTreatments = parseInt(formData.registeredTreatments) || 0;
-      const commitmentTreatments = parseInt(formData.commitmentTreatments) || 0;
-      
-      console.log('🔍 בדיקת תנאים ליצירת הערה אוטומטית:');
-      console.log('  קופת חולים:', selectedHealthFund?.name);
-      console.log('  האם מאוחדת:', isUnited);
-      console.log('  טיפולים שנרשם:', registeredTreatments);
-      console.log('  טיפולים בהתחייבות:', commitmentTreatments);
-      console.log('  האם התחייבות נמוכה:', commitmentTreatments < registeredTreatments);
-      
-      // יצירת הערה אוטומטית אם הקופה מאוחדת ומספר הטיפולים בהתחייבות נמוך
-      if (isUnited && commitmentTreatments < registeredTreatments && commitmentTreatments > 0 && registeredTreatments > 0) {
-        console.log('🔍 יוצר הערה אוטומטית - קופה מאוחדת וטיפולים נמוכים');
-        try {
-          await createAutomaticInsufficientTreatmentsNote(formData.studentId, selectedHealthFund?.name);
-          console.log('✅ הערה אוטומטית נוצרה בהצלחה');
-          setNotification({
-            open: true,
-            message: 'הערת גביה אוטומטית נוצרה: מס\' הטיפולים בהתחייבות נמוך ממס\' הטיפולים שנרשם',
-            severity: 'success'
-          });
-        } catch (noteError) {
-          console.error('❌ שגיאה ביצירת הערה אוטומטית:', noteError);
-          setNotification({
-            open: true,
-            message: 'שגיאה ביצירת הערה אוטומטית: ' + (noteError.message || noteError),
-            severity: 'error'
-          });
-        }
-      } else {
-        console.log('ℹ️ לא נוצרה הערה אוטומטית - תנאים לא מתקיימים');
-        if (!isUnited) console.log('  סיבה: קופה לא מאוחדת');
-        if (commitmentTreatments >= registeredTreatments) console.log('  סיבה: טיפולים בהתחייבות לא נמוכים');
-        if (commitmentTreatments <= 0) console.log('  סיבה: לא הוזן מספר טיפולים בהתחייבות');
-        if (registeredTreatments <= 0) console.log('  סיבה: לא הוזן מספר טיפולים שנרשם');
-      }
+      await dispatch(addStudentHealthFund(formData)).unwrap();
+
+      // נתוני דיווח והתחייבויות יחושבו אוטומטית בשרת מתוך הנוכחות,
+      // ולכן לא נוצרת כאן יותר הערה אוטומטית לפי מונים ידניים.
       
       // יצירת הערות אוטומטיות בהתאם לצ'קליסט
-      console.log('🔍 מתחיל יצירת הערות אוטומטיות...');
       try {
-        const noteResult = await createAutomaticHealthFundNotes(formData.studentId);
-        if (noteResult) {
-          console.log('✅ הערות גביה נוצרו בהצלחה');
-        } else {
-          console.log('ℹ️ לא נוצרו הערות (לא נבחרו פריטים)');
-        }
+        await createAutomaticHealthFundNotes(formData.studentId);
       } catch (noteError) {
-        console.error('❌ שגיאה ביצירת הערות, אבל ממשיכים:', noteError);
-        // לא עוצרים את התהליך בגלל שגיאה בהערות
+        console.error('שגיאה ביצירת הערות, אבל ממשיכים:', noteError);
       }
       
       handleCloseAddDialog();
       dispatch(fetchStudentHealthFunds());
-      
-      console.log('✅ התהליך הושלם בהצלחה');
     } catch (err) {
       console.error('❌ Failed to add student health fund:', err);
       alert('שגיאה בשמירת נתוני קופת החולים: ' + (err.message || err));
@@ -925,12 +1055,8 @@ const StudentHealthFundTable = () => {
       isActive: true
     };
 
-    console.log('🔍 יוצר הערה אוטומטית:', noteData);
-    console.log('🔍 פרטי משתמש:', userDetails);
-    
     try {
       const result = await dispatch(addStudentNote(noteData)).unwrap();
-      console.log('✅ הערה אוטומטית נוצרה בהצלחה:', result);
       return result;
     } catch (error) {
       console.error('❌ שגיאה ביצירת הערה אוטומטית:', error);
@@ -940,19 +1066,12 @@ const StudentHealthFundTable = () => {
 
   // פונקציה ליצירת הערות אוטומטיות
   const createAutomaticHealthFundNotes = async (studentId) => {
-    console.log('🔍 התחלת יצירת הערות גביה אוטומטיות לתלמיד:', studentId);
-    console.log('🔍 צ\'קליסט נוכחי:', healthFundChecklist);
-    console.log('🔍 משתמש נוכחי:', currentUser);
-
     if (!(ensurePermission())) return null;
     
     const userDetails = getUserDetails(currentUser);
-    console.log('🔍 פרטי משתמש אחרי getUserDetails:', userDetails);
-    console.log('🔍 סוג authorId:', typeof userDetails.id, 'ערך:', userDetails.id);
     
     const selectedHealthFund = healthFundList.find(fund => fund.healthFundId == formData.healthFundId);
     const healthFundName = selectedHealthFund?.name || 'קופת חולים';
-    console.log('🔍 קופת חולים נבחרת:', selectedHealthFund);
     
     // בניית תוכן ההערה על בסיס הצ'קליסט
     let noteContent = `קופת החולים : ${healthFundName} \n\n`;
@@ -982,7 +1101,7 @@ const StudentHealthFundTable = () => {
     }
     
     if (healthFundChecklist.treatmentsFinished) {
-      const item = '🔚 נגמרו הטיפולים';
+      const item = '✅ סיים התחייבות';
       checkedItems.push(item);
       const additionalNote = additionalNotes.treatmentsFinished || '';
       noteContent += `${item}${additionalNote ? ` - ${additionalNote}` : ''}\n`;
@@ -994,9 +1113,6 @@ const StudentHealthFundTable = () => {
       const additionalNote = additionalNotes.authorizationCancelled || '';
       noteContent += `${item}${additionalNote ? ` - ${additionalNote}` : ''}\n`;
     }
-    
-    console.log('🔍 פריטים שנבחרו:', checkedItems);
-    console.log('🔍 תוכן הערה:', noteContent);
     
     // אם יש פריטים שנבחרו, צור הערה
     if (checkedItems.length > 0) {
@@ -1019,19 +1135,7 @@ const StudentHealthFundTable = () => {
         isActive: true
       };
       
-      console.log('🔍 נתוני הערה לשליחה:', noteData);
-      console.log('🔍 validation check:');
-      console.log('   - studentId:', typeof noteData.studentId, noteData.studentId);
-      console.log('   - authorId:', typeof noteData.authorId, noteData.authorId);
-      console.log('   - authorName:', typeof noteData.authorName, `"${noteData.authorName}"`);
-      console.log('   - noteContent length:', noteData.noteContent.length);
-      console.log('   - dateCreated:', noteData.dateCreated);
-      console.log('   - תאריך בעברית:', new Date(noteData.dateCreated).toLocaleDateString('he-IL'));
-      console.log('   - שנה:', new Date(noteData.dateCreated).getFullYear());
-      
       try {
-        console.log('🧪 מנסה לשלוח הערה לשרת...');
-        
         // בדיקת validation בסיסית לפני שליחה
         if (!noteData.studentId || isNaN(noteData.studentId)) {
           throw new Error('studentId לא תקין');
@@ -1044,7 +1148,6 @@ const StudentHealthFundTable = () => {
         }
         
         const result = await dispatch(addStudentNote(noteData)).unwrap();
-        console.log('✅ הערת גביה אוטומטית נוצרה בהצלחה:', result);
         return result;
       } catch (error) {
         console.error('❌ שגיאה ביצירת הערת גביה אוטומטית:', error);
@@ -1060,10 +1163,9 @@ const StudentHealthFundTable = () => {
         
         throw error;
       }
-    } else {
-      console.log('⚠️ לא נבחרו פריטים בצ\'קליסט, לא נוצרת הערה');
-      return null;
     }
+
+    return null;
   };
 
   // עדכון
@@ -1123,51 +1225,134 @@ const StudentHealthFundTable = () => {
     setDeleteSaving(false);
   };
 
+  const getCurrentUserId = () => Number(
+    currentUser?.id || currentUser?.userId || currentUser?.IdentityCard || currentUser?.identityCard || 0
+  );
+
+  const loadAttendanceDatesFallback = async (row, statusValue) => {
+    try {
+      const attendanceResult = await dispatch(getAttendanceByStudent(row.studentId)).unwrap();
+      return (Array.isArray(attendanceResult) ? attendanceResult : [])
+        .filter((attendanceRow) => {
+          const isPresent = attendanceRow?.wasPresent ?? attendanceRow?.WasPresent;
+          const statusReport = Number(attendanceRow?.statusReport ?? attendanceRow?.StatusReport ?? 0);
+          const healthFundReport = attendanceRow?.healthFundReport ?? attendanceRow?.HealthFundReport;
+
+          return Boolean(isPresent)
+            && statusReport === statusValue
+            && (!row?.healthFundId || !healthFundReport || Number(healthFundReport) === Number(row.healthFundId));
+        })
+        .map((attendanceRow) => ({
+          attendanceId: Number(attendanceRow?.attendanceId ?? attendanceRow?.AttendanceId ?? 0),
+          studentId: Number(attendanceRow?.studentId ?? attendanceRow?.StudentId ?? row?.studentId ?? 0),
+          lessonId: Number(attendanceRow?.lessonId ?? attendanceRow?.LessonId ?? 0),
+          healthFundReport: Number(attendanceRow?.healthFundReport ?? attendanceRow?.HealthFundReport ?? row?.healthFundId ?? 0),
+          wasPresent: Boolean(attendanceRow?.wasPresent ?? attendanceRow?.WasPresent),
+          lessonDate: attendanceRow?.lessonDate ?? attendanceRow?.LessonDate ?? attendanceRow?.date ?? attendanceRow?.Date ?? null,
+          reportedAt: attendanceRow?.dateReport ?? attendanceRow?.DateReport ?? attendanceRow?.updateDate ?? attendanceRow?.UpdateDate ?? null,
+          dateValue: attendanceRow?.lessonDate ?? attendanceRow?.LessonDate ?? attendanceRow?.date ?? attendanceRow?.Date ?? attendanceRow?.dateReport ?? attendanceRow?.DateReport ?? null,
+        }))
+        .filter((entry) => Boolean(entry.dateValue));
+    } catch (error) {
+      console.error('Failed to load attendance date fallback:', error);
+      return [];
+    }
+  };
+
+  const effectiveUnreportedDates = unreportedDates.length > 0 ? unreportedDates : fallbackUnreportedDates;
+  const effectiveReportedDates = reportedDates.length > 0 ? reportedDates : fallbackReportedDates;
+
   // פונקציות לטיפול בדיאלוג תאריכים לא מדווחים
   const handleOpenUnreportedDatesDialog = async (row) => {
     setSelectedStudentForDates(row);
+    setFallbackUnreportedDates([]);
+    setFallbackUnreportedEntries([]);
     setUnreportedDatesDialogOpen(true);
-    // קריאה לתאריכים הלא מדווחים
     try {
       const result = await dispatch(fetchUnreportedDates(row.id)).unwrap();
-      console.log('🔍 תאריכים שחזרו מהשרת:', result);
-      console.log('🔍 סוג הנתונים:', typeof result);
-      console.log('🔍 האם זה מערך:', Array.isArray(result));
-      if (Array.isArray(result) && result.length > 0) {
-        console.log('🔍 פריט ראשון:', result[0]);
-        console.log('🔍 מפתחות של פריט ראשון:', Object.keys(result[0]));
+      if ((!Array.isArray(result) || result.length === 0) && Number(row?.treatmentsUsed || 0) > 0) {
+        const fallbackEntries = await loadAttendanceDatesFallback(row, 3);
+        setFallbackUnreportedEntries(fallbackEntries);
+        setFallbackUnreportedDates(fallbackEntries.map((entry) => entry.dateValue));
       }
     } catch (err) {
       console.error('Failed to fetch unreported dates:', err);
+      if (Number(row?.treatmentsUsed || 0) > 0) {
+        const fallbackEntries = await loadAttendanceDatesFallback(row, 3);
+        setFallbackUnreportedEntries(fallbackEntries);
+        setFallbackUnreportedDates(fallbackEntries.map((entry) => entry.dateValue));
+      }
     }
   };
   const handleCloseUnreportedDatesDialog = () => {
     setUnreportedDatesDialogOpen(false);
     setSelectedStudentForDates(null);
+    setFallbackUnreportedDates([]);
+    setFallbackUnreportedEntries([]);
     setSelectedDatesForReporting([]);
+  };
+
+  const getDateSelectionKey = (value) => {
+    if (!value) return '';
+
+    if (typeof value === 'string') {
+      const normalized = value.trim();
+      const match = normalized.match(/^(\d{4}-\d{2}-\d{2})/);
+      if (match) {
+        return match[1];
+      }
+    }
+
+    const parsed = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(parsed.getTime())) return '';
+
+    const year = parsed.getFullYear();
+    const month = String(parsed.getMonth() + 1).padStart(2, '0');
+    const day = String(parsed.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   // פונקציות לטיפול בבחירת תאריכים לדיווח
   const handleDateSelectionToggle = (date) => {
-    const dateString = date.toISOString();
+    const dateKey = getDateSelectionKey(date);
+    if (!dateKey) return;
+
     setSelectedDatesForReporting(prev => {
-      if (prev.includes(dateString)) {
-        return prev.filter(d => d !== dateString);
-      } else {
-        return [...prev, dateString];
+      if (prev.includes(dateKey)) {
+        return prev.filter(d => d !== dateKey);
       }
+      return [...prev, dateKey];
+    });
+  };
+
+  const handleToggleSelectAllDates = () => {
+    const allDateKeys = Array.from(
+      new Set(effectiveUnreportedDates.map(dateItem => getDateSelectionKey(dateItem)).filter(Boolean))
+    );
+
+    setSelectedDatesForReporting(prev => {
+      const areAllSelected = allDateKeys.length > 0 && allDateKeys.every(date => prev.includes(date));
+      return areAllSelected ? [] : allDateKeys;
     });
   };
 
   // פונקציה לדיווח תאריכים נבחרים
   const handleReportSelectedDates = async () => {
     if (selectedDatesForReporting.length === 0) {
-      alert('יש לבחור לפחות תאריך אחד לדיווח');
+      setNotification({
+        open: true,
+        message: 'יש לבחור לפחות תאריך אחד לדיווח',
+        severity: 'warning'
+      });
       return;
     }
 
     if (!selectedStudentForDates?.id) {
-      alert('שגיאה: לא נמצא מזהה תלמיד');
+      setNotification({
+        open: true,
+        message: 'שגיאה: לא נמצא מזהה תלמיד',
+        severity: 'error'
+      });
       return;
     }
 
@@ -1175,26 +1360,78 @@ const StudentHealthFundTable = () => {
 
     setReportingInProgress(true);
     try {
-      // שלח כל תאריך בנפרד
-      for (const date of selectedDatesForReporting) {
-        await dispatch(reportUnreportedDate({
-          studentHealthFundId: selectedStudentForDates.id,
-          date: date
-        })).unwrap();
+      let reportedSuccessfully = false;
+
+      try {
+        for (const dateKey of selectedDatesForReporting) {
+          await dispatch(reportUnreportedDate({
+            studentHealthFundId: selectedStudentForDates.id,
+            date: dateKey,
+          })).unwrap();
+        }
+
+        reportedSuccessfully = true;
+      } catch (serverReportError) {
+        console.warn('הדיווח הישיר לשרת נכשל, מנסה מסלול גיבוי:', serverReportError);
+
+        const sourceEntries = fallbackUnreportedEntries.length > 0
+          ? fallbackUnreportedEntries
+          : await loadAttendanceDatesFallback(selectedStudentForDates, 3);
+
+        const selectedEntries = sourceEntries.filter((entry) => {
+          const entryKey = getDateSelectionKey(entry.dateValue || entry.lessonDate);
+          return entryKey && selectedDatesForReporting.includes(entryKey);
+        });
+
+        if (!selectedEntries.length) {
+          throw new Error('לא נמצאו רשומות נוכחות תואמות לתאריכים שנבחרו.');
+        }
+
+        const nowIso = new Date().toISOString();
+        const reportDate = nowIso.split('T')[0];
+        const updatePayloads = selectedEntries.map((entry) => ({
+          attendanceId: Number(entry.attendanceId),
+          studentId: Number(entry.studentId || selectedStudentForDates.studentId || 0),
+          lessonId: Number(entry.lessonId || 0),
+          dateReport: reportDate,
+          statusReport: 1,
+          updateDate: nowIso,
+          updateBy: getCurrentUserId(),
+          healthFundReport: Number(entry.healthFundReport || selectedStudentForDates.healthFundId || 0),
+          wasPresent: Boolean(entry.wasPresent),
+        }));
+
+        await dispatch(batchUpdateAttendances(updatePayloads)).unwrap();
+        reportedSuccessfully = true;
       }
 
-      // רענן את הרשימות
+      if (!reportedSuccessfully) {
+        throw new Error('דיווח התאריכים לא הושלם');
+      }
+
+      setAttendanceCountsByRecordId((prev) => {
+        const next = { ...prev };
+        delete next[selectedStudentForDates.id];
+        return next;
+      });
+
       await dispatch(fetchUnreportedDates(selectedStudentForDates.id));
       await dispatch(fetchReportedDates(selectedStudentForDates.id));
       await dispatch(fetchStudentHealthFunds());
 
-      // סגור דיאלוג ונקה בחירות
       handleCloseUnreportedDatesDialog();
-      
-      alert(`${selectedDatesForReporting.length} תאריכים דווחו בהצלחה!`);
+      setNotification({
+        open: true,
+        message: `${selectedDatesForReporting.length} תאריכים דווחו בהצלחה!`,
+        severity: 'success'
+      });
     } catch (error) {
       console.error('שגיאה בדיווח תאריכים:', error);
-      alert('שגיאה בדיווח התאריכים. אנא נסה שנית.');
+      setNotification({
+        open: true,
+        message: 'שגיאה בדיווח התאריכים. אנא נסי שנית.',
+        severity: 'error'
+      });
     } finally {
       setReportingInProgress(false);
     }
@@ -1203,18 +1440,30 @@ const StudentHealthFundTable = () => {
   // פונקציות לטיפול בדיאלוג תאריכים שדווחו
   const handleOpenReportedDatesDialog = async (row) => {
     setSelectedStudentForReportedDates(row);
+    setFallbackReportedDates([]);
+    setFallbackReportedEntries([]);
     setReportedDatesDialogOpen(true);
-    // קריאה לתאריכים שדווחו
     try {
       const result = await dispatch(fetchReportedDates(row.id)).unwrap();
-      console.log('🔍 תאריכים שדווחו שחזרו מהשרת:', result);
+      if ((!Array.isArray(result) || result.length === 0) && Number(row?.reportedTreatments || 0) > 0) {
+        const fallbackEntries = await loadAttendanceDatesFallback(row, 1);
+        setFallbackReportedEntries(fallbackEntries);
+        setFallbackReportedDates(fallbackEntries.map((entry) => entry.dateValue));
+      }
     } catch (err) {
       console.error('Failed to fetch reported dates:', err);
+      if (Number(row?.reportedTreatments || 0) > 0) {
+        const fallbackEntries = await loadAttendanceDatesFallback(row, 1);
+        setFallbackReportedEntries(fallbackEntries);
+        setFallbackReportedDates(fallbackEntries.map((entry) => entry.dateValue));
+      }
     }
   };
   const handleCloseReportedDatesDialog = () => {
     setReportedDatesDialogOpen(false);
     setSelectedStudentForReportedDates(null);
+    setFallbackReportedDates([]);
+    setFallbackReportedEntries([]);
   };
 
   // פונקציות לטיפול בדיאלוג ייצוא אקסל
@@ -1223,6 +1472,163 @@ const StudentHealthFundTable = () => {
   };
   const handleCloseExcelExportDialog = () => {
     setExcelExportDialogOpen(false);
+  };
+
+  const handleOpenCommitmentsDialog = async (row) => {
+    setSelectedStudentForCommitments(row);
+    setCommitmentsDialogOpen(true);
+
+    try {
+      await dispatch(fetchCommitmentsByStudentHealthFund(row.id)).unwrap();
+    } catch (error) {
+      console.error('שגיאה בטעינת התחייבויות:', error);
+    }
+  };
+
+  const handleCloseCommitmentsDialog = () => {
+    setCommitmentsDialogOpen(false);
+    setSelectedStudentForCommitments(null);
+    setCommitmentFormOpen(false);
+  };
+
+  const handleOpenAddCommitment = () => {
+    const today = new Date().toISOString().split('T')[0];
+    setCommitmentFormMode('add');
+    setCommitmentFormData({
+      id: null,
+      studentHealthFundId: selectedStudentForCommitments?.id || '',
+      commitmentNumber: '',
+      commitmentTreatments: '',
+      usedTreatments: 0,
+      startDate: today,
+      endDate: '',
+      filePath: '',
+      notes: '',
+      isActive: true,
+    });
+    setCommitmentFormOpen(true);
+  };
+
+  const handleOpenEditCommitment = (commitment) => {
+    const formatDateInput = (value) => {
+      if (!value) return '';
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString().split('T')[0];
+    };
+
+    setCommitmentFormMode('edit');
+    setCommitmentFormData({
+      id: commitment.id ?? commitment.Id ?? commitment.commitmentId ?? commitment.CommitmentId ?? null,
+      studentHealthFundId: (commitment.studentHealthFundId ?? commitment.StudentHealthFundId ?? selectedStudentForCommitments?.id) || '',
+      commitmentNumber: commitment.commitmentNumber ?? commitment.CommitmentNumber ?? '',
+      commitmentTreatments: commitment.commitmentTreatments ?? commitment.CommitmentTreatments ?? '',
+      usedTreatments: commitment.usedTreatments ?? commitment.UsedTreatments ?? 0,
+      startDate: formatDateInput(commitment.startDate ?? commitment.StartDate),
+      endDate: formatDateInput(commitment.endDate ?? commitment.EndDate),
+      filePath: commitment.filePath ?? commitment.FilePath ?? '',
+      notes: commitment.notes ?? commitment.Notes ?? '',
+      isActive: commitment.isActive ?? commitment.IsActive ?? true,
+      createdAt: commitment.createdAt ?? commitment.CreatedAt ?? null,
+    });
+    setCommitmentFormOpen(true);
+  };
+
+  const handleCloseCommitmentForm = () => {
+    setCommitmentFormOpen(false);
+  };
+
+  const handleCommitmentFormChange = (field, value) => {
+    setCommitmentFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveCommitment = async () => {
+    if (!(ensurePermission())) return;
+
+    if (!commitmentFormData.commitmentNumber || !commitmentFormData.startDate) {
+      setNotification({
+        open: true,
+        message: 'יש למלא מספר התחייבות ותאריך התחלה',
+        severity: 'warning'
+      });
+      return;
+    }
+
+    setCommitmentSaving(true);
+    try {
+      const payload = {
+        ...commitmentFormData,
+        studentHealthFundId: Number(selectedStudentForCommitments?.id || commitmentFormData.studentHealthFundId || 0),
+        commitmentTreatments: commitmentFormData.commitmentTreatments === '' ? null : Number(commitmentFormData.commitmentTreatments),
+        usedTreatments: Number(commitmentFormData.usedTreatments || 0),
+        endDate: commitmentFormData.endDate || null,
+        createdAt: commitmentFormData.createdAt || null,
+      };
+
+      if (commitmentFormMode === 'edit') {
+        const commitmentId = Number(payload.id ?? payload.commitmentId ?? payload.CommitmentId ?? 0);
+
+        if (!commitmentId) {
+          throw new Error('לא נמצא מזהה התחייבות לעדכון');
+        }
+
+        payload.id = commitmentId;
+        delete payload.commitmentId;
+        await dispatch(updateHealthFundCommitment(payload)).unwrap();
+      } else {
+        delete payload.id;
+        delete payload.commitmentId;
+        await dispatch(addHealthFundCommitment(payload)).unwrap();
+      }
+
+      await dispatch(fetchCommitmentsByStudentHealthFund(selectedStudentForCommitments?.id)).unwrap();
+
+      setNotification({
+        open: true,
+        message: commitmentFormMode === 'edit' ? 'התחייבות עודכנה בהצלחה' : 'התחייבות נוספה בהצלחה',
+        severity: 'success'
+      });
+
+      setCommitmentFormOpen(false);
+      dispatch(fetchStudentHealthFunds());
+    } catch (error) {
+      console.error('שגיאה בשמירת התחייבות:', error);
+      const validationMessage = error?.errors
+        ? Object.values(error.errors).flat().join(' | ')
+        : error?.message || 'שגיאה בשמירת התחייבות';
+
+      setNotification({
+        open: true,
+        message: validationMessage,
+        severity: 'error'
+      });
+    } finally {
+      setCommitmentSaving(false);
+    }
+  };
+
+  const handleDeleteCommitment = async (commitmentId) => {
+    if (!(ensurePermission())) return;
+
+    const isConfirmed = window.confirm('האם למחוק את ההתחייבות הזו?');
+    if (!isConfirmed) return;
+
+    try {
+      await dispatch(deleteHealthFundCommitment(commitmentId)).unwrap();
+      await dispatch(fetchCommitmentsByStudentHealthFund(selectedStudentForCommitments?.id)).unwrap();
+      setNotification({
+        open: true,
+        message: 'התחייבות נמחקה בהצלחה',
+        severity: 'success'
+      });
+      dispatch(fetchStudentHealthFunds());
+    } catch (error) {
+      console.error('שגיאה במחיקת התחייבות:', error);
+      setNotification({
+        open: true,
+        message: 'שגיאה במחיקת התחייבות',
+        severity: 'error'
+      });
+    }
   };
 
   // פונקציות לטיפול בדיאלוג פרטי תלמיד
@@ -1276,172 +1682,194 @@ const StudentHealthFundTable = () => {
   };
 
   return (
-  <Box sx={{ bgcolor: 'transparent', p: 0 }}>
-    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-      <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1d4fbaff', textAlign: 'right', ml: 2 }}>
-        ניהול גביה תלמידים
-      </Typography>
-      <Box sx={{ display: 'flex', gap: 2 }}>
-        <Button
-          variant="outlined"
-          startIcon={<FileDownload />}
-          color="primary"
-          sx={{ 
-            borderRadius: '24px', 
-            direction: 'ltr', 
-            fontWeight: 'bold', 
-            px: 4, 
-            py: 1.5, 
-            fontSize: '1rem', 
-            transition: 'all 0.2s',
-            borderColor: '#2563EB',
-            color: '#2563EB',
-            '&:hover': { 
-              bgcolor: '#2563EB', 
-              color: 'white',
-              borderColor: '#2563EB'
-            }
-          }}
-          onClick={handleOpenExcelExportDialog}
-        >
-          ייצוא
-        </Button>
-        <Button
-          variant="contained"
-          startIcon={<AddCircle />}
-          color="primary"
-          sx={{ borderRadius: '24px', direction: 'ltr', fontWeight: 'bold', px: 4, py: 1.5, boxShadow: '0 4px 14px rgba(37,99,235,0.18)', fontSize: '1rem', transition: 'all 0.2s', bgcolor: '#2563EB', '&:hover': { bgcolor: '#1D4ED8' } }}
-          onClick={handleOpenAddDialog}
-        >
-          הוספה
-        </Button>
-      </Box>
-    </Box>
-
-    {/* שדה חיפוש וכפתורים */}
-    <Box sx={{ 
-      display: 'flex', 
-      flexDirection: 'column',
-      alignItems: 'center',
-      mb: 3,
-      px: 2
-    }}>
-      {/* שורת החיפוש עם כפתורים */}
-      <Box sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: 2, 
-        width: '100%',
-        flexWrap: 'nowrap'
-      }}>
-        <TextField
-          placeholder="חיפוש בכל העמודות (קוד תלמיד, שם, עיר, קופה, מספרי טיפולים, הערות וכו')"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          sx={{
-            flex: 1,
-            '& .MuiOutlinedInput-root': {
-              borderRadius: '24px',
-              bgcolor: 'white',
-              direction: 'rtl',
-              pr: 3,
-              '&:hover': {
-                boxShadow: '0 4px 12px rgba(37,99,235,0.15)',
-              },
-              '&.Mui-focused': {
-                boxShadow: '0 4px 20px rgba(37,99,235,0.25)',
-              }
-            },
-            '& input': {
-              textAlign: 'right',
-              fontSize: '1rem',
-              fontFamily: 'inherit'
-            }
-          }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon sx={{ color: '#2563EB', fontSize: 24 }} />
-              </InputAdornment>
-            ),
-            endAdornment: searchTerm && (
-              <InputAdornment position="end">
-                <IconButton 
-                  onClick={handleClearSearch}
-                  size="small"
-                  sx={{ 
-                    color: '#64748B',
-                    '&:hover': { 
-                      color: '#ef4444',
-                      bgcolor: '#fef2f2'
-                    }
-                  }}
-                >
-                  <ClearIcon />
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-        />
-        
-        <Button
-          variant={showAdvancedSearch ? "contained" : "outlined"}
-          color="primary"
-          onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
-          sx={{ 
-            borderRadius: '24px',
-            fontWeight: 'bold',
-            minWidth: '260px',
-            px: 3,
-            whiteSpace: 'nowrap'
-          }}
-        >
-          {showAdvancedSearch ? '🔍 סגור חיפוש מתקדם' : '🔍 חיפוש מתקדם'}
-        </Button>
-        
-        {(hasActiveAdvancedFilters || searchTerm) && (
+  <Box sx={{ bgcolor: 'transparent', p: 0, fontFamily: 'inherit' }}>
+    <Paper
+      elevation={0}
+      sx={{
+        mb: 2.5,
+        p: { xs: 2, md: 2.5 },
+        borderRadius: 3,
+        border: '1px solid #dbeafe',
+        background: 'linear-gradient(135deg, #f8fbff 0%, #eef5ff 100%)',
+        boxShadow: '0 8px 24px rgba(37,99,235,0.08)'
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+        <Box>
+          <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1d4fbaff', textAlign: 'right', ml: 2, fontFamily: 'inherit', fontSize: { xs: '1.3rem', md: '1.5rem' } }}>
+            ניהול גביה תלמידים
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#5b6b84', mt: 0.75, fontFamily: 'inherit' }}>
+            מעקב נוח אחר דיווחים, התחייבויות והערות גביה במקום אחד.
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
           <Button
-            variant="outlined"
-            color="error"
-            onClick={handleClearAllFilters}
-            sx={{ 
-              borderRadius: '24px',
-              fontWeight: 'bold',
+            variant="contained"
+            startIcon={<FileDownload />}
+            color="primary"
+            sx={{
+              borderRadius: '999px',
+              direction: 'ltr',
+              fontWeight: 700,
               px: 3,
-              whiteSpace: 'nowrap'
+              py: 1,
+              fontSize: '0.92rem',
+              fontFamily: 'inherit',
+              boxShadow: '0 8px 18px rgba(37,99,235,0.18)',
+              background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%)'
+              }
+            }}
+            onClick={handleOpenExcelExportDialog}
+          >
+            ייצוא לאקסל
+          </Button>
+        </Box>
+      </Box>
+    </Paper>
+
+    <Paper
+      elevation={0}
+      sx={{
+        mb: 3,
+        px: { xs: 1.5, md: 2 },
+        py: 2,
+        borderRadius: 3,
+        bgcolor: 'white',
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 8px 20px rgba(15,23,42,0.05)'
+      }}
+    >
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%', flexWrap: 'wrap' }}>
+          <TextField
+            placeholder="חיפוש לפי שם תלמיד, קוד, עיר, קופה, הערות ונתוני גביה"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{
+              flex: 1,
+              minWidth: 260,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '999px',
+                bgcolor: '#f8fbff',
+                direction: 'rtl',
+                pr: 2,
+                '& fieldset': {
+                  borderColor: '#dbeafe'
+                },
+                '&:hover': {
+                  boxShadow: '0 4px 12px rgba(37,99,235,0.10)',
+                },
+                '&.Mui-focused': {
+                  boxShadow: '0 4px 16px rgba(37,99,235,0.16)',
+                }
+              },
+              '& input': {
+                textAlign: 'right',
+                fontSize: '0.92rem',
+                fontFamily: 'inherit'
+              }
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  {isSearching ? <CircularProgress size={18} /> : <SearchIcon sx={{ color: '#2563EB', fontSize: 22 }} />}
+                </InputAdornment>
+              ),
+              endAdornment: searchTerm && (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={handleClearSearch}
+                    size="small"
+                    sx={{
+                      color: '#64748B',
+                      '&:hover': {
+                        color: '#ef4444',
+                        bgcolor: '#fef2f2'
+                      }
+                    }}
+                  >
+                    <ClearIcon />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
+
+          <Button
+            variant={showAdvancedSearch ? 'contained' : 'outlined'}
+            color="primary"
+            onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
+            sx={{
+              borderRadius: '999px',
+              fontWeight: 700,
+              minWidth: '190px',
+              px: 2.5,
+              whiteSpace: 'nowrap',
+              fontFamily: 'inherit',
+              fontSize: '0.9rem'
             }}
           >
-            🗑️ נקה הכל
+            {showAdvancedSearch ? 'סגור חיפוש מתקדם' : 'חיפוש מתקדם'}
           </Button>
-        )}
+
+          {(hasActiveAdvancedFilters || searchTerm) && (
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={handleClearAllFilters}
+              sx={{
+                borderRadius: '999px',
+                fontWeight: 700,
+                px: 2.5,
+                whiteSpace: 'nowrap',
+                fontFamily: 'inherit',
+                fontSize: '0.9rem'
+              }}
+            >
+              נקה הכל
+            </Button>
+          )}
+        </Box>
+
+        <Typography variant="caption" sx={{ color: '#64748B', textAlign: 'right', px: 0.5 }}>
+          ניתן לסנן לפי קופה, עיר, הערות גביה, קבצים ונתוני טיפולים.
+        </Typography>
       </Box>
-      
-     
-    </Box>
+    </Paper>
 
     {/* פאנל חיפוש מתקדם */}
     {showAdvancedSearch && (
-      <Box sx={{ 
-        bgcolor: 'white',
-        borderRadius: '16px',
+      <Paper sx={{ 
+        bgcolor: '#ffffff',
+        borderRadius: '18px',
         p: 3,
         mb: 3,
-        boxShadow: '0 4px 12px rgba(37,99,235,0.15)',
-        border: '1px solid #e2e8f0',
+        boxShadow: '0 10px 24px rgba(37,99,235,0.10)',
+        border: '1px solid #dbeafe',
         width: '100%'
       }}>
-        <Typography variant="h6" sx={{ 
-          color: '#2563EB', 
-          fontWeight: 'bold', 
-          mb: 2,
-          textAlign: 'center',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 1
-        }}>
-          🔍 חיפוש מתקדם ומסננים
-        </Typography>
+        <Box sx={{ mb: 2.5 }}>
+          <Typography variant="body1" sx={{ 
+            color: '#2563EB', 
+            fontWeight: 'bold', 
+            mb: 0.5,
+            fontSize: '1rem',
+            textAlign: 'right',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            gap: 1
+          }}>
+            <SearchIcon sx={{ fontSize: 18 }} />
+            חיפוש מתקדם ומסננים
+          </Typography>
+          <Typography variant="caption" sx={{ color: '#64748B', display: 'block', textAlign: 'right' }}>
+            בחרי רק את המסננים הרלוונטיים כדי למקד את רשימת התלמידים במהירות.
+          </Typography>
+        </Box>
         
        
         
@@ -1449,33 +1877,12 @@ const StudentHealthFundTable = () => {
           <Grid item xs={12} sm={6}>
             <TextField
               select
+              size="small"
               label="קופת חולים"
               fullWidth
               value={advancedFilters.healthFundId}
               onChange={(e) => handleAdvancedFilterChange('healthFundId', e.target.value)}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  direction: 'rtl',
-                  height: '56px'
-                },
-                '& .MuiSelect-select': {
-                  display: 'flex',
-                  alignItems: 'center',
-                  height: '100%',
-                  paddingTop: 0,
-                  paddingBottom: 0
-                },
-                '& .MuiInputLabel-root': {
-                  fontSize: '0.9rem',
-                  fontWeight: '500',
-                  left: '14px',
-                  right: 'auto',
-                  transformOrigin: 'top left'
-                },
-                '& .MuiInputLabel-shrink': {
-                  transform: 'translate(-6px, -9px) scale(0.75)'
-                }
-              }}
+              sx={compactFilterFieldSx}
               SelectProps={{
                 MenuProps: {
                   PaperProps: {
@@ -1513,65 +1920,24 @@ const StudentHealthFundTable = () => {
           <Grid item xs={12} sm={6}>
             <TextField
               label="עיר"
+              size="small"
               fullWidth
               value={advancedFilters.city}
               onChange={(e) => handleAdvancedFilterChange('city', e.target.value)}
               placeholder="הקלד שם עיר..."
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  direction: 'rtl',
-                  height: '56px'
-                },
-                '& input': {
-                  textAlign: 'right',
-                  fontSize: '0.9rem',
-                  height: '100%',
-                  paddingTop: 0,
-                  paddingBottom: 0
-                },
-                '& .MuiInputLabel-root': {
-                  fontSize: '0.9rem',
-                  fontWeight: '500',
-                  left: '25px',
-                  right: 'auto',
-                  transformOrigin: 'top left'
-                },
-                '& .MuiInputLabel-shrink': {
-                  transform: 'translate(-14px, -9px) scale(0.75)'
-                }
-              }}
+              sx={compactFilterFieldSx}
             />
           </Grid>
 
           <Grid item xs={6} sm={4} md={3}>
             <TextField
               select
+              size="small"
               label="הערות"
               fullWidth
               value={advancedFilters.hasNotes}
               onChange={(e) => handleAdvancedFilterChange('hasNotes', e.target.value)}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  height: '56px'
-                },
-                '& .MuiSelect-select': {
-                  display: 'flex',
-                  alignItems: 'center',
-                  height: '100%',
-                  paddingTop: 0,
-                  paddingBottom: 0
-                },
-                '& .MuiInputLabel-root': {
-                  fontSize: '0.9rem',
-                  fontWeight: '500',
-                  left: '25px',
-                  right: 'auto',
-                  transformOrigin: 'top left'
-                },
-                '& .MuiInputLabel-shrink': {
-                  transform: 'translate(-14px, -9px) scale(0.75)'
-                }
-              }}
+              sx={compactFilterFieldSx}
             >
               <MenuItem value="all">הכל</MenuItem>
               <MenuItem value="yes">יש הערות</MenuItem>
@@ -1581,7 +1947,7 @@ const StudentHealthFundTable = () => {
 
           {/* פילטר הערות גביה אוטומטיות */}
           <Grid item xs={12} sm={6}>
-            <FormControl fullWidth>
+            <FormControl fullWidth size="small">
               <InputLabel>הערות גביה אוטומטיות</InputLabel>
               <Select
                 multiple
@@ -1591,22 +1957,7 @@ const StudentHealthFundTable = () => {
                 renderValue={(selected) => 
                   selected.length === 0 ? 'בחר הערות גביה...' : `${selected.length} הערות נבחרו`
                 }
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    direction: 'rtl',
-                    minHeight: '56px'
-                  },
-                  '& .MuiInputLabel-root': {
-                    fontSize: '0.9rem',
-                    fontWeight: '500',
-                    left: '14px',
-                    right: 'auto',
-                    transformOrigin: 'top left'
-                  },
-                  '& .MuiInputLabel-shrink': {
-                    transform: 'translate(-6px, -9px) scale(0.75)'
-                  }
-                }}
+                sx={compactFilterFieldSx}
                 MenuProps={{
                   PaperProps: {
                     sx: {
@@ -1657,7 +2008,7 @@ const StudentHealthFundTable = () => {
                     size="small"
                   />
                   <ListItemText 
-                    primary="🔚 נגמרו הטיפולים" 
+                    primary="✅ סיים התחייבות" 
                     secondary="התלמיד סיים את כל הטיפולים הזמינים לו"
                   />
                 </MenuItem>
@@ -1701,32 +2052,12 @@ const StudentHealthFundTable = () => {
           <Grid item xs={6} sm={4} md={3}>
             <TextField
               select
+              size="small"
               label="קובץ הפניה"
               fullWidth
               value={advancedFilters.hasReferralFile}
               onChange={(e) => handleAdvancedFilterChange('hasReferralFile', e.target.value)}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  height: '56px'
-                },
-                '& .MuiSelect-select': {
-                  display: 'flex',
-                  alignItems: 'center',
-                  height: '100%',
-                  paddingTop: 0,
-                  paddingBottom: 0
-                },
-                '& .MuiInputLabel-root': {
-                  fontSize: '0.9rem',
-                  fontWeight: '500',
-                  left: '25px',
-                  right: 'auto',
-                  transformOrigin: 'top left'
-                },
-                '& .MuiInputLabel-shrink': {
-                  transform: 'translate(-14px, -9px) scale(0.75)'
-                }
-              }}
+              sx={compactFilterFieldSx}
             >
               <MenuItem value="all">הכל</MenuItem>
               <MenuItem value="yes">יש קובץ</MenuItem>
@@ -1737,32 +2068,12 @@ const StudentHealthFundTable = () => {
           <Grid item xs={6} sm={4} md={3}>
             <TextField
               select
+              size="small"
               label="קובץ התחייבות"
               fullWidth
               value={advancedFilters.hasCommitmentFile}
               onChange={(e) => handleAdvancedFilterChange('hasCommitmentFile', e.target.value)}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  height: '56px'
-                },
-                '& .MuiSelect-select': {
-                  display: 'flex',
-                  alignItems: 'center',
-                  height: '100%',
-                  paddingTop: 0,
-                  paddingBottom: 0
-                },
-                '& .MuiInputLabel-root': {
-                  fontSize: '0.9rem',
-                  fontWeight: '500',
-                  left: '25px',
-                  right: 'auto',
-                  transformOrigin: 'top left'
-                },
-                '& .MuiInputLabel-shrink': {
-                  transform: 'translate(-14px, -9px) scale(0.75)'
-                }
-              }}
+              sx={compactFilterFieldSx}
             >
               <MenuItem value="all">הכל</MenuItem>
               <MenuItem value="yes">יש קובץ</MenuItem>
@@ -1773,66 +2084,26 @@ const StudentHealthFundTable = () => {
           <Grid item xs={6} sm={4} md={3}>
             <TextField
               type="number"
+              size="small"
               label="מינימום טיפולים"
               fullWidth
               value={advancedFilters.minTreatments}
               onChange={(e) => handleAdvancedFilterChange('minTreatments', e.target.value)}
               placeholder="0"
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  height: '56px'
-                },
-                '& input': {
-                  textAlign: 'right',
-                  fontSize: '0.9rem',
-                  height: '100%',
-                  paddingTop: 0,
-                  paddingBottom: 0
-                },
-                '& .MuiInputLabel-root': {
-                  fontSize: '0.9rem',
-                  fontWeight: '500',
-                  left: '25px',
-                  right: 'auto',
-                  transformOrigin: 'top left'
-                },
-                '& .MuiInputLabel-shrink': {
-                  transform: 'translate(-14px, -9px) scale(0.75)'
-                }
-              }}
+              sx={compactFilterFieldSx}
             />
           </Grid>
 
           <Grid item xs={6} sm={4} md={3}>
             <TextField
               type="number"
+              size="small"
               label="מקסימום טיפולים"
               fullWidth
               value={advancedFilters.maxTreatments}
               onChange={(e) => handleAdvancedFilterChange('maxTreatments', e.target.value)}
               placeholder="∞"
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  height: '56px'
-                },
-                '& input': {
-                  textAlign: 'right',
-                  fontSize: '0.9rem',
-                  height: '100%',
-                  paddingTop: 0,
-                  paddingBottom: 0
-                },
-                '& .MuiInputLabel-root': {
-                  fontSize: '0.9rem',
-                  fontWeight: '500',
-                  left: '25px',
-                  right: 'auto',
-                  transformOrigin: 'top left'
-                },
-                '& .MuiInputLabel-shrink': {
-                  transform: 'translate(-14px, -9px) scale(0.75)'
-                }
-              }}
+              sx={compactFilterFieldSx}
             />
           </Grid>
           
@@ -1857,7 +2128,7 @@ const StudentHealthFundTable = () => {
                     px: 3
                   }}
                 >
-                  🗑️ נקה מסננים
+                  נקה מסננים
                 </Button>
               )}
               {(searchTerm || hasActiveAdvancedFilters) && (
@@ -1870,18 +2141,19 @@ const StudentHealthFundTable = () => {
                     fontSize: '0.8rem',
                     px: 3,
                     bgcolor: '#ef4444',
+                    boxShadow: '0 6px 14px rgba(239,68,68,0.16)',
                     '&:hover': {
                       bgcolor: '#dc2626'
                     }
                   }}
                 >
-                  🔄 נקה הכל
+                  נקה הכל
                 </Button>
               )}
             </Box>
           </Grid>
         </Grid>
-      </Box>
+      </Paper>
     )}
 
     {/* הצגת תוצאות החיפוש */}
@@ -2039,10 +2311,10 @@ const StudentHealthFundTable = () => {
               sortConfig.key === 'groupName' ? 'שם קבוצה' :
               sortConfig.key === 'healthFundName' ? 'קופה' :
               sortConfig.key === 'startDate' ? 'תאריך יצירה' :
-              sortConfig.key === 'reportedTreatments' ? 'טיפולים שדווחו' :
-              sortConfig.key === 'treatmentsUsed' ? 'טיפולים שלא דווחו' :
-              sortConfig.key === 'commitmentTreatments' ? 'טיפולים עם התחייבות' :
-              sortConfig.key === 'registeredTreatments' ? 'טיפולים שנרשם אליהם' :
+              sortConfig.key === 'reportedTreatments' ? 'דווחו' :
+              sortConfig.key === 'treatmentsUsed' ? 'ממתין לדיווח' :
+              sortConfig.key === 'commitmentTreatments' ? 'מספר התחייבויות' :
+              sortConfig.key === 'registeredTreatments' ? 'התחייבויות שנוצלו' :
               sortConfig.key === 'notes' ? 'הערות' :
               sortConfig.key
             } ${sortConfig.direction === 'asc' ? '↗️' : '↘️'}`}
@@ -2065,40 +2337,31 @@ const StudentHealthFundTable = () => {
 
     {/* מונה תלמידים */}
     <Box sx={{ 
-      mb: 2, 
-      p: 2, 
-      bgcolor: '#f8fafc', 
-      borderRadius: 2, 
-      border: '1px solid #e2e8f0',
+      mb: 2,
+      p: 2,
+      background: 'linear-gradient(90deg, #f8fbff 0%, #ffffff 100%)',
+      borderRadius: 3,
+      border: '1px solid #dbeafe',
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
-      direction: 'rtl'
+      gap: 2,
+      flexWrap: 'wrap',
+      direction: 'rtl',
+      boxShadow: '0 6px 16px rgba(15,23,42,0.04)'
     }}>
-      <Typography variant="h6" sx={{ 
-        color: '#1e40af', 
-        fontWeight: 'bold',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 1
-      }}>
-        📊
-        סה"כ תלמידים בטבלה: {allFilteredHealthFunds.length}
+      <Typography variant="h6" sx={{ color: '#1e40af', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}>
+        📊 סה"כ תלמידים בטבלה: {allFilteredHealthFunds.length}
       </Typography>
-      
-      <Typography variant="body2" sx={{ 
-        color: '#64748b',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 1
-      }}>
+
+      <Typography variant="body2" sx={{ color: '#475569', display: 'flex', alignItems: 'center', gap: 1 }}>
         <InfoIcon sx={{ fontSize: 16 }} />
-        מציג {paginatedHealthFunds.length} מתוך {allFilteredHealthFunds.length} תלמידים
+        מציג {paginatedHealthFunds.length} מתוך {allFilteredHealthFunds.length} תלמידים בעמוד הנוכחי
       </Typography>
     </Box>
 
     <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: 2, overflowX: 'auto', background: 'white', p: 0 }}>
-      <Table sx={{ minWidth: 1800 }}>
+      <Table sx={{ minWidth: 1800, fontFamily: 'inherit' }}>
           <TableHead sx={{ background: '#1d4fbaff' }}>
             <TableRow>
               <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center' }}>
@@ -2126,17 +2389,17 @@ const StudentHealthFundTable = () => {
                 {getSortableHeader('startDate', 'תאריך יצירה', <CalendarMonth sx={{ color: '#38F9D7' }} />)}
               </TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center', width: 60, minWidth: 40, maxWidth: 80 }}>
-                {getSortableHeader('reportedTreatments', 'טיפולים שדווחו', <AssignmentTurnedIn sx={{ color: '#10b981' }} />)}
+                {getSortableHeader('reportedTreatments', 'דווחו', <AssignmentTurnedIn sx={{ color: '#10b981' }} />)}
               </TableCell>
               
               <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center', width: 60, minWidth: 40, maxWidth: 80 }}>
-                {getSortableHeader('treatmentsUsed', 'טיפולים שלא דווחו', <Healing sx={{ color: '#F59E42' }} />)}
+                {getSortableHeader('treatmentsUsed', 'ממתין לדיווח', <Healing sx={{ color: '#F59E42' }} />)}
               </TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center', width: 60, minWidth: 40, maxWidth: 80 }}>
-                {getSortableHeader('commitmentTreatments', 'טיפולים עם התחייבות', <AssignmentTurnedIn sx={{ color: '#667eea' }} />)}
+                {getSortableHeader('commitmentTreatments', 'מספר התחייבויות', <AssignmentTurnedIn sx={{ color: '#667eea' }} />)}
               </TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center', width: 60, minWidth: 40, maxWidth: 80 }}>
-                {getSortableHeader('registeredTreatments', 'טיפולים שנרשם אליהם', <Event sx={{ color: '#10b981' }} />)}
+                {getSortableHeader('registeredTreatments', 'התחייבויות שנוצלו', <Event sx={{ color: '#10b981' }} />)}
               </TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center' }}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60px', gap: 0.5 }}>
@@ -2258,7 +2521,11 @@ const StudentHealthFundTable = () => {
                     onClick={() => handleOpenStudentDetails(row)}
                   >
                     <Tooltip title="לחץ לצפייה בפרטי התלמיד 👆" arrow>
-                      <span style={{ transition: 'all 0.2s ease' }}>
+                      <span style={{ 
+                        transition: 'all 0.2s ease',
+                        color: paymentNotesByStudentId.get(String(row.studentId)) ? '#b45309' : 'inherit',
+                        fontWeight: paymentNotesByStudentId.get(String(row.studentId)) ? 700 : 400
+                      }}>
                         {highlightSearchTerm(row.studentName || '-', searchTerm)}
                       </span>
                     </Tooltip>
@@ -2319,8 +2586,36 @@ const StudentHealthFundTable = () => {
                       </Typography>
                     </Tooltip>
                   </TableCell>
-                  <TableCell align="center">{highlightSearchTerm(row.commitmentTreatments, searchTerm)}</TableCell>
-                  <TableCell align="center">{highlightSearchTerm(row.registeredTreatments || '-', searchTerm)}</TableCell>
+                  <TableCell align="center">
+                    <Tooltip title="לחץ לצפייה בהתחייבויות" arrow>
+                      <Typography
+                        sx={{
+                          cursor: 'pointer',
+                          color: '#4f46e5',
+                          fontWeight: 'bold',
+                          '&:hover': { textDecoration: 'underline' }
+                        }}
+                        onClick={() => handleOpenCommitmentsDialog(row)}
+                      >
+                        {highlightSearchTerm(row.commitmentTreatments ?? 0, searchTerm)}
+                      </Typography>
+                    </Tooltip>
+                  </TableCell>
+                  <TableCell align="center">
+                    <Tooltip title="לחץ לצפייה בהתחייבויות" arrow>
+                      <Typography
+                        sx={{
+                          cursor: 'pointer',
+                          color: '#0f766e',
+                          fontWeight: 'bold',
+                          '&:hover': { textDecoration: 'underline' }
+                        }}
+                        onClick={() => handleOpenCommitmentsDialog(row)}
+                      >
+                        {highlightSearchTerm(row.registeredTreatments ?? 0, searchTerm)}
+                      </Typography>
+                    </Tooltip>
+                  </TableCell>
                   <TableCell align="center">
                     {row.referralFilePath ? (
                       <Chip 
@@ -2371,7 +2666,14 @@ const StudentHealthFundTable = () => {
                       />
                     )}
                   </TableCell>
-                  <TableCell align="center">{highlightSearchTerm(row.notes || '-', searchTerm)}</TableCell>
+                  <TableCell align="center">
+                    {highlightSearchTerm(
+                      [paymentNotesByStudentId.get(String(row.studentId)), row.notes]
+                        .filter(Boolean)
+                        .join(' | ') || '-',
+                      searchTerm
+                    )}
+                  </TableCell>
                   <TableCell align="center" sx={{  py: 0 }}>
                     <Tooltip title="עריכה" arrow>
                       <IconButton color="info" onClick={() => handleOpenEditDialog(row)} size="small">
@@ -2386,6 +2688,11 @@ const StudentHealthFundTable = () => {
                     <Tooltip title={'צפיה בפרטי קופ"ח'} arrow>
                       <IconButton color="primary" onClick={() => handleOpenFundDialog(row)} size="small" sx={{ ml: 1 }}>
                         <LocalHospital />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="צפיה בהתחייבויות" arrow>
+                      <IconButton color="success" onClick={() => handleOpenCommitmentsDialog(row)} size="small" sx={{ ml: 1 }}>
+                        <AssignmentTurnedIn />
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="הערות גביה" arrow>
@@ -2449,16 +2756,11 @@ const StudentHealthFundTable = () => {
           try {
             if (!(ensurePermission())) return;
             if (note.noteId) {
-              console.log('מחיקת הערה: שולח לשרת noteId', note.noteId);
-              const deleteResult = await dispatch(deleteStudentNote(note.noteId)).unwrap();
-              console.log('תוצאת מחיקה מהשרת:', deleteResult);
+              await dispatch(deleteStudentNote(note.noteId)).unwrap();
               if (notesStudent?.id) {
                 const result = await dispatch(getNotesByStudentId(notesStudent.studentId)).unwrap();
-                console.log('רענון הערות לאחר מחיקה:', result);
                 setStudentNotes(Array.isArray(result) ? result : []);
               }
-            } else {
-              console.log('אין noteId למחיקה');
             }
           } catch (err) {
             console.error('שגיאת מחיקה:', err);
@@ -2485,141 +2787,197 @@ const StudentHealthFundTable = () => {
         PaperComponent={DraggablePaper}
         PaperProps={{
           sx: {
-            borderRadius: '16px',
-            boxShadow: '0 20px 60px rgba(37,99,235,0.10)',
+            borderRadius: '20px',
+            boxShadow: '0 18px 55px rgba(15,23,42,0.12)',
             direction: 'rtl',
-            bgcolor: 'white',
-            background: 'white',
+            bgcolor: '#ffffff',
+            border: '1px solid #dbeafe',
+            overflow: 'hidden'
           }
         }}
       >
-        <DialogTitle 
+        <DialogTitle
           className="drag-handle"
           sx={{
-            bgcolor: 'linear-gradient(90deg, #2563EB 0%, #43E97B 100%)',
             color: 'white',
             fontWeight: 'bold',
-            borderRadius: '16px 16px 0 0',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             direction: 'rtl',
-            minHeight: 60,
-            boxShadow: '0 2px 8px rgba(37,99,235,0.10)',
-            background: 'linear-gradient(90deg, #2563EB 0%, #43E97B 100%)',
-            cursor: 'move',
-            '&:hover': {
-              background: 'linear-gradient(90deg, #1d4ed8 0%, #38F9D7 100%)'
-            }
+            minHeight: 68,
+            px: 2.5,
+            background: 'linear-gradient(90deg, #2563eb 0%, #0ea5a4 55%, #4ade80 100%)',
+            cursor: 'move'
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <DragIndicatorIcon sx={{ opacity: 0.8, fontSize: 20 }} />
-            <LocalHospital sx={{ fontSize: 32, color: 'white' }} />
-            <Typography variant="h5" component="span" sx={{ color: 'white', fontWeight: 'bold', ml: 1 }}>פרטי קופה</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+            <DragIndicatorIcon sx={{ opacity: 0.9, fontSize: 20 }} />
+            <LocalHospital sx={{ fontSize: 30, color: 'white' }} />
+            <Typography
+              variant="h5"
+              component="span"
+              sx={{
+                color: 'white',
+                fontWeight: 700,
+                ml: 1,
+                letterSpacing: '0.2px',
+                fontSize: { xs: '1.45rem', md: '1.6rem' },
+                fontFamily: '"Segoe UI", "Assistant", "Rubik", sans-serif'
+              }}
+            >
+              פרטי קופה
+            </Typography>
           </Box>
-          <IconButton onClick={handleCloseFundDialog} sx={{ color: '#2563EB' }} size="small"><Close /></IconButton>
+          <IconButton
+            onClick={handleCloseFundDialog}
+            sx={{
+              color: 'white',
+              bgcolor: 'rgba(255,255,255,0.12)',
+              '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' }
+            }}
+            size="small"
+          >
+            <Close />
+          </IconButton>
         </DialogTitle>
-        <DialogContent sx={{
-          p: 4,
-          direction: 'rtl',
-          bgcolor: 'white',
-          background: 'white',
-          borderRadius: 0,
-        }}>
-          <br />
+        <DialogContent
+          sx={{
+            p: 0,
+            direction: 'rtl',
+            bgcolor: '#fbfdff'
+          }}
+        >
           {selectedFund && (
-            <Box sx={{
-              bgcolor: 'white',
-              borderRadius: 0,
-              p: 3,
-              boxShadow: 'none',
-              minWidth: 320,
-              border: 'none',
-            }}>
-              <Typography variant="h5" sx={{ 
-                color: (selectedFund.name && selectedFund.name !== 'לא נמצאו פרטים' && selectedFund.fundType) ? '#2563EB' : '#64748B', 
-                fontWeight: 'bold', 
-                mb: 2, 
-                textAlign: 'center', 
-                letterSpacing: 1 
-              }}>
-                {selectedFund.name || 'פרטי קופת חולים'}
-              </Typography>
-              <Divider sx={{ mb: 2, bgcolor: '#e3f0ff' }} />
+            <Box sx={{ p: { xs: 2, md: 3 } }}>
+              <Box
+                sx={{
+                  mb: 2.5,
+                  p: 2.5,
+                  borderRadius: '18px',
+                  background: 'linear-gradient(135deg, #f8fbff 0%, #eef7ff 100%)',
+                  border: '1px solid #dbeafe',
+                  textAlign: 'center'
+                }}
+              >
+                <Typography
+                  variant="h4"
+                  sx={{
+                    color: (selectedFund.name && selectedFund.name !== 'לא נמצאו פרטים') ? '#1e40af' : '#64748B',
+                    fontWeight: 700,
+                    mb: 0.75,
+                    letterSpacing: '0.15px',
+                    lineHeight: 1.2,
+                    fontSize: { xs: '1.55rem', md: '1.85rem' },
+                    fontFamily: '"Segoe UI", "Assistant", "Rubik", sans-serif'
+                  }}
+                >
+                  {selectedFund.name || 'פרטי קופת חולים'}
+                </Typography>
+                <Typography sx={{ color: '#64748B', fontSize: '0.98rem' }}>
+                  הצגת תנאי הקופה, מחירים והגדרות הדיווח בצורה מסודרת וברורה.
+                </Typography>
+              </Box>
+
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
-                  <Typography sx={{ color: selectedFund.fundType ? '#2563EB' : '#64748B' }}>
-                    <b>סוג:</b> {selectedFund.fundType || '-'}
-                  </Typography>
+                  <Box sx={{ p: 1.75, borderRadius: '14px', bgcolor: 'white', border: '1px solid #e2e8f0', minHeight: 82 }}>
+                    <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 700 }}>סוג מסלול</Typography>
+                    <Typography sx={{ color: '#0f172a', fontWeight: 700, mt: 0.5 }}>{selectedFund.fundType || '-'}</Typography>
+                  </Box>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Typography sx={{ color: selectedFund.maxTreatmentsPerYear ? '#2563EB' : '#64748B' }}>
-                    <b>מקסימום טיפולים בשנה:</b> {selectedFund.maxTreatmentsPerYear || '-'}
-                  </Typography>
+                  <Box sx={{ p: 1.75, borderRadius: '14px', bgcolor: 'white', border: '1px solid #e2e8f0', minHeight: 82 }}>
+                    <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 700 }}>מקסימום טיפולים בשנה</Typography>
+                    <Typography sx={{ color: '#0f172a', fontWeight: 700, mt: 0.5 }}>{selectedFund.maxTreatmentsPerYear || '-'}</Typography>
+                  </Box>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Typography sx={{ color: selectedFund.pricePerLesson ? '#2563EB' : '#64748B' }}>
-                    <b>מחיר לשיעור:</b> {selectedFund.pricePerLesson || '-'}
-                  </Typography>
+                  <Box sx={{ p: 1.75, borderRadius: '14px', bgcolor: 'white', border: '1px solid #e2e8f0', minHeight: 82 }}>
+                    <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 700 }}>מחיר לשיעור</Typography>
+                    <Typography sx={{ color: '#0f172a', fontWeight: 700, mt: 0.5 }}>{selectedFund.pricePerLesson || '-'}</Typography>
+                  </Box>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Typography sx={{ color: selectedFund.monthlyPrice ? '#2563EB' : '#64748B' }}>
-                    <b>מחיר חודשי:</b> {selectedFund.monthlyPrice || '-'}
-                  </Typography>
+                  <Box sx={{ p: 1.75, borderRadius: '14px', bgcolor: 'white', border: '1px solid #e2e8f0', minHeight: 82 }}>
+                    <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 700 }}>מחיר חודשי</Typography>
+                    <Typography sx={{ color: '#0f172a', fontWeight: 700, mt: 0.5 }}>{selectedFund.monthlyPrice || '-'}</Typography>
+                  </Box>
                 </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography sx={{ color: selectedFund.requiresReferral !== null ? '#2563EB' : '#64748B' }}>
-                    <b>הפניה נדרשת:</b> <Chip 
-                      label={selectedFund.requiresReferral !== null ? (selectedFund.requiresReferral ? 'כן' : 'לא') : '-'} 
-                      color={selectedFund.requiresReferral ? 'primary' : 'default'} 
-                      size="small" 
-                      sx={{ 
-                        bgcolor: selectedFund.requiresReferral ? '#e3f0ff' : '#e0e7ef', 
-                        color: selectedFund.requiresReferral !== null ? '#2563EB' : '#64748B' 
-                      }} 
+                <Grid item xs={12} sm={4}>
+                  <Box sx={{ p: 1.75, borderRadius: '14px', bgcolor: 'white', border: '1px solid #e2e8f0', minHeight: 82 }}>
+                    <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 700, display: 'block', mb: 1 }}>הפניה נדרשת</Typography>
+                    <Chip
+                      label={selectedFund.requiresReferral !== null ? (selectedFund.requiresReferral ? 'כן' : 'לא') : '-'}
+                      size="small"
+                      sx={{
+                        bgcolor: selectedFund.requiresReferral ? '#fff7ed' : '#eefbf3',
+                        color: selectedFund.requiresReferral ? '#b45309' : '#2f855a',
+                        border: selectedFund.requiresReferral ? '1px solid #f6d7a7' : '1px solid #cfe9d9',
+                        fontWeight: 700
+                      }}
                     />
-                  </Typography>
+                  </Box>
                 </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography sx={{ color: selectedFund.requiresCommitment !== null ? '#2563EB' : '#64748B' }}>
-                    <b>התחייבות נדרשת:</b> <Chip 
-                      label={selectedFund.requiresCommitment !== null ? (selectedFund.requiresCommitment ? 'כן' : 'לא') : '-'} 
-                      color={selectedFund.requiresCommitment ? 'primary' : 'default'} 
-                      size="small" 
-                      sx={{ 
-                        bgcolor: selectedFund.requiresCommitment ? '#e3f0ff' : '#e0e7ef', 
-                        color: selectedFund.requiresCommitment !== null ? '#2563EB' : '#64748B' 
-                      }} 
+                <Grid item xs={12} sm={4}>
+                  <Box sx={{ p: 1.75, borderRadius: '14px', bgcolor: 'white', border: '1px solid #e2e8f0', minHeight: 82 }}>
+                    <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 700, display: 'block', mb: 1 }}>התחייבות נדרשת</Typography>
+                    <Chip
+                      label={selectedFund.requiresCommitment !== null ? (selectedFund.requiresCommitment ? 'כן' : 'לא') : '-'}
+                      size="small"
+                      sx={{
+                        bgcolor: selectedFund.requiresCommitment ? '#fff7ed' : '#eefbf3',
+                        color: selectedFund.requiresCommitment ? '#b45309' : '#2f855a',
+                        border: selectedFund.requiresCommitment ? '1px solid #f6d7a7' : '1px solid #cfe9d9',
+                        fontWeight: 700
+                      }}
                     />
-                  </Typography>
+                  </Box>
                 </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography sx={{ color: selectedFund.isActive !== null ? '#2563EB' : '#64748B' }}>
-                    <b>פעילה:</b> <Chip 
-                      label={selectedFund.isActive !== null ? (selectedFund.isActive ? 'כן' : 'לא') : '-'} 
-                      color={selectedFund.isActive ? 'primary' : 'default'} 
-                      size="small" 
-                      sx={{ 
-                        bgcolor: selectedFund.isActive ? '#e3f0ff' : '#e0e7ef', 
-                        color: selectedFund.isActive !== null ? '#2563EB' : '#64748B' 
-                      }} 
+                <Grid item xs={12} sm={4}>
+                  <Box sx={{ p: 1.75, borderRadius: '14px', bgcolor: 'white', border: '1px solid #e2e8f0', minHeight: 82 }}>
+                    <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 700, display: 'block', mb: 1 }}>פעילה</Typography>
+                    <Chip
+                      label={selectedFund.isActive !== null ? (selectedFund.isActive ? 'כן' : 'לא') : '-'}
+                      size="small"
+                      sx={{
+                        bgcolor: selectedFund.isActive ? '#eefbf3' : '#f3f4f6',
+                        color: selectedFund.isActive ? '#2f855a' : '#6b7280',
+                        border: selectedFund.isActive ? '1px solid #cfe9d9' : '1px solid #e5e7eb',
+                        fontWeight: 700
+                      }}
                     />
-                  </Typography>
+                  </Box>
                 </Grid>
               </Grid>
             </Box>
           )}
         </DialogContent>
-        <DialogActions sx={{
-          p: 2,
-          gap: 1,
-          direction: 'rtl',
-          bgcolor: 'transparent',
-          borderRadius: '0 0 20px 20px',
-          background: 'linear-gradient(90deg, #2563EB 0%, #43E97B 100%)',
-        }}>
-          <Button variant="contained" color="primary" onClick={handleCloseFundDialog} sx={{ borderRadius: '8px', px: 3, py: 1, fontWeight: 'bold', fontSize: '1rem', boxShadow: '0 2px 8px rgba(37,99,235,0.18)', bgcolor: '#2563EB', '&:hover': { bgcolor: '#1D4ED8' } }}>סגור</Button>
+        <DialogActions
+          sx={{
+            p: 2,
+            gap: 1,
+            direction: 'rtl',
+            bgcolor: '#f8fbff',
+            borderTop: '1px solid #dbeafe'
+          }}
+        >
+          <Button
+            variant="contained"
+            onClick={handleCloseFundDialog}
+            sx={{
+              borderRadius: '10px',
+              px: 3.5,
+              py: 1,
+              fontWeight: 'bold',
+              fontSize: '0.98rem',
+              boxShadow: '0 6px 16px rgba(37,99,235,0.12)',
+              bgcolor: '#2563EB',
+              '&:hover': { bgcolor: '#1D4ED8' }
+            }}
+          >
+            סגור
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -2689,17 +3047,12 @@ const StudentHealthFundTable = () => {
               <Grid item xs={12} sm={6}>
                 <TextField label="תאריך התחלה" type="date" fullWidth variant="outlined" value={editFormData.startDate} onChange={e => handleEditInputChange('startDate', e.target.value)} InputLabelProps={{ shrink: true }} inputProps={{ style: { direction: 'rtl', textAlign: 'right' } }} />
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField label="טיפולים שלא דווחו" type="number" fullWidth variant="outlined" value={editFormData.treatmentsUsed} onChange={e => handleEditInputChange('treatmentsUsed', e.target.value)} inputProps={{ style: { direction: 'rtl', textAlign: 'right' } }} />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField label="טיפולים שדווחו" type="number" fullWidth variant="outlined" value={editFormData.reportedTreatments || ''} onChange={e => handleEditInputChange('reportedTreatments', e.target.value)} inputProps={{ style: { direction: 'rtl', textAlign: 'right' } }} />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField label="טיפולים עם התחייבות" type="number" fullWidth variant="outlined" value={editFormData.commitmentTreatments} onChange={e => handleEditInputChange('commitmentTreatments', e.target.value)} inputProps={{ style: { direction: 'rtl', textAlign: 'right' } }} />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField label="טיפולים שנרשם אליהם" type="number" fullWidth variant="outlined" value={editFormData.registeredTreatments || ''} onChange={e => handleEditInputChange('registeredTreatments', e.target.value)} inputProps={{ style: { direction: 'rtl', textAlign: 'right' } }} />
+              <Grid item xs={12}>
+                <Box sx={{ p: 2, borderRadius: 2, bgcolor: '#eff6ff', border: '1px solid #bfdbfe' }}>
+                  <Typography sx={{ color: '#1d4ed8', fontWeight: 600 }}>
+                    נתוני דיווח והתחייבויות מחושבים אוטומטית מתוך הנוכחות ואינם ניתנים לעריכה ידנית.
+                  </Typography>
+                </Box>
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField label="קובץ הפניה" fullWidth variant="outlined" value={editFormData.referralFilePath} onChange={e => handleEditInputChange('referralFilePath', e.target.value)} />
@@ -2839,7 +3192,7 @@ const StudentHealthFundTable = () => {
               direction: 'rtl'
             }}>
               <InfoIcon sx={{ fontSize: 18 }} />
-           הערה: כאשר מכניסים תלמיד חדש, אוטומטית כל השיעורים שהוא היה בהם יסומנו כטיפולים שעוד לא דווחו.
+           הערה: הרשומה משמשת פרופיל גביה לתלמיד. נתוני הדיווח עצמם יחושבו אוטומטית מתוך הנוכחות.
             </Typography>
           </Box>
           <Grid container spacing={2} sx={{ direction: 'rtl' }}>
@@ -2866,7 +3219,7 @@ const StudentHealthFundTable = () => {
                     const fund = Array.isArray(healthFundList) ? healthFundList.find(f => String(f.healthFundId) === String(selected)) : null;
                     return fund ? `${fund.name} (${fund.fundType})` : '';
                   }}}
-                  helperText="בחירת קופה תמלא אוטומטית את שדות הטיפולים"
+                  helperText="בחירת קופה תשייך את התלמיד לקופה. נתוני הדיווח יחושבו אוטומטית."
                 >
                   <MenuItem value="" disabled>בחר קופה</MenuItem>
                   {Array.isArray(healthFundList) && healthFundList.map(fund => (
@@ -2888,51 +3241,12 @@ const StudentHealthFundTable = () => {
                 inputProps={{ style: { direction: 'rtl', textAlign: 'right' } }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField 
-                label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, direction: 'rtl' }}><Healing sx={{ color: '#F59E42' }} /> <span>טיפולים שלא דווחו</span><span style={{ color: '#d32f2f', fontWeight: 'bold', marginRight: 2 }}>*</span></Box>} 
-                type="number" 
-                fullWidth 
-                variant="outlined" 
-                value={formData.treatmentsUsed} 
-                onChange={e => handleInputChange('treatmentsUsed', e.target.value)} 
-                inputProps={{ style: { direction: 'rtl', textAlign: 'right' } }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField 
-                label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, direction: 'rtl' }}><AssignmentTurnedIn sx={{ color: '#10b981' }} /> <span>טיפולים שדווחו</span></Box>} 
-                type="number" 
-                fullWidth 
-                variant="outlined" 
-                value={formData.reportedTreatments} 
-                onChange={e => handleInputChange('reportedTreatments', e.target.value)} 
-                inputProps={{ style: { direction: 'rtl', textAlign: 'right' } }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField 
-                label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, direction: 'rtl' }}><AssignmentTurnedIn sx={{ color: '#667eea' }} /> <span>טיפולים עם התחייבות</span><span style={{ color: '#d32f2f', fontWeight: 'bold', marginRight: 2 }}>*</span></Box>} 
-                type="number" 
-                fullWidth 
-                variant="outlined" 
-                value={formData.commitmentTreatments} 
-                onChange={e => handleInputChange('commitmentTreatments', e.target.value)} 
-                inputProps={{ style: { direction: 'rtl', textAlign: 'right' } }}
-                helperText="מתמלא אוטומטית לפי הקופה הנבחרת"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField 
-                label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, direction: 'rtl' }}><Event sx={{ color: '#10b981' }} /> <span>טיפולים שנרשם אליהם</span></Box>} 
-                type="number" 
-                fullWidth 
-                variant="outlined" 
-                value={formData.registeredTreatments} 
-                onChange={e => handleInputChange('registeredTreatments', e.target.value)} 
-                inputProps={{ style: { direction: 'rtl', textAlign: 'right' } }}
-                helperText="מתמלא אוטומטית, ניתן לשינוי"
-              />
+            <Grid item xs={12}>
+              <Box sx={{ p: 2, borderRadius: 2, bgcolor: '#eff6ff', border: '1px solid #bfdbfe' }}>
+                <Typography sx={{ color: '#1d4ed8', fontWeight: 600 }}>
+                  נתוני ממתין לדיווח, דווחו, מספר התחייבויות והתחייבויות שנוצלו יחושבו אוטומטית מתוך שאילתות השרת.
+                </Typography>
+              </Box>
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField label={<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Description sx={{ color: '#2563EB' }} /> <span>קובץ הפניה</span></Box>} fullWidth variant="outlined" value={formData.referralFilePath} onChange={e => handleInputChange('referralFilePath', e.target.value)} />
@@ -3115,29 +3429,43 @@ const StudentHealthFundTable = () => {
         }}>
           <br />
           {selectedStudentForDates && (
-            <Typography variant="h6" sx={{ 
-              color: '#2563EB', 
-              fontWeight: 'bold', 
-              mb: 3, 
-              textAlign: 'center',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 1
-            }}>
-              <Person />
-              תלמיד: {selectedStudentForDates.studentName || selectedStudentForDates.studentId}
-            </Typography>
+            <Box
+              sx={{
+                mb: 3,
+                p: 2.2,
+                borderRadius: '18px',
+                background: 'linear-gradient(135deg, #f8fbff 0%, #eef8ff 100%)',
+                border: '1px solid #dbeafe',
+                boxShadow: '0 6px 18px rgba(37,99,235,0.06)'
+              }}
+            >
+              <Typography variant="h6" sx={{ 
+                color: '#2563EB', 
+                fontWeight: 'bold', 
+                mb: 1, 
+                textAlign: 'center',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 1
+              }}>
+                <Person />
+                תלמיד: {selectedStudentForDates.studentName || selectedStudentForDates.studentId}
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#64748B', textAlign: 'center' }}>
+                כאן אפשר לבחור את התאריכים הלא מדווחים ולשלוח אותם ישירות לדיווח.
+              </Typography>
+            </Box>
           )}
           
-          <Divider sx={{ mb: 3, bgcolor: '#e3f0ff' }} />
+          <Divider sx={{ mb: 3, bgcolor: '#dbeafe' }} />
           
           {unreportedDatesLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
               <Typography>טוען תאריכים...</Typography>
             </Box>
-          ) : unreportedDates.length === 0 ? (
-            <Box sx={{ textAlign: 'center', p: 3 }}>
+          ) : effectiveUnreportedDates.length === 0 ? (
+            <Box sx={{ textAlign: 'center', p: 3, borderRadius: '18px', bgcolor: '#f8fffc', border: '1px solid #d1fae5' }}>
               <Typography variant="h6" sx={{ color: '#10b981', fontWeight: 'bold' }}>
                  כל הטיפולים דווחו! 🎉
               </Typography>
@@ -3153,7 +3481,7 @@ const StudentHealthFundTable = () => {
                 mb: 2,
                 textAlign: 'center'
               }}>
-                תאריכים שטרם דווחו ({unreportedDates.length}):
+                תאריכים שטרם דווחו ({effectiveUnreportedDates.length}):
               </Typography>
               
               <Typography variant="body2" sx={{ 
@@ -3164,10 +3492,30 @@ const StudentHealthFundTable = () => {
               }}>
                 לחץ על התאריכים כדי לבחור אותם לדיווח
               </Typography>
+
+              <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2.5 }}>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  onClick={handleToggleSelectAllDates}
+                  sx={{
+                    borderRadius: '999px',
+                    fontWeight: 'bold',
+                    px: 3,
+                    py: 0.85,
+                    bgcolor: '#f8fbff',
+                    borderColor: '#bfdbfe',
+                    boxShadow: '0 4px 12px rgba(37,99,235,0.08)',
+                    '&:hover': { bgcolor: '#eef6ff', borderColor: '#93c5fd' }
+                  }}
+                >
+                  {selectedDatesForReporting.length === effectiveUnreportedDates.length ? 'נקה בחירה' : 'בחר הכל'}
+                </Button>
+              </Box>
               
               {(() => {
                 // קיבוץ התאריכים לפי חודשים
-                const datesByMonth = unreportedDates.reduce((acc, dateItem) => {
+                const datesByMonth = effectiveUnreportedDates.reduce((acc, dateItem) => {
                   const date = new Date(dateItem);
                   const monthKey = `${date.getFullYear()}-${date.getMonth() + 1}`;
                   const monthName = date.toLocaleDateString('he-IL', { year: 'numeric', month: 'long' });
@@ -3208,35 +3556,42 @@ const StudentHealthFundTable = () => {
                       {datesByMonth[monthKey].dates
                         .sort((a, b) => a - b) // מיון התאריכים בתוך החודש
                         .map((date, dateIndex) => {
-                          const dateString = date.toISOString();
-                          const isSelected = selectedDatesForReporting.includes(dateString);
+                          const dateKey = getDateSelectionKey(date);
+                          const isSelected = selectedDatesForReporting.includes(dateKey);
                           
                           return (
                             <Grid item xs={6} sm={4} md={3} key={`${monthKey}-${dateIndex}`}>
                               <Box 
                                 sx={{
-                                  p: 2,
-                                  bgcolor: isSelected ? '#F0FDF4' : '#FEF2F2',
-                                  borderRadius: '8px',
-                                  border: isSelected ? '2px solid #10B981' : '1px solid #FECACA',
+                                  p: 1.8,
+                                  bgcolor: isSelected ? '#ecfdf5' : '#f8fbff',
+                                  borderRadius: '14px',
+                                  border: isSelected ? '2px solid #10B981' : '1px solid #cfe3f5',
                                   textAlign: 'center',
                                   mx: 'auto',
-                                  maxWidth: 120,
+                                  maxWidth: 132,
+                                  minHeight: 86,
                                   cursor: 'pointer',
+                                  boxShadow: isSelected ? '0 10px 20px rgba(16,185,129,0.14)' : '0 4px 12px rgba(37,99,235,0.06)',
                                   transition: 'all 0.2s',
                                   '&:hover': {
-                                    transform: 'scale(1.05)',
-                                    boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                                    transform: 'translateY(-2px)',
+                                    boxShadow: '0 10px 20px rgba(37,99,235,0.12)'
                                   }
                                 }}
                                 onClick={() => handleDateSelectionToggle(date)}
                               >
                                 <Typography sx={{ 
-                                  color: isSelected ? '#10B981' : '#DC2626',
+                                  color: isSelected ? '#059669' : '#2563EB',
                                   fontWeight: 'bold',
-                                  fontSize: '1.1rem'
+                                  fontSize: '1.15rem'
                                 }}>
                                   {date.getDate().toString().padStart(2, '0')}/{(date.getMonth() + 1).toString().padStart(2, '0')}
+                                </Typography>
+                                <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: '#64748B', fontWeight: 600 }}>
+                                  {date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) !== '00:00'
+                                    ? date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })
+                                    : 'מוכן לדיווח'}
                                 </Typography>
                               </Box>
                             </Grid>
@@ -3255,7 +3610,8 @@ const StudentHealthFundTable = () => {
           direction: 'rtl',
           bgcolor: 'transparent',
           borderRadius: '0 0 16px 16px',
-          background: 'linear-gradient(90deg, #2563EB 0%, #43E97B 100%)',
+          background: 'linear-gradient(90deg, #eff6ff 0%, #ecfdf5 100%)',
+          borderTop: '1px solid #dbeafe'
         }}>
 
           
@@ -3268,11 +3624,12 @@ const StudentHealthFundTable = () => {
               py: 1, 
               fontWeight: 'bold', 
               fontSize: '1rem',
-              color: 'white',
-              borderColor: 'white',
+              color: '#2563EB',
+              borderColor: '#93c5fd',
+              bgcolor: 'white',
               '&:hover': { 
-                bgcolor: 'rgba(255,255,255,0.1)',
-                borderColor: 'white'
+                bgcolor: '#eff6ff',
+                borderColor: '#60a5fa'
               } 
             }}
           >
@@ -3383,7 +3740,7 @@ const StudentHealthFundTable = () => {
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
               <Typography>טוען תאריכים...</Typography>
             </Box>
-          ) : reportedDates.length === 0 ? (
+          ) : effectiveReportedDates.length === 0 ? (
             <Box sx={{ textAlign: 'center', p: 3 }}>
               <Typography variant="h6" sx={{ color: '#ef4444', fontWeight: 'bold' }}>
                  לא דווחו טיפולים עדיין 📋
@@ -3400,12 +3757,12 @@ const StudentHealthFundTable = () => {
                 mb: 2,
                 textAlign: 'center'
               }}>
-                תאריכים שדווחו ({reportedDates.length}):
+                תאריכים שדווחו ({effectiveReportedDates.length}):
               </Typography>
               
               {(() => {
                 // קיבוץ התאריכים לפי חודשים
-                const datesByMonth = reportedDates.reduce((acc, dateItem) => {
+                const datesByMonth = effectiveReportedDates.reduce((acc, dateItem) => {
                   const date = new Date(dateItem);
                   const monthKey = `${date.getFullYear()}-${date.getMonth() + 1}`;
                   const monthName = date.toLocaleDateString('he-IL', { year: 'numeric', month: 'long' });
@@ -3497,6 +3854,243 @@ const StudentHealthFundTable = () => {
             }}
           >
             סגור
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={commitmentsDialogOpen}
+        onClose={handleCloseCommitmentsDialog}
+        maxWidth="md"
+        fullWidth
+        PaperComponent={DraggablePaper}
+        PaperProps={{
+          sx: {
+            borderRadius: '16px',
+            boxShadow: '0 20px 60px rgba(79,70,229,0.15)',
+            direction: 'rtl'
+          }
+        }}
+      >
+        <DialogTitle
+          className="drag-handle"
+          sx={{
+            bgcolor: 'linear-gradient(90deg, #4f46e5 0%, #06b6d4 100%)',
+            background: 'linear-gradient(90deg, #4f46e5 0%, #06b6d4 100%)',
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            cursor: 'move'
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <DragHandle />
+            <AssignmentTurnedIn />
+            <Typography variant="h6" component="span">התחייבויות תלמיד</Typography>
+          </Box>
+          <IconButton onClick={handleCloseCommitmentsDialog} sx={{ color: 'white' }} size="small">
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ p: 3, direction: 'rtl' }}>
+          <br />
+          {selectedStudentForCommitments && (
+            <Box sx={{ mb: 3 }}>
+              <Typography sx={{ fontWeight: 'bold', color: '#1d4ed8', textAlign: 'center' }}>
+                תלמיד: {selectedStudentForCommitments.studentName || selectedStudentForCommitments.studentId}
+              </Typography>
+            </Box>
+          )}
+
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, gap: 2, flexWrap: 'wrap' }}>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <Chip label={`סה"כ התחייבויות: ${Array.isArray(commitments) ? commitments.length : 0}`} color="primary" variant="outlined" />
+              <Chip label={`התחייבויות בשימוש: ${Array.isArray(commitments) ? commitments.filter(c => (c.usedTreatments ?? c.UsedTreatments ?? 0) > 0).length : 0}`} color="success" variant="outlined" />
+            </Box>
+            <Button
+              variant="contained"
+              startIcon={<AddCircle />}
+              onClick={handleOpenAddCommitment}
+              sx={{ borderRadius: '999px', direction: 'ltr' }}
+            >
+              הוסף התחייבות
+            </Button>
+          </Box>
+
+          {commitmentsLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <CircularProgress />
+            </Box>
+          ) : !Array.isArray(commitments) || commitments.length === 0 ? (
+            <Box sx={{ textAlign: 'center', p: 3 }}>
+              <Typography variant="h6" sx={{ color: '#64748b', fontWeight: 'bold' }}>
+                אין התחייבויות להצגה
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#94a3b8', mt: 1 }}>
+                ברגע שיוזנו התחייבויות אמיתיות בשרת הן יופיעו כאן.
+              </Typography>
+            </Box>
+          ) : (
+            <Grid container spacing={2}>
+              {commitments.map((commitment, index) => (
+                <Grid item xs={12} md={6} key={commitment.id || commitment.Id || commitment.commitmentId || commitment.CommitmentId || index}>
+                  <Box sx={{ p: 2, borderRadius: 2, border: '1px solid #c7d2fe', bgcolor: '#f8fafc' }}>
+                    <Typography sx={{ fontWeight: 'bold', color: '#312e81', mb: 1 }}>
+                      מספר התחייבות: {commitment.commitmentNumber || commitment.CommitmentNumber || '-'}
+                    </Typography>
+                    <Typography sx={{ color: '#334155' }}>
+                      טיפולים בהתחייבות: {commitment.commitmentTreatments ?? commitment.CommitmentTreatments ?? '-'}
+                    </Typography>
+                    <Typography sx={{ color: '#334155' }}>
+                      טיפולים שנוצלו: {commitment.usedTreatments ?? commitment.UsedTreatments ?? 0}
+                    </Typography>
+                    <Typography sx={{ color: '#334155' }}>
+                      תאריך התחלה: {commitment.startDate || commitment.StartDate ? new Date(commitment.startDate || commitment.StartDate).toLocaleDateString('he-IL') : '-'}
+                    </Typography>
+                    <Typography sx={{ color: '#334155' }}>
+                      תאריך סיום: {commitment.endDate || commitment.EndDate ? new Date(commitment.endDate || commitment.EndDate).toLocaleDateString('he-IL') : '-'}
+                    </Typography>
+                    <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>
+                      <Chip
+                        label={(commitment.isActive ?? commitment.IsActive) ? 'פעילה' : 'לא פעילה'}
+                        color={(commitment.isActive ?? commitment.IsActive) ? 'success' : 'default'}
+                        size="small"
+                      />
+                      <Box>
+                        <Tooltip title="עריכת התחייבות" arrow>
+                          <IconButton size="small" color="primary" onClick={() => handleOpenEditCommitment(commitment)}>
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="מחיקת התחייבות" arrow>
+                          <IconButton size="small" color="error" onClick={() => handleDeleteCommitment(commitment.id ?? commitment.Id ?? commitment.commitmentId ?? commitment.CommitmentId)}>
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </Box>
+                    {(commitment.notes || commitment.Notes) && (
+                      <Typography sx={{ color: '#475569', mt: 1 }}>
+                        הערות: {commitment.notes || commitment.Notes}
+                      </Typography>
+                    )}
+                  </Box>
+                </Grid>
+              ))}
+            </Grid>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2, direction: 'rtl' }}>
+          <Button variant="contained" onClick={handleCloseCommitmentsDialog} sx={{ borderRadius: '8px' }}>
+            סגור
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={commitmentFormOpen}
+        onClose={handleCloseCommitmentForm}
+        maxWidth="sm"
+        fullWidth
+        PaperComponent={DraggablePaper}
+        PaperProps={{ sx: { borderRadius: '16px', direction: 'rtl' } }}
+      >
+        <DialogTitle className="drag-handle" sx={{ bgcolor: '#4f46e5', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'move' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <DragHandle />
+            <AssignmentTurnedIn />
+            <Typography component="span" variant="h6">{commitmentFormMode === 'edit' ? 'עריכת התחייבות' : 'הוספת התחייבות'}</Typography>
+          </Box>
+          <IconButton onClick={handleCloseCommitmentForm} sx={{ color: 'white' }} size="small">
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ p: 3, direction: 'rtl' }}>
+          <br />
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="מספר התחייבות"
+                fullWidth
+                value={commitmentFormData.commitmentNumber}
+                onChange={(e) => handleCommitmentFormChange('commitmentNumber', e.target.value)}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="מספר טיפולים בהתחייבות"
+                type="number"
+                fullWidth
+                value={commitmentFormData.commitmentTreatments}
+                onChange={(e) => handleCommitmentFormChange('commitmentTreatments', e.target.value)}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="טיפולים שנוצלו"
+                type="number"
+                fullWidth
+                value={commitmentFormData.usedTreatments}
+                onChange={(e) => handleCommitmentFormChange('usedTreatments', e.target.value)}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                select
+                label="סטטוס"
+                fullWidth
+                value={commitmentFormData.isActive ? 'active' : 'inactive'}
+                onChange={(e) => handleCommitmentFormChange('isActive', e.target.value === 'active')}
+              >
+                <MenuItem value="active">פעילה</MenuItem>
+                <MenuItem value="inactive">לא פעילה</MenuItem>
+              </TextField>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="תאריך התחלה"
+                type="date"
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+                value={commitmentFormData.startDate}
+                onChange={(e) => handleCommitmentFormChange('startDate', e.target.value)}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="תאריך סיום"
+                type="date"
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+                value={commitmentFormData.endDate}
+                onChange={(e) => handleCommitmentFormChange('endDate', e.target.value)}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="נתיב קובץ"
+                fullWidth
+                value={commitmentFormData.filePath}
+                onChange={(e) => handleCommitmentFormChange('filePath', e.target.value)}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="הערות"
+                fullWidth
+                multiline
+                minRows={3}
+                value={commitmentFormData.notes}
+                onChange={(e) => handleCommitmentFormChange('notes', e.target.value)}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1, direction: 'rtl' }}>
+          <Button variant="outlined" color="error" onClick={handleCloseCommitmentForm}>ביטול</Button>
+          <Button variant="contained" onClick={handleSaveCommitment} disabled={commitmentSaving} sx={{ direction: 'ltr' }} startIcon={<Save />}>
+            {commitmentSaving ? 'שומר...' : 'שמור'}
           </Button>
         </DialogActions>
       </Dialog>

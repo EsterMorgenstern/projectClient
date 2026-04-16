@@ -258,16 +258,18 @@ const groupSlice = createSlice({
       .addCase(getStudentsByGroupId.pending, (state) => {
         console.log('Getting students by group ID...');
         state.studentsInGroupLoading = true;
+        state.studentsInGroup = [];
       })
       .addCase(getStudentsByGroupId.fulfilled, (state, action) => {
         console.log('Students in group:', action.payload);
         state.studentsInGroupLoading = false;
-        state.studentsInGroup = action.payload;
+        state.studentsInGroup = Array.isArray(action.payload) ? action.payload : [];
       })
       .addCase(getStudentsByGroupId.rejected, (state, action) => {
-        console.error('Error getting students by group:', action.error.message);
+        console.error('Error getting students by group:', action.payload || action.error.message);
         state.studentsInGroupLoading = false;
-        state.error = action.error.message;
+        state.studentsInGroup = [];
+        state.error = action.payload || action.error.message;
       })
 
       // getAllGroupsWithStudents

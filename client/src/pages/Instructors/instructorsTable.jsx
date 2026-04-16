@@ -1147,6 +1147,11 @@ export default function InstructorsTable() {
           maxWidth="sm"
           fullWidth
           className="advanced-dialog"
+          PaperProps={{
+            sx: {
+              direction: 'rtl'
+            }
+          }}
         >
           <DialogTitle className="dialog-title">
             ➕ הוסף מדריך חדש
@@ -1220,6 +1225,11 @@ export default function InstructorsTable() {
           maxWidth="sm"
           fullWidth
           className="advanced-dialog"
+          PaperProps={{
+            sx: {
+              direction: 'rtl'
+            }
+          }}
         >
           <DialogTitle className="dialog-title">
             ✏️ ערוך מדריך

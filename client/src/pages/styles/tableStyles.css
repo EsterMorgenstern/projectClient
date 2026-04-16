@@ -332,6 +332,7 @@
   border-radius: 20px !important;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2) !important;
   overflow: hidden !important;
+  direction: rtl !important;
 }
 
 .dialog-title {
@@ -347,16 +348,55 @@
 .dialog-content {
   padding: 24px !important;
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+  direction: rtl !important;
+  text-align: right !important;
 }
 
 .dialog-field {
   margin-bottom: 20px !important;
 }
 
+.dialog-field .MuiInputLabel-root {
+  right: 18px !important;
+  left: auto !important;
+  transform-origin: top right !important;
+  padding-inline: 8px !important;
+  background: #ffffff !important;
+  border-radius: 8px !important;
+  z-index: 1 !important;
+}
+
+.dialog-field .MuiInputLabel-root.MuiInputLabel-shrink {
+  transform: translate(-10px, -9px) scale(0.75) !important;
+  background: #ffffff !important;
+  padding-inline: 8px !important;
+}
+
 .dialog-field .MuiOutlinedInput-root {
+  direction: rtl !important;
   border-radius: 12px !important;
   background: white !important;
   transition: all 0.3s ease !important;
+  padding-right: 4px !important;
+}
+
+.dialog-field .MuiOutlinedInput-notchedOutline {
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+.dialog-field .MuiOutlinedInput-notchedOutline legend {
+  margin-right: 0 !important;
+  margin-left: 0 !important;
+}
+
+.dialog-field .MuiOutlinedInput-input,
+.dialog-field .MuiInputBase-input,
+.dialog-field input {
+  direction: rtl !important;
+  text-align: right !important;
+  unicode-bidi: plaintext !important;
+  padding: 16.5px 18px 16.5px 10px !important;
 }
 
 .dialog-field .MuiOutlinedInput-root:hover {
@@ -370,17 +410,22 @@
 .dialog-actions {
   padding: 20px 24px !important;
   background: #f8fafc !important;
- margin-right: 37px !important;
-  gap: 12px !important;
+  margin-right: 0 !important;
+  gap: 14px !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  flex-direction: row-reverse !important;
 }
 
 .dialog-button {
-  border-radius: 12px !important;
-  font-weight: 600 !important;
-  padding: 12px 24px !important;
+  border-radius: 14px !important;
+  font-weight: 700 !important;
+  padding: 12px 28px !important;
   font-size: 1rem !important;
   transition: all 0.3s ease !important;
   text-transform: none !important;
+  min-width: 160px !important;
 }
 
 .dialog-button.primary {

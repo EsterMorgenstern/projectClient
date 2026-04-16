@@ -8,7 +8,6 @@ export const batchUpdateAttendances = createAsyncThunk(
         try {
             const response = await axios.post(
                `${API_BASE_URL}/Attendance/batch-update`, attendances
-             
             );
             return response.data;
         } catch (error) {

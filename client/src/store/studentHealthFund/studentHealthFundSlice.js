@@ -1,18 +1,31 @@
 import { createSlice } from '@reduxjs/toolkit';
 import {
   fetchStudentHealthFunds,
+  fetchStudentHealthFundById,
   addStudentHealthFund,
   updateStudentHealthFund,
-  deleteStudentHealthFund
+  deleteStudentHealthFund,
+  fetchUnreportedDates,
+  fetchReportedDates,
+  reportUnreportedDate,
+  uploadStudentHealthFundFile,
+  validateAndFixUnreportedTreatments,
 } from './studentHealthFundApi';
-import { fetchUnreportedDates } from './fetchUnreportedDates';
-import { fetchReportedDates } from './fetchReportedDates';
-import { reportUnreportedDate } from './reportUnreportedDate';
 
-// Initial state
+const normalizeDateKey = (value) => {
+  const parsedDate = new Date(value);
+  return Number.isNaN(parsedDate.getTime()) ? String(value) : parsedDate.toISOString();
+};
+
 const initialState = {
   items: [],
+  currentItem: null,
   loading: false,
+  saving: false,
+  uploadLoading: false,
+  uploadResult: null,
+  syncLoading: false,
+  syncResult: null,
   error: null,
   unreportedDates: [],
   unreportedDatesLoading: false,
@@ -22,38 +35,88 @@ const initialState = {
   reportedDatesError: null,
 };
 
-// CRUD thunks are now imported from studentHealthFundApi.js
-
 const studentHealthFundSlice = createSlice({
   name: 'studentHealthFund',
   initialState,
-  reducers: {},
+  reducers: {
+    clearStudentHealthFundState(state) {
+      state.currentItem = null;
+      state.error = null;
+      state.uploadResult = null;
+      state.syncResult = null;
+      state.unreportedDates = [];
+      state.reportedDates = [];
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchStudentHealthFunds.pending, (state) => {
         state.loading = true;
         state.error = null;
-        console.log('Fetching student health funds...'); // Debug log
       })
       .addCase(fetchStudentHealthFunds.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload;
-        console.log('Fetched student health funds:', action.payload); // Debug log
+        state.items = Array.isArray(action.payload) ? action.payload : [];
       })
       .addCase(fetchStudentHealthFunds.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message;
-        console.error('Error fetching student health funds:', action.error.message); // Debug log
+        state.error = action.payload || action.error.message;
+      })
+      .addCase(fetchStudentHealthFundById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchStudentHealthFundById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentItem = action.payload || null;
+      })
+      .addCase(fetchStudentHealthFundById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || action.error.message;
+      })
+      .addCase(addStudentHealthFund.pending, (state) => {
+        state.saving = true;
+        state.error = null;
       })
       .addCase(addStudentHealthFund.fulfilled, (state, action) => {
-        state.items.push(action.payload);
+        state.saving = false;
+        if (action.payload) {
+          state.items.push(action.payload);
+        }
+      })
+      .addCase(addStudentHealthFund.rejected, (state, action) => {
+        state.saving = false;
+        state.error = action.payload || action.error.message;
+      })
+      .addCase(updateStudentHealthFund.pending, (state) => {
+        state.saving = true;
+        state.error = null;
       })
       .addCase(updateStudentHealthFund.fulfilled, (state, action) => {
-        const idx = state.items.findIndex(s => s.id === action.payload.id);
-        if (idx !== -1) state.items[idx] = action.payload;
+        state.saving = false;
+        const updatedItem = action.payload;
+        const updatedId = updatedItem?.id ?? updatedItem?.Id;
+        const idx = state.items.findIndex(s => (s?.id ?? s?.Id) === updatedId);
+        if (idx !== -1) state.items[idx] = updatedItem;
+        if ((state.currentItem?.id ?? state.currentItem?.Id) === updatedId) {
+          state.currentItem = updatedItem;
+        }
+      })
+      .addCase(updateStudentHealthFund.rejected, (state, action) => {
+        state.saving = false;
+        state.error = action.payload || action.error.message;
+      })
+      .addCase(deleteStudentHealthFund.pending, (state) => {
+        state.saving = true;
+        state.error = null;
       })
       .addCase(deleteStudentHealthFund.fulfilled, (state, action) => {
-        state.items = state.items.filter(s => s.id !== action.payload);
+        state.saving = false;
+        state.items = state.items.filter(s => (s?.id ?? s?.Id) !== action.payload);
+      })
+      .addCase(deleteStudentHealthFund.rejected, (state, action) => {
+        state.saving = false;
+        state.error = action.payload || action.error.message;
       })
       .addCase(fetchUnreportedDates.pending, (state) => {
         state.unreportedDatesLoading = true;
@@ -61,11 +124,11 @@ const studentHealthFundSlice = createSlice({
       })
       .addCase(fetchUnreportedDates.fulfilled, (state, action) => {
         state.unreportedDatesLoading = false;
-        state.unreportedDates = action.payload;
+        state.unreportedDates = Array.isArray(action.payload) ? action.payload : [];
       })
       .addCase(fetchUnreportedDates.rejected, (state, action) => {
         state.unreportedDatesLoading = false;
-        state.unreportedDatesError = action.error.message;
+        state.unreportedDatesError = action.payload || action.error.message;
       })
       .addCase(fetchReportedDates.pending, (state) => {
         state.reportedDatesLoading = true;
@@ -73,30 +136,63 @@ const studentHealthFundSlice = createSlice({
       })
       .addCase(fetchReportedDates.fulfilled, (state, action) => {
         state.reportedDatesLoading = false;
-        state.reportedDates = action.payload;
+        state.reportedDates = Array.isArray(action.payload) ? action.payload : [];
       })
       .addCase(fetchReportedDates.rejected, (state, action) => {
         state.reportedDatesLoading = false;
-        state.reportedDatesError = action.error.message;
+        state.reportedDatesError = action.payload || action.error.message;
       })
       .addCase(reportUnreportedDate.pending, (state) => {
-        state.loading = true;
+        state.saving = true;
         state.error = null;
       })
       .addCase(reportUnreportedDate.fulfilled, (state, action) => {
-        state.loading = false;
-        // עדכן את הרשימות - הסר תאריך מלא דווחו והוסף לדווחו
-        const { date } = action.payload;
-        state.unreportedDates = state.unreportedDates.filter(d => d !== date);
-        if (!state.reportedDates.includes(date)) {
-          state.reportedDates.push(date);
+        state.saving = false;
+        const reportedDateKey = normalizeDateKey(action.payload.date);
+        state.unreportedDates = state.unreportedDates.filter(date => normalizeDateKey(date) !== reportedDateKey);
+        const exists = state.reportedDates.some(date => normalizeDateKey(date) === reportedDateKey);
+        if (!exists) {
+          state.reportedDates.push(action.payload.date);
         }
       })
       .addCase(reportUnreportedDate.rejected, (state, action) => {
-        state.loading = false;
+        state.saving = false;
+        state.error = action.payload || action.error.message;
+      })
+      .addCase(uploadStudentHealthFundFile.pending, (state) => {
+        state.uploadLoading = true;
+        state.error = null;
+      })
+      .addCase(uploadStudentHealthFundFile.fulfilled, (state, action) => {
+        state.uploadLoading = false;
+        state.uploadResult = action.payload;
+      })
+      .addCase(uploadStudentHealthFundFile.rejected, (state, action) => {
+        state.uploadLoading = false;
+        state.error = action.payload || action.error.message;
+      })
+      .addCase(validateAndFixUnreportedTreatments.pending, (state) => {
+        state.syncLoading = true;
+        state.error = null;
+      })
+      .addCase(validateAndFixUnreportedTreatments.fulfilled, (state, action) => {
+        state.syncLoading = false;
+        state.syncResult = action.payload;
+      })
+      .addCase(validateAndFixUnreportedTreatments.rejected, (state, action) => {
+        state.syncLoading = false;
         state.error = action.payload || action.error.message;
       });
   },
 });
+
+export const { clearStudentHealthFundState } = studentHealthFundSlice.actions;
+
+export const selectStudentHealthFunds = (state) => state.studentHealthFunds.items;
+export const selectStudentHealthFundsLoading = (state) => state.studentHealthFunds.loading;
+export const selectStudentHealthFundSaving = (state) => state.studentHealthFunds.saving;
+export const selectStudentHealthFundError = (state) => state.studentHealthFunds.error;
+export const selectUnreportedDates = (state) => state.studentHealthFunds.unreportedDates;
+export const selectReportedDates = (state) => state.studentHealthFunds.reportedDates;
 
 export default studentHealthFundSlice.reducer;

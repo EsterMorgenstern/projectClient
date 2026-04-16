@@ -23,13 +23,13 @@ import {
     InputLabel,
     Select,
     MenuItem,
-    Grid,
     Alert,
     CircularProgress,
     Pagination,
     IconButton
 } from '@mui/material';
 
+import Grid from '@mui/material/GridLegacy';
 import {
     Receipt as ReceiptIcon,
     Add as AddIcon,

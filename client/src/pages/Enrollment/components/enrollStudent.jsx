@@ -329,6 +329,22 @@ const EnrollStudent = () => {
     return { code: 3, label: 'ליד', color: 'warning', icon: '🤝' };
   };
 
+  const resolveStudentLookupId = (student) => {
+    const candidates = [
+      student?.fullDetails?.id,
+      student?.Student?.id,
+      student?.student?.id,
+      student?.id
+    ];
+
+    const resolvedId = candidates.find((candidate) => {
+      const numericValue = Number(candidate);
+      return Number.isFinite(numericValue) && numericValue > 0;
+    });
+
+    return resolvedId ?? null;
+  };
+
   // Local state - כל המשתנים במקום אחד
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedBranch, setSelectedBranch] = useState(null);
@@ -718,19 +734,7 @@ const sortedGroups = groups
     }
   }, [selectedBranch, selectedCourse, dispatch]);
 
-  useEffect(() => {
-    console.log('🔍 Debug Info:');
-    console.log('selectedCourse:', selectedCourse);
-    console.log('groups:', groups);
-    console.log('branches:', branches);
 
-    if (groups && groups.length > 0) {
-      console.log('First group structure:', groups[0]);
-    }
-    if (branches && branches.length > 0) {
-      console.log('First branch structure:', branches[0]);
-    }
-  }, [selectedCourse, groups, branches]);
 
   useEffect(() => {
     if (selectedCourse && selectedCourse.courseId) {
@@ -1092,51 +1096,43 @@ if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity
   const handleViewStudents = async (group) => {
     setSelectedGroupForStudents(group);
     setStudentsListDialogOpen(true);
-    setEnhancedStudentsInGroup([]); // Clear previous data
-    
+    setEnhancedStudentsInGroup([]);
+    dispatch(clearStudentsInGroup());
+
     try {
       const groupId = group.groupId || group.id;
       console.log('Getting students by group ID...', groupId);
-      
-      // Get students in group
-      const result = await dispatch(getStudentsByGroupId(groupId));
-      
-      // Get full details for each student
-      if (result.payload && result.payload.length > 0) {
-        console.log('Students in group basic data:', result.payload);
-        
-        // Fetch full details for each student
-        const studentsWithFullDetails = await Promise.all(
-          result.payload.map(async (student) => {
-            try {
-              const studentDetails = await dispatch(getStudentById(student.studentId));
-              if (studentDetails.payload) {
-                return {
-                  ...student,
-                  fullDetails: studentDetails.payload
-                };
-              }
-              return student;
-            } catch (error) {
-              console.error(`Error fetching details for student ${student.studentId}:`, error);
-              return student;
-            }
-          })
-        );
-        
-        console.log('Students with full details:', studentsWithFullDetails);
-        setEnhancedStudentsInGroup(studentsWithFullDetails);
+
+      const students = await dispatch(getStudentsByGroupId(groupId)).unwrap();
+      const normalizedStudents = Array.isArray(students) ? students : [];
+
+      if (normalizedStudents.length > 0) {
+        console.log('Students in group basic data:', normalizedStudents);
+
+        const normalizedStudentDetails = normalizedStudents.map((student) => ({
+          ...student,
+          fullDetails: student.fullDetails || student.Student || null
+        }));
+
+        setEnhancedStudentsInGroup(normalizedStudentDetails);
       } else {
-        // No students in group
         console.log('No students found in group');
         setEnhancedStudentsInGroup([]);
       }
     } catch (error) {
       console.error('Error fetching students:', error);
       setEnhancedStudentsInGroup([]);
+      dispatch(clearStudentsInGroup());
+
+      const errorMessage = typeof error === 'string'
+        ? error
+        : error?.message || 'שגיאה בטעינת רשימת התלמידים';
+
       setNotification({
         open: true,
-        message: 'שגיאה בטעינת רשימת התלמידים',
+        message: errorMessage.includes('Failed') || errorMessage.includes('Network')
+          ? 'לא ניתן לטעון את רשימת התלמידים כרגע'
+          : errorMessage,
         severity: 'error'
       });
     }
@@ -1144,31 +1140,27 @@ if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity
 
   const handleViewStudentDetails = async (student) => {
     console.log('👁️ Viewing student details:', student);
-    
-    // Convert the student object to match the expected format
+
+    const lookupId = resolveStudentLookupId(student);
     const studentForDialog = {
-      id: student.studentId,
-      firstName: student.studentName?.split(' ')[0] || '',
-      lastName: student.studentName?.split(' ').slice(1).join(' ') || '',
+      id: lookupId || student.studentId || student.id,
+      firstName: student.studentName?.split(' ')[0] || student.firstName || '',
+      lastName: student.studentName?.split(' ').slice(1).join(' ') || student.lastName || '',
       ...student
     };
 
     try {
-      // Get the full student details including courses
-      const studentResult = await dispatch(getStudentById(student.studentId));
-      if (studentResult.payload) {
-        setSelectedStudentForDialog(studentResult.payload);
+      if (lookupId) {
+        const studentResult = await dispatch(getStudentById(lookupId)).unwrap();
+        setSelectedStudentForDialog(studentResult || studentForDialog);
       } else {
         setSelectedStudentForDialog(studentForDialog);
       }
-      
-      // Get student's courses
+
       await dispatch(getgroupStudentByStudentId(student.studentId));
-      
       setStudentCoursesDialogOpen(true);
     } catch (error) {
       console.error('Error fetching student details:', error);
-      // Still open dialog with available data
       setSelectedStudentForDialog(studentForDialog);
       setStudentCoursesDialogOpen(true);
     }
@@ -1176,9 +1168,8 @@ if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity
 
   const handleEditStudentDetails = async (student) => {
     console.log('✏️ Editing student details:', student);
-    
+
     try {
-      // Use fullDetails if available, otherwise Student object, otherwise fetch from server
       if (student.fullDetails) {
         setSelectedStudentForEdit(student.fullDetails);
         setEditStudentDialogOpen(true);
@@ -1186,11 +1177,21 @@ if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity
         setSelectedStudentForEdit(student.Student);
         setEditStudentDialogOpen(true);
       } else {
-        // Fallback: Get full student details from the server
-        const studentResult = await dispatch(getStudentById(student.studentId));
-        
-        if (studentResult.payload) {
-          setSelectedStudentForEdit(studentResult.payload);
+        const lookupId = resolveStudentLookupId(student);
+
+        if (!lookupId) {
+          setNotification({
+            open: true,
+            message: 'לא נמצא מזהה תלמיד תקין לעריכה',
+            severity: 'error'
+          });
+          return;
+        }
+
+        const studentResult = await dispatch(getStudentById(lookupId)).unwrap();
+
+        if (studentResult) {
+          setSelectedStudentForEdit(studentResult);
           setEditStudentDialogOpen(true);
         } else {
           setNotification({
@@ -5745,7 +5746,7 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
                   setSelectedStudentForEdit(null);
                   // Refresh the group data if needed
                   if (selectedGroup) {
-                    dispatch(getStudentsByGroupId(selectedGroup.id));
+                    dispatch(getStudentsByGroupId(selectedGroup.groupId || selectedGroup.id));
                   }
                 } else {
                   throw new Error('Failed to update student');

@@ -765,10 +765,7 @@ const Navbar = () => {
             textOverflow: 'ellipsis',
             display: 'flex',
             alignItems: 'center',
-            // justifyContent: 'flex-end',
-            // paddingRight: { xs: 3.5, sm: 2, md: 2.5 },
-            width: '100%',
-            position: 'relative',
+              position: 'relative',
             '&:hover': {
               background: ((item.isMore && Boolean(moreMenuAnchor)) || isActive(item.path))
                 ? 'rgba(255, 255, 255, 1)'

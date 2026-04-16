@@ -18,7 +18,7 @@ import {
   LocalHospital
 } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
-import { fetchUnreportedDates } from '../store/studentHealthFund/fetchUnreportedDates';
+import { fetchUnreportedDates } from '../store/studentHealthFund/studentHealthFundApi';
 
 const EXCEL_MAX_SHEET_NAME_LENGTH = 31;
 
@@ -97,9 +97,11 @@ const ExcelExportDialog = ({ open, onClose, data, healthFundList, dispatch }) =>
         
         // השגת תאריכים לא מדווחים לתלמיד זה
         let unreportedDatesText = '';
+        let unreportedDatesCount = 0;
         try {
           console.log(`🔍 מושך תאריכים לתלמיד ${student.studentId}...`);
           const unreportedDatesResult = await dispatch(fetchUnreportedDates(student.id)).unwrap();
+          unreportedDatesCount = Array.isArray(unreportedDatesResult) ? unreportedDatesResult.length : 0;
           
           if (unreportedDatesResult && unreportedDatesResult.length > 0) {
             // קיבוץ התאריכים לפי חודשים
@@ -156,7 +158,7 @@ const ExcelExportDialog = ({ open, onClose, data, healthFundList, dispatch }) =>
         exportData.push({
           'שם הילד': student.studentName || '',
           'ת"ז / קוד התלמיד': student.studentId,
-          'מס\' השיעורים שצריך לדווח': student.treatmentsUsed || 0,
+          'מס\' השיעורים שצריך לדווח': unreportedDatesCount,
           'תאריכי הטיפולים הלא מדווחים': unreportedDatesText,
           'הערות': studentNotesText
         });
