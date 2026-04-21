@@ -29,8 +29,8 @@ import { fetchBranches } from '../../store/branch/branchGetAllThunk';
 import { addBranch } from '../../store/branch/branchAddThunk';
 import { updateBranch } from '../../store/branch/branchUpdateThunk';
 import { deleteBranch } from '../../store/branch/branchDelete';
+import { fetchInstructors } from '../../store/instructor/instructorGetAllThunk';
 import { CourseDialog, BranchDialog, GroupDialog, DeleteConfirmDialog } from './components/ManagementDialogs';
-// Instructors are already loaded in redux state, no need to refetch on every group update
 import GroupDetailsPanel from './components/GroupDetailsPanel';
 import StyledTableShell from '../../components/StyledTableShell';
 import StatsCard from '../../components/StatsCard';
@@ -151,6 +151,7 @@ const ensurePermission = useCallback(() => {
     dispatch(fetchCourses());
     dispatch(fetchBranches());
     dispatch(fetchGroups());
+    dispatch(fetchInstructors());
   }, [dispatch]);
 
   // When a course is selected, load its groups only

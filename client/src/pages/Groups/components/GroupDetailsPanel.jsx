@@ -44,6 +44,13 @@ import { getGroupDetails } from '../../../store/group/groupGetDetailsThunk';
 
 
 
+const normalizeGroupStudentStatus = (value) => {
+  if (value === 1 || value === '1' || value === true) return 1;
+  if (value === 2 || value === '2') return 2;
+  if (value === 3 || value === '3' || value === false) return 3;
+  return 3;
+};
+
 const GroupDetailsPanel = ({ groupId: propGroupId } = {}) => {
   const dispatch = useDispatch();
   const { groupId: routeGroupId } = useParams();
@@ -176,12 +183,15 @@ const GroupDetailsPanel = ({ groupId: propGroupId } = {}) => {
   }));
 
   const normalizedStudents = (students || []).map((s) => {
-    const name = s.studentName
-      || s.fullName
-      || [s.firstName, s.lastName].filter(Boolean).join(' ');
+    const name = [s.firstName, s.lastName].filter(Boolean).join(' ') || s.studentName || s.fullName;
     const age = s.age || s.Age || s.studentAge || null;
     const phone = s.phone || s.phoneNumber || s.mobile;
-    const status = s.status || s.Status || s.studentStatus || 'פעיל';
+    // isActive is nested inside groupStudents[0].isActive in this API response
+    const groupStudentEntry = Array.isArray(s.groupStudents) ? s.groupStudents.find(gs => gs && gs.studentId === (s.id || s.studentId)) : null;
+    const rawIsActive = groupStudentEntry?.isActive ?? s.isActive ?? s.IsActive ?? s.groupStudentStatus ?? s.enrollmentStatus;
+    const statusCode = normalizeGroupStudentStatus(rawIsActive);
+    const isLeft = statusCode === 2;
+    const status = isLeft ? 'עזב' : (statusCode === 3 ? 'ליד' : (s.status || s.Status || s.studentStatus || 'פעיל'));
     return {
       ...s,
       studentId: s.studentId || s.id || s.Id,
@@ -189,8 +199,12 @@ const GroupDetailsPanel = ({ groupId: propGroupId } = {}) => {
       age: age,
       phone: phone || undefined,
       status: status,
+      isLeft,
     };
   });
+
+  const activeStudents = normalizedStudents.filter(s => !s.isLeft);
+  const leftStudents = normalizedStudents.filter(s => s.isLeft);
 
   const remainingLessons = (group.numOfLessons || 0) - (group.lessonsCompleted || 0);
   const progressPercent = group.numOfLessons ? ((group.lessonsCompleted || 0) / group.numOfLessons) * 100 : 0;
@@ -494,11 +508,11 @@ const GroupDetailsPanel = ({ groupId: propGroupId } = {}) => {
             <Box sx={{ width: 34, height: 34, borderRadius: '50%', bgcolor: '#1976d2', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.12)' }}>
               <GroupsIcon fontSize="small" />
             </Box>
-            התלמידים הרשומים ({normalizedStudents?.length || 0})
+            התלמידים הרשומים ({activeStudents.length}{leftStudents.length > 0 ? ` + ${leftStudents.length} עזבו` : ''})
           </Typography>
-          {normalizedStudents && normalizedStudents.length > 0 ? (
+          {activeStudents.length > 0 ? (
             <Grid container spacing={2}>
-              {normalizedStudents.map((student, idx) => (
+              {activeStudents.map((student, idx) => (
                 <Grid item xs={12} sm={6} md={4} lg={3} key={student.studentId || idx}>
                   <Card
                     sx={{
@@ -553,8 +567,73 @@ const GroupDetailsPanel = ({ groupId: propGroupId } = {}) => {
           ) : (
             <Box sx={{ textAlign: 'center', py: 4 }}>
               <Typography variant="body2" color="textSecondary">
-                אין תלמידים רשומים
+                אין תלמידים פעילים רשומים
               </Typography>
+            </Box>
+          )}
+
+          {/* תלמידים שעזבו */}
+          {leftStudents.length > 0 && (
+            <Box sx={{ mt: 4 }}>
+              <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5,
+                mb: 2,
+                px: 2,
+                py: 1.2,
+                borderRadius: 2,
+                background: 'linear-gradient(90deg, #fee2e2 0%, #fecaca 100%)',
+                borderLeft: '4px solid #ef4444',
+                boxShadow: '0 2px 8px rgba(239,68,68,0.10)'
+              }}>
+                <Typography sx={{ fontSize: '1.2rem' }}>🚪</Typography>
+                <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#b91c1c', flex: 1 }}>
+                  תלמידים שעזבו
+                </Typography>
+                <Chip
+                  label={leftStudents.length}
+                  size="small"
+                  sx={{ background: '#ef4444', color: '#fff', fontWeight: 'bold', minWidth: 32 }}
+                />
+              </Box>
+              <Box sx={{
+                p: 2,
+                borderRadius: 2,
+                background: '#fafafa',
+                border: '1px solid #fecaca'
+              }}>
+                <Grid container spacing={2}>
+                  {leftStudents.map((student, idx) => (
+                    <Grid item xs={12} sm={6} md={4} lg={3} key={`left-${student.studentId || idx}`}>
+                      <Card sx={{
+                        borderRadius: 3,
+                        background: '#fff',
+                        border: '1px solid #fecaca',
+                        opacity: 0.9,
+                        boxShadow: '0 2px 8px rgba(239,68,68,0.07)'
+                      }}>
+                        <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#7f1d1d' }}>
+                            {student.studentName}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: '#b91c1c', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <BadgeIcon sx={{ fontSize: 16 }} /> {student.studentId}
+                          </Typography>
+                          {student.phone && (
+                            <Chip
+                              size="small"
+                              icon={<PhoneIphoneIcon sx={{ fontSize: 16 }} />}
+                              label={student.phone}
+                              sx={{ background: '#fee2e2', color: '#7f1d1d', fontWeight: 'bold', width: 'fit-content' }}
+                            />
+                          )}
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+              </Box>
             </Box>
           )}
         </CardContent>

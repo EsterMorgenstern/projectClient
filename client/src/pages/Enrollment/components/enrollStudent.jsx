@@ -334,7 +334,8 @@ const EnrollStudent = () => {
       student?.fullDetails?.id,
       student?.Student?.id,
       student?.student?.id,
-      student?.id
+      student?.id,
+      student?.studentId
     ];
 
     const resolvedId = candidates.find((candidate) => {
@@ -343,6 +344,52 @@ const EnrollStudent = () => {
     });
 
     return resolvedId ?? null;
+  };
+
+  const normalizeStudentDisplayData = (student) => {
+    const sources = [
+      student?.fullDetails,
+      student?.Student,
+      student?.student,
+      student
+    ].filter(Boolean);
+
+    const pickValue = (...keys) => {
+      for (const source of sources) {
+        for (const key of keys) {
+          const value = source?.[key];
+          if (value !== undefined && value !== null && String(value).trim() !== '') {
+            return value;
+          }
+        }
+      }
+      return '';
+    };
+
+    const firstName = pickValue('firstName', 'FirstName');
+    const lastName = pickValue('lastName', 'LastName');
+    const studentName = pickValue('studentName', 'StudentName') || `${firstName} ${lastName}`.trim();
+    const resolvedId = pickValue('id', 'Id') || student?.studentId || student?.id || '';
+
+    return {
+      ...student,
+      id: student?.id || resolvedId,
+      studentId: student?.studentId || resolvedId,
+      studentName: studentName || 'תלמיד ללא שם',
+      phone: pickValue('phone', 'Phone'),
+      secondaryPhone: pickValue('secondaryPhone', 'SecondaryPhone'),
+      email: pickValue('email', 'Email'),
+      age: pickValue('age', 'Age'),
+      class: pickValue('class', 'Class'),
+      city: pickValue('city', 'City'),
+      school: pickValue('school', 'School'),
+      sector: pickValue('sector', 'Sector'),
+      healthFund: pickValue('healthFund', 'HealthFund', 'healthFundName', 'HealthFundName'),
+      healthFundName: pickValue('healthFundName', 'HealthFundName', 'healthFund', 'HealthFund'),
+      healthFundPlan: pickValue('healthFundPlan', 'HealthFundPlan'),
+      createdBy: pickValue('createdBy', 'CreatedBy'),
+      fullDetails: student?.fullDetails || student?.Student || student?.student || null
+    };
   };
 
   // Local state - כל המשתנים במקום אחד
@@ -442,6 +489,7 @@ const [studentLessons, setStudentLessons] = useState(0);
     instructorId: 0,
     courseId: '',
     branchId: '',
+    isActive: true,
   });
 
   const buildAutoGroupName = useCallback((parts) => {
@@ -714,13 +762,14 @@ const sortedGroups = groups
     dispatch(fetchCourses());
     dispatch(fetchGroups()); // טען את כל הקבוצות לכל החוגים/סניפים בכניסה לעמוד
     dispatch(fetchBranches()); // טען גם סניפים כדי שתצוגת "לפי ימים" תדע שמות סניפים בלי בחירת חוג
+    dispatch(fetchInstructors()); // טען מדריכים מחדש בטעינה ראשונית
   }, [dispatch]);
 
   useEffect(() => {
-  if (addGroupDialogOpen) {
-    dispatch(fetchInstructors());
-  }
-}, [addGroupDialogOpen, dispatch]);
+    if (addGroupDialogOpen || editGroupDialogOpen) {
+      dispatch(fetchInstructors());
+    }
+  }, [addGroupDialogOpen, editGroupDialogOpen, dispatch]);
 
   useEffect(() => {
     if (selectedCourse) {
@@ -848,7 +897,9 @@ useEffect(() => {
       instructorId: 0,
       courseId: '',
       branchId: '',
+      isActive: true,
     });
+    setSelectedInstructorId('');
     setNewBranch({ name: '', address: '', city: '' });
     setNewCourse({ couresName: '', description: '' });
     clearFormData();
@@ -1109,10 +1160,27 @@ if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity
       if (normalizedStudents.length > 0) {
         console.log('Students in group basic data:', normalizedStudents);
 
-        const normalizedStudentDetails = normalizedStudents.map((student) => ({
-          ...student,
-          fullDetails: student.fullDetails || student.Student || null
-        }));
+        const normalizedStudentDetails = await Promise.all(
+          normalizedStudents.map(async (student) => {
+            const lookupId = resolveStudentLookupId(student) || student.studentId;
+            let fullDetails = student.fullDetails || student.Student || student.student || null;
+
+            if (lookupId && !fullDetails) {
+              try {
+                fullDetails = await dispatch(getStudentById(lookupId)).unwrap();
+              } catch (detailsError) {
+                console.warn(`Could not load full details for student ${lookupId}:`, detailsError);
+              }
+            }
+
+            return normalizeStudentDisplayData({
+              ...student,
+              id: student.id || lookupId || student.studentId,
+              studentId: student.studentId || lookupId || student.id,
+              fullDetails
+            });
+          })
+        );
 
         setEnhancedStudentsInGroup(normalizedStudentDetails);
       } else {
@@ -1152,12 +1220,15 @@ if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity
     try {
       if (lookupId) {
         const studentResult = await dispatch(getStudentById(lookupId)).unwrap();
-        setSelectedStudentForDialog(studentResult || studentForDialog);
+        setSelectedStudentForDialog({
+          ...studentForDialog,
+          ...(studentResult || {})
+        });
       } else {
         setSelectedStudentForDialog(studentForDialog);
       }
 
-      await dispatch(getgroupStudentByStudentId(student.studentId));
+      await dispatch(getgroupStudentByStudentId(lookupId || student.studentId || student.id));
       setStudentCoursesDialogOpen(true);
     } catch (error) {
       console.error('Error fetching student details:', error);
@@ -1973,6 +2044,7 @@ if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity
       instructorId: selectedInstructorId,
       courseId: selectedCourse?.courseId,
       branchId: selectedBranch?.branchId,
+      isActive: newGroup.isActive !== false,
       notes: newGroup.notes || ''
     };
 
@@ -2221,18 +2293,29 @@ if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity
   // Edit functions
   const handleEditFromMenu = () => {
     if (selectedItemForMenu && menuType) {
-      setEditingItem(selectedItemForMenu);
-      
       switch (menuType) {
         case 'course':
+          setEditingItem(selectedItemForMenu);
           setEditCourseDialogOpen(true);
           break;
         case 'branch':
+          setEditingItem(selectedItemForMenu);
           setEditBranchDialogOpen(true);
           break;
-        case 'group':
+        case 'group': {
+          const normalizedInstructorId = selectedItemForMenu?.instructorId
+            ?? selectedItemForMenu?.instructor?.instructorId
+            ?? selectedItemForMenu?.instructor?.id
+            ?? '';
+
+          setEditingItem({
+            ...selectedItemForMenu,
+            instructorId: normalizedInstructorId,
+            isActive: ![false, 0, '0'].includes(selectedItemForMenu?.isActive)
+          });
           setEditGroupDialogOpen(true);
           break;
+        }
         default:
           break;
       }
@@ -4512,20 +4595,74 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
-  <InputLabel>בחר מדריך</InputLabel>
-  <Select
-    value={selectedInstructorId}
-    onChange={e => setSelectedInstructorId(e.target.value)}
-    label="בחר מדריך"
-  >
-    {instructors.map(inst => (
-      <MenuItem key={inst.id} value={inst.id}>
-        {inst.firstName} {inst.lastName}
-      </MenuItem>
-    ))}
-  </Select>
-</FormControl>
+                <FormControl fullWidth margin="dense">
+                  <InputLabel>בחר מדריך</InputLabel>
+                  <Select
+                    value={String(selectedInstructorId || '')}
+                    onChange={e => setSelectedInstructorId(e.target.value)}
+                    label="בחר מדריך"
+                  >
+                    {instructors.map((inst) => {
+                      const instructorValue = String(inst.instructorId ?? inst.id ?? '');
+                      const instructorLabel = inst.instructorName || `${inst.firstName || ''} ${inst.lastName || ''}`.trim() || `מדריך ${instructorValue}`;
+
+                      return (
+                        <MenuItem key={instructorValue} value={instructorValue}>
+                          {instructorLabel}
+                        </MenuItem>
+                      );
+                    })}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Box sx={{ p: 2, bgcolor: 'rgba(99, 102, 241, 0.05)', borderRadius: 1.5, border: '1px solid rgba(99, 102, 241, 0.1)', mt: 1 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 500, color: '#1e3a8a', mb: 1.5, textAlign: 'right' }}>
+                    סטטוס קבוצה
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 1.5 }}>
+                    <Button
+                      variant={newGroup.isActive !== false ? 'contained' : 'outlined'}
+                      onClick={() => setNewGroup({ ...newGroup, isActive: true })}
+                      sx={{
+                        flex: 1,
+                        py: 0.75,
+                        fontWeight: 700,
+                        borderRadius: 1.5,
+                        fontSize: '0.85rem',
+                        color: newGroup.isActive !== false ? '#ffffff' : '#10b981',
+                        backgroundColor: newGroup.isActive !== false ? '#10b981' : 'transparent',
+                        borderColor: '#10b981',
+                        borderWidth: '2px',
+                        '&:hover': {
+                          backgroundColor: newGroup.isActive !== false ? '#059669' : 'rgba(16, 185, 129, 0.1)'
+                        }
+                      }}
+                    >
+                      פעיל
+                    </Button>
+                    <Button
+                      variant={newGroup.isActive === false ? 'contained' : 'outlined'}
+                      onClick={() => setNewGroup({ ...newGroup, isActive: false })}
+                      sx={{
+                        flex: 1,
+                        py: 0.75,
+                        fontWeight: 700,
+                        borderRadius: 1.5,
+                        fontSize: '0.85rem',
+                        color: newGroup.isActive === false ? '#ffffff' : '#ef4444',
+                        backgroundColor: newGroup.isActive === false ? '#ef4444' : 'transparent',
+                        borderColor: '#ef4444',
+                        borderWidth: '2px',
+                        '&:hover': {
+                          backgroundColor: newGroup.isActive === false ? '#dc2626' : 'rgba(239, 68, 68, 0.1)'
+                        }
+                      }}
+                    >
+                      לא פעיל
+                    </Button>
+                  </Box>
+                </Box>
               </Grid>
             </Grid>
           </DialogContent>
@@ -5106,6 +5243,27 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
               onChange={(e) => setEditingItem({ ...editingItem, startDate: e.target.value })}
             />
           </Grid>
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth margin="dense" variant="outlined">
+              <InputLabel>מדריך</InputLabel>
+              <Select
+                value={String(editingItem?.instructorId ?? '')}
+                onChange={(e) => setEditingItem({ ...editingItem, instructorId: e.target.value })}
+                label="מדריך"
+              >
+                {instructors.map((inst) => {
+                  const instructorValue = String(inst.instructorId ?? inst.id ?? '');
+                  const instructorLabel = inst.instructorName || `${inst.firstName || ''} ${inst.lastName || ''}`.trim() || `מדריך ${instructorValue}`;
+
+                  return (
+                    <MenuItem key={instructorValue} value={instructorValue}>
+                      {instructorLabel}
+                    </MenuItem>
+                  );
+                })}
+              </Select>
+            </FormControl>
+          </Grid>
           <Grid item xs={12}>
             <Box sx={{ p: 2, bgcolor: 'rgba(99, 102, 241, 0.05)', borderRadius: 1.5, border: '1px solid rgba(99, 102, 241, 0.1)' }}>
               <Typography variant="body2" sx={{ fontWeight: 500, color: '#1e3a8a', mb: 2, textAlign: 'right' }}>
@@ -5282,17 +5440,11 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
           </Box>
         ) : (
           <Box sx={{ direction: 'rtl' }}>
-            <Typography variant="body1" sx={{ mb: 1, color: '#6366F1', fontWeight: 'bold', textAlign: 'right' }}>
-              סה"כ {studentsInGroup.length} תלמידים רשומים
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 2, color: '#64748b', textAlign: 'right', display: 'flex', alignItems: 'center', gap: 1 }}>
-              <InfoIcon sx={{ fontSize: 16 }} />
-              לחץ על כרטיס התלמיד לצפייה בפרטים המלאים
-            </Typography>
-            <Grid container spacing={2}>
-              {(enhancedStudentsInGroup.length > 0 ? enhancedStudentsInGroup : studentsInGroup).map((student, index) => {
-                console.log('🔍 Student data structure:', student);
-                return (
+            {(() => {
+              const allStudents = enhancedStudentsInGroup.length > 0 ? enhancedStudentsInGroup : studentsInGroup;
+              const activeStudents = allStudents.filter(s => normalizeGroupStudentStatus(s.isActive) !== 2);
+              const leftStudents = allStudents.filter(s => normalizeGroupStudentStatus(s.isActive) === 2);
+              const renderStudentCard = (student, index) => (
                 <Grid item xs={12} sm={6} md={4} key={student.studentId || index}>
                   <Tooltip title="לחץ לצפייה בפרטים המלאים של התלמיד" arrow>
                     <Paper
@@ -5412,38 +5564,6 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
                     <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-start', direction: 'rtl' }}>
                       <span>📅 תאריך רישום: {student.enrollmentDate ? new Date(student.enrollmentDate).toLocaleDateString('he-IL') : 'לא זמין'}</span>
                     </Typography>
-                   <Typography
-  variant="body2"
-  color="text.secondary"
-  sx={{
-    textAlign: 'right',
-    display: 'flex',
-    alignItems: 'center',
-    gap: 0.5,
-    justifyContent: 'flex-start',
-    direction: 'rtl'
-  }}
->
-  
-</Typography>
- <Typography
-  variant="body2"
-  color="text.secondary"
-  sx={{
-    textAlign: 'right',
-    display: 'flex',
-    alignItems: 'center',
-    gap: 0.5,
-    justifyContent: 'flex-start',
-    direction: 'rtl'
-  }}
->
-  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-    {getGroupStudentStatusMeta(student.isActive).icon}
-    סטטוס בחוג: {getGroupStudentStatusMeta(student.isActive).label}
-  </span>
-</Typography>
-
                     {student.branchName && (
                       <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-start', direction: 'rtl' }}>
                         <span>🏢 סניף: {student.branchName}</span>
@@ -5454,13 +5574,64 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
                         <span>👨‍🏫 מדריך: {student.instructorName}</span>
                       </Typography>
                     )}
-                   
                   </Paper>
                   </Tooltip>
                 </Grid>
-                );
-              })}
-            </Grid>
+              );
+
+              return (
+                <>
+                  <Typography variant="body1" sx={{ mb: 1, color: '#6366F1', fontWeight: 'bold', textAlign: 'right' }}>
+                    סה"כ {activeStudents.length} תלמידים פעילים{leftStudents.length > 0 ? ` • ${leftStudents.length} עזבו` : ''}
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 2, color: '#64748b', textAlign: 'right', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <InfoIcon sx={{ fontSize: 16 }} />
+                    לחץ על כרטיס התלמיד לצפייה בפרטים המלאים
+                  </Typography>
+                  <Grid container spacing={2}>
+                    {activeStudents.map((student, index) => renderStudentCard(student, index))}
+                  </Grid>
+
+            {/* תלמידים שעזבו */}
+            {leftStudents.length > 0 && (
+              <Box sx={{ mt: 4 }}>
+                <Box sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1.5,
+                  mb: 2,
+                  px: 2,
+                  py: 1.2,
+                  borderRadius: 2,
+                  background: 'linear-gradient(90deg, #fee2e2 0%, #fecaca 100%)',
+                  borderLeft: '4px solid #ef4444',
+                  boxShadow: '0 2px 8px rgba(239,68,68,0.10)'
+                }}>
+                  <Typography sx={{ fontSize: '1.2rem' }}>🚪</Typography>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#b91c1c', flex: 1 }}>
+                    תלמידים שעזבו
+                  </Typography>
+                  <Chip
+                    label={leftStudents.length}
+                    size="small"
+                    sx={{ background: '#ef4444', color: '#fff', fontWeight: 'bold', minWidth: 32 }}
+                  />
+                </Box>
+                <Box sx={{
+                  p: 2,
+                  borderRadius: 2,
+                  background: '#fafafa',
+                  border: '1px solid #fecaca'
+                }}>
+                  <Grid container spacing={2}>
+                    {leftStudents.map((student, index) => renderStudentCard(student, `left-${index}`))}
+                  </Grid>
+                </Box>
+              </Box>
+            )}
+          </>
+        );
+      })()}
           </Box>
         )}
       </DialogContent>
