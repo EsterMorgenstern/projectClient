@@ -18,29 +18,32 @@ import GroupsTable from '../Groups/groupsTable';
 import GroupDetailsPage from '../Groups/groupDetailsPage';
 import LessonStatusManagementPage from '../Lessons/LessonStatusManagementPage';
 import StudentDetailsPage from '../Students/studentDetailsPage';
+import AuthGuard from '../LogIn/AuthGuard';
 
 const Routing = () => {
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<HomeLayout><Home /></HomeLayout>} />
-        <Route path="/my-notes" element={<Layout><MyNotes /></Layout>} />
-        <Route path="/about-system" element={<HomeLayout><AboutSystem /></HomeLayout>} />
-        <Route path="/registration-tracking" element={<Layout><RegistrationTracking /></Layout>} />
-        <Route path="/students" element={<Layout><StudentsTable /></Layout>} />
-        <Route path="/students/:studentId" element={<Layout><StudentDetailsPage /></Layout>} />
-        <Route path="/instructors" element={<Layout><InstructorsTable /></Layout>} />
-        <Route path="/attendance-calendar" element={<Layout><AttendanceCalendar /></Layout>} />
-        <Route path="/attendance-reports" element={<Layout><AttendanceReports /></Layout>} />
-        <Route path="/enroll-student" element={<Layout><EnrollStudent /></Layout>} />
-        <Route path="/classes-management" element={<Layout><GroupsTable /></Layout>} />
-        <Route path="/group/:groupId" element={<Layout><GroupDetailsPage /></Layout>} />
-        <Route path="/lesson-management" element={<Layout><LessonManagement /></Layout>} />
-        <Route path="/health-fund-management" element={<Layout><HealthFundManagement /></Layout>} />
-        <Route path="/grow-payment-callback" element={<GrowPaymentCallback />} />
-        <Route path="/grow-payment-test" element={<Layout><GrowPaymentTest /></Layout>} />
-        <Route path="/lesson-status-management" element={<Layout><LessonStatusManagementPage /></Layout>} />
-      </Routes>
+      <AuthGuard>
+        <Routes>
+          <Route path="/" element={<HomeLayout><Home /></HomeLayout>} />
+          <Route path="/my-notes" element={<Layout><MyNotes /></Layout>} />
+          <Route path="/about-system" element={<HomeLayout><AboutSystem /></HomeLayout>} />
+          <Route path="/registration-tracking" element={<Layout><RegistrationTracking /></Layout>} />
+          <Route path="/students" element={<Layout><StudentsTable /></Layout>} />
+          <Route path="/students/:studentId" element={<Layout><StudentDetailsPage /></Layout>} />
+          <Route path="/instructors" element={<Layout><InstructorsTable /></Layout>} />
+          <Route path="/attendance-calendar" element={<Layout><AttendanceCalendar /></Layout>} />
+          <Route path="/attendance-reports" element={<Layout><AttendanceReports /></Layout>} />
+          <Route path="/enroll-student" element={<Layout><EnrollStudent /></Layout>} />
+          <Route path="/classes-management" element={<Layout><GroupsTable /></Layout>} />
+          <Route path="/group/:groupId" element={<Layout><GroupDetailsPage /></Layout>} />
+          <Route path="/lesson-management" element={<Layout><LessonManagement /></Layout>} />
+          <Route path="/health-fund-management" element={<Layout><HealthFundManagement /></Layout>} />
+          <Route path="/grow-payment-callback" element={<GrowPaymentCallback />} />
+          <Route path="/grow-payment-test" element={<Layout><GrowPaymentTest /></Layout>} />
+          <Route path="/lesson-status-management" element={<Layout><LessonStatusManagementPage /></Layout>} />
+        </Routes>
+      </AuthGuard>
     </Router>
   );
 };

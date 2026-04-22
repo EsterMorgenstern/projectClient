@@ -160,7 +160,7 @@ const HealthFundManagement = () => {
         borderRadius: 8,
         py: 4
       }}>
-      <Box sx={{ p: { xs: 2, md: 4 }, direction: 'rtl', borderRadius: 8, minHeight: '80vh', maxWidth: '1500px', mx: 'auto' }}>
+      <Box sx={{ p: { xs: 2, md: 4 }, direction: 'rtl', borderRadius: 8, minHeight: '80vh', width: '100%', mx: 'auto' }}>
       {/* <Paper elevation={0} sx={{ mb: 4, p: { xs: 2, md: 3 }, borderRadius: 4, border: '1px solid #dbeafe', background: 'linear-gradient(135deg, #f8fbff 0%, #eef4ff 100%)', boxShadow: '0 10px 26px rgba(37,99,235,0.07)' }}> */}
           <Typography
             variant="h3"

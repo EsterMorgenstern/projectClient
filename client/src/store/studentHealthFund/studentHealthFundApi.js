@@ -57,7 +57,6 @@ export const updateStudentHealthFund = createAsyncThunk(
       if (!recordId) {
         throw new Error('Student health fund id is required');
       }
-
       const response = await axios.put(
         `${API_BASE_URL}/StudentHealthFund/Update/${recordId}`,
         studentHealthFund

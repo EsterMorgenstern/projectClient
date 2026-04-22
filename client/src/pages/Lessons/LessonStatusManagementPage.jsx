@@ -438,7 +438,7 @@ const LessonStatusManagementPage = () => {
         py: 4
       }}
     >
-      <Box sx={{ maxWidth: 1300, mx: 'auto', px: 3, direction: 'rtl' }}>
+      <Box sx={{ width: '100%', px: 3, direction: 'rtl' }}>
         <Box sx={{ mt: 1, mb: 2, position: 'relative', minHeight: 44 }}>
           <Box sx={{ position: 'absolute', top: 0, right: 0 }}>
             <Button

@@ -510,25 +510,31 @@ const GroupDetailsPanel = ({ groupId: propGroupId } = {}) => {
             </Box>
             התלמידים הרשומים ({activeStudents.length}{leftStudents.length > 0 ? ` + ${leftStudents.length} עזבו` : ''})
           </Typography>
-          {activeStudents.length > 0 ? (
+          {normalizedStudents.length > 0 ? (
             <Grid container spacing={2}>
-              {activeStudents.map((student, idx) => (
+              {[...activeStudents, ...leftStudents].map((student, idx) => (
                 <Grid item xs={12} sm={6} md={4} lg={3} key={student.studentId || idx}>
                   <Card
                     sx={{
                       height: '100%',
                       borderRadius: 3,
-                      background: '#f9fbfd',
-                      border: '1px solid #e4e9f2',
-                      boxShadow: '0 12px 30px rgba(17, 24, 39, 0.06)'
+                      background: student.isLeft ? 'linear-gradient(135deg, #fff5f5 0%, #fff 100%)' : '#f9fbfd',
+                      border: student.isLeft ? '1px solid #fca5a5' : '1px solid #e4e9f2',
+                      borderRight: student.isLeft ? '4px solid #ef4444' : undefined,
+                      opacity: student.isLeft ? 0.88 : 1,
+                      boxShadow: student.isLeft ? '0 4px 12px rgba(239,68,68,0.07)' : '0 12px 30px rgba(17, 24, 39, 0.06)',
+                      position: 'relative',
                     }}
                   >
+                    {student.isLeft && (
+                      <Chip label="עזב" size="small" sx={{ position: 'absolute', top: 8, left: 8, background: '#ef4444', color: '#fff', fontWeight: 'bold', fontSize: '0.7rem', height: 20 }} />
+                    )}
                     <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#1f2a60' }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: student.isLeft ? '#7f1d1d' : '#1f2a60' }}>
                           {student.studentName}
                         </Typography>
-                        <Typography variant="caption" sx={{ color: '#6071a1', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Typography variant="caption" sx={{ color: student.isLeft ? '#b91c1c' : '#6071a1', display: 'flex', alignItems: 'center', gap: 0.5 }}>
                           <BadgeIcon sx={{ fontSize: 16 }} /> {student.studentId}
                         </Typography>
                       </Box>
@@ -540,22 +546,18 @@ const GroupDetailsPanel = ({ groupId: propGroupId } = {}) => {
                             icon={<PhoneIphoneIcon sx={{ fontSize: 16 }} />}
                             label={student.phone}
                             sx={{
-                              background: '#eef2ff',
-                              color: '#1f2a60',
+                              background: student.isLeft ? '#fee2e2' : '#eef2ff',
+                              color: student.isLeft ? '#7f1d1d' : '#1f2a60',
                               fontWeight: 'bold'
                             }}
                           />
                         )}
-                        {student.status && (
+                        {!student.isLeft && student.status && (
                           <Chip
                             size="small"
                             icon={<CheckCircleIcon sx={{ fontSize: 16 }} />}
                             label={student.status}
-                            sx={{
-                              background: '#d4edda',
-                              color: '#155724',
-                              fontWeight: 'bold'
-                            }}
+                            sx={{ background: '#d4edda', color: '#155724', fontWeight: 'bold' }}
                           />
                         )}
                       </Box>
@@ -567,73 +569,8 @@ const GroupDetailsPanel = ({ groupId: propGroupId } = {}) => {
           ) : (
             <Box sx={{ textAlign: 'center', py: 4 }}>
               <Typography variant="body2" color="textSecondary">
-                אין תלמידים פעילים רשומים
+                אין תלמידים רשומים
               </Typography>
-            </Box>
-          )}
-
-          {/* תלמידים שעזבו */}
-          {leftStudents.length > 0 && (
-            <Box sx={{ mt: 4 }}>
-              <Box sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1.5,
-                mb: 2,
-                px: 2,
-                py: 1.2,
-                borderRadius: 2,
-                background: 'linear-gradient(90deg, #fee2e2 0%, #fecaca 100%)',
-                borderLeft: '4px solid #ef4444',
-                boxShadow: '0 2px 8px rgba(239,68,68,0.10)'
-              }}>
-                <Typography sx={{ fontSize: '1.2rem' }}>🚪</Typography>
-                <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#b91c1c', flex: 1 }}>
-                  תלמידים שעזבו
-                </Typography>
-                <Chip
-                  label={leftStudents.length}
-                  size="small"
-                  sx={{ background: '#ef4444', color: '#fff', fontWeight: 'bold', minWidth: 32 }}
-                />
-              </Box>
-              <Box sx={{
-                p: 2,
-                borderRadius: 2,
-                background: '#fafafa',
-                border: '1px solid #fecaca'
-              }}>
-                <Grid container spacing={2}>
-                  {leftStudents.map((student, idx) => (
-                    <Grid item xs={12} sm={6} md={4} lg={3} key={`left-${student.studentId || idx}`}>
-                      <Card sx={{
-                        borderRadius: 3,
-                        background: '#fff',
-                        border: '1px solid #fecaca',
-                        opacity: 0.9,
-                        boxShadow: '0 2px 8px rgba(239,68,68,0.07)'
-                      }}>
-                        <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#7f1d1d' }}>
-                            {student.studentName}
-                          </Typography>
-                          <Typography variant="caption" sx={{ color: '#b91c1c', display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <BadgeIcon sx={{ fontSize: 16 }} /> {student.studentId}
-                          </Typography>
-                          {student.phone && (
-                            <Chip
-                              size="small"
-                              icon={<PhoneIphoneIcon sx={{ fontSize: 16 }} />}
-                              label={student.phone}
-                              sx={{ background: '#fee2e2', color: '#7f1d1d', fontWeight: 'bold', width: 'fit-content' }}
-                            />
-                          )}
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  ))}
-                </Grid>
-              </Box>
             </Box>
           )}
         </CardContent>

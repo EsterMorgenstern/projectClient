@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, Typography, Box, Skeleton, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, IconButton, Tooltip, Divider, MenuItem, ListItemIcon, ListItemText, FormControlLabel, Checkbox, InputAdornment, Select, FormControl, InputLabel, CircularProgress, TablePagination, Snackbar, Alert } from '@mui/material';
 import Grid from '@mui/material/GridLegacy';
 import { motion } from 'framer-motion';
-import { AddCircle, Person, LocalHospital, CalendarMonth, Healing, AssignmentTurnedIn, Description, Note, Save, Close, Face, LocationCity, Groups, Event, Check as CheckIcon, AttachMoney as AttachMoneyIcon, Info as InfoIcon, FileDownload, Search as SearchIcon, Clear as ClearIcon, ArrowUpward, ArrowDownward, Sort, DragIndicator as DragIndicatorIcon } from '@mui/icons-material';
+import { AddCircle, Person, LocalHospital, CalendarMonth, Healing, AssignmentTurnedIn, Description, Note, Save, Close, Face, LocationCity, Groups, Event, Check as CheckIcon, AttachMoney as AttachMoneyIcon, Info as InfoIcon, FileDownload, Search as SearchIcon, Clear as ClearIcon, ArrowUpward, ArrowDownward, Sort, DragIndicator as DragIndicatorIcon, MenuBook as MenuBookIcon } from '@mui/icons-material';
 import ExcelExportDialog from '../../components/ExcelExportDialog';
 import NotesIcon from '@mui/icons-material/Notes';
 import StudentNotesDialog from '../Students/components/StudentNotesDialog';
@@ -43,7 +43,18 @@ import {
   selectHealthFundCommitmentsLoading,
 } from '../../store/healthFundCommitment/healthFundCommitmentSlice';
 
-// Styled table container inspired by instructorsTable and Home
+// קונפיגורציה לפי קופת חולים — שם שדה ב-DB: standing_order_date
+const HEALTH_FUND_CONFIG = {
+  'מאוחדת': { showCommitments: true, showStandingOrder: false },
+  'לאומית':  { showCommitments: false, showStandingOrder: true },
+};
+
+const getConfigByFundName = (name = '') => {
+  for (const [key, cfg] of Object.entries(HEALTH_FUND_CONFIG)) {
+    if (name.includes(key)) return cfg;
+  }
+  return { showCommitments: false, showStandingOrder: false };
+};
 
 const StudentHealthFundTable = () => {
   // State לחיפוש עם debouncing
@@ -344,6 +355,7 @@ const StudentHealthFundTable = () => {
         reportedTreatments: computedCounts?.reportedTreatments ?? Number(row?.reportedTreatments ?? row?.ReportedTreatments ?? 0),
         commitmentTreatments: Number(row?.commitmentTreatments ?? row?.CommitmentTreatments ?? 0),
         registeredTreatments: Number(row?.registeredTreatments ?? row?.RegisteredTreatments ?? 0),
+        standingOrderDay: row?.standingOrderDay ?? row?.StandingOrderDay ?? null,
       };
     })
   ), [rawHealthFunds, attendanceCountsByRecordId]);
@@ -732,6 +744,26 @@ const StudentHealthFundTable = () => {
 
   // נתונים מפולטרים לפני pagination
   const allFilteredHealthFunds = filteredHealthFunds;
+
+  // פונקציה לקבלת שם קופה לפי שורה
+  const getFundName = (row) => {
+    const fund = healthFundMap.get(Number(row.healthFundId));
+    return fund?.name || '';
+  };
+
+  // האם להציג עמודות התחייבויות (רק כשיש שורות מאוחדת)
+  const showCommitmentsColumns = allFilteredHealthFunds.some(row => getConfigByFundName(getFundName(row)).showCommitments);
+  // האם להציג עמודת הוראת קבע (רק כשיש שורות לאומית)
+  const showStandingOrderColumn = allFilteredHealthFunds.some(row => getConfigByFundName(getFundName(row)).showStandingOrder);
+
+  // בדיקה אם יום הוראת קבע הוא היום בחודש
+  const isStandingOrderToday = (row) => {
+    if (!row.standingOrderDay) return false;
+    return row.standingOrderDay === new Date().getDate();
+  };
+
+  // ספירת עמודות דינמית
+  const totalColumns = 14 + (showCommitmentsColumns ? 2 : 0) + (showStandingOrderColumn ? 1 : 0);
   
   // נתונים מפולטרים עם pagination
   const paginatedHealthFunds = useMemo(() => {
@@ -1169,8 +1201,20 @@ const StudentHealthFundTable = () => {
   };
 
   // עדכון
+  const toDateInputValue = (val) => {
+    if (!val) return '';
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return '';
+    return d.toISOString().slice(0, 10);
+  };
+
   const handleOpenEditDialog = (row) => {
-    setEditFormData({ ...row });
+    const resolvedStartDate = row.startDate || row.startDateGroup || null;
+    setEditFormData({
+      ...row,
+      startDate: toDateInputValue(resolvedStartDate),
+      standingOrderDay: row.standingOrderDay ?? '',
+    });
     setEditDialogOpen(true);
     setEditSaving(false);
   };
@@ -2360,8 +2404,57 @@ const StudentHealthFundTable = () => {
       </Typography>
     </Box>
 
+    {/* מקרא מערכת */}
+    <Box sx={{
+      mb: 2, p: 2, borderRadius: 2,
+      background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+      border: '1px solid #e2e8f0',
+      direction: 'rtl'
+    }}>
+      <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#334155', mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        <MenuBookIcon sx={{ fontSize: 18, color: '#1d4ed8' }} />
+        מקרא מערכת
+      </Typography>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, px: 1.5, py: 0.5, borderRadius: 2, background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', border: '1px solid #6ee7b7' }}>
+          <Typography variant="caption" sx={{ fontWeight: 600, color: '#065f46' }}>שורה מוארת — לאומית עם הוראת קבע להיום</Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, px: 1.5, py: 0.5, borderRadius: 2, background: '#fff7ed', border: '1px solid #fdba74' }}>
+          <Typography variant="caption" sx={{ fontWeight: 700, color: '#b45309' }}>שם מודגש בצהוב</Typography>
+          <Typography variant="caption" sx={{ color: '#64748b' }}>— לתלמיד יש הערת גביה</Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, px: 1.5, py: 0.5, borderRadius: 2, background: '#fdf4ff', border: '1px solid #e879f9' }}>
+          <Typography variant="caption" sx={{ fontWeight: 600, color: '#86198f' }}>עמודות התחייבויות</Typography>
+          <Typography variant="caption" sx={{ color: '#64748b' }}>— מוצגות עבור קופ"ח מאוחדת</Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, px: 1.5, py: 0.5, borderRadius: 2, background: '#eff6ff', border: '1px solid #93c5fd' }}>
+          <Typography variant="caption" sx={{ fontWeight: 600, color: '#1d4ed8' }}>עמודת הוראת קבע</Typography>
+          <Typography variant="caption" sx={{ color: '#64748b' }}>— מוצגת עבור קופ"ח לאומית</Typography>
+        </Box>
+      </Box>
+    </Box>
+
     <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: 2, overflowX: 'auto', background: 'white', p: 0 }}>
-      <Table sx={{ minWidth: 1800, fontFamily: 'inherit' }}>
+      <Table sx={{ minWidth: 1600, tableLayout: 'fixed', fontFamily: 'inherit' }}>
+        <colgroup>
+          <col style={{ width: 90 }} />
+          <col style={{ width: 160 }} />
+          <col style={{ width: 60 }} />
+          <col style={{ width: 100 }} />
+          <col style={{ width: 110 }} />
+          <col style={{ width: 140 }} />
+          <col style={{ width: 120 }} />
+          <col style={{ width: 110 }} />
+          <col style={{ width: 70 }} />
+          <col style={{ width: 90 }} />
+          {showCommitmentsColumns && <col style={{ width: 90 }} />}
+          {showCommitmentsColumns && <col style={{ width: 110 }} />}
+          {showStandingOrderColumn && <col style={{ width: 120 }} />}
+          <col style={{ width: 80 }} />
+          <col style={{ width: 100 }} />
+          <col style={{ width: 160 }} />
+          <col style={{ width: 170 }} />
+        </colgroup>
           <TableHead sx={{ background: '#1d4fbaff' }}>
             <TableRow>
               <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center' }}>
@@ -2388,19 +2481,27 @@ const StudentHealthFundTable = () => {
               <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center' }}>
                 {getSortableHeader('startDate', 'תאריך יצירה', <CalendarMonth sx={{ color: '#38F9D7' }} />)}
               </TableCell>
-              <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center', width: 60, minWidth: 40, maxWidth: 80 }}>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center' }}>
                 {getSortableHeader('reportedTreatments', 'דווחו', <AssignmentTurnedIn sx={{ color: '#10b981' }} />)}
               </TableCell>
-              
-              <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center', width: 60, minWidth: 40, maxWidth: 80 }}>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center' }}>
                 {getSortableHeader('treatmentsUsed', 'ממתין לדיווח', <Healing sx={{ color: '#F59E42' }} />)}
               </TableCell>
-              <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center', width: 60, minWidth: 40, maxWidth: 80 }}>
-                {getSortableHeader('commitmentTreatments', 'מספר התחייבויות', <AssignmentTurnedIn sx={{ color: '#667eea' }} />)}
-              </TableCell>
-              <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center', width: 60, minWidth: 40, maxWidth: 80 }}>
-                {getSortableHeader('registeredTreatments', 'התחייבויות שנוצלו', <Event sx={{ color: '#10b981' }} />)}
-              </TableCell>
+              {showCommitmentsColumns && (
+                <>
+                  <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center' }}>
+                    {getSortableHeader('commitmentTreatments', 'מס׳ התחייבויות', <AssignmentTurnedIn sx={{ color: '#667eea' }} />)}
+                  </TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center' }}>
+                    {getSortableHeader('registeredTreatments', 'התחייבויות שנוצלו', <Event sx={{ color: '#10b981' }} />)}
+                  </TableCell>
+                </>
+              )}
+              {showStandingOrderColumn && (
+                <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center' }}>
+                  {getSortableHeader('standingOrderDay', 'יום הוראת קבע', <CalendarMonth sx={{ color: '#fde68a' }} />)}
+                </TableCell>
+              )}
               <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center' }}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60px', gap: 0.5 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '24px' }}>
@@ -2447,7 +2548,7 @@ const StudentHealthFundTable = () => {
               ))
             ) : filteredHealthFunds.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={16} align="center">
+                <TableCell colSpan={totalColumns} align="center">
                   <Box sx={{ py: 4 }}>
                     {(searchTerm || hasActiveAdvancedFilters) ? (
                       <>
@@ -2495,14 +2596,25 @@ const StudentHealthFundTable = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              paginatedHealthFunds.map((row, idx) => (
+              paginatedHealthFunds.map((row, idx) => {
+                const standingOrderToday = showStandingOrderColumn && isStandingOrderToday(row);
+                return (
                 <TableRow
                   key={row.id || `row-${idx}`}
                   component={motion.tr}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05 }}
-                  sx={{ background: idx % 2 === 0 ? '#f8fafc' : '#e2e8f0', height: 36 }}
+                  sx={{
+                    background: standingOrderToday
+                      ? 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 60%, #c0f1dbda 100%)'
+                      : (idx % 2 === 0 ? '#f8fafc' : '#e2e8f0'),
+                    height: 36,
+                    ...(standingOrderToday && {
+                      boxShadow: 'inset 4px 0 0 #059669',
+                      outline: '1px solid #6ee7b770'
+                    })
+                  }}
                 >
                   <TableCell align="center">{highlightSearchTerm(row.studentId, searchTerm)}</TableCell>
                   <TableCell 
@@ -2586,6 +2698,7 @@ const StudentHealthFundTable = () => {
                       </Typography>
                     </Tooltip>
                   </TableCell>
+                  {showCommitmentsColumns && <>
                   <TableCell align="center">
                     <Tooltip title="לחץ לצפייה בהתחייבויות" arrow>
                       <Typography
@@ -2616,6 +2729,23 @@ const StudentHealthFundTable = () => {
                       </Typography>
                     </Tooltip>
                   </TableCell>
+                  </>}
+                  {showStandingOrderColumn && (
+                    <TableCell align="center">
+                      {row.standingOrderDay ? (
+                        <Chip
+                          label={`יום ${row.standingOrderDay}`}
+                          size="small"
+                          sx={{
+                            background: isStandingOrderToday(row) ? 'linear-gradient(135deg, #059668e2, #10b981)' : '#dbeafe',
+                            color: isStandingOrderToday(row) ? '#fff' : '#1e40af',
+                            fontWeight: 'bold',
+                            boxShadow: isStandingOrderToday(row) ? '0 2px 8px #05966960' : 'none',
+                          }}
+                        />
+                      ) : '—'}
+                    </TableCell>
+                  )}
                   <TableCell align="center">
                     {row.referralFilePath ? (
                       <Chip 
@@ -2702,7 +2832,8 @@ const StudentHealthFundTable = () => {
                     </Tooltip>
                   </TableCell>
                 </TableRow>
-              ))
+                );
+              })
             )}
           </TableBody>
         </Table>
@@ -3045,7 +3176,10 @@ const StudentHealthFundTable = () => {
                 </FormControl>
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField label="תאריך התחלה" type="date" fullWidth variant="outlined" value={editFormData.startDate} onChange={e => handleEditInputChange('startDate', e.target.value)} InputLabelProps={{ shrink: true }} inputProps={{ style: { direction: 'rtl', textAlign: 'right' } }} />
+                <TextField label="תאריך התחלה" type="date" fullWidth variant="outlined" value={editFormData.startDate || ''} onChange={e => handleEditInputChange('startDate', e.target.value)} InputLabelProps={{ shrink: true }} inputProps={{ style: { direction: 'rtl', textAlign: 'right' } }} helperText={editFormData.startDateGroup ? `מקבוצה: ${new Date(editFormData.startDateGroup).toLocaleDateString('he-IL')}` : ''} />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField label="יום הוראת קבע (1-31)" type="number" fullWidth variant="outlined" value={editFormData.standingOrderDay ?? ''} onChange={e => { const v = e.target.value === '' ? null : Math.min(31, Math.max(1, Number(e.target.value))); handleEditInputChange('standingOrderDay', v); }} inputProps={{ min: 1, max: 31, style: { direction: 'ltr', textAlign: 'center' } }} helperText="יום קבוע בחודש שבו מתבצעת הוראת הקבע" />
               </Grid>
               <Grid item xs={12}>
                 <Box sx={{ p: 2, borderRadius: 2, bgcolor: '#eff6ff', border: '1px solid #bfdbfe' }}>
@@ -3055,13 +3189,13 @@ const StudentHealthFundTable = () => {
                 </Box>
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField label="קובץ הפניה" fullWidth variant="outlined" value={editFormData.referralFilePath} onChange={e => handleEditInputChange('referralFilePath', e.target.value)} />
+                <TextField label="קובץ הפניה" fullWidth variant="outlined" value={editFormData.referralFilePath ?? ''} onChange={e => handleEditInputChange('referralFilePath', e.target.value)} />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField label="קובץ התחייבות" fullWidth variant="outlined" value={editFormData.commitmentFilePath} onChange={e => handleEditInputChange('commitmentFilePath', e.target.value)} />
+                <TextField label="קובץ התחייבות" fullWidth variant="outlined" value={editFormData.commitmentFilePath ?? ''} onChange={e => handleEditInputChange('commitmentFilePath', e.target.value)} />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField label="הערות" fullWidth variant="outlined" value={editFormData.notes} onChange={e => handleEditInputChange('notes', e.target.value)} />
+                <TextField label="הערות" fullWidth variant="outlined" value={editFormData.notes ?? ''} onChange={e => handleEditInputChange('notes', e.target.value)} />
               </Grid>
             </Grid>
           )}

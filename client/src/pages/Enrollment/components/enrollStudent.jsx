@@ -5444,7 +5444,9 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
               const allStudents = enhancedStudentsInGroup.length > 0 ? enhancedStudentsInGroup : studentsInGroup;
               const activeStudents = allStudents.filter(s => normalizeGroupStudentStatus(s.isActive) !== 2);
               const leftStudents = allStudents.filter(s => normalizeGroupStudentStatus(s.isActive) === 2);
-              const renderStudentCard = (student, index) => (
+              const renderStudentCard = (student, index) => {
+                const isLeft = normalizeGroupStudentStatus(student.isActive) === 2;
+                return (
                 <Grid item xs={12} sm={6} md={4} key={student.studentId || index}>
                   <Tooltip title="לחץ לצפייה בפרטים המלאים של התלמיד" arrow>
                     <Paper
@@ -5452,20 +5454,27 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
                       sx={{
                         p: 2,
                         borderRadius: 2,
-                        border: '1px solid #e5e7eb',
+                        border: isLeft ? '1px solid #fca5a5' : '1px solid #e5e7eb',
+                        borderRight: isLeft ? '4px solid #ef4444' : undefined,
+                        background: isLeft ? 'linear-gradient(135deg, #fff5f5 0%, #fff 100%)' : '#fff',
+                        opacity: isLeft ? 0.85 : 1,
                         direction: 'rtl',
                         textAlign: 'right',
                         cursor: 'pointer',
+                        position: 'relative',
                         '&:hover': {
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                          borderColor: '#6366F1',
+                          boxShadow: isLeft ? '0 4px 12px rgba(239,68,68,0.15)' : '0 4px 12px rgba(0,0,0,0.1)',
+                          borderColor: isLeft ? '#ef4444' : '#6366F1',
                           transform: 'translateY(-2px)',
-                          backgroundColor: 'rgba(99, 102, 241, 0.05)',
+                          backgroundColor: isLeft ? 'rgba(239,68,68,0.04)' : 'rgba(99, 102, 241, 0.05)',
                         },
                         transition: 'all 0.3s ease'
                       }}
                       onClick={() => handleViewStudentDetails(student)}
                     >
+                    {isLeft && (
+                      <Chip label="עזב" size="small" sx={{ position: 'absolute', top: 8, left: 8, background: '#ef4444', color: '#fff', fontWeight: 'bold', fontSize: '0.7rem', height: 20 }} />
+                    )}
                     <Box display="flex" alignItems="center" justifyContent="space-between" mb={1} sx={{ direction: 'rtl' }}>
                       <Box display="flex" alignItems="center" sx={{ direction: 'rtl' }}>
                         <Typography variant="subtitle1" fontWeight="bold" sx={{ mr: 1 }}>
@@ -5577,8 +5586,10 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
                   </Paper>
                   </Tooltip>
                 </Grid>
-              );
+                );
+              };
 
+              const allSorted = [...activeStudents, ...leftStudents];
               return (
                 <>
                   <Typography variant="body1" sx={{ mb: 1, color: '#6366F1', fontWeight: 'bold', textAlign: 'right' }}>
@@ -5589,49 +5600,11 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
                     לחץ על כרטיס התלמיד לצפייה בפרטים המלאים
                   </Typography>
                   <Grid container spacing={2}>
-                    {activeStudents.map((student, index) => renderStudentCard(student, index))}
+                    {allSorted.map((student, index) => renderStudentCard(student, index))}
                   </Grid>
-
-            {/* תלמידים שעזבו */}
-            {leftStudents.length > 0 && (
-              <Box sx={{ mt: 4 }}>
-                <Box sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1.5,
-                  mb: 2,
-                  px: 2,
-                  py: 1.2,
-                  borderRadius: 2,
-                  background: 'linear-gradient(90deg, #fee2e2 0%, #fecaca 100%)',
-                  borderLeft: '4px solid #ef4444',
-                  boxShadow: '0 2px 8px rgba(239,68,68,0.10)'
-                }}>
-                  <Typography sx={{ fontSize: '1.2rem' }}>🚪</Typography>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#b91c1c', flex: 1 }}>
-                    תלמידים שעזבו
-                  </Typography>
-                  <Chip
-                    label={leftStudents.length}
-                    size="small"
-                    sx={{ background: '#ef4444', color: '#fff', fontWeight: 'bold', minWidth: 32 }}
-                  />
-                </Box>
-                <Box sx={{
-                  p: 2,
-                  borderRadius: 2,
-                  background: '#fafafa',
-                  border: '1px solid #fecaca'
-                }}>
-                  <Grid container spacing={2}>
-                    {leftStudents.map((student, index) => renderStudentCard(student, `left-${index}`))}
-                  </Grid>
-                </Box>
-              </Box>
-            )}
-          </>
-        );
-      })()}
+                </>
+              );
+            })()}
           </Box>
         )}
       </DialogContent>

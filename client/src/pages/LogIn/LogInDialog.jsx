@@ -29,7 +29,7 @@ import {
 } from '@mui/icons-material';
 import { getUserById } from '../../store/user/userGetByIdThunk';
 
-const LoginDialog = ({ open, onClose, onLoginSuccess }) => {
+const LoginDialog = ({ open, onClose, onLoginSuccess, disableClose = false, onLoginError }) => {
   const dispatch = useDispatch();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -96,16 +96,11 @@ const LoginDialog = ({ open, onClose, onLoginSuccess }) => {
         setAuthenticatedUser(null);
       }, 400);
     } catch (error) {
-      let errorMessage = 'סיסמה שגויה. אנא נסה שוב.';
-
-      if (typeof error === 'string') {
-        errorMessage = error;
-      } else if (error?.message) {
-        errorMessage = error.message;
-      }
+      const errorMessage = 'סיסמה שגויה. אנא נסה שוב';
 
       setErrors({ password: errorMessage });
       setLoginStep('input');
+      if (onLoginError) onLoginError();
     }
   };
 
@@ -338,8 +333,9 @@ const LoginDialog = ({ open, onClose, onLoginSuccess }) => {
   return (
     <Dialog
       open={open}
-      onClose={loginStep === 'loading' ? undefined : onClose} // ✅ מנע סגירה בזמן טעינה
+      onClose={loginStep === 'loading' ? undefined : onClose}
       disableRestoreFocus
+      disableEscapeKeyDown
       maxWidth="sm"
       fullWidth
       fullScreen={isMobile}
@@ -365,7 +361,7 @@ const LoginDialog = ({ open, onClose, onLoginSuccess }) => {
       }}
     >
       {/* כפתור סגירה */}
-      {loginStep !== 'loading' && (
+      {loginStep !== 'loading' && !disableClose && (
         <IconButton
           onClick={onClose}
           sx={{

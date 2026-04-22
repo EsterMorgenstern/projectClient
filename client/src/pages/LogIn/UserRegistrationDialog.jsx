@@ -34,7 +34,7 @@ import { addUser } from '../../store/user/userAddThunk';
 import { getUserById } from '../../store/user/userGetByIdThunk';
 import { checkUserPermission } from '../../utils/permissions';
 
-const UserRegistrationDialog = ({ open, onClose, onRegistrationSuccess }) => {
+const UserRegistrationDialog = ({ open, onClose, onRegistrationSuccess, hideBackdrop = false }) => {
   const dispatch = useDispatch();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -557,6 +557,7 @@ const handleSubmit = async () => {
         maxWidth="md"
         fullWidth
         fullScreen={isMobile}
+        hideBackdrop={hideBackdrop}
         PaperProps={{
           sx: {
             borderRadius: isMobile ? 0 : 3,
@@ -606,7 +607,8 @@ const handleSubmit = async () => {
           minHeight: 400,
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'center'
+          justifyContent: 'center',
+          overflowY: 'hidden'
         }}>
           <AnimatePresence mode="wait">
             {registrationStep === 'form' && renderRegistrationForm()}
