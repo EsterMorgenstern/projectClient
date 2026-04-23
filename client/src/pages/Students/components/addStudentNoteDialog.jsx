@@ -156,7 +156,7 @@ const AddStudentNoteDialog = ({
       },
       {
         key: 'treatmentsFinished',
-        label: '🔚 נגמרו הטיפולים',
+        label: '🔚 סיים התחייבות',
         description: 'התלמיד סיים את כל הטיפולים הזמינים לו'
       },
       {

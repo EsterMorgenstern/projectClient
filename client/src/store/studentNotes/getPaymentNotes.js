@@ -87,13 +87,13 @@ export const extractStudentIdsByAutomaticBillingNotes = (paymentNotes, selectedA
                      content.includes('📊 מס\' הטיפולים');
             break;
           case 'treatmentsFinished':
-            isMatch = content.includes('נגמרו הטיפולים') || 
+            isMatch = content.includes('סיים התחייבות') || 
                      content.includes('סיים את הטיפולים') ||
                      content.includes('הטיפולים נגמרו') ||
                      content.includes('אין עוד טיפולים') ||
                      content.includes('סיים התחייבות') ||
                      content.includes('✅ סיים התחייבות') ||
-                     content.includes('🔚 נגמרו הטיפולים');
+                     content.includes('🔚 סיים התחייבות');
             break;
           case 'authorizationCancelled':
             isMatch = content.includes('הו"ק בוטלה') || 

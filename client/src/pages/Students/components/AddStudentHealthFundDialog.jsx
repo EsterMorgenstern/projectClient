@@ -62,7 +62,7 @@ const AddStudentHealthFundDialog = ({ open, onClose, studentId, onSuccess }) => 
       },
       {
         key: 'treatmentsFinished',
-        label: '🔚 נגמרו הטיפולים',
+        label: '🔚 סיים התחייבות',
         description: 'התלמיד סיים את כל הטיפולים הזמינים לו'
       },
       {
@@ -231,7 +231,7 @@ const AddStudentHealthFundDialog = ({ open, onClose, studentId, onSuccess }) => 
         }
       }
       if (healthFundChecklist.treatmentsFinished) {
-        const item = '🔚 נגמרו הטיפולים';
+        const item = '🔚 סיים התחייבות';
         const additionalNote = additionalNotes.treatmentsFinished || '';
         const fullItem = `${item}${additionalNote ? ` - ${additionalNote}` : ''}`;
         if (!checklistNotes.includes(fullItem)) {

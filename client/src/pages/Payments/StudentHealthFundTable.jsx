@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, Typography, Box, Skeleton, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, IconButton, Tooltip, Divider, MenuItem, ListItemIcon, ListItemText, FormControlLabel, Checkbox, InputAdornment, Select, FormControl, InputLabel, CircularProgress, TablePagination, Snackbar, Alert } from '@mui/material';
 import Grid from '@mui/material/GridLegacy';
 import { motion } from 'framer-motion';
-import { AddCircle, Person, LocalHospital, CalendarMonth, Healing, AssignmentTurnedIn, Description, Note, Save, Close, Face, LocationCity, Groups, Event, Check as CheckIcon, AttachMoney as AttachMoneyIcon, Info as InfoIcon, FileDownload, Search as SearchIcon, Clear as ClearIcon, ArrowUpward, ArrowDownward, Sort, DragIndicator as DragIndicatorIcon, MenuBook as MenuBookIcon } from '@mui/icons-material';
+import { AddCircle, Person, LocalHospital, CalendarMonth, Healing, AssignmentTurnedIn, Description, Note, Save, Close, Face, LocationCity, Groups, Event, AlternateEmail, Check as CheckIcon, AttachMoney as AttachMoneyIcon, Info as InfoIcon, FileDownload, Search as SearchIcon, Clear as ClearIcon, ArrowUpward, ArrowDownward, Sort, DragIndicator as DragIndicatorIcon, MenuBook as MenuBookIcon } from '@mui/icons-material';
 import ExcelExportDialog from '../../components/ExcelExportDialog';
 import NotesIcon from '@mui/icons-material/Notes';
 import StudentNotesDialog from '../Students/components/StudentNotesDialog';
@@ -30,6 +30,8 @@ import { selectPaymentNotes, selectPaymentNotesLoading } from '../../store/stude
 import DraggablePaper, { DragHandle } from '../../components/DraggablePaper';
 import StudentCoursesDialog from '../Students/components/studentCoursesDialog';
 import { getgroupStudentByStudentId } from '../../store/groupStudent/groupStudentGetByStudentIdThunk';
+import { getStudentById } from '../../store/student/studentGetByIdThunk';
+import { editStudent } from '../../store/student/studentEditThunk';
 import { getAttendanceByStudent } from '../../store/attendance/attendanceGetByStudent';
 import { batchUpdateAttendances } from '../../store/attendance/batchUpdateAttendances';
 import {
@@ -178,6 +180,13 @@ const StudentHealthFundTable = () => {
   const [selectedStudentForDetails, setSelectedStudentForDetails] = useState(null);
   const [studentCourses, setStudentCourses] = useState([]);
   const [loadingStudentCourses, setLoadingStudentCourses] = useState(false);
+  const [emailEditDialogOpen, setEmailEditDialogOpen] = useState(false);
+  const [emailEditLoading, setEmailEditLoading] = useState(false);
+  const [emailEditForm, setEmailEditForm] = useState({
+    studentId: '',
+    studentName: '',
+    email: ''
+  });
 
   // Notification state
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
@@ -342,6 +351,7 @@ const StudentHealthFundTable = () => {
         id: recordId,
         studentId: row?.studentId ?? row?.StudentId ?? '',
         studentName: row?.studentName ?? row?.StudentName ?? '',
+        email: row?.email ?? row?.Email ?? '',
         healthFundId: row?.healthFundId ?? row?.HealthFundId ?? '',
         age: row?.age ?? row?.Age ?? '',
         city: row?.city ?? row?.City ?? '',
@@ -424,6 +434,7 @@ const StudentHealthFundTable = () => {
         const searchableText = [
           row.studentId,
           row.studentName,
+          row.email,
           row.age,
           row.city,
           row.groupName,
@@ -763,7 +774,7 @@ const StudentHealthFundTable = () => {
   };
 
   // ספירת עמודות דינמית
-  const totalColumns = 14 + (showCommitmentsColumns ? 2 : 0) + (showStandingOrderColumn ? 1 : 0);
+  const totalColumns = 15 + (showCommitmentsColumns ? 2 : 0) + (showStandingOrderColumn ? 1 : 0);
   
   // נתונים מפולטרים עם pagination
   const paginatedHealthFunds = useMemo(() => {
@@ -794,15 +805,15 @@ const StudentHealthFundTable = () => {
           alignItems: 'center',
           justifyContent: 'center',
           cursor: 'pointer',
-          minHeight: '60px',
-          gap: 0.5,
+          minHeight: '52px',
+          gap: 0.25,
           '&:hover': {
             opacity: 0.8
           }
         }}
         onClick={() => handleSort(key)}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5, minHeight: '24px' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5, minHeight: '20px' }}>
           {icon}
           {isActive && (
             direction === 'asc' ? 
@@ -1725,6 +1736,115 @@ const StudentHealthFundTable = () => {
     setLoadingStudentCourses(false);
   };
 
+  const handleOpenEmailEditDialog = (row) => {
+    setEmailEditForm({
+      studentId: row.studentId || row.id || '',
+      studentName: row.studentName || '',
+      email: row.email || ''
+    });
+    setEmailEditDialogOpen(true);
+  };
+
+  const handleCloseEmailEditDialog = () => {
+    if (emailEditLoading) return;
+
+    setEmailEditDialogOpen(false);
+    setEmailEditForm({
+      studentId: '',
+      studentName: '',
+      email: ''
+    });
+  };
+
+  const handleSaveStudentEmail = async () => {
+    const trimmedEmail = String(emailEditForm.email || '').trim();
+
+    if (!emailEditForm.studentId) {
+      setNotification({
+        open: true,
+        message: 'לא נמצא מזהה תלמיד לעדכון המייל',
+        severity: 'error'
+      });
+      return;
+    }
+
+    if (!trimmedEmail) {
+      setNotification({
+        open: true,
+        message: 'יש להזין כתובת מייל לפני השמירה',
+        severity: 'warning'
+      });
+      return;
+    }
+
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(trimmedEmail)) {
+      setNotification({
+        open: true,
+        message: 'כתובת המייל אינה בפורמט תקין',
+        severity: 'warning'
+      });
+      return;
+    }
+
+    if (!(ensurePermission())) return;
+
+    setEmailEditLoading(true);
+
+    try {
+      const studentResult = await dispatch(getStudentById(emailEditForm.studentId)).unwrap();
+
+      if (!studentResult) {
+        throw new Error('לא ניתן היה לטעון את פרטי התלמיד מהשרת');
+      }
+
+      const payload = {
+        studentId: Number(studentResult.studentId || studentResult.id || emailEditForm.studentId),
+        id: Number(studentResult.id || studentResult.studentId || emailEditForm.studentId),
+        firstName: studentResult.firstName || studentResult.firstname || '',
+        lastName: studentResult.lastName || studentResult.lastname || '',
+        phone: String(studentResult.phone || ''),
+        secondaryPhone: studentResult.secondaryPhone || studentResult.secondary_phone || studentResult.phoneSecondary || '',
+        email: trimmedEmail,
+        age: parseInt(studentResult.age, 10) || 0,
+        city: studentResult.city || '',
+        school: studentResult.school || '',
+        healthFundId: studentResult.healthFundId || null,
+        class: studentResult.class || studentResult.className || '',
+        sector: studentResult.sector || '',
+        status: studentResult.status || 'פעיל',
+        createdBy: studentResult.createdBy || studentResult.CreatedBy || '',
+        IdentityCard: studentResult.IdentityCard || studentResult.identityCard || ''
+      };
+
+      await dispatch(editStudent(payload)).unwrap();
+
+      setNotification({
+        open: true,
+        message: 'כתובת המייל עודכנה בהצלחה',
+        severity: 'success'
+      });
+
+      setSelectedStudentForDetails((prev) => (
+        prev && String(prev.id) === String(emailEditForm.studentId)
+          ? { ...prev, email: trimmedEmail }
+          : prev
+      ));
+
+      handleCloseEmailEditDialog();
+      dispatch(fetchStudentHealthFunds());
+    } catch (error) {
+      console.error('שגיאה בעדכון כתובת המייל:', error);
+      setNotification({
+        open: true,
+        message: error?.message || 'שגיאה בעדכון כתובת המייל',
+        severity: 'error'
+      });
+    } finally {
+      setEmailEditLoading(false);
+    }
+  };
+
   return (
   <Box sx={{ bgcolor: 'transparent', p: 0, fontFamily: 'inherit' }}>
     <Paper
@@ -2349,6 +2469,7 @@ const StudentHealthFundTable = () => {
             label={`מיון לפי: ${
               sortConfig.key === 'studentId' ? 'קוד תלמיד' :
               sortConfig.key === 'studentName' ? 'שם תלמיד' :
+              sortConfig.key === 'email' ? 'מייל' :
               sortConfig.key === 'age' ? 'גיל' :
               sortConfig.key === 'city' ? 'עיר' :
               sortConfig.key === 'startDateGroup' ? 'תאריך התחלה' :
@@ -2435,10 +2556,25 @@ const StudentHealthFundTable = () => {
     </Box>
 
     <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: 2, overflowX: 'auto', background: 'white', p: 0 }}>
-      <Table sx={{ minWidth: 1600, tableLayout: 'fixed', fontFamily: 'inherit' }}>
+      <Table
+        sx={{
+          minWidth: 1600,
+          tableLayout: 'fixed',
+          fontFamily: 'inherit',
+          '& .MuiTableBody-root .MuiTableCell-root': {
+            py: 0.45,
+            px: 0.75
+          },
+          '& .MuiTableHead-root .MuiTableCell-root': {
+            py: 0.5,
+            px: 0.75
+          }
+        }}
+      >
         <colgroup>
           <col style={{ width: 90 }} />
           <col style={{ width: 160 }} />
+          <col style={{ width: 170 }} />
           <col style={{ width: 60 }} />
           <col style={{ width: 100 }} />
           <col style={{ width: 110 }} />
@@ -2451,7 +2587,7 @@ const StudentHealthFundTable = () => {
           {showCommitmentsColumns && <col style={{ width: 110 }} />}
           {showStandingOrderColumn && <col style={{ width: 120 }} />}
           <col style={{ width: 80 }} />
-          <col style={{ width: 100 }} />
+          <col style={{ width: 185 }} />
           <col style={{ width: 160 }} />
           <col style={{ width: 170 }} />
         </colgroup>
@@ -2462,6 +2598,9 @@ const StudentHealthFundTable = () => {
               </TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center' }}>
                 {getSortableHeader('studentName', 'שם תלמיד', <Face sx={{ color: '#43E97B' }} />)}
+              </TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center' }}>
+                {getSortableHeader('email', 'מייל', <AlternateEmail sx={{ color: '#fbbf24' }} />)}
               </TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center' }}>
                 {getSortableHeader('age', 'גיל', <Face sx={{ color: '#764ba2' }} />)}
@@ -2503,8 +2642,8 @@ const StudentHealthFundTable = () => {
                 </TableCell>
               )}
               <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center' }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60px', gap: 0.5 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '24px' }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '52px', gap: 0.25 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '20px' }}>
                     <Description sx={{ color: '#2563EB' }} />
                   </Box>
                   <Typography variant="body2" sx={{ textAlign: 'center', fontSize: '0.875rem', fontWeight: 'bold', lineHeight: 1.2 }}>
@@ -2513,8 +2652,8 @@ const StudentHealthFundTable = () => {
                 </Box>
               </TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center' }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60px', gap: 0.5 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '24px' }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '52px', gap: 0.25 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '20px' }}>
                     <Description sx={{ color: '#764ba2' }} />
                   </Box>
                   <Typography variant="body2" sx={{ textAlign: 'center', fontSize: '0.875rem', fontWeight: 'bold', lineHeight: 1.2 }}>
@@ -2526,8 +2665,8 @@ const StudentHealthFundTable = () => {
                 {getSortableHeader('notes', 'הערות', <Note sx={{ color: '#F59E42' }} />)}
               </TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center' }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60px', gap: 0.5 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '24px' }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '52px', gap: 0.25, width: '100%' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '20px', width: '100%' }}>
                     <EditIcon sx={{ color: 'white' }} />
                   </Box>
                   <Typography variant="body2" sx={{ textAlign: 'center', fontSize: '0.875rem', fontWeight: 'bold', lineHeight: 1.2 }}>
@@ -2541,7 +2680,7 @@ const StudentHealthFundTable = () => {
             {loading ? (
               [...Array(5)].map((_, idx) => (
                 <TableRow key={idx}>
-                  {[...Array(16)].map((__, i) => (
+                  {[...Array(totalColumns)].map((__, i) => (
                     <TableCell key={i}><Skeleton variant="rectangular" height={24} /></TableCell>
                   ))}
                 </TableRow>
@@ -2609,7 +2748,7 @@ const StudentHealthFundTable = () => {
                     background: standingOrderToday
                       ? 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 60%, #c0f1dbda 100%)'
                       : (idx % 2 === 0 ? '#f8fafc' : '#e2e8f0'),
-                    height: 36,
+                    height: 30,
                     ...(standingOrderToday && {
                       boxShadow: 'inset 4px 0 0 #059669',
                       outline: '1px solid #6ee7b770'
@@ -2640,6 +2779,35 @@ const StudentHealthFundTable = () => {
                       }}>
                         {highlightSearchTerm(row.studentName || '-', searchTerm)}
                       </span>
+                    </Tooltip>
+                  </TableCell>
+                  <TableCell
+                    align="center"
+                    sx={{
+                      direction: 'ltr',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        bgcolor: 'rgba(245, 158, 11, 0.08)'
+                      }
+                    }}
+                    onClick={() => handleOpenEmailEditDialog(row)}
+                  >
+                    <Tooltip title="לחץ לעריכת כתובת המייל" arrow>
+                      <Box
+                        component="span"
+                        sx={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 0.75,
+                          color: row.email ? '#1d4ed8' : '#9ca3af',
+                          textDecoration: row.email ? 'underline' : 'none',
+                          fontWeight: row.email ? 600 : 400
+                        }}
+                      >
+                        <AlternateEmail sx={{ fontSize: 16, color: '#f59e0b' }} />
+                        {highlightSearchTerm(row.email || '', searchTerm)}
+                      </Box>
                     </Tooltip>
                   </TableCell>
                   <TableCell align="center">{highlightSearchTerm(row.age ?? '-', searchTerm)}</TableCell>
@@ -4249,6 +4417,66 @@ const StudentHealthFundTable = () => {
         title={selectedStudentForDetails ? `${selectedStudentForDetails.firstName} ${selectedStudentForDetails.lastName}` : ''}
         subtitle={selectedStudentForDetails ? `ת"ז: ${selectedStudentForDetails.id}${selectedStudentForDetails.email ? ` | 📧 ${selectedStudentForDetails.email}` : ''}` : ''}
       />
+
+      <Dialog
+        open={emailEditDialogOpen}
+        onClose={handleCloseEmailEditDialog}
+        maxWidth="sm"
+        fullWidth
+        PaperComponent={DraggablePaper}
+        PaperProps={{ sx: { borderRadius: '16px', direction: 'rtl' } }}
+      >
+        <DialogTitle className="drag-handle" sx={{ bgcolor: '#f59e0b', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'move' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <DragHandle />
+            <AlternateEmail />
+            <Typography component="span" variant="h6">עריכת כתובת מייל</Typography>
+          </Box>
+          <IconButton onClick={handleCloseEmailEditDialog} sx={{ color: 'white' }} size="small" disabled={emailEditLoading}>
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ p: 3, direction: 'rtl' }}>
+          <br />
+          <Alert severity="warning" sx={{ mb: 2, borderRadius: '12px', alignItems: 'center' }}>
+            כתובת המייל תעודכן לתלמיד הספציפי בכל המקומות בהם רשומים הפרטים שלו.
+          </Alert>
+          <Box sx={{ mb: 2, color: '#334155' }}>
+            <Typography sx={{ fontWeight: 'bold' }}>
+              תלמיד: {emailEditForm.studentName || 'ללא שם'}
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#64748b' }}>
+              ת"ז: {emailEditForm.studentId || '-'}
+            </Typography>
+          </Box>
+          <TextField
+            label="כתובת מייל"
+            fullWidth
+            type="email"
+            value={emailEditForm.email}
+            onChange={(e) => setEmailEditForm((prev) => ({ ...prev, email: e.target.value }))}
+            dir="ltr"
+            placeholder="name@example.com"
+            autoFocus
+            disabled={emailEditLoading}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <AlternateEmail sx={{ color: '#f59e0b' }} />
+                </InputAdornment>
+              )
+            }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1, direction: 'rtl' }}>
+          <Button variant="outlined" color="error" onClick={handleCloseEmailEditDialog} disabled={emailEditLoading} startIcon={<Close />} sx={{ direction: 'ltr' }}>
+            ביטול
+          </Button>
+          <Button variant="contained" onClick={handleSaveStudentEmail} disabled={emailEditLoading} startIcon={emailEditLoading ? <CircularProgress size={18} color="inherit" /> : <Save />} sx={{ bgcolor: '#f59e0b', '&:hover': { bgcolor: '#d97706' }, direction: 'ltr' }}>
+            {emailEditLoading ? 'שומר...' : 'שמור מייל'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Notification Snackbar */}
       <Snackbar

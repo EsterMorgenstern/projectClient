@@ -17,7 +17,7 @@ export const fetchStudentHealthFunds = createAsyncThunk(
     try {
       const response = await axios.get(`${API_BASE_URL}/StudentHealthFund/GetAll`);
       const records = Array.isArray(response.data) ? response.data : [];
-      console.log('✅ נתוני קופות תלמידים חזרו מהשרת:', records);
+     
       return records;
     } catch (error) {
       return rejectWithValue(getErrorMessage(error, 'Failed to fetch student health fund records'));

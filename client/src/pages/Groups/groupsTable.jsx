@@ -135,6 +135,26 @@ const GroupsTable = () => {
       .join(' ');
   }, []);
 
+  const getCourseHeroAsset = useCallback((courseName = '') => {
+    const normalizedName = String(courseName).trim();
+
+    if (normalizedName.includes('בישול')) {
+      return {
+        src: '/לוגו בישול-01.svg',
+        alt: 'לוגו חוג בישול'
+      };
+    }
+
+    if (normalizedName.includes('נגרות')) {
+      return {
+        src: '/לוגו נגרות-01.svg',
+        alt: 'לוגו חוג נגרות'
+      };
+    }
+
+    return null;
+  }, []);
+
 const ensurePermission = useCallback(() => {
     return checkUserPermission(
       currentUser?.id || currentUser?.userId,
@@ -1178,6 +1198,8 @@ const ensurePermission = useCallback(() => {
             const courseBranches = getBranchesForCourse(course.courseId || course.id);
             const totalGroups = courseBranches.reduce((acc, b) => acc + getGroupsForBranch(b.branchId || b.id).length, 0);
 
+            const courseHeroAsset = getCourseHeroAsset(course.couresName);
+
             return (
               <Grid item xs={12} sm={6} md={4} lg={3} key={`course-${course.courseId || course.id || index}`}>
                 <motion.div variants={itemVariants}>
@@ -1206,7 +1228,22 @@ const ensurePermission = useCallback(() => {
                       }
                     }}
                   >
-                    <SchoolIcon sx={{ fontSize: 60, color: '#3B82F6', mb: 2 }} />
+                    {courseHeroAsset ? (
+                      <Box
+                        component="img"
+                        src={courseHeroAsset.src}
+                        alt={courseHeroAsset.alt}
+                        sx={{
+                          width: { xs: 120, sm: 140 },
+                          height: { xs: 72, sm: 84 },
+                          objectFit: 'contain',
+                          mb: 2,
+                          filter: 'drop-shadow(0 10px 22px rgba(0, 0, 0, 0.14))'
+                        }}
+                      />
+                    ) : (
+                      <SchoolIcon sx={{ fontSize: 60, color: '#3B82F6', mb: 2 }} />
+                    )}
                     <Typography variant="h6" fontWeight="bold" textAlign="center" color="#1E3A8A">
                       {course.couresName}
                     </Typography>

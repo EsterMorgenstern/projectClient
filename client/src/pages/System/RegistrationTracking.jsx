@@ -115,7 +115,7 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
           studentsMap[student.id] = student;
         });
         setStudentsData(studentsMap);
-        console.log('נתוני תלמידים נטענו:', studentsMap);
+       
       }
       await dispatch(getStudentNotesByRegistrationTracking());
     } catch (error) {

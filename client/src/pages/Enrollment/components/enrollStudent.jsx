@@ -266,6 +266,26 @@ const EnrollStudent = () => {
     <Box component="span" sx={{ fontSize: '24px' }}>🚀</Box>
   );
 
+  const getCourseHeroAsset = (courseName = '') => {
+    const normalizedName = courseName.trim();
+
+    if (normalizedName.includes('בישול')) {
+      return {
+        src: '/לוגו בישול-01.svg',
+        alt: 'לוגו חוג בישול'
+      };
+    }
+
+    if (normalizedName.includes('נגרות')) {
+      return {
+        src: '/לוגו נגרות-01.svg',
+        alt: 'לוגו חוג נגרות'
+      };
+    }
+
+    return null;
+  };
+
   // Redux state
   const courses = useSelector(state => state.courses.courses || []);
   const branches = useSelector(state => state.branches.branches || []);
@@ -2587,8 +2607,23 @@ if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity
                   <MoreVertIcon fontSize="small" />
                 </IconButton>
 
-                <CourseIcon sx={{ fontSize: 60, color: '#3B82F6', mb: 2 }} />
-                <Typography variant="h6" fontWeight="bold" textAlign="center" color="#1E3A8A">
+                {getCourseHeroAsset(course.couresName) ? (
+                  <Box
+                    component="img"
+                    src={getCourseHeroAsset(course.couresName).src}
+                    alt={getCourseHeroAsset(course.couresName).alt}
+                    sx={{
+                      width: { xs: 120, sm: 140 },
+                      height: { xs: 72, sm: 84 },
+                      objectFit: 'contain',
+                      mb: 2,
+                      filter: 'drop-shadow(0 10px 22px rgba(0, 0, 0, 0.14))'
+                    }}
+                  />
+                ) : (
+                  <CourseIcon sx={{ fontSize: 60, color: '#3B82F6', mb: 2 }} />
+                )}
+                <Typography variant="h6" fontWeight="bold" textAlign="center" color="#74571a">
                   {course.couresName}
                 </Typography>
                 <Divider sx={{ width: '80%', my: 2 }} />
@@ -2597,9 +2632,14 @@ if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity
                 </Typography>
                 <Chip
                   label={`${course.totalGroups || 'מספר'} קבוצות`}
-                  color="primary"
                   size="small"
-                  sx={{ mt: 2 }}
+                  sx={{
+                    mt: 2,
+                    backgroundColor: '#eef5df',
+                    color: '#8b6b5c',
+                    border: '1px solid #8ed402',
+                    fontWeight: 700
+                  }}
                 />
               </Paper>
             </motion.div>
@@ -2791,7 +2831,7 @@ if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity
                           sx={{
                             p: 2,
                             borderRadius: 2,
-                            mb: 2,
+                            color: '#4c7520',
                             width: '100%',
                             display: 'flex',
                             flexDirection: 'column',
