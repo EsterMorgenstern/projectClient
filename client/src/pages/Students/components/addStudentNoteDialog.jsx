@@ -139,32 +139,58 @@ const AddStudentNoteDialog = ({
 
     // הערות גביה אוטומטיות
     const billingNoteOptions = [
-      {
-        key: 'noReferralSent',
-        label: '🚫 לא שלחו הפניה',
-        description: 'עדיין לא נשלחה הפניה לקופת החולים'
-      },
-      {
-        key: 'noEligibility', 
-        label: '❌ אין זכאות לטיפולים',
-        description: 'התלמיד אינו זכאי לטיפולים דרך קופת החולים'
-      },
-      {
-        key: 'insufficientTreatments',
-        label: '📊 מס\' הטיפולים בהתחייבות לא מספיק',
-        description: 'יש לשלוח התחייבות חדשה עם מספר טיפולים נוסף'
-      },
-      {
-        key: 'treatmentsFinished',
-        label: '🔚 סיים התחייבות',
-        description: 'התלמיד סיים את כל הטיפולים הזמינים לו'
-      },
-      {
-        key: 'authorizationCancelled',
-        label: '🚨 הו"ק בוטלה',
-        description: 'ההרשאה/אישור מקופת החולים בוטל'
-      }
-    ];
+            {
+                key: 'noReferralSent',
+                label: '🚫 לא שלחו הפניה',
+                description: 'עדיין לא נשלחה הפניה לקופת החולים'
+            },
+            {
+                key: 'noEligibility', 
+                label: '❌ אין זכאות לטיפולים',
+                description: 'התלמיד אינו זכאי לטיפולים דרך קופת החולים'
+            },
+            {
+                key: 'insufficientTreatments',
+                label: '📊 מס\' הטיפולים בהתחייבות לא מספיק',
+                description: 'יש לשלוח התחייבות חדשה עם מספר טיפולים נוסף'
+            },
+            {
+                key: 'treatmentsFinished',
+                label: '🔚 סיים התחייבות',
+                description: 'התלמיד סיים את כל הטיפולים הזמינים לו'
+            },
+            {
+                key: 'authorizationCancelled',
+                label: '🚨 הו"ק בוטלה',
+                description: 'ההרשאה/אישור מקופת החולים בוטל'
+            },
+            // --- הערות גביה אוטומטיות חדשות ---
+            {
+                key: 'openStandingOrderNextMonth',
+                label: '📅 לפתוח הו"ק חודש הבא',
+                description: 'הערות גביה אוטומטיות: לפתוח הו"ק חודש הבא'
+            },
+            {
+                key: 'debtPaidIssueReceipts',
+                label: '💸 שולם החוב, להוציא קבלות ולדווח',
+                description: 'שולם החוב צריך להוציא קבלות ולדווח'
+            },
+            {
+                key: 'partialPaymentIssueReceipts',
+                label: '💰 שילמו חלק מהסכום, להוציא קבלות לדיווח',
+                description: 'שילמו חלק מהסכום, להוציא קבלות לדיווח. כשמסתיים לגבות את יתרת החוב.'
+            },
+            {
+                key: 'notCollectingThisYear',
+                label: '⏳ עדיין לא גובים השנה',
+                description: 'עדיין לא גובים השנה. בטיפול לגבי החזר על שנה שעברה.'
+            },
+            {
+                key: 'receiptSentForMonth',
+                label: '🧾 נשלחה קבלה על חודש',
+                description: 'נשלחה קבלה על חודש ואפשרות לבחור חודש'
+            }
+        ];
 
     // בדוק אם יש כבר הערת "מעקב רישום" לתלמיד
     const hasRegistrationTrackingNote = useMemo(() => {
@@ -190,6 +216,12 @@ const AddStudentNoteDialog = ({
 
     // הערות נוספות להערות גביה
     const [billingAdditionalNotes, setBillingAdditionalNotes] = useState({});
+        // חודשי שנה לועזיים
+        // חודשי שנה לועזיים בעברית (מהחודש האחרון לראשון)
+        const months = [
+            'דצמבר', 'נובמבר', 'אוקטובר', 'ספטמבר', 'אוגוסט', 'יולי',
+            'יוני', 'מאי', 'אפריל', 'מרץ', 'פברואר', 'ינואר'
+        ];
 
     // עדכן סטטוס משימה
     const handleTaskToggle = (task) => {
@@ -871,19 +903,44 @@ const AddStudentNoteDialog = ({
                                         {option.description}
                                       </Typography>
                                       {billingNoteSelection[option.key] && (
-                                        <TextField
-                                          fullWidth
-                                          size="small"
-                                          placeholder="הערה נוספת (אופציונלי)"
-                                          value={billingAdditionalNotes[option.key] || ''}
-                                          onChange={(e) => handleBillingAdditionalNoteChange(option.key, e.target.value)}
-                                          sx={{
-                                            '& .MuiOutlinedInput-root': {
-                                              borderRadius: '6px',
-                                              bgcolor: 'white'
-                                            }
-                                          }}
-                                        />
+                                                                                option.key === 'receiptSentForMonth' ? (
+                                                                                    <TextField
+                                                                                        select
+                                                                                        fullWidth
+                                                                                        size="small"
+                                                                                        label="בחר חודש לועזי"
+                                                                                        value={billingAdditionalNotes[option.key] || ''}
+                                                                                        onChange={(e) => handleBillingAdditionalNoteChange(option.key, e.target.value)}
+                                                                                        sx={{
+                                                                                            direction: 'rtl',
+                                                                                            textAlign: 'right',
+                                                                                            '& .MuiOutlinedInput-root': {
+                                                                                                borderRadius: '6px',
+                                                                                                bgcolor: 'white',
+                                                                                                direction: 'rtl',
+                                                                                                textAlign: 'right'
+                                                                                            }
+                                                                                        }}
+                                                                                    >
+                                                                                        {months.map((month) => (
+                                                                                            <MenuItem key={month} value={month} sx={{ direction: 'rtl', textAlign: 'right' }}>{month}</MenuItem>
+                                                                                        ))}
+                                                                                    </TextField>
+                                                                                ) : (
+                                                                                    <TextField
+                                                                                        fullWidth
+                                                                                        size="small"
+                                                                                        placeholder="הערה נוספת (אופציונלי)"
+                                                                                        value={billingAdditionalNotes[option.key] || ''}
+                                                                                        onChange={(e) => handleBillingAdditionalNoteChange(option.key, e.target.value)}
+                                                                                        sx={{
+                                                                                            '& .MuiOutlinedInput-root': {
+                                                                                                borderRadius: '6px',
+                                                                                                bgcolor: 'white'
+                                                                                            }
+                                                                                        }}
+                                                                                    />
+                                                                                )
                                       )}
                                     </Box>
                                   ))}

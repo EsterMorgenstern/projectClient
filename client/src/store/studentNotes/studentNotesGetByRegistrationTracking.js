@@ -7,8 +7,8 @@ export const getStudentNotesByRegistrationTracking = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get(`${API_BASE_URL}/StudentNotes/getByRegistrationTracking`);
-      return response.data;
-    } catch (error) {
+        return response.data;
+  } catch (error) {
       return rejectWithValue(error.response?.data || 'An error occurred while fetching registration tracking notes');
     }
   }

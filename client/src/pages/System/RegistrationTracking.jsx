@@ -11,7 +11,7 @@ import {
   TableBody,
   TableCell,
   TableRow,
-  
+
   Chip,
   IconButton,
   TextField,
@@ -59,7 +59,7 @@ import { checkUserPermission } from '../../utils/permissions';
 
 const RegistrationTracking = () => {
   const dispatch = useDispatch();
-  
+
   // משימות רישום קבועות
   const registrationTasks = [
     'אמצעי תשלום מולא',
@@ -67,7 +67,7 @@ const RegistrationTracking = () => {
     'הוכנס ל-GIS',
     'הוסבר על התחייבות/הפניה'
   ];
-  
+
   // States
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -75,22 +75,38 @@ const RegistrationTracking = () => {
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterTask, setFilterTask] = useState('all');
+  const [filterMonth, setFilterMonth] = useState('all');
+  const months = [
+    { value: 'all', label: 'הכל' },
+    { value: 0, label: 'ינואר' },
+    { value: 1, label: 'פברואר' },
+    { value: 2, label: 'מרץ' },
+    { value: 3, label: 'אפריל' },
+    { value: 4, label: 'מאי' },
+    { value: 5, label: 'יוני' },
+    { value: 6, label: 'יולי' },
+    { value: 7, label: 'אוגוסט' },
+    { value: 8, label: 'ספטמבר' },
+    { value: 9, label: 'אוקטובר' },
+    { value: 10, label: 'נובמבר' },
+    { value: 11, label: 'דצמבר' },
+  ];
   const [studentsData, setStudentsData] = useState({});
   const [saving, setSaving] = useState(false);
   const [editNotesMode, setEditNotesMode] = useState(false);
   const [editedTasks, setEditedTasks] = useState({});
   const [alert, setAlert] = useState({ open: false, message: '', severity: 'success' });
-  
+
   // Student details dialog states
   const [studentDetailsDialogOpen, setStudentDetailsDialogOpen] = useState(false);
   const [selectedStudentForDetails, setSelectedStudentForDetails] = useState(null);
   const [studentCourses, setStudentCourses] = useState([]);
   const [loadingStudentCourses, setLoadingStudentCourses] = useState(false);
-  
+
   // Pagination states
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  
+
   // Sorting states
   const [sortField, setSortField] = useState('');
   const [sortDirection, setSortDirection] = useState('asc');
@@ -98,7 +114,7 @@ const RegistrationTracking = () => {
   // Redux selectors
   const registrationTrackingNotes = useSelector(selectRegistrationTrackingNotes);
   const notesLoading = useSelector(selectStudentNotesLoading);
-const currentUser = useSelector(state => state.user?.currentUser || state.users?.currentUser || null);
+  const currentUser = useSelector(state => state.user?.currentUser || state.users?.currentUser || null);
 
   // Load data
   useEffect(() => {
@@ -115,7 +131,7 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
           studentsMap[student.id] = student;
         });
         setStudentsData(studentsMap);
-       
+
       }
       await dispatch(getStudentNotesByRegistrationTracking());
     } catch (error) {
@@ -166,13 +182,18 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
           registrationNotes: [],
           incompleteTasks: [],
           lastNoteDate: null,
-          priority: 'בינוני'
+          priority: 'בינוני',
+          createdDate: studentInfo.createdDate || null // הוסף שדה תאריך יצירה
         });
       }
       const studentData = studentNotesMap.get(studentId);
       if (note.noteType === 'מעקב רישום') {
         if (!studentData.registrationNotes.length || new Date(note.updatedDate || note.createdDate) > new Date(studentData.registrationNotes[0].updatedDate || studentData.registrationNotes[0].createdDate)) {
           studentData.registrationNotes[0] = note;
+          // אם אין תאריך יצירה בתלמיד, קח מההערה
+          if (!studentData.createdDate && note.createdDate) {
+            studentData.createdDate = note.createdDate;
+          }
         }
       }
       // אפשר להוסיף הערות אחרות אם צריך
@@ -202,10 +223,9 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
   // Sort data function
   const sortData = (data, field, direction) => {
     if (!field) return data;
-    
+
     return [...data].sort((a, b) => {
       let aValue, bValue;
-      
       switch (field) {
         case 'studentName':
           aValue = `${a.firstName} ${a.lastName}`.toLowerCase();
@@ -228,6 +248,10 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
           aValue = a.lastNoteDate ? new Date(a.lastNoteDate) : new Date(0);
           bValue = b.lastNoteDate ? new Date(b.lastNoteDate) : new Date(0);
           break;
+        case 'createdDate':
+          aValue = a.createdDate ? new Date(a.createdDate) : new Date(0);
+          bValue = b.createdDate ? new Date(b.createdDate) : new Date(0);
+          break;
         case 'incompleteTasks':
           aValue = a.incompleteTasks.length;
           bValue = b.incompleteTasks.length;
@@ -239,7 +263,6 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
         default:
           return 0;
       }
-      
       if (direction === 'asc') {
         return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
       } else {
@@ -276,7 +299,7 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
           matchesSearch = true;
         }
       }
-      const matchesFilter = 
+      const matchesFilter =
         filterStatus === 'all' ||
         (filterStatus === 'pending' && student.incompleteTasks.length > 0) ||
         (filterStatus === 'completed' && student.incompleteTasks.length === 0);
@@ -285,11 +308,22 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
       const matchesTask =
         typeof filterTask === 'undefined' || filterTask === 'all' || student.incompleteTasks.includes(filterTask);
 
-      return matchesSearch && matchesFilter && matchesTask;
+      // סינון לפי חודש
+      let matchesMonth = true;
+      if (filterMonth !== 'all') {
+        if (student.createdDate && !isNaN(new Date(student.createdDate))) {
+          const month = new Date(student.createdDate).getMonth();
+          matchesMonth = month === Number(filterMonth);
+        } else {
+          matchesMonth = false;
+        }
+      }
+
+      return matchesSearch && matchesFilter && matchesTask && matchesMonth;
     });
     // Apply sorting
     return sortData(filtered, sortField, sortDirection);
-  }, [studentsWithRegistrationNotes, searchTerm, filterStatus, filterTask, sortField, sortDirection]);
+  }, [studentsWithRegistrationNotes, searchTerm, filterStatus, filterTask, filterMonth, sortField, sortDirection]);
 
   // Pagination handlers
   const handleChangePage = (event, newPage) => {
@@ -339,15 +373,15 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
   };
 
   const handleSaveNotes = async () => {
-   setSaving(true);
-  if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setAlert({ open: true, message: msg, severity }))) {
-    setSaving(false);
-    return;
-  }
+    setSaving(true);
+    if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setAlert({ open: true, message: msg, severity }))) {
+      setSaving(false);
+      return;
+    }
     try {
       const currentDate = new Date().toLocaleDateString('he-IL');
       let noteContent = `🔴 משימות שטרם הושלמו (עודכן ב-${currentDate}):\n`;
-      
+
       const incompleteTasks = [];
       registrationTasks.forEach(task => {
         if (!editedTasks[task]) {
@@ -368,7 +402,7 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
       };
 
       const result = await dispatch(updateStudentNote(updatedNote));
-      
+
       if (result.type === 'studentNotes/updateStudentNote/fulfilled') {
         await loadRegistrationTrackingData();
         setEditNotesMode(false);
@@ -396,7 +430,7 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
     try {
       // נצטרך לוודא שהתלמיד מכיל את כל הנתונים הנחוצים
       const fullStudentData = studentsData[student.id] || student;
-      
+
       // נוסיף נתונים חסרים אם לא קיימים
       const studentForDialog = {
         ...fullStudentData,
@@ -408,16 +442,16 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
         city: fullStudentData.city || student.city || '',
         age: fullStudentData.age || student.age || '',
       };
-      
+
       setSelectedStudentForDetails(studentForDialog);
-      
+
       // פתיחת הדיאלוג מיד - ללא המתנה לטעינת הקורסים
       setStudentDetailsDialogOpen(true);
-      
+
       // איפוס קורסים קודמים ותחילת טעינה חדשה ברקע
       setStudentCourses([]);
       setLoadingStudentCourses(true);
-      
+
       // טעינת קורסי התלמיד ברקע
       try {
         const coursesResult = await dispatch(getgroupStudentByStudentId(student.id));
@@ -432,7 +466,7 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
       } finally {
         setLoadingStudentCourses(false);
       }
-      
+
     } catch (error) {
       console.error('שגיאה בפתיחת פרטי התלמיד:', error);
     }
@@ -489,102 +523,101 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    ><Box sx={{ 
+      transition={{ duration: 0.5 }}>
+      <Box sx={{
         background: 'linear-gradient(to right, #e0f2fe, #f8fafc)',
-          minHeight: '100vh',
-          borderRadius: 8,
+        minHeight: '100vh',
+        borderRadius: 8,
         py: 4
       }}>
-      <Box sx={{ p: 3, direction: 'rtl', fontFamily: 'Arial, sans-serif' }}>
-        <Box sx={{ mb: 6 }}>
-        
-          <Typography
-            variant={"h3"}
-            sx={{
-              fontWeight: 'bold',
-              color: '#1E3A8A',
-              mb: 1,
-              fontFamily: 'Heebo, sans-serif',
-              textAlign: 'center',
-            }}
-          >
-מעקב רישום          </Typography>
-          <Typography
-            variant="h6"
-            sx={{
-              color: '#334155',
-              textAlign: 'center',
-              mb: 3,
-              fontSize: { xs: '1rem', md: '1.25rem' }
-            }}
-          >
-      ניהול רישום התלמידים במערכת    
-      </Typography>
-          
-      </Box>
-  {/* סטטיסטיקות רישום */}
-  <Box sx={{ 
-    display: 'grid',
-    gridTemplateColumns: { xs: 'repeat(1, minmax(0, 1fr))', sm: 'repeat(2, minmax(0, 1fr))', md: 'repeat(4, minmax(0, 1fr))' },
-    gap: 1,
-    mt: 3,
-    mb: 3.4,
-    width: '75%',
-    mx: 'auto'
-  }}>
-    <StatsCard
-      label="משימות חסרות"
-      value={studentsWithRegistrationNotes.filter(s => s.incompleteTasks.length > 0).length}
-      note="תלמידים שנדרשים"
-      bg="linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)"
-      icon={ErrorIcon}
-      iconBg="rgba(220, 38, 38, 0.12)"
-      numberAlign="center"
-    />
-    <StatsCard
-      label="הושלמו"
-      value={studentsWithRegistrationNotes.filter(s => s.incompleteTasks.length === 0).length}
-      note="תלמידים מוכנים"
-      bg="linear-gradient(135deg, #ecfdf3 0%, #dcfce7 100%)"
-      icon={CheckCircleIcon}
-      iconBg="rgba(34, 197, 94, 0.12)"
-      numberAlign="center"
-    />
-    <StatsCard
-      label="עדיפות גבוהה"
-      value={studentsWithRegistrationNotes.filter(s => s.priority === 'גבוהה').length}
-      note="דורשים טיפול מיידי"
-      bg="linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)"
-      icon={TrendingUpIcon}
-      iconBg="rgba(245, 158, 11, 0.12)"
-      numberAlign="center"
-    />
-    <StatsCard
-      label='סה"כ במעקב'
-      value={studentsWithRegistrationNotes.length}
-      note="כל התלמידים"
-       bg="linear-gradient(135deg, #ffe8f9c4 0%, #ffd5f256 100%)"
-          icon={AssessmentIcon}
-          iconBg="rgba(242, 58, 227, 0.12)"
-      numberAlign="center"
-    />
-  </Box>
-        <br/>
-        {/* אזור חיפוש עדין ומקצועי */}
-        <Box sx={{ 
-          mb: 4, 
-          direction: 'rtl'
-        }}>
-         
-           
+        <Box sx={{ p: 3, direction: 'rtl', fontFamily: 'Arial, sans-serif' }}>
+          <Box sx={{ mb: 6 }}>
+            <Typography
+              variant={"h3"}
+              sx={{
+                fontWeight: 'bold',
+                color: '#1E3A8A',
+                mb: 1,
+                fontFamily: 'Heebo, sans-serif',
+                textAlign: 'center',
+              }}
+            >
+              מעקב רישום
+            </Typography>
+            <Typography
+              variant="h6"
+              sx={{
+                color: '#334155',
+                textAlign: 'center',
+                mb: 3,
+                fontSize: { xs: '1rem', md: '1.25rem' }
+              }}
+            >
+              ניהול רישום התלמידים במערכת
+            </Typography>
+          </Box>
+          {/* סטטיסטיקות רישום */}
+          <Box sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: 'repeat(1, minmax(0, 1fr))', sm: 'repeat(2, minmax(0, 1fr))', md: 'repeat(4, minmax(0, 1fr))' },
+            gap: 1,
+            mt: 3,
+            mb: 3.4,
+            width: '75%',
+            mx: 'auto'
+          }}>
+            <StatsCard
+              label="משימות חסרות"
+              value={studentsWithRegistrationNotes.filter(s => s.incompleteTasks.length > 0).length}
+              note="תלמידים שנדרשים"
+              bg="linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)"
+              icon={ErrorIcon}
+              iconBg="rgba(220, 38, 38, 0.12)"
+              numberAlign="center"
+            />
+            <StatsCard
+              label="הושלמו"
+              value={studentsWithRegistrationNotes.filter(s => s.incompleteTasks.length === 0).length}
+              note="תלמידים מוכנים"
+              bg="linear-gradient(135deg, #ecfdf3 0%, #dcfce7 100%)"
+              icon={CheckCircleIcon}
+              iconBg="rgba(34, 197, 94, 0.12)"
+              numberAlign="center"
+            />
+            <StatsCard
+              label="עדיפות גבוהה"
+              value={studentsWithRegistrationNotes.filter(s => s.priority === 'גבוהה').length}
+              note="דורשים טיפול מיידי"
+              bg="linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)"
+              icon={TrendingUpIcon}
+              iconBg="rgba(245, 158, 11, 0.12)"
+              numberAlign="center"
+            />
+            <StatsCard
+              label='סה"כ במעקב'
+              value={studentsWithRegistrationNotes.length}
+              note="כל התלמידים"
+              bg="linear-gradient(135deg, #ffe8f9c4 0%, #ffd5f256 100%)"
+              icon={AssessmentIcon}
+              iconBg="rgba(242, 58, 227, 0.12)"
+              numberAlign="center"
+            />
+          </Box>
+          <br />
+          {/* אזור חיפוש עדין ומקצועי */}
+          <Box sx={{
+            mb: 4,
+            direction: 'rtl'
+          }}>
+
+
 
             {/* אזור החיפוש והכפתורים */}
-            <Box sx={{ 
-              display: 'flex', 
-              gap: 2, 
-              alignItems: 'center', 
-              flexWrap: 'wrap', 
+            <Box sx={{
+              display: 'flex',
+              gap: 2,
+              alignItems: 'center',
+              flexWrap: 'wrap',
               justifyContent: 'center'
             }}>
               {/* שדה החיפוש */}
@@ -594,10 +627,12 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 size="medium"
-                sx={{ 
+                sx={{
                   flex: 1,
-                  minWidth: 350, 
+                  minWidth: 350,
                   maxWidth: 550,
+                  direction: 'rtl',
+                  textAlign: 'right',
                   '& .MuiOutlinedInput-root': {
                     borderRadius: '12px',
                     bgcolor: '#fafafa',
@@ -647,25 +682,37 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                   }
                 }}
               />
-              
+
               {/* סינון לפי משימת רישום */}
 
-              <Box sx={{ minWidth: 180 }}>
+              <Box sx={{ minWidth: 180, direction: 'rtl', textAlign: 'right' }}>
                 <FormControl fullWidth size="small" sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: '10px',
                   },
                   '& .MuiInputLabel-root': {
                     borderRadius: '10px',
-                  }
+                  },
+                  direction: 'rtl',
+                  textAlign: 'right'
                 }}>
-                  <InputLabel id="filter-task-label">סנן לפי משימת רישום</InputLabel>
+                  <InputLabel id="filter-task-label" sx={{ direction: 'rtl', right: 36, left: 'auto', textAlign: 'right' }}>סנן לפי משימת רישום</InputLabel>
                   <Select
                     labelId="filter-task-label"
                     id="filter-task-select"
                     value={filterTask}
                     label="סנן לפי משימת רישום"
                     onChange={e => setFilterTask(e.target.value)}
+                    sx={{ direction: 'rtl', textAlign: 'right' }}
+                    MenuProps={{
+                      PaperProps: {
+                        sx: {
+                          direction: 'rtl',
+                          textAlign: 'right',
+                          minWidth: 180
+                        }
+                      }
+                    }}
                   >
                     <MenuItem value="all" sx={{ direction: 'rtl', textAlign: 'right' }}>הכל</MenuItem>
                     {registrationTasks.map(task => (
@@ -675,13 +722,39 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                 </FormControl>
               </Box>
 
-              {/* כפתור רענון */}
+
+              {/* כפתור סינון לפי חודש רישום */}
+              <FormControl fullWidth size="small" sx={{ minWidth: 180, maxWidth: 220, direction: 'rtl', textAlign: 'right' }}>
+                <InputLabel id="filter-month-label" sx={{ direction: 'rtl', right: 69, left: 'auto', textAlign: 'right' }}>סינון לפי תאריך רישום</InputLabel>
+                <Select
+                  labelId="filter-month-label"
+                  id="filter-month-select"
+                  value={filterMonth}
+                  label="סינון לפי תאריך רישום"
+                  onChange={e => setFilterMonth(e.target.value)}
+                  sx={{ direction: 'rtl', textAlign: 'right' }}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        direction: 'rtl',
+                        textAlign: 'right',
+                        minWidth: 180
+                      }
+                    }
+                  }}
+                >
+                  {months.map(month => (
+                    <MenuItem key={month.value} value={month.value} sx={{ direction: 'rtl', textAlign: 'right' }}>{month.label}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              {/* כפתור רענן נתונים */}
               <Button
                 variant="contained"
                 startIcon={<RefreshIcon />}
                 onClick={loadRegistrationTrackingData}
                 sx={{
-                 
                   borderRadius: '12px',
                   px: 3,
                   py: 1.5,
@@ -704,7 +777,7 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
               >
                 רענן נתונים
               </Button>
-              
+
               {/* כפתור איפוס מיון */}
               {sortField && (
                 <Button
@@ -738,15 +811,15 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
 
             {/* מחוון תוצאות חיפוש */}
             {searchTerm && (
-              <Box sx={{ 
-                mt: 3, 
+              <Box sx={{
+                mt: 3,
                 textAlign: 'center',
                 p: 2,
                 bgcolor: '#f0f9ff',
                 borderRadius: '8px',
                 border: '1px solid #e0f2fe'
               }}>
-                <Typography variant="body2" sx={{ 
+                <Typography variant="body2" sx={{
                   color: '#0369a1',
                   fontWeight: 500,
                   display: 'flex',
@@ -758,8 +831,8 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                   <Button
                     size="small"
                     onClick={() => setSearchTerm('')}
-                    sx={{ 
-                      color: '#0369a1', 
+                    sx={{
+                      color: '#0369a1',
                       minWidth: 'auto',
                       p: 0.5,
                       ml: 1,
@@ -771,316 +844,340 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                 </Typography>
               </Box>
             )}
-        
-        </Box>
 
-        {/* מונה תלמידים */}
-      <Box sx={{ 
-      mb: 2, 
-      p: 2, 
-      bgcolor: '#e1eefbff', 
-      borderRadius: 2, 
-      border: '1px solid #d7e4f6ff',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      direction: 'rtl'
-    }}>
-      <Typography variant="h6" sx={{ 
-        color: '#1e40af', 
-        fontWeight: 'bold',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 1
-      }}>
-        📊
-        סה"כ תלמידים בטבלה: {filteredStudents.length}
-      </Typography>
-      
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-        <Typography variant="body2" sx={{ 
-          color: '#64748b',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1
-        }}>
-          <InfoIcon sx={{ fontSize: 16 }} />
-          מציג {paginatedStudents.length} מתוך {filteredStudents.length} תלמידים
-        </Typography>
-        {sortField && (
-          <Typography variant="caption" sx={{ 
-            color: '#3b82f6',
+          </Box>
+
+          {/* מונה תלמידים */}
+          <Box sx={{
+            mb: 2,
+            p: 2,
+            bgcolor: '#e1eefbff',
+            borderRadius: 2,
+            border: '1px solid #d7e4f6ff',
             display: 'flex',
+            justifyContent: 'space-between',
             alignItems: 'center',
-            gap: 0.5,
-            fontWeight: 500
+            direction: 'rtl'
           }}>
-            🔄 ממוין לפי: {
-              sortField === 'studentName' ? 'שם תלמיד' :
-              sortField === 'authorName' ? 'נרשם על ידי' :
-              sortField === 'status' ? 'סטטוס' :
-              sortField === 'priority' ? 'עדיפות' :
-              sortField === 'updateDate' ? 'תאריך עדכון' :
-              sortField === 'incompleteTasks' ? 'משימות חסרות' :
-              sortField
-            } ({sortDirection === 'asc' ? 'עולה' : 'יורד'})
-          </Typography>
-        )}
-      </Box>
-    </Box>
+            <Typography variant="h6" sx={{
+              color: '#1e40af',
+              fontWeight: 'bold',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1
+            }}>
+              📊
+              סה"כ תלמידים בטבלה: {filteredStudents.length}
+            </Typography>
 
-        {/* טבלה מעוצבת */}
-        <StyledTableShell
-          enableSort={true}
-          onSort={handleSort}
-          sortField={sortField}
-          sortDirection={sortDirection}
-          enableHorizontalScroll={true}
-          headers={[
-            { label: 'סטטוס', field: 'status', align: 'center' },
-            { label: 'נרשם על ידי', field: 'authorName', align: 'center', sx: { minWidth: '150px' } },
-            { label: 'תלמיד', field: 'studentName', align: 'center' },
-            { label: 'משימות חסרות', field: 'incompleteTasks', align: 'center', sx: { width: '250px' } },
-            { label: 'עדיפות', field: 'priority', align: 'center' },
-            { label: 'תאריך עדכון', field: 'updateDate', align: 'center', sx: { minWidth: '140px' } },
-            { label: 'פעולות', align: 'center', sortable: false }
-          ]}
-        >
-              <TableBody>
-                {paginatedStudents.map((student, index) => (
-                  <TableRow 
-                    key={student.id || index} 
-                    sx={{ 
-                      '&:hover': { 
-                        bgcolor: 'rgba(59, 130, 246, 0.04)',
-                        transform: 'scale(1.005)',
-                        transition: 'all 0.2s ease',
-                        boxShadow: '0 4px 20px rgba(59, 130, 246, 0.1)'
-                      },
-                      '&:nth-of-type(even)': {
-                        bgcolor: 'rgba(248, 250, 252, 0.5)'
-                      },
-                      direction: 'rtl',
-                      borderBottom: '1px solid rgba(226, 232, 240, 0.8)'
-                    }}
-                  >
-                    <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
-                      <Box sx={{ 
-                        display: 'flex', 
-                        justifyContent: 'center', 
-                        alignItems: 'center',
-                        gap: 1
-                      }}>
-                        <Tooltip title={
-                          student.incompleteTasks.length === 0 
-                            ? 'כל המשימות הושלמו' 
-                            : `${student.incompleteTasks.length} משימות חסרות`
-                        }>
-                          <Box sx={{
-                            p: 0.5,
-                            borderRadius: '50%',
-                            bgcolor: student.incompleteTasks.length === 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}>
-                            {getStatusIcon(student.incompleteTasks)}
-                          </Box>
-                        </Tooltip>
-                      </Box>
-                    </TableCell>
-                    <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        {student.registrationNotes && student.registrationNotes.length > 0 && student.registrationNotes[0].authorName ? (
-                          <>
-                            <Typography variant="body2" sx={{ 
-                              fontWeight: 600,
-                              color: '#1e293b',
-                              textAlign: 'center'
-                            }}>
-                              {student.registrationNotes[0].authorName}
-                            </Typography>
-                            <Typography variant="caption" sx={{ 
-                              color: '#64748b',
-                              textAlign: 'center'
-                            }}>
-                              {student.registrationNotes[0].authorRole || 'רושם'}
-                            </Typography>
-                          </>
-                        ) : (
-                          <Typography variant="body2" sx={{ 
-                            textAlign: 'center', 
-                            color: '#94a3b8',
-                            fontStyle: 'italic'
-                          }}>
-                            לא ידוע
-                          </Typography>
-                        )}
-                      </Box>
-                    </TableCell>
-                    <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <Tooltip 
-                          title="לחץ לצפייה בפרטי התלמיד 👆"
-                          placement="top"
-                          arrow
-                          sx={{
-                            '& .MuiTooltip-tooltip': {
-                              bgcolor: '#3b82f6',
-                              color: 'white',
-                              fontSize: '0.8rem',
-                              fontWeight: 500,
-                              borderRadius: '8px',
-                              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
-                            },
-                            '& .MuiTooltip-arrow': {
-                              color: '#3b82f6'
-                            }
-                          }}
-                        >
-                          <Typography 
-                            variant="body1" 
-                            onClick={() => handleOpenStudentDetails(student)}
-                            sx={{ 
-                              fontWeight: 700,
-                              color: '#1e293b',
-                              textAlign: 'center',
-                              mb: 0.1,
-                              cursor: 'pointer',
-                              '&:hover': {
-                                color: '#3b82f6',
-                                textDecoration: 'underline'
-                              }
-                            }}
-                          >
-                            {student.firstName} {student.lastName}
-                          </Typography>
-                        </Tooltip>
-                        <Chip
-                          label={`קוד תלמיד: ${student.id}`}
-                          size="small"
-                          sx={{
-                            bgcolor: 'rgba(59, 130, 246, 0.1)',
-                            color: '#3b82f6',
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              <Typography variant="body2" sx={{
+                color: '#64748b',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <InfoIcon sx={{ fontSize: 16 }} />
+                מציג {paginatedStudents.length} מתוך {filteredStudents.length} תלמידים
+              </Typography>
+              {sortField && (
+                <Typography variant="caption" sx={{
+                  color: '#3b82f6',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  fontWeight: 500
+                }}>
+                  🔄 ממוין לפי: {
+                    sortField === 'studentName' ? 'שם תלמיד' :
+                      sortField === 'authorName' ? 'נרשם על ידי' :
+                        sortField === 'status' ? 'סטטוס' :
+                          sortField === 'priority' ? 'עדיפות' :
+                            sortField === 'updateDate' ? 'תאריך עדכון' :
+                              sortField === 'createdDate' ? 'תאריך רישום' :
+                                sortField === 'incompleteTasks' ? 'משימות חסרות' :
+                                  sortField
+                  } ({sortDirection === 'asc' ? 'עולה' : 'יורד'})
+                </Typography>
+              )}
+            </Box>
+          </Box>
+
+          {/* טבלה מעוצבת */}
+          <StyledTableShell
+            enableSort={true}
+            onSort={handleSort}
+            sortField={sortField}
+            sortDirection={sortDirection}
+            enableHorizontalScroll={true}
+            headers={[
+              { label: 'סטטוס', field: 'status', align: 'center' },
+              { label: 'נרשם על ידי', field: 'authorName', align: 'center', sx: { minWidth: '150px' } },
+              { label: 'תלמיד', field: 'studentName', align: 'center' },
+              { label: 'תאריך רישום', field: 'createdDate', align: 'center', sx: { minWidth: '140px' } },
+              { label: 'משימות חסרות', field: 'incompleteTasks', align: 'center', sx: { width: '250px' } },
+              { label: 'עדיפות', field: 'priority', align: 'center' },
+              { label: 'תאריך עדכון', field: 'updateDate', align: 'center', sx: { minWidth: '140px' } },
+              { label: 'פעולות', align: 'center', sortable: false }
+            ]}
+          >
+            <TableBody>
+              {paginatedStudents.map((student, index) => (
+                <TableRow
+                  key={student.id || index}
+                  sx={{
+                    '&:hover': {
+                      bgcolor: 'rgba(59, 130, 246, 0.04)',
+                      transform: 'scale(1.005)',
+                      transition: 'all 0.2s ease',
+                      boxShadow: '0 4px 20px rgba(59, 130, 246, 0.1)'
+                    },
+                    '&:nth-of-type(even)': {
+                      bgcolor: 'rgba(248, 250, 252, 0.5)'
+                    },
+                    direction: 'rtl',
+                    borderBottom: '1px solid rgba(226, 232, 240, 0.8)'
+                  }}
+                >
+                  <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
+                    <Box sx={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      gap: 1
+                    }}>
+                      <Tooltip title={
+                        student.incompleteTasks.length === 0
+                          ? 'כל המשימות הושלמו'
+                          : `${student.incompleteTasks.length} משימות חסרות`
+                      }>
+                        <Box sx={{
+                          p: 0.5,
+                          borderRadius: '50%',
+                          bgcolor: student.incompleteTasks.length === 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          {getStatusIcon(student.incompleteTasks)}
+                        </Box>
+                      </Tooltip>
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      {student.registrationNotes && student.registrationNotes.length > 0 && student.registrationNotes[0].authorName ? (
+                        <>
+                          <Typography variant="body2" sx={{
                             fontWeight: 600,
-                            fontSize: '0.7rem',
-                            fontFamily: 'monospace'
-                          }}
-                        />
-                      </Box>
-                    </TableCell>
-                    <TableCell sx={{ textAlign: 'center', py: 0.5, width: '250px' }}>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-                        <Badge 
-                          badgeContent={student.incompleteTasks.length} 
-                          color="error"
-                          sx={{
-                            '& .MuiBadge-badge': {
-                              bgcolor: student.incompleteTasks.length === 0 ? '#10b981' : '#ef4444',
-                              color: 'white',
-                              fontWeight: 'bold'
-                            }
-                          }}
-                        >
-                          <AssignmentIcon sx={{ 
-                            color: student.incompleteTasks.length === 0 ? '#10b981' : '#ef4444',
-                            fontSize: '1.5rem'
-                          }} />
-                        </Badge>
-                        {student.incompleteTasks.length > 0 && (
-                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.3, alignItems: 'center' }}>
-                            {student.incompleteTasks.slice(0, 2).map((task, i) => (
-                              <Chip
-                                key={i}
-                                label={task}
-                                size="small"
-                                sx={{ 
-                                  bgcolor: '#fef2f2', 
-                                  color: '#dc2626', 
-                                  fontSize: '0.7rem',
-                                  maxWidth: '120px',
-                                  '& .MuiChip-label': {
-                                    px: 0.5
-                                  }
-                                }}
-                              />
-                            ))}
-                            {student.incompleteTasks.length > 2 && (
-                              <Typography variant="caption" sx={{ 
-                                color: '#64748b',
-                                textAlign: 'center',
-                                fontWeight: 500
-                              }}>
-                                +{student.incompleteTasks.length - 2} נוספות
-                              </Typography>
-                            )}
-                          </Box>
-                        )}
-                      </Box>
-                    </TableCell>
-                    <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
-                      <Chip
-                        label={student.priority}
-                        size="medium"
+                            color: '#1e293b',
+                            textAlign: 'center'
+                          }}>
+                            {student.registrationNotes[0].authorName}
+                          </Typography>
+                          <Typography variant="caption" sx={{
+                            color: '#64748b',
+                            textAlign: 'center'
+                          }}>
+                            {student.registrationNotes[0].authorRole || 'רושם'}
+                          </Typography>
+                        </>
+                      ) : (
+                        <Typography variant="body2" sx={{
+                          textAlign: 'center',
+                          color: '#94a3b8',
+                          fontStyle: 'italic'
+                        }}>
+                          לא ידוע
+                        </Typography>
+                      )}
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <Tooltip
+                        title="לחץ לצפייה בפרטי התלמיד 👆"
+                        placement="top"
+                        arrow
                         sx={{
-                          bgcolor: `${getPriorityColor(student.priority)}15`,
-                          color: getPriorityColor(student.priority),
-                          fontWeight: 700,
-                          borderRadius: '12px',
-                          px: 2,
-                          '&:hover': {
-                            bgcolor: `${getPriorityColor(student.priority)}25`,
+                          '& .MuiTooltip-tooltip': {
+                            bgcolor: '#3b82f6',
+                            color: 'white',
+                            fontSize: '0.8rem',
+                            fontWeight: 500,
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                          },
+                          '& .MuiTooltip-arrow': {
+                            color: '#3b82f6'
                           }
                         }}
-                      />
-                    </TableCell>
-                    <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <Typography variant="body2" sx={{ 
-                          fontWeight: 600,
-                          color: '#1e293b',
-                          textAlign: 'center'
-                        }}>
-                          {student.lastNoteDate ? student.lastNoteDate.toLocaleDateString('he-IL') : 'לא זמין'}
+                      >
+                        <Typography
+                          variant="body1"
+                          onClick={() => handleOpenStudentDetails(student)}
+                          sx={{
+                            fontWeight: 700,
+                            color: '#1e293b',
+                            textAlign: 'center',
+                            mb: 0.1,
+                            cursor: 'pointer',
+                            '&:hover': {
+                              color: '#3b82f6',
+                              textDecoration: 'underline'
+                            }
+                          }}
+                        >
+                          {student.firstName} {student.lastName}
                         </Typography>
-                        <Typography variant="caption" sx={{ 
-                          color: '#64748b',
-                          textAlign: 'center'
-                        }}>
-                          עדכון אחרון
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
-                      <Button
+                      </Tooltip>
+                      <Chip
+                        label={`קוד תלמיד: ${student.id}`}
                         size="small"
-                        variant="contained"
-                        startIcon={<EditIcon />}
-                        onClick={() => handleViewDetails(student)}
-                        sx={{ 
-                          borderRadius: '12px',
-                          px: 1.5,
-                          py: 0.5,
-                          bgcolor: '#3b82f6',
+                        sx={{
+                          bgcolor: 'rgba(59, 130, 246, 0.1)',
+                          color: '#3b82f6',
                           fontWeight: 600,
-                          fontSize: '0.8rem',
-                          boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)',
-                          '&:hover': {
-                            bgcolor: '#1d4ed8',
-                            transform: 'translateY(-2px)',
-                            boxShadow: '0 6px 20px rgba(59, 130, 246, 0.35)',
-                          },
-                          transition: 'all 0.2s ease'
+                          fontSize: '0.7rem',
+                          fontFamily: 'monospace'
+                        }}
+                      />
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <Typography variant="body2" sx={{
+                        fontWeight: 600,
+                        color: '#1e293b',
+                        textAlign: 'center'
+                      }}>
+                        {student.createdDate && !isNaN(new Date(student.createdDate)) ? (
+                          <>
+                            {new Date(student.createdDate).toLocaleDateString('he-IL')}
+                            <br />
+                            <span style={{ fontSize: '0.85em', color: '#64748b', fontWeight: 400 }}>
+                              {new Date(student.createdDate).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                            </span>
+                          </>
+                        ) : 'לא זמין'}
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ textAlign: 'center', py: 0.5, width: '250px' }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                      <Badge
+                        badgeContent={student.incompleteTasks.length}
+                        color="error"
+                        sx={{
+                          '& .MuiBadge-badge': {
+                            bgcolor: student.incompleteTasks.length === 0 ? '#10b981' : '#ef4444',
+                            color: 'white',
+                            fontWeight: 'bold'
+                          }
                         }}
                       >
-                        עדכן משימות
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-        </StyledTableShell>
-          
+                        <AssignmentIcon sx={{
+                          color: student.incompleteTasks.length === 0 ? '#10b981' : '#ef4444',
+                          fontSize: '1.5rem'
+                        }} />
+                      </Badge>
+                      {student.incompleteTasks.length > 0 && (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.3, alignItems: 'center' }}>
+                          {student.incompleteTasks.slice(0, 2).map((task, i) => (
+                            <Chip
+                              key={i}
+                              label={task}
+                              size="small"
+                              sx={{
+                                bgcolor: '#fef2f2',
+                                color: '#dc2626',
+                                fontSize: '0.7rem',
+                                maxWidth: '120px',
+                                '& .MuiChip-label': {
+                                  px: 0.5
+                                }
+                              }}
+                            />
+                          ))}
+                          {student.incompleteTasks.length > 2 && (
+                            <Typography variant="caption" sx={{
+                              color: '#64748b',
+                              textAlign: 'center',
+                              fontWeight: 500
+                            }}>
+                              +{student.incompleteTasks.length - 2} נוספות
+                            </Typography>
+                          )}
+                        </Box>
+                      )}
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
+                    <Chip
+                      label={student.priority}
+                      size="medium"
+                      sx={{
+                        bgcolor: `${getPriorityColor(student.priority)}15`,
+                        color: getPriorityColor(student.priority),
+                        fontWeight: 700,
+                        borderRadius: '12px',
+                        px: 2,
+                        '&:hover': {
+                          bgcolor: `${getPriorityColor(student.priority)}25`,
+                        }
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <Typography variant="body2" sx={{
+                        fontWeight: 600,
+                        color: '#1e293b',
+                        textAlign: 'center'
+                      }}>
+                        {student.lastNoteDate ? student.lastNoteDate.toLocaleDateString('he-IL') : 'לא זמין'}
+                      </Typography>
+                      <Typography variant="caption" sx={{
+                        color: '#64748b',
+                        textAlign: 'center'
+                      }}>
+                        עדכון אחרון
+                      </Typography>
+                    </Box>
+                  </TableCell>
+
+
+
+                  <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
+                    <Button
+                      size="small"
+                      variant="contained"
+                      startIcon={<EditIcon />}
+                      onClick={() => handleViewDetails(student)}
+                      sx={{
+                        borderRadius: '12px',
+                        px: 1.5,
+                        py: 0.5,
+                        bgcolor: '#3b82f6',
+                        fontWeight: 600,
+                        fontSize: '0.8rem',
+                        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)',
+                        '&:hover': {
+                          bgcolor: '#1d4ed8',
+                          transform: 'translateY(-2px)',
+                          boxShadow: '0 6px 20px rgba(59, 130, 246, 0.35)',
+                        },
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      עדכן משימות
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </StyledTableShell>
+
           {/* Pagination */}
           {filteredStudents.length > 0 && (
             <TablePagination
@@ -1092,7 +1189,7 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
               onRowsPerPageChange={handleChangeRowsPerPage}
               rowsPerPageOptions={[5, 10, 25, 50, 100]}
               labelRowsPerPage="שורות בעמוד:"
-              labelDisplayedRows={({ from, to, count }) => 
+              labelDisplayedRows={({ from, to, count }) =>
                 `${from}-${to} מתוך ${count !== -1 ? count : `יותר מ-${to}`}`
               }
               sx={{
@@ -1119,59 +1216,59 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
             />
           )}
         </Box>
-          
-          {filteredStudents.length === 0 && (
-            <Box sx={{ 
-              textAlign: 'center', 
-              py: 8,
-              background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-              borderRadius: '0 0 20px 20px'
+
+        {filteredStudents.length === 0 && (
+          <Box sx={{
+            textAlign: 'center',
+            py: 8,
+            background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+            borderRadius: '0 0 20px 20px'
+          }}>
+            <Box sx={{
+              background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+              borderRadius: '50%',
+              p: 3,
+              mb: 3,
+              display: 'inline-flex',
+              boxShadow: '0 10px 30px rgba(59, 130, 246, 0.3)'
             }}>
-              <Box sx={{
-                background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-                borderRadius: '50%',
-                p: 3,
-                mb: 3,
-                display: 'inline-flex',
-                boxShadow: '0 10px 30px rgba(59, 130, 246, 0.3)'
-              }}>
-                <SearchIcon sx={{ fontSize: 48, color: 'white' }} />
-              </Box>
-              <Typography variant="h5" sx={{ 
-                color: '#1e293b',
-                fontWeight: 'bold',
-                mb: 1
-              }}>
-                לא נמצאו תלמידים
-              </Typography>
-              <Typography variant="body1" sx={{ 
-                color: '#64748b',
-                mb: 3
-              }}>
-                {searchTerm ? `לא נמצאו תלמידים המתאימים לחיפוש "${searchTerm}"` : 'לא נמצאו תלמידים במעקב רישום'}
-              </Typography>
-              {searchTerm && (
-                <Button
-                  variant="outlined"
-                  onClick={() => setSearchTerm('')}
-                  sx={{
-                    borderRadius: '12px',
-                    px: 3,
-                    py: 1,
-                    borderColor: '#3b82f6',
-                    color: '#3b82f6',
-                    '&:hover': {
-                      bgcolor: 'rgba(59, 130, 246, 0.1)',
-                      borderColor: '#1d4ed8'
-                    }
-                  }}
-                >
-                  נקה חיפוש
-                </Button>
-              )}
+              <SearchIcon sx={{ fontSize: 48, color: 'white' }} />
             </Box>
-          )}
-        
+            <Typography variant="h5" sx={{
+              color: '#1e293b',
+              fontWeight: 'bold',
+              mb: 1
+            }}>
+              לא נמצאו תלמידים
+            </Typography>
+            <Typography variant="body1" sx={{
+              color: '#64748b',
+              mb: 3
+            }}>
+              {searchTerm ? `לא נמצאו תלמידים המתאימים לחיפוש "${searchTerm}"` : 'לא נמצאו תלמידים במעקב רישום'}
+            </Typography>
+            {searchTerm && (
+              <Button
+                variant="outlined"
+                onClick={() => setSearchTerm('')}
+                sx={{
+                  borderRadius: '12px',
+                  px: 3,
+                  py: 1,
+                  borderColor: '#3b82f6',
+                  color: '#3b82f6',
+                  '&:hover': {
+                    bgcolor: 'rgba(59, 130, 246, 0.1)',
+                    borderColor: '#1d4ed8'
+                  }
+                }}
+              >
+                נקה חיפוש
+              </Button>
+            )}
+          </Box>
+        )}
+
         <Dialog
           open={detailsDialogOpen}
           onClose={handleCloseDialog}
@@ -1186,7 +1283,7 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
               פרטי משימות - {selectedStudent?.firstName} {selectedStudent?.lastName}
             </Typography>
           </DialogTitle>
-          
+
           <DialogContent sx={{ p: 3 }}>
             {selectedStudent && (
               <Grid container spacing={3}>
@@ -1195,7 +1292,7 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                     כאן תוכל לראות את פרטי המשימות של התלמיד
                   </Alert>
                 </Grid>
-                
+
                 <Grid item xs={12}>
                   <Card sx={{ width: '100%' }}>
                     <CardContent>
@@ -1203,13 +1300,13 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                         <AssignmentIcon />
                         משימות רישום ({selectedStudent.incompleteTasks.length})
                       </Typography>
-                      
+
                       {editNotesMode ? (
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                           <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
                             סמן משימות שהושלמו:
                           </Typography>
-                          
+
                           {registrationTasks.map((task, index) => (
                             <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                               <input
@@ -1218,7 +1315,7 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                                 onChange={() => handleTaskToggle(task)}
                                 style={{ transform: 'scale(1.2)' }}
                               />
-                              <Typography variant="body2" sx={{ 
+                              <Typography variant="body2" sx={{
                                 textDecoration: editedTasks[task] ? 'line-through' : 'none',
                                 color: editedTasks[task] ? 'text.secondary' : 'text.primary'
                               }}>
@@ -1226,16 +1323,16 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                               </Typography>
                             </Box>
                           ))}
-                          
+
                           <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', mt: 2 }}>
-                            <Button 
+                            <Button
                               onClick={handleCancelNotesEdit}
                               disabled={saving}
                               size="small"
                             >
                               ביטול
                             </Button>
-                            <Button 
+                            <Button
                               onClick={handleSaveNotes}
                               disabled={saving}
                               variant="contained"
@@ -1252,7 +1349,7 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
                           <Typography variant="body1" sx={{ fontWeight: 600, mb: 2 }}>
                             תלמיד: {selectedStudent.firstName} {selectedStudent.lastName} (ת.ז: {selectedStudent.id})
                           </Typography>
-                          
+
                           {selectedStudent.incompleteTasks.length > 0 ? (
                             <>
                               <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
@@ -1297,7 +1394,7 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
               </Grid>
             )}
           </DialogContent>
-          
+
           <DialogActions sx={{ p: 2, direction: 'rtl' }}>
             <Button onClick={handleCloseDialog}>
               סגור
@@ -1321,13 +1418,13 @@ const currentUser = useSelector(state => state.user?.currentUser || state.users?
 
         {/* Alert for notifications */}
         {alert.open && (
-          <Alert 
-            severity={alert.severity} 
+          <Alert
+            severity={alert.severity}
             onClose={() => setAlert({ ...alert, open: false })}
-            sx={{ 
-              position: 'fixed', 
-              top: 20, 
-              right: 20, 
+            sx={{
+              position: 'fixed',
+              top: 20,
+              right: 20,
               zIndex: 9999,
               direction: 'rtl'
             }}

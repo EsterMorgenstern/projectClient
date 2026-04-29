@@ -2147,43 +2147,94 @@ const StudentHealthFundTable = () => {
                   />
                 </MenuItem>
                 <MenuItem value="noEligibility">
-                  <Checkbox 
-                    checked={advancedFilters.billingNotesFilter.indexOf('noEligibility') > -1} 
+                  <Checkbox
+                    checked={advancedFilters.billingNotesFilter.indexOf('noEligibility') > -1}
                     size="small"
                   />
-                  <ListItemText 
-                    primary="❌ אין זכאות לטיפולים" 
+                  <ListItemText
+                    primary="❌ אין זכאות לטיפולים"
                     secondary="התלמיד אינו זכאי לטיפולים דרך קופת החולים"
                   />
                 </MenuItem>
                 <MenuItem value="insufficientTreatments">
-                  <Checkbox 
-                    checked={advancedFilters.billingNotesFilter.indexOf('insufficientTreatments') > -1} 
+                  <Checkbox
+                    checked={advancedFilters.billingNotesFilter.indexOf('insufficientTreatments') > -1}
                     size="small"
                   />
-                  <ListItemText 
-                    primary="📊 מס' הטיפולים בהתחייבות לא מספיק" 
+                  <ListItemText
+                    primary="📊 מס' הטיפולים בהתחייבות לא מספיק"
                     secondary="יש לשלוח התחייבות חדשה עם מספר טיפולים נוסף"
                   />
                 </MenuItem>
                 <MenuItem value="treatmentsFinished">
-                  <Checkbox 
-                    checked={advancedFilters.billingNotesFilter.indexOf('treatmentsFinished') > -1} 
+                  <Checkbox
+                    checked={advancedFilters.billingNotesFilter.indexOf('treatmentsFinished') > -1}
                     size="small"
                   />
-                  <ListItemText 
-                    primary="✅ סיים התחייבות" 
+                  <ListItemText
+                    primary="🔚 סיים התחייבות"
                     secondary="התלמיד סיים את כל הטיפולים הזמינים לו"
                   />
                 </MenuItem>
                 <MenuItem value="authorizationCancelled">
-                  <Checkbox 
-                    checked={advancedFilters.billingNotesFilter.indexOf('authorizationCancelled') > -1} 
+                  <Checkbox
+                    checked={advancedFilters.billingNotesFilter.indexOf('authorizationCancelled') > -1}
                     size="small"
                   />
-                  <ListItemText 
-                    primary="🚨 הו״ק בוטלה" 
-                    secondary="ההרשאה/אישור מקופת החולים בוטל"
+                  <ListItemText
+                    primary={'🚨 הו"ק בוטלה'}
+                    secondary={'ההרשאה/אישור מקופת החולים בוטל'}
+                  />
+                </MenuItem>
+                {/* --- הערות גביה אוטומטיות חדשות --- */}
+                <MenuItem value="openStandingOrderNextMonth">
+                  <Checkbox
+                    checked={advancedFilters.billingNotesFilter.indexOf('openStandingOrderNextMonth') > -1}
+                    size="small"
+                  />
+                  <ListItemText
+                    primary={'📅 לפתוח הו"ק חודש הבא'}
+                    secondary={'הערות גביה אוטומטיות: לפתוח הו"ק חודש הבא'}
+                  />
+                </MenuItem>
+                <MenuItem value="debtPaidIssueReceipts">
+                  <Checkbox
+                    checked={advancedFilters.billingNotesFilter.indexOf('debtPaidIssueReceipts') > -1}
+                    size="small"
+                  />
+                  <ListItemText
+                    primary="💸 שולם החוב, להוציא קבלות ולדווח"
+                    secondary="שולם החוב צריך להוציא קבלות ולדווח"
+                  />
+                </MenuItem>
+                <MenuItem value="partialPaymentIssueReceipts">
+                  <Checkbox
+                    checked={advancedFilters.billingNotesFilter.indexOf('partialPaymentIssueReceipts') > -1}
+                    size="small"
+                  />
+                  <ListItemText
+                    primary="💰 שילמו חלק מהסכום, להוציא קבלות לדיווח"
+                    secondary="שילמו חלק מהסכום, להוציא קבלות לדיווח. כשמסתיים לגבות את יתרת החוב."
+                  />
+                </MenuItem>
+                <MenuItem value="notCollectingThisYear">
+                  <Checkbox
+                    checked={advancedFilters.billingNotesFilter.indexOf('notCollectingThisYear') > -1}
+                    size="small"
+                  />
+                  <ListItemText
+                    primary="⏳ עדיין לא גובים השנה"
+                    secondary="עדיין לא גובים השנה. בטיפול לגבי החזר על שנה שעברה."
+                  />
+                </MenuItem>
+                <MenuItem value="receiptSentForMonth">
+                  <Checkbox
+                    checked={advancedFilters.billingNotesFilter.indexOf('receiptSentForMonth') > -1}
+                    size="small"
+                  />
+                  <ListItemText
+                    primary="🧾 נשלחה קבלה על חודש"
+                    secondary="נשלחה קבלה על חודש ואפשרות לבחור חודש"
                   />
                 </MenuItem>
               </Select>

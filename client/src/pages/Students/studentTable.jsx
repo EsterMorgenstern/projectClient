@@ -1,5 +1,4 @@
-﻿
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { checkUserPermission } from '../../utils/permissions';
 import EditStudentDialog from './components/EditStudentDialog';
 import {
@@ -17,7 +16,7 @@ import {
   FilterAlt as FilterIcon,
   Download as DownloadIcon
 } from '@mui/icons-material';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, color } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
 import StudentAttendanceHistory from './components/studentAttendanceHistory'
 import { fetchStudents } from '../../store/student/studentGetAllThunk';
@@ -32,6 +31,7 @@ import StyledTableShell from '../../components/StyledTableShell';
 import StatsCard from '../../components/StatsCard';
 import { exportStudentsWithoutGroupToExcel } from '../../utils/exportStudentsWithoutGroupToExcel';
 import '../styles/tableStyles.css';
+import StudentTableFilters from './components/StudentTableFilters';
 
 // קומפוננטת Loading Skeleton מתקדמת
 const LoadingSkeleton = ({ headers }) => (
@@ -98,6 +98,7 @@ export default function StudentsTable() {
     { label: 'כיתה', align: 'center' },
     { label: 'מגזר', align: 'center' },
     { label: 'סטטוס', align: 'center' },
+    { label: 'תאריך רישום', align: 'center' },
     { label: 'נרשם על ידי', align: 'center' },
     { label: 'פעולות', align: 'center' }
   ];
@@ -113,7 +114,7 @@ export default function StudentsTable() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [currentStudent, setCurrentStudent] = useState({
     id: null, firstName: '', lastName: '', phone: null, secondaryPhone: '', age: 0, city: '',
-    school: '', class: "", sector: "", status: 'פעיל', identityCard: ''
+    school: '', class: "", sector: "", status: 'פעיל', identityCard: '', registrationTrackingDate: ''
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredStudents, setFilteredStudents] = useState([]);
@@ -135,6 +136,10 @@ export default function StudentsTable() {
   const [isWithoutGroupFilterActive, setIsWithoutGroupFilterActive] = useState(false);
   const [createdByFilter, setCreatedByFilter] = useState('');
 
+  const [statusFilter, setStatusFilter] = useState('');
+  const [registrationDateFrom, setRegistrationDateFrom] = useState('');
+  const [registrationDateTo, setRegistrationDateTo] = useState('');
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -149,20 +154,16 @@ export default function StudentsTable() {
   const normalizeCreatedByName = (value) => formatCreatedByDisplayName(value)
     .replace(/[״׳]/g, '');
 
-  const getCreatedByName = (student) => formatCreatedByDisplayName(student?.createdBy || student?.CreatedBy || '') || 'מערכת';
-
-  const createdByOptions = Array.from(
-    new Map(
-      (Array.isArray(students) ? students : [])
-        .map((student) => {
-          const rawName = student?.createdBy || student?.CreatedBy || '';
-          const displayName = formatCreatedByDisplayName(rawName);
-          const normalizedName = normalizeCreatedByName(rawName);
-          return normalizedName ? [normalizedName, displayName] : null;
-        })
-        .filter(Boolean)
-    ).values()
-  ).sort((a, b) => a.localeCompare(b, 'he'));
+  const getCreatedByName = (student) => {
+    // נסה להוציא שם מלא, אם יש אובייקט משתמש מלא
+    if (student.createdByUser && (student.createdByUser.firstName || student.createdByUser.lastName)) {
+      return `${student.createdByUser.firstName || ''} ${student.createdByUser.lastName || ''}`.trim();
+    }
+    // אחרת, נסה לפרק מחרוזת
+    const raw = String(student?.createdBy || student?.CreatedBy || '').trim();
+    if (raw.split(' ').length > 1) return raw; // כבר שם מלא
+    return raw.length > 1 ? raw : raw; // אם יש רק אות אחת, תחזיר אותה (למקרה קצה)
+  };
 
   const healthFundOptions = [
     { value: 'מכבי', label: '🏥 מכבי', icon: '🏥' },
@@ -203,9 +204,9 @@ export default function StudentsTable() {
   ];
 
   const statusOptions = [
-    { value: 'פעיל', label: '✅ פעיל', icon: '✅' },
-    { value: 'ליד', label: '🤝 ליד', icon: '🤝' },
-    { value: 'לא רלוונטי', label: '❌ לא רלוונטי', icon: '❌' }
+    { value: 'פעיל', label: 'פעיל', color: 'green' },
+    { value: 'ליד', label: ' ליד', color: 'orange' },
+    { value: 'לא ידוע', label: ' לא ידוע', color: 'gray' }
   ];
 
   // פונקציה לחיפוש חכם
@@ -256,9 +257,29 @@ export default function StudentsTable() {
       );
     }
 
+    if (statusFilter) {
+      filtered = filtered.filter((student) => (student.status || '') === statusFilter);
+    }
+
+    if (registrationDateFrom) {
+      filtered = filtered.filter((student) => {
+        const regDate = student.registrationTrackingDate || student.createdAt;
+        if (!regDate) return false;
+        return new Date(regDate) >= new Date(registrationDateFrom);
+      });
+    }
+
+    if (registrationDateTo) {
+      filtered = filtered.filter((student) => {
+        const regDate = student.registrationTrackingDate || student.createdAt;
+        if (!regDate) return false;
+        return new Date(regDate) <= new Date(registrationDateTo);
+      });
+    }
+
     setFilteredStudents(Array.isArray(filtered) ? filtered : []);
     setCurrentPage(1); // איפוס לעמוד הראשון בחיפוש חדש
-  }, [students, searchTerm, isWithoutGroupFilterActive, studentsWithoutActiveGroupWithNotes, createdByFilter]);
+  }, [students, searchTerm, isWithoutGroupFilterActive, studentsWithoutActiveGroupWithNotes, createdByFilter, statusFilter, registrationDateFrom, registrationDateTo]);
 
   // עדכון pagination
   useEffect(() => {
@@ -336,6 +357,15 @@ export default function StudentsTable() {
     ? new Set(students.map((s) => s?.class).filter(Boolean)).size
     : 0;
 
+  const createdByOptions = Array.from(
+    new Set(
+      (Array.isArray(students) ? students : [])
+        .map((student) => getCreatedByName(student))
+        .filter(Boolean)
+        .filter((name) => name.length > 1)
+    )
+  ).sort((a, b) => a.localeCompare(b, 'he'));
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -407,7 +437,9 @@ export default function StudentsTable() {
           </Box>
         </motion.div>
 
-<br/>
+        <br />
+        {/* אין צורך בשורת סיכום כפולה */}
+
         {/* שדה חיפוש */}
         <motion.div
           className="search-container slide-in-right"
@@ -433,197 +465,151 @@ export default function StudentsTable() {
         </motion.div>
 
 
+        {/* מסננים מתקדמים + כפתורי סינון מיוחדים */}
+        {/* מסננים מתקדמים + כפתור סינון ראשי באותה שורה */}
 
-        {/* בקרות עמוד */}
-        <motion.div
-          className="pagination-controls"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
+        {/* Action Bar עליון - RTL מלא: אייקון | טקסט | תוצאות בעמוד */}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            flexDirection: 'row',
+            gap: 2,
+            mb: 2.5,
+            px: { xs: 1, md: 0 },
+            width: '100%',
+            maxWidth: '100%',
+            direction: 'rtl',
+            background: '#fff',
+            borderRadius: '18px',
+            boxShadow: '0 2px 12px 0 rgba(60,60,60,0.06)',
+            minHeight: 64,
+            justifyContent: 'flex-start'
+          }}
         >
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-            <Typography className="results-info">
-              📊 מציג {paginatedStudents.length} מתוך {filteredStudents.length} תלמידים
-              {searchTerm && ` (מסונן מתוך ${students.length} סה"כ)`}
-            </Typography>
-
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                <Tooltip title="סינון הטבלה לפי תלמידים ללא קבוצה פעילה">
-                  <Button
-                    variant={isWithoutGroupFilterActive ? 'contained' : 'outlined'}
-                    startIcon={<FilterIcon />}
-                    onClick={handleToggleWithoutGroupFilter}
-                    disabled={loadingWithoutGroup}
-                    sx={{
-                      borderColor: '#1d4ed8',
-                      borderWidth: '2px',
-                      color: '#1e3a8a',
-                      bgcolor: isWithoutGroupFilterActive ? '#dbeafe' : '#eff6ff',
-                      '&:hover': {
-                        bgcolor: isWithoutGroupFilterActive ? '#bfdbfe' : '#dbeafe',
-                        borderColor: '#1d4ed8'
-                      },
-                      fontWeight: 700,
-                      letterSpacing: '0.2px',
-                      borderRadius: '10px',
-                      px: 2,
-                      textTransform: 'none'
-                    }}
-                  >
-                    {isWithoutGroupFilterActive ? 'הסר סינון ללא קבוצה' : 'סנן: ללא קבוצה עם הערות'}
-                  </Button>
-                </Tooltip>
-
-                {isWithoutGroupFilterActive && (
-                  <Tooltip title="ייצוא כל התלמידים שחזרו מהשרת בסינון זה">
-                    <span>
-                      <Button
-                        variant="contained"
-                        color="success"
-                        startIcon={<DownloadIcon />}
-                        onClick={handleExportFilteredStudents}
-                        disabled={loadingWithoutGroup || !studentsWithoutActiveGroupWithNotes?.length}
-                        sx={{
-                          bgcolor: '#dcfce7',
-                          color: '#166534',
-                          border: '2px solid #16a34a',
-                          fontWeight: 700,
-                          letterSpacing: '0.2px',
-                          borderRadius: '10px',
-                          px: 2.25,
-                          textTransform: 'none',
-                          boxShadow: '0 8px 24px rgba(22, 163, 74, 0.18)',
-                          '&:hover': {
-                            bgcolor: '#bbf7d0',
-                            borderColor: '#15803d',
-                            boxShadow: '0 10px 28px rgba(22, 163, 74, 0.26)'
-                          },
-                          '&.Mui-disabled': {
-                            bgcolor: '#f0fdf4',
-                            color: '#86efac',
-                            borderColor: '#86efac'
-                          }
-                        }}
-                      >
-                      יצא לאקסל את רשימת הסינון
-                      </Button>
-                    </span>
-                  </Tooltip>
-                )}
-
-              <FormControl
-                size="small"
-                sx={{
-                  minWidth: 190,
-                  '& .MuiOutlinedInput-root': {
-                    height: 40,
-                    borderRadius: '10px',
-                    bgcolor: '#eff6ff',
-                    color: '#1e3a8a',
-                    fontWeight: 600,
-                    transition: 'all 0.2s ease',
-                    '& fieldset': {
-                      borderColor: '#93c5fd',
-                      borderWidth: '2px'
-                    },
-                    '&:hover fieldset': {
-                      borderColor: '#60a5fa'
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#2563eb'
-                    }
-                  },
-                  '& .MuiInputLabel-root': {
-                    fontWeight: 600,
-                    fontSize: '0.84rem',
-                    color: '#2563eb'
-                  },
-                  '& .MuiInputLabel-root.Mui-focused': {
-                    color: '#2563eb'
-                  },
-                  '& .MuiInputLabel-shrink': {
-                    fontSize: '0.99rem'
-                  }
-                }}
-              >
-                <InputLabel>נרשם על ידי</InputLabel>
-                <Select
-                  value={createdByFilter}
-                  onChange={(event) => setCreatedByFilter(event.target.value)}
-                  label="נרשם על ידי"
-                  renderValue={(selected) => (
-                    <Box component="span" sx={{ color: selected ? '#1f2937' : '#4b5563', fontSize: '0.9rem', fontWeight: 500 }}>
-                      {selected || 'כל המשתמשים'}
-                    </Box>
-                  )}
-                  MenuProps={{
-                    PaperProps: {
-                      sx: {
-                        direction: 'rtl',
-                        textAlign: 'right',
-                        borderRadius: '12px',
-                        mt: 0.5,
-                        p: 0.5,
-                        boxShadow: '0 12px 32px rgba(15, 23, 42, 0.16)'
-                      }
-                    }
-                  }}
-                  sx={{
-                    direction: 'rtl',
-                    fontWeight: 600,
-                    fontSize: '0.95rem',
-                    color: '#1e3a8a',
-                    bgcolor: 'transparent',
-                    '& .MuiSelect-select': {
-                      textAlign: 'right',
-                      display: 'flex',
-                      alignItems: 'center',
-                      py: 0.5
-                    }
-                  }}
-                >
-                  <MenuItem value="" sx={{ borderRadius: '10px', my: 0.25, fontWeight: 600 }}>
-                    כל המשתמשים
-                  </MenuItem>
-                  {createdByOptions.map((createdBy) => (
-                    <MenuItem
-                      key={createdBy}
-                      value={createdBy}
-                      sx={{
-                        borderRadius: '10px',
-                        my: 0.3,
-                        mx: 0.2,
-                        color: '#1f2937',
-                        bgcolor: 'transparent',
-                        fontWeight: 500,
-                        transition: 'all 0.18s ease',
-                        '&:hover': {
-                          bgcolor: '#f8fafc'
-                        }
-                      }}
-                    >
-                      <Box component="span" sx={{ fontWeight: 500, color: '#111827' }}>{createdBy}</Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              <FormControl size="small" className="page-size-selector">
-                <InputLabel >תוצאות בעמוד</InputLabel>
-                <Select
-                  value={pageSize}
-                  onChange={handlePageSizeChange}
-                  label="תוצאות בעמוד"
-                >
-                  <MenuItem value={5}>5</MenuItem>
-                  <MenuItem value={10}>10</MenuItem>
-                  <MenuItem value={25}>25</MenuItem>
-                  <MenuItem value={50}>50</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
+          {/* אייקון בצד ימין */}
+          <Box component="span" sx={{ fontSize: 26, ml: 1, display: 'flex', alignItems: 'center' }}>
+            <span role="img" aria-label="chart">📊</span>
           </Box>
-        </motion.div>
+          {/* טקסט סיכום */}
+          <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.15rem', color: '#222', letterSpacing: 0, minWidth: 180 }}>
+            מציג {paginatedStudents.length} מתוך {filteredStudents.length} תלמידים
+          </Typography>
+          <Box sx={{ flex: 1 }} />
+          {/* תוצאות בעמוד בצד שמאל */}
+          <FormControl size="small" className="page-size-selector" sx={{ minWidth: 120, height: 48, justifyContent: 'center', mr: 2, direction: 'rtl' }}>
+            <InputLabel sx={{ right: 0, left: 'unset', direction: 'rtl' }}>תוצאות בעמוד</InputLabel>
+            <Select
+              value={pageSize}
+              onChange={handlePageSizeChange}
+              label="תוצאות בעמוד"
+              sx={{ direction: 'rtl', textAlign: 'right' }}
+              MenuProps={{ PaperProps: { sx: { direction: 'rtl', textAlign: 'right' } } }}
+            >
+              <MenuItem value={5}>5</MenuItem>
+              <MenuItem value={10}>10</MenuItem>
+              <MenuItem value={25}>25</MenuItem>
+              <MenuItem value={50}>50</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+
+        {/* שורת פילטרים בלבד */}
+        <Box
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: 2,
+            mb: 2.5,
+            px: { xs: 1, md: 0 },
+            width: '100%',
+            maxWidth: '100%',
+            direction: 'rtl',
+            background: 'linear-gradient(90deg, #f7fafd 0%, #f1f5f9 100%)',
+            borderRadius: '16px',
+            boxShadow: '0 1px 6px 0 rgba(60,60,60,0.04)',
+            minHeight: 70,
+            justifyContent: { xs: 'flex-start', md: 'center' }
+          }}
+        >
+          <StudentTableFilters
+            createdByFilter={createdByFilter}
+            setCreatedByFilter={setCreatedByFilter}
+            createdByOptions={createdByOptions}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            statusOptions={statusOptions}
+            registrationDateFrom={registrationDateFrom}
+            setRegistrationDateFrom={setRegistrationDateFrom}
+            registrationDateTo={registrationDateTo}
+            setRegistrationDateTo={setRegistrationDateTo}
+          />
+          <Tooltip title="סינון הטבלה לפי תלמידים ללא קבוצה פעילה">
+            <Button
+              variant={isWithoutGroupFilterActive ? 'contained' : 'outlined'}
+              startIcon={<FilterIcon />}
+              onClick={handleToggleWithoutGroupFilter}
+              disabled={loadingWithoutGroup}
+              sx={{
+                borderColor: '#1d4ed8',
+                borderWidth: '2px',
+                color: '#1e3a8a',
+                bgcolor: isWithoutGroupFilterActive ? '#dbeafe' : '#eff6ff',
+                '&:hover': {
+                  bgcolor: isWithoutGroupFilterActive ? '#bfdbfe' : '#dbeafe',
+                  borderColor: '#1d4ed8'
+                },
+                fontWeight: 700,
+                letterSpacing: '0.2px',
+                borderRadius: '10px',
+                px: 2,
+                textTransform: 'none',
+                height: 38,
+                marginBottom: { xs: 0, md: 2 }
+              }}
+            >
+              {isWithoutGroupFilterActive ? 'הסר סינון ללא קבוצה' : 'סנן: ללא קבוצה עם הערות'}
+            </Button>
+          </Tooltip>
+          {isWithoutGroupFilterActive && (
+            <Tooltip title="ייצוא כל התלמידים שחזרו מהשרת בסינון זה">
+              <span>
+                <Button
+                  variant="contained"
+                  color="success"
+                  startIcon={<DownloadIcon />}
+                  onClick={handleExportFilteredStudents}
+                  disabled={loadingWithoutGroup || !studentsWithoutActiveGroupWithNotes?.length}
+                  sx={{
+                    bgcolor: '#dcfce7',
+                    color: '#166534',
+                    border: '2px solid #16a34a',
+                    fontWeight: 700,
+                    letterSpacing: '0.2px',
+                    borderRadius: '10px',
+                    px: 2.25,
+                    textTransform: 'none',
+                    boxShadow: '0 8px 24px rgba(22, 163, 74, 0.18)',
+                    '&:hover': {
+                      bgcolor: '#bbf7d0',
+                      borderColor: '#15803d',
+                      boxShadow: '0 10px 28px rgba(22, 163, 74, 0.26)'
+                    },
+                    '&.Mui-disabled': {
+                      bgcolor: '#f0fdf4',
+                      color: '#86efac',
+                      borderColor: '#86efac'
+                    },
+                    height: 48
+                  }}
+                >
+                  יצא לאקסל את רשימת הסינון
+                </Button>
+              </span>
+            </Tooltip>
+          )}
+        </Box>
 
         {/* טבלה */}
         <AnimatePresence mode="wait">
@@ -777,9 +763,15 @@ export default function StudentsTable() {
                               </Typography>
                             )}
                           </TableCell>
-                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.age || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}</TableCell>
-                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.city || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}</TableCell>
-                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>{student.school || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}</TableCell>
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>
+                            {student.age || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}
+                          </TableCell>
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>
+                            {student.city || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}
+                          </TableCell>
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>
+                            {student.school || <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>}
+                          </TableCell>
                           <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>
                             {student.healthFundName || student.healthFundPlan ? (
                               <Typography variant="body2" sx={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
@@ -820,102 +812,112 @@ export default function StudentsTable() {
                               }}
                             />
                           </TableCell>
-                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5, minWidth: '150px', color: '#111827', fontSize: '0.88rem', fontWeight: 500 }}>
-                            <Box
-                              component="span"
-                              sx={{
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis'
-                              }}
-                            >
-                              {getCreatedByName(student)}
-                            </Box>
-                          </TableCell>
-                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5, minWidth: '180px' }}>
-                            <Box className="action-buttons" sx={{
-                              display: 'flex',
-                              gap: 0.3,
-                              flexWrap: 'wrap',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              minHeight: '30px'
-                            }}>
-                              <Tooltip title="פרטים">
-                                <IconButton
-                                  size="small"
-                                  className="action-button info"
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    handleViewCourses(student);
-                                  }}
-                                  sx={{
-                                    color: '#60A5FA',
-                                    '&:hover': {
-                                      color: '#3B82F6',
-                                      backgroundColor: 'rgba(96, 165, 250, 0.08)'
-                                    }
-                                  }}
-                                >
-                                  <InfoIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title="ערוך">
-                                <IconButton
-                                  size="small"
-                                  className="action-button edit"
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    setSelectedStudentForEdit(student);
-                                    setEditStudentDialogOpen(true);
-                                  }}
-                                  sx={{
-                                    color: '#F6D365',
-                                    '&:hover': {
-                                      color: '#FCD34D',
-                                      backgroundColor: 'rgba(246, 211, 101, 0.08)'
-                                    }
-                                  }}
-                                >
-                                  <Edit fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title="מחק">
-                                <IconButton
-                                  size="small"
-                                  className="action-button delete"
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    setCurrentStudent({
-                                      id: student.id,
-                                      firstName: student.firstName,
-                                      lastName: student.lastName,
-                                      phone: student.phone,
-                                      secondaryPhone: student.secondaryPhone,
-                                      age: student.age,
-                                      city: student.city,
-                                      school: student.school,
-                                      class: student.class,
-                                      sector: student.sector,
-                                      status: student.status || 'פעיל'
-                                    });
-                                    setDeleteOpen(true);
-                                  }}
-                                  sx={{
-                                    color: '#FF6B6B',
-                                    '&:hover': {
-                                      color: '#EF4444',
-                                      backgroundColor: 'rgba(255, 107, 107, 0.08)'
-                                    }
-                                  }}
-                                >
-                                  <Delete fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                            </Box>
-                          </TableCell>
-                        </motion.tr>
-                      ))}
+                          <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5 }}>
+                            {student.registrationTrackingDate && student.registrationTrackingDate !== '0001-01-01T00:00:00'
+      ? new Date(student.registrationTrackingDate).toLocaleDateString('he-IL', { year: 'numeric', month: '2-digit', day: '2-digit' })
+      : student.registrationDate && student.registrationDate !== '0001-01-01T00:00:00'
+        ? new Date(student.registrationDate).toLocaleDateString('he-IL', { year: 'numeric', month: '2-digit', day: '2-digit' })
+        : student.createdAt && student.createdAt !== '0001-01-01T00:00:00'
+          ? new Date(student.createdAt).toLocaleDateString('he-IL', { year: 'numeric', month: '2-digit', day: '2-digit' })
+          : <span style={{ color: '#999', fontStyle: 'italic' }}>—</span>
+      }
+    </TableCell>
+    <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5, minWidth: '150px', color: '#111827', fontSize: '0.88rem', fontWeight: 500 }}>
+      <Box
+        component="span"
+        sx={{
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis'
+        }}
+      >
+        {getCreatedByName(student)}
+      </Box>
+    </TableCell>
+    <TableCell className="table-cell" sx={{ py: 0.3, px: 0.5, minWidth: '180px' }}>
+      <Box className="action-buttons" sx={{
+        display: 'flex',
+        gap: 0.3,
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '30px'
+      }}>
+        <Tooltip title="פרטים">
+          <IconButton
+            size="small"
+            className="action-button info"
+            onClick={(event) => {
+              event.stopPropagation();
+              handleViewCourses(student);
+            }}
+            sx={{
+              color: '#60A5FA',
+              '&:hover': {
+                color: '#3B82F6',
+                backgroundColor: 'rgba(96, 165, 250, 0.08)'
+              }
+            }}
+          >
+            <InfoIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="ערוך">
+          <IconButton
+            size="small"
+            className="action-button edit"
+            onClick={(event) => {
+              event.stopPropagation();
+              setSelectedStudentForEdit(student);
+              setEditStudentDialogOpen(true);
+            }}
+            sx={{
+              color: '#F6D365',
+              '&:hover': {
+                color: '#FCD34D',
+                backgroundColor: 'rgba(246, 211, 101, 0.08)'
+              }
+            }}
+          >
+            <Edit fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="מחק">
+          <IconButton
+            size="small"
+            className="action-button delete"
+            onClick={(event) => {
+              event.stopPropagation();
+              setCurrentStudent({
+                id: student.id,
+                firstName: student.firstName,
+                lastName: student.lastName,
+                phone: student.phone,
+                secondaryPhone: student.secondaryPhone,
+                age: student.age,
+                city: student.city,
+                school: student.school,
+                class: student.class,
+                sector: student.sector,
+                status: student.status || 'פעיל'
+              });
+              setDeleteOpen(true);
+            }}
+            sx={{
+              color: '#FF6B6B',
+              '&:hover': {
+                color: '#EF4444',
+                backgroundColor: 'rgba(255, 107, 107, 0.08)'
+              }
+            }}
+          >
+            <Delete fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      </Box>
+    </TableCell>
+  </motion.tr>
+))}
                   </AnimatePresence>
                 </TableBody>
               </StyledTableShell>
@@ -1192,10 +1194,8 @@ export default function StudentsTable() {
           }}
           student={selectedStudentForEdit}
           onStudentUpdated={(updatedStudent) => {
-            // Close dialog immediately
             setEditStudentDialogOpen(false);
             setSelectedStudentForEdit(null);
-            // Refresh the students list only if update was successful
             try {
               dispatch(fetchStudents());
               setNotification({
