@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useLocation, useNavigate } from 'react-router-dom';
 import StyledTableShell from '../../components/StyledTableShell';
 import StatsCard from '../../components/StatsCard';
+import TrialStudentsTable from './TrialStudentsTable';
 import {
   Box,
   Typography,
@@ -35,6 +37,9 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Tabs,
+  Tab,
+  Paper,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -59,6 +64,8 @@ import { checkUserPermission } from '../../utils/permissions';
 
 const RegistrationTracking = () => {
   const dispatch = useDispatch();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   // משימות רישום קבועות
   const registrationTasks = [
@@ -70,6 +77,9 @@ const RegistrationTracking = () => {
 
   // States
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState(
+    location.pathname.includes('/trial') ? 1 : 0
+  );
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
@@ -525,913 +535,873 @@ const RegistrationTracking = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}>
       <Box sx={{
-        background: 'linear-gradient(to right, #e0f2fe, #f8fafc)',
+        background: 'linear-gradient(180deg, #f6fbff 0%, #eef5fb 100%)',
         minHeight: '100vh',
         borderRadius: 8,
         py: 4
       }}>
-        <Box sx={{ p: 3, direction: 'rtl', fontFamily: 'Arial, sans-serif' }}>
-          <Box sx={{ mb: 6 }}>
-            <Typography
-              variant={"h3"}
+        <Box sx={{ p: { xs: 2, md: 4 }, direction: 'rtl', borderRadius: 8, minHeight: '80vh', width: '100%', mx: 'auto' }}>
+          {/* כותרת ראשית */}
+          <Typography
+            variant="h3"
+            sx={{
+              fontWeight: 'bold',
+              color: '#1E3A8A',
+              mb: 1,
+              fontFamily: 'inherit',
+              textAlign: 'center'
+            }}
+          >
+            מעקב רישום וניסיון
+          </Typography>
+          <Typography
+            variant="h6"
+            sx={{
+              color: '#334155',
+              textAlign: 'center',
+              mb: 3,
+              fontSize: { xs: '1rem', md: '1.25rem' },
+              fontFamily: 'inherit'
+            }}
+          >
+            מעקב רישום תלמידים ושיעורי ניסיון
+          </Typography>
+
+          {/* טאבים */}
+          <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', direction: 'rtl' }}>
+            <Tabs
+              value={activeTab}
+              onChange={(_, v) => {
+                setActiveTab(v);
+                navigate(v === 1 ? '/registration-tracking/trial' : '/registration-tracking', { replace: true });
+              }}
               sx={{
-                fontWeight: 'bold',
-                color: '#1E3A8A',
-                mb: 1,
-                fontFamily: 'Heebo, sans-serif',
-                textAlign: 'center',
+                minHeight: 42,
+                '& .MuiTabs-indicator': {
+                  height: 4,
+                  borderRadius: 999,
+                  backgroundColor: '#1d4ed8'
+                },
+                '& .MuiTab-root': {
+                  minHeight: 42,
+                  fontWeight: 700,
+                  fontFamily: 'inherit',
+                  color: '#475569',
+                  px: { xs: 1.5, sm: 2, md: 2.25 },
+                  py: 0.35,
+                  whiteSpace: 'nowrap',
+                  fontSize: { xs: '0.84rem', sm: '0.9rem', md: '0.94rem' }
+                },
+                '& .Mui-selected': {
+                  color: '#1e3a8a !important'
+                },
               }}
             >
-              מעקב רישום
-            </Typography>
-            <Typography
-              variant="h6"
+              <Tab label="מעקב רישום" />
+              <Tab label="שיעורי ניסיון" />
+            </Tabs>
+          </Box>
+
+          {/* תוכן טאב 0 - מעקב רישום קיים */}
+          <Box sx={{ display: activeTab === 0 ? undefined : 'none' }}>
+
+            {/* כותרת סקשן */}
+            <Paper
+              elevation={0}
               sx={{
-                color: '#334155',
-                textAlign: 'center',
-                mb: 3,
-                fontSize: { xs: '1rem', md: '1.25rem' }
+                mb: 2.5,
+                p: { xs: 2, md: 2.5 },
+                borderRadius: 3,
+                border: '1px solid #dbeafe',
+                background: 'linear-gradient(135deg, #f8fbff 0%, #eef5ff 100%)',
+                boxShadow: '0 8px 24px rgba(37,99,235,0.08)'
               }}
             >
-              ניהול רישום התלמידים במערכת
-            </Typography>
-          </Box>
-          {/* סטטיסטיקות רישום */}
-          <Box sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: 'repeat(1, minmax(0, 1fr))', sm: 'repeat(2, minmax(0, 1fr))', md: 'repeat(4, minmax(0, 1fr))' },
-            gap: 1,
-            mt: 3,
-            mb: 3.4,
-            width: '75%',
-            mx: 'auto'
-          }}>
-            <StatsCard
-              label="משימות חסרות"
-              value={studentsWithRegistrationNotes.filter(s => s.incompleteTasks.length > 0).length}
-              note="תלמידים שנדרשים"
-              bg="linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)"
-              icon={ErrorIcon}
-              iconBg="rgba(220, 38, 38, 0.12)"
-              numberAlign="center"
-            />
-            <StatsCard
-              label="הושלמו"
-              value={studentsWithRegistrationNotes.filter(s => s.incompleteTasks.length === 0).length}
-              note="תלמידים מוכנים"
-              bg="linear-gradient(135deg, #ecfdf3 0%, #dcfce7 100%)"
-              icon={CheckCircleIcon}
-              iconBg="rgba(34, 197, 94, 0.12)"
-              numberAlign="center"
-            />
-            <StatsCard
-              label="עדיפות גבוהה"
-              value={studentsWithRegistrationNotes.filter(s => s.priority === 'גבוהה').length}
-              note="דורשים טיפול מיידי"
-              bg="linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)"
-              icon={TrendingUpIcon}
-              iconBg="rgba(245, 158, 11, 0.12)"
-              numberAlign="center"
-            />
-            <StatsCard
-              label='סה"כ במעקב'
-              value={studentsWithRegistrationNotes.length}
-              note="כל התלמידים"
-              bg="linear-gradient(135deg, #ffe8f9c4 0%, #ffd5f256 100%)"
-              icon={AssessmentIcon}
-              iconBg="rgba(242, 58, 227, 0.12)"
-              numberAlign="center"
-            />
-          </Box>
-          <br />
-          {/* אזור חיפוש עדין ומקצועי */}
-          <Box sx={{
-            mb: 4,
-            direction: 'rtl'
-          }}>
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+                <Box>
+                  <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1d4fbaff', textAlign: 'right', fontFamily: 'inherit', fontSize: { xs: '1.3rem', md: '1.5rem' } }}>
+                    מעקב רישום תלמידים
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#5b6b84', mt: 0.75, fontFamily: 'inherit' }}>
+                    מעקב אחר משימות הרישום לכל תלמיד — סינון, מיון ועדכון ישיר
+                  </Typography>
+                </Box>
+                <Button
+                  variant="contained"
+                  startIcon={<RefreshIcon />}
+                  onClick={loadRegistrationTrackingData}
+                  sx={{
+                    borderRadius: '999px',
+                    direction: 'ltr',
+                    fontWeight: 700,
+                    px: 3,
+                    py: 1,
+                    fontSize: '0.92rem',
+                    fontFamily: 'inherit',
+                    boxShadow: '0 8px 18px rgba(37,99,235,0.18)',
+                    background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+                    '&:hover': { background: 'linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%)' }
+                  }}
+                >
+                  רענן נתונים
+                </Button>
+              </Box>
+            </Paper>
 
-
-
-            {/* אזור החיפוש והכפתורים */}
+            {/* סטטיסטיקות רישום */}
             <Box sx={{
-              display: 'flex',
-              gap: 2,
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              justifyContent: 'center'
+              display: 'grid',
+              gridTemplateColumns: { xs: 'repeat(1, minmax(0, 1fr))', sm: 'repeat(2, minmax(0, 1fr))', md: 'repeat(4, minmax(0, 1fr))' },
+              gap: 1,
+              mb: 3.4
             }}>
-              {/* שדה החיפוש */}
-              <TextField
-                label="🔍 חפש תלמיד, קוד תלמיד, או שם רושם"
-                variant="outlined"
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                size="medium"
-                sx={{
-                  flex: 1,
-                  minWidth: 350,
-                  maxWidth: 550,
-                  direction: 'rtl',
-                  textAlign: 'right',
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '12px',
-                    bgcolor: '#fafafa',
-                    border: '1px solid #e2e8f0',
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      borderColor: '#cbd5e1',
-                      bgcolor: '#ffffff',
-                    },
-                    '&.Mui-focused': {
-                      borderColor: '#3b82f6',
-                      bgcolor: '#ffffff',
-                      boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)',
-                    }
-                  },
-                  '& .MuiInputLabel-root': {
-                    fontSize: '0.95rem',
-                    fontWeight: 500,
-                    color: '#64748b',
-                    right: 20,
-                    left: 'auto',
-                    transformOrigin: 'top right',
-                    zIndex: 1,
-                    backgroundColor: 'transparent',
-                    '&.Mui-focused, &.MuiFormLabel-filled': {
-                      color: '#3b82f6',
-                      right: 25,
-                      backgroundColor: '#ffffff',
-                      px: 1,
-                      transform: 'translate(0, -9px) scale(0.75)',
-                      transformOrigin: 'top right'
-                    }
-                  },
-                  '& .MuiOutlinedInput-input': {
-                    direction: 'rtl',
-                    textAlign: 'right',
-                    fontSize: '0.95rem',
-                    fontWeight: 500,
-                    pr: 2
-                  },
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    textAlign: 'right',
-                    '& legend': {
-                      textAlign: 'right',
-                      marginRight: '10px'
-                    }
-                  }
-                }}
+              <StatsCard
+                label="משימות חסרות"
+                value={studentsWithRegistrationNotes.filter(s => s.incompleteTasks.length > 0).length}
+                note="תלמידים שנדרשים"
+                bg="linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)"
+                icon={ErrorIcon}
+                iconBg="rgba(220, 38, 38, 0.12)"
+                numberAlign="center"
               />
+              <StatsCard
+                label="הושלמו"
+                value={studentsWithRegistrationNotes.filter(s => s.incompleteTasks.length === 0).length}
+                note="תלמידים מוכנים"
+                bg="linear-gradient(135deg, #ecfdf3 0%, #dcfce7 100%)"
+                icon={CheckCircleIcon}
+                iconBg="rgba(34, 197, 94, 0.12)"
+                numberAlign="center"
+              />
+              <StatsCard
+                label="עדיפות גבוהה"
+                value={studentsWithRegistrationNotes.filter(s => s.priority === 'גבוהה').length}
+                note="דורשים טיפול מיידי"
+                bg="linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)"
+                icon={TrendingUpIcon}
+                iconBg="rgba(245, 158, 11, 0.12)"
+                numberAlign="center"
+              />
+              <StatsCard
+                label='סה"כ במעקב'
+                value={studentsWithRegistrationNotes.length}
+                note="כל התלמידים"
+                bg="linear-gradient(135deg, #ffe8f9c4 0%, #ffd5f256 100%)"
+                icon={AssessmentIcon}
+                iconBg="rgba(242, 58, 227, 0.12)"
+                numberAlign="center"
+              />
+            </Box>
 
-              {/* סינון לפי משימת רישום */}
+            {/* אזור סינון — סגנון כמו TrialStudentsTable */}
+            <Paper
+              elevation={0}
+              sx={{
+                mb: 3,
+                px: { xs: 1.5, md: 2 },
+                py: 2,
+                borderRadius: 3,
+                bgcolor: 'white',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 8px 20px rgba(15,23,42,0.05)'
+              }}
+            >
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
 
-              <Box sx={{ minWidth: 180, direction: 'rtl', textAlign: 'right' }}>
-                <FormControl fullWidth size="small" sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '10px',
-                  },
-                  '& .MuiInputLabel-root': {
-                    borderRadius: '10px',
-                  },
-                  direction: 'rtl',
-                  textAlign: 'right'
-                }}>
-                  <InputLabel id="filter-task-label" sx={{ direction: 'rtl', right: 36, left: 'auto', textAlign: 'right' }}>סנן לפי משימת רישום</InputLabel>
+                {/* שדה החיפוש */}
+                <TextField
+                  placeholder="חיפוש תלמיד, קוד תלמיד, או שם רושם"
+                  variant="outlined"
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  size="small"
+                  sx={{
+                    flex: 1,
+                    minWidth: 260,
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '999px',
+                      bgcolor: '#f8fbff',
+                      direction: 'rtl',
+                      pr: 2,
+                      '& fieldset': { borderColor: '#dbeafe' },
+                      '&:hover': { boxShadow: '0 4px 12px rgba(37,99,235,0.10)' },
+                      '&.Mui-focused': { boxShadow: '0 4px 16px rgba(37,99,235,0.16)' }
+                    },
+                    '& input': { textAlign: 'right', fontSize: '0.92rem', fontFamily: 'inherit' }
+                  }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon sx={{ color: '#93c5fd', fontSize: '1.1rem' }} />
+                      </InputAdornment>
+                    )
+                  }}
+                />
+
+                {/* סינון לפי משימת רישום */}
+                <FormControl size="small" sx={{ minWidth: 185, direction: 'rtl', '& .MuiOutlinedInput-notchedOutline legend': { textAlign: 'right', marginRight: '20px' }, '& .MuiInputLabel-shrink': { transform: 'translate(0, -9px) scale(0.75)' } }}>
+                  <InputLabel sx={{ right: 20, left: 'auto', transformOrigin: 'top right' }}>סנן לפי משימת רישום</InputLabel>
                   <Select
-                    labelId="filter-task-label"
-                    id="filter-task-select"
                     value={filterTask}
                     label="סנן לפי משימת רישום"
                     onChange={e => setFilterTask(e.target.value)}
-                    sx={{ direction: 'rtl', textAlign: 'right' }}
-                    MenuProps={{
-                      PaperProps: {
-                        sx: {
-                          direction: 'rtl',
-                          textAlign: 'right',
-                          minWidth: 180
-                        }
-                      }
-                    }}
+                    sx={{ borderRadius: '12px', direction: 'rtl', bgcolor: 'white' }}
+                    MenuProps={{ PaperProps: { sx: { direction: 'rtl' } } }}
                   >
-                    <MenuItem value="all" sx={{ direction: 'rtl', textAlign: 'right' }}>הכל</MenuItem>
+                    <MenuItem value="all" sx={{ direction: 'rtl' }}>הכל</MenuItem>
                     {registrationTasks.map(task => (
-                      <MenuItem key={task} value={task} sx={{ direction: 'rtl', textAlign: 'right' }}>{task}</MenuItem>
+                      <MenuItem key={task} value={task} sx={{ direction: 'rtl' }}>{task}</MenuItem>
                     ))}
                   </Select>
                 </FormControl>
+
+                {/* סינון לפי חודש רישום */}
+                <FormControl size="small" sx={{ minWidth: 185, direction: 'rtl', '& .MuiOutlinedInput-notchedOutline legend': { textAlign: 'right', marginRight: '20px' }, '& .MuiInputLabel-shrink': { transform: 'translate(0, -9px) scale(0.75)' } }}>
+                  <InputLabel sx={{ right: 20, left: 'auto', transformOrigin: 'top right' }}>סינון לפי תאריך רישום</InputLabel>
+                  <Select
+                    value={filterMonth}
+                    label="סינון לפי תאריך רישום"
+                    onChange={e => setFilterMonth(e.target.value)}
+                    sx={{ borderRadius: '12px', direction: 'rtl', bgcolor: 'white' }}
+                    MenuProps={{ PaperProps: { sx: { direction: 'rtl' } } }}
+                  >
+                    {months.map(month => (
+                      <MenuItem key={month.value} value={month.value} sx={{ direction: 'rtl' }}>{month.label}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                {/* כפתור איפוס מיון */}
+                {sortField && (
+                  <Button
+                    variant="outlined"
+                    onClick={() => { setSortField(''); setSortDirection('asc'); }}
+                    sx={{
+                      borderRadius: '12px',
+                      px: 2.5,
+                      fontWeight: 600,
+                      borderColor: '#d1d5db',
+                      color: '#6b7280',
+                      '&:hover': { borderColor: '#9ca3af', bgcolor: '#f9fafb', color: '#374151' }
+                    }}
+                  >
+                    🔄 איפוס מיון
+                  </Button>
+                )}
               </Box>
 
-
-              {/* כפתור סינון לפי חודש רישום */}
-              <FormControl fullWidth size="small" sx={{ minWidth: 180, maxWidth: 220, direction: 'rtl', textAlign: 'right' }}>
-                <InputLabel id="filter-month-label" sx={{ direction: 'rtl', right: 69, left: 'auto', textAlign: 'right' }}>סינון לפי תאריך רישום</InputLabel>
-                <Select
-                  labelId="filter-month-label"
-                  id="filter-month-select"
-                  value={filterMonth}
-                  label="סינון לפי תאריך רישום"
-                  onChange={e => setFilterMonth(e.target.value)}
-                  sx={{ direction: 'rtl', textAlign: 'right' }}
-                  MenuProps={{
-                    PaperProps: {
-                      sx: {
-                        direction: 'rtl',
-                        textAlign: 'right',
-                        minWidth: 180
-                      }
-                    }
-                  }}
-                >
-                  {months.map(month => (
-                    <MenuItem key={month.value} value={month.value} sx={{ direction: 'rtl', textAlign: 'right' }}>{month.label}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              {/* כפתור רענן נתונים */}
-              <Button
-                variant="contained"
-                startIcon={<RefreshIcon />}
-                onClick={loadRegistrationTrackingData}
-                sx={{
-                  borderRadius: '12px',
-                  px: 3,
-                  py: 1.5,
-                  fontSize: '0.9rem',
-                  fontWeight: 600,
-                  bgcolor: '#3b82f6',
-                  color: 'white',
-                  boxShadow: 'none',
-                  transition: 'all 0.2s ease',
-                  minWidth: 140,
-                  '&:hover': {
-                    bgcolor: '#2563eb',
-                    boxShadow: '0 2px 8px rgba(59, 130, 246, 0.25)',
-                    transform: 'translateY(-1px)',
-                  },
-                  '&:active': {
-                    transform: 'translateY(0)',
-                  }
-                }}
-              >
-                רענן נתונים
-              </Button>
-
-              {/* כפתור איפוס מיון */}
-              {sortField && (
-                <Button
-                  variant="outlined"
-                  onClick={() => {
-                    setSortField('');
-                    setSortDirection('asc');
-                  }}
-                  sx={{
-                    borderRadius: '12px',
-                    px: 3,
-                    py: 1.5,
-                    fontSize: '0.9rem',
-                    fontWeight: 600,
-                    borderColor: '#d1d5db',
-                    color: '#6b7280',
-                    bgcolor: 'transparent',
-                    transition: 'all 0.2s ease',
-                    minWidth: 140,
-                    '&:hover': {
-                      borderColor: '#9ca3af',
-                      bgcolor: '#f9fafb',
-                      color: '#374151',
-                    }
-                  }}
-                >
-                  🔄 איפוס מיון
-                </Button>
-              )}
-            </Box>
-
-            {/* מחוון תוצאות חיפוש */}
-            {searchTerm && (
-              <Box sx={{
-                mt: 3,
-                textAlign: 'center',
-                p: 2,
-                bgcolor: '#f0f9ff',
-                borderRadius: '8px',
-                border: '1px solid #e0f2fe'
-              }}>
-                <Typography variant="body2" sx={{
-                  color: '#0369a1',
-                  fontWeight: 500,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 1
-                }}>
-                  מחפש: "{searchTerm}"
+              {/* מחוון תוצאות חיפוש */}
+              {searchTerm && (
+                <Box sx={{ mt: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="body2" sx={{ color: '#0369a1', fontWeight: 500 }}>
+                    מחפש: "{searchTerm}"
+                  </Typography>
                   <Button
                     size="small"
                     onClick={() => setSearchTerm('')}
-                    sx={{
-                      color: '#0369a1',
-                      minWidth: 'auto',
-                      p: 0.5,
-                      ml: 1,
-                      fontSize: '0.8rem'
-                    }}
+                    sx={{ color: '#0369a1', minWidth: 'auto', p: 0.5, fontSize: '0.8rem' }}
                   >
                     ✕ נקה
                   </Button>
-                </Typography>
-              </Box>
-            )}
+                </Box>
+              )}
+            </Paper>
 
-          </Box>
-
-          {/* מונה תלמידים */}
-          <Box sx={{
-            mb: 2,
-            p: 2,
-            bgcolor: '#e1eefbff',
-            borderRadius: 2,
-            border: '1px solid #d7e4f6ff',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            direction: 'rtl'
-          }}>
-            <Typography variant="h6" sx={{
-              color: '#1e40af',
-              fontWeight: 'bold',
+            {/* מונה תלמידים */}
+            <Box sx={{
+              mb: 2,
+              p: 2,
+              bgcolor: '#e1eefbff',
+              borderRadius: 2,
+              border: '1px solid #d7e4f6ff',
               display: 'flex',
+              justifyContent: 'space-between',
               alignItems: 'center',
-              gap: 1
+              direction: 'rtl'
             }}>
-              📊
-              סה"כ תלמידים בטבלה: {filteredStudents.length}
-            </Typography>
-
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-              <Typography variant="body2" sx={{
-                color: '#64748b',
+              <Typography variant="h6" sx={{
+                color: '#1e40af',
+                fontWeight: 'bold',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 1
               }}>
-                <InfoIcon sx={{ fontSize: 16 }} />
-                מציג {paginatedStudents.length} מתוך {filteredStudents.length} תלמידים
+                📊
+                סה"כ תלמידים בטבלה: {filteredStudents.length}
               </Typography>
-              {sortField && (
-                <Typography variant="caption" sx={{
-                  color: '#3b82f6',
+
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                <Typography variant="body2" sx={{
+                  color: '#64748b',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 0.5,
-                  fontWeight: 500
+                  gap: 1
                 }}>
-                  🔄 ממוין לפי: {
-                    sortField === 'studentName' ? 'שם תלמיד' :
-                      sortField === 'authorName' ? 'נרשם על ידי' :
-                        sortField === 'status' ? 'סטטוס' :
-                          sortField === 'priority' ? 'עדיפות' :
-                            sortField === 'updateDate' ? 'תאריך עדכון' :
-                              sortField === 'createdDate' ? 'תאריך רישום' :
-                                sortField === 'incompleteTasks' ? 'משימות חסרות' :
-                                  sortField
-                  } ({sortDirection === 'asc' ? 'עולה' : 'יורד'})
+                  <InfoIcon sx={{ fontSize: 16 }} />
+                  מציג {paginatedStudents.length} מתוך {filteredStudents.length} תלמידים
                 </Typography>
-              )}
+                {sortField && (
+                  <Typography variant="caption" sx={{
+                    color: '#3b82f6',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    fontWeight: 500
+                  }}>
+                    🔄 ממוין לפי: {
+                      sortField === 'studentName' ? 'שם תלמיד' :
+                        sortField === 'authorName' ? 'נרשם על ידי' :
+                          sortField === 'status' ? 'סטטוס' :
+                            sortField === 'priority' ? 'עדיפות' :
+                              sortField === 'updateDate' ? 'תאריך עדכון' :
+                                sortField === 'createdDate' ? 'תאריך רישום' :
+                                  sortField === 'incompleteTasks' ? 'משימות חסרות' :
+                                    sortField
+                    } ({sortDirection === 'asc' ? 'עולה' : 'יורד'})
+                  </Typography>
+                )}
+              </Box>
             </Box>
-          </Box>
 
-          {/* טבלה מעוצבת */}
-          <StyledTableShell
-            enableSort={true}
-            onSort={handleSort}
-            sortField={sortField}
-            sortDirection={sortDirection}
-            enableHorizontalScroll={true}
-            headers={[
-              { label: 'סטטוס', field: 'status', align: 'center' },
-              { label: 'נרשם על ידי', field: 'authorName', align: 'center', sx: { minWidth: '150px' } },
-              { label: 'תלמיד', field: 'studentName', align: 'center' },
-              { label: 'תאריך רישום', field: 'createdDate', align: 'center', sx: { minWidth: '140px' } },
-              { label: 'משימות חסרות', field: 'incompleteTasks', align: 'center', sx: { width: '250px' } },
-              { label: 'עדיפות', field: 'priority', align: 'center' },
-              { label: 'תאריך עדכון', field: 'updateDate', align: 'center', sx: { minWidth: '140px' } },
-              { label: 'פעולות', align: 'center', sortable: false }
-            ]}
-          >
-            <TableBody>
-              {paginatedStudents.map((student, index) => (
-                <TableRow
-                  key={student.id || index}
-                  sx={{
-                    '&:hover': {
-                      bgcolor: 'rgba(59, 130, 246, 0.04)',
-                      transform: 'scale(1.005)',
-                      transition: 'all 0.2s ease',
-                      boxShadow: '0 4px 20px rgba(59, 130, 246, 0.1)'
-                    },
-                    '&:nth-of-type(even)': {
-                      bgcolor: 'rgba(248, 250, 252, 0.5)'
-                    },
-                    direction: 'rtl',
-                    borderBottom: '1px solid rgba(226, 232, 240, 0.8)'
-                  }}
-                >
-                  <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
-                    <Box sx={{
-                      display: 'flex',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      gap: 1
-                    }}>
-                      <Tooltip title={
-                        student.incompleteTasks.length === 0
-                          ? 'כל המשימות הושלמו'
-                          : `${student.incompleteTasks.length} משימות חסרות`
-                      }>
-                        <Box sx={{
-                          p: 0.5,
-                          borderRadius: '50%',
-                          bgcolor: student.incompleteTasks.length === 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}>
-                          {getStatusIcon(student.incompleteTasks)}
-                        </Box>
-                      </Tooltip>
-                    </Box>
-                  </TableCell>
-                  <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      {student.registrationNotes && student.registrationNotes.length > 0 && student.registrationNotes[0].authorName ? (
-                        <>
+            {/* טבלה מעוצבת */}
+            <StyledTableShell
+              enableSort={true}
+              onSort={handleSort}
+              sortField={sortField}
+              sortDirection={sortDirection}
+              enableHorizontalScroll={true}
+              headers={[
+                { label: 'סטטוס', field: 'status', align: 'center' },
+                { label: 'נרשם על ידי', field: 'authorName', align: 'center', sx: { minWidth: '150px' } },
+                { label: 'תלמיד', field: 'studentName', align: 'center' },
+                { label: 'תאריך רישום', field: 'createdDate', align: 'center', sx: { minWidth: '140px' } },
+                { label: 'משימות חסרות', field: 'incompleteTasks', align: 'center', sx: { width: '250px' } },
+                { label: 'עדיפות', field: 'priority', align: 'center' },
+                { label: 'תאריך עדכון', field: 'updateDate', align: 'center', sx: { minWidth: '140px' } },
+                { label: 'פעולות', align: 'center', sortable: false }
+              ]}
+            >
+              <TableBody>
+                {paginatedStudents.map((student, index) => (
+                  <TableRow
+                    key={student.id || index}
+                    sx={{
+                      '&:hover': {
+                        bgcolor: 'rgba(59, 130, 246, 0.04)',
+                        transform: 'scale(1.005)',
+                        transition: 'all 0.2s ease',
+                        boxShadow: '0 4px 20px rgba(59, 130, 246, 0.1)'
+                      },
+                      '&:nth-of-type(even)': {
+                        bgcolor: 'rgba(248, 250, 252, 0.5)'
+                      },
+                      direction: 'rtl',
+                      borderBottom: '1px solid rgba(226, 232, 240, 0.8)'
+                    }}
+                  >
+                    <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
+                      <Box sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        gap: 1
+                      }}>
+                        <Tooltip title={
+                          student.incompleteTasks.length === 0
+                            ? 'כל המשימות הושלמו'
+                            : `${student.incompleteTasks.length} משימות חסרות`
+                        }>
+                          <Box sx={{
+                            p: 0.5,
+                            borderRadius: '50%',
+                            bgcolor: student.incompleteTasks.length === 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}>
+                            {getStatusIcon(student.incompleteTasks)}
+                          </Box>
+                        </Tooltip>
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        {student.registrationNotes && student.registrationNotes.length > 0 && student.registrationNotes[0].authorName ? (
+                          <>
+                            <Typography variant="body2" sx={{
+                              fontWeight: 600,
+                              color: '#1e293b',
+                              textAlign: 'center'
+                            }}>
+                              {student.registrationNotes[0].authorName}
+                            </Typography>
+                            <Typography variant="caption" sx={{
+                              color: '#64748b',
+                              textAlign: 'center'
+                            }}>
+                              {student.registrationNotes[0].authorRole || 'רושם'}
+                            </Typography>
+                          </>
+                        ) : (
                           <Typography variant="body2" sx={{
-                            fontWeight: 600,
-                            color: '#1e293b',
-                            textAlign: 'center'
-                          }}>
-                            {student.registrationNotes[0].authorName}
-                          </Typography>
-                          <Typography variant="caption" sx={{
-                            color: '#64748b',
-                            textAlign: 'center'
-                          }}>
-                            {student.registrationNotes[0].authorRole || 'רושם'}
-                          </Typography>
-                        </>
-                      ) : (
-                        <Typography variant="body2" sx={{
-                          textAlign: 'center',
-                          color: '#94a3b8',
-                          fontStyle: 'italic'
-                        }}>
-                          לא ידוע
-                        </Typography>
-                      )}
-                    </Box>
-                  </TableCell>
-                  <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <Tooltip
-                        title="לחץ לצפייה בפרטי התלמיד 👆"
-                        placement="top"
-                        arrow
-                        sx={{
-                          '& .MuiTooltip-tooltip': {
-                            bgcolor: '#3b82f6',
-                            color: 'white',
-                            fontSize: '0.8rem',
-                            fontWeight: 500,
-                            borderRadius: '8px',
-                            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
-                          },
-                          '& .MuiTooltip-arrow': {
-                            color: '#3b82f6'
-                          }
-                        }}
-                      >
-                        <Typography
-                          variant="body1"
-                          onClick={() => handleOpenStudentDetails(student)}
-                          sx={{
-                            fontWeight: 700,
-                            color: '#1e293b',
                             textAlign: 'center',
-                            mb: 0.1,
-                            cursor: 'pointer',
-                            '&:hover': {
-                              color: '#3b82f6',
-                              textDecoration: 'underline'
+                            color: '#94a3b8',
+                            fontStyle: 'italic'
+                          }}>
+                            לא ידוע
+                          </Typography>
+                        )}
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <Tooltip
+                          title="לחץ לצפייה בפרטי התלמיד 👆"
+                          placement="top"
+                          arrow
+                          sx={{
+                            '& .MuiTooltip-tooltip': {
+                              bgcolor: '#3b82f6',
+                              color: 'white',
+                              fontSize: '0.8rem',
+                              fontWeight: 500,
+                              borderRadius: '8px',
+                              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                            },
+                            '& .MuiTooltip-arrow': {
+                              color: '#3b82f6'
                             }
                           }}
                         >
-                          {student.firstName} {student.lastName}
-                        </Typography>
-                      </Tooltip>
-                      <Chip
-                        label={`קוד תלמיד: ${student.id}`}
-                        size="small"
-                        sx={{
-                          bgcolor: 'rgba(59, 130, 246, 0.1)',
-                          color: '#3b82f6',
+                          <Typography
+                            variant="body1"
+                            onClick={() => handleOpenStudentDetails(student)}
+                            sx={{
+                              fontWeight: 700,
+                              color: '#1e293b',
+                              textAlign: 'center',
+                              mb: 0.1,
+                              cursor: 'pointer',
+                              '&:hover': {
+                                color: '#3b82f6',
+                                textDecoration: 'underline'
+                              }
+                            }}
+                          >
+                            {student.firstName} {student.lastName}
+                          </Typography>
+                        </Tooltip>
+                        <Chip
+                          label={`קוד תלמיד: ${student.id}`}
+                          size="small"
+                          sx={{
+                            bgcolor: 'rgba(59, 130, 246, 0.1)',
+                            color: '#3b82f6',
+                            fontWeight: 600,
+                            fontSize: '0.7rem',
+                            fontFamily: 'monospace'
+                          }}
+                        />
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <Typography variant="body2" sx={{
                           fontWeight: 600,
-                          fontSize: '0.7rem',
-                          fontFamily: 'monospace'
-                        }}
-                      />
-                    </Box>
-                  </TableCell>
-                  <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <Typography variant="body2" sx={{
-                        fontWeight: 600,
-                        color: '#1e293b',
-                        textAlign: 'center'
-                      }}>
-                        {student.createdDate && !isNaN(new Date(student.createdDate)) ? (
-                          <>
-                            {new Date(student.createdDate).toLocaleDateString('he-IL')}
-                            <br />
-                            <span style={{ fontSize: '0.85em', color: '#64748b', fontWeight: 400 }}>
-                              {new Date(student.createdDate).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false })}
-                            </span>
-                          </>
-                        ) : 'לא זמין'}
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell sx={{ textAlign: 'center', py: 0.5, width: '250px' }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-                      <Badge
-                        badgeContent={student.incompleteTasks.length}
-                        color="error"
+                          color: '#1e293b',
+                          textAlign: 'center'
+                        }}>
+                          {student.createdDate && !isNaN(new Date(student.createdDate)) ? (
+                            <>
+                              {new Date(student.createdDate).toLocaleDateString('he-IL')}
+                              <br />
+                              <span style={{ fontSize: '0.85em', color: '#64748b', fontWeight: 400 }}>
+                                {new Date(student.createdDate).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                              </span>
+                            </>
+                          ) : 'לא זמין'}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ textAlign: 'center', py: 0.5, width: '250px' }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                        <Badge
+                          badgeContent={student.incompleteTasks.length}
+                          color="error"
+                          sx={{
+                            '& .MuiBadge-badge': {
+                              bgcolor: student.incompleteTasks.length === 0 ? '#10b981' : '#ef4444',
+                              color: 'white',
+                              fontWeight: 'bold'
+                            }
+                          }}
+                        >
+                          <AssignmentIcon sx={{
+                            color: student.incompleteTasks.length === 0 ? '#10b981' : '#ef4444',
+                            fontSize: '1.5rem'
+                          }} />
+                        </Badge>
+                        {student.incompleteTasks.length > 0 && (
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.3, alignItems: 'center' }}>
+                            {student.incompleteTasks.slice(0, 2).map((task, i) => (
+                              <Chip
+                                key={i}
+                                label={task}
+                                size="small"
+                                sx={{
+                                  bgcolor: '#fef2f2',
+                                  color: '#dc2626',
+                                  fontSize: '0.7rem',
+                                  maxWidth: '120px',
+                                  '& .MuiChip-label': {
+                                    px: 0.5
+                                  }
+                                }}
+                              />
+                            ))}
+                            {student.incompleteTasks.length > 2 && (
+                              <Typography variant="caption" sx={{
+                                color: '#64748b',
+                                textAlign: 'center',
+                                fontWeight: 500
+                              }}>
+                                +{student.incompleteTasks.length - 2} נוספות
+                              </Typography>
+                            )}
+                          </Box>
+                        )}
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
+                      <Chip
+                        label={student.priority}
+                        size="medium"
                         sx={{
-                          '& .MuiBadge-badge': {
-                            bgcolor: student.incompleteTasks.length === 0 ? '#10b981' : '#ef4444',
-                            color: 'white',
-                            fontWeight: 'bold'
+                          bgcolor: `${getPriorityColor(student.priority)}15`,
+                          color: getPriorityColor(student.priority),
+                          fontWeight: 700,
+                          borderRadius: '12px',
+                          px: 2,
+                          '&:hover': {
+                            bgcolor: `${getPriorityColor(student.priority)}25`,
                           }
                         }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <Typography variant="body2" sx={{
+                          fontWeight: 600,
+                          color: '#1e293b',
+                          textAlign: 'center'
+                        }}>
+                          {student.lastNoteDate ? student.lastNoteDate.toLocaleDateString('he-IL') : 'לא זמין'}
+                        </Typography>
+                        <Typography variant="caption" sx={{
+                          color: '#64748b',
+                          textAlign: 'center'
+                        }}>
+                          עדכון אחרון
+                        </Typography>
+                      </Box>
+                    </TableCell>
+
+
+
+                    <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        startIcon={<EditIcon />}
+                        onClick={() => handleViewDetails(student)}
+                        sx={{
+                          borderRadius: '12px',
+                          px: 1.5,
+                          py: 0.5,
+                          bgcolor: '#3b82f6',
+                          fontWeight: 600,
+                          fontSize: '0.8rem',
+                          boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)',
+                          '&:hover': {
+                            bgcolor: '#1d4ed8',
+                            transform: 'translateY(-2px)',
+                            boxShadow: '0 6px 20px rgba(59, 130, 246, 0.35)',
+                          },
+                          transition: 'all 0.2s ease'
+                        }}
                       >
-                        <AssignmentIcon sx={{
-                          color: student.incompleteTasks.length === 0 ? '#10b981' : '#ef4444',
-                          fontSize: '1.5rem'
-                        }} />
-                      </Badge>
-                      {student.incompleteTasks.length > 0 && (
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.3, alignItems: 'center' }}>
-                          {student.incompleteTasks.slice(0, 2).map((task, i) => (
-                            <Chip
-                              key={i}
-                              label={task}
-                              size="small"
-                              sx={{
-                                bgcolor: '#fef2f2',
-                                color: '#dc2626',
-                                fontSize: '0.7rem',
-                                maxWidth: '120px',
-                                '& .MuiChip-label': {
-                                  px: 0.5
-                                }
-                              }}
-                            />
-                          ))}
-                          {student.incompleteTasks.length > 2 && (
-                            <Typography variant="caption" sx={{
-                              color: '#64748b',
-                              textAlign: 'center',
-                              fontWeight: 500
-                            }}>
-                              +{student.incompleteTasks.length - 2} נוספות
-                            </Typography>
-                          )}
-                        </Box>
-                      )}
-                    </Box>
-                  </TableCell>
-                  <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
-                    <Chip
-                      label={student.priority}
-                      size="medium"
-                      sx={{
-                        bgcolor: `${getPriorityColor(student.priority)}15`,
-                        color: getPriorityColor(student.priority),
-                        fontWeight: 700,
-                        borderRadius: '12px',
-                        px: 2,
-                        '&:hover': {
-                          bgcolor: `${getPriorityColor(student.priority)}25`,
-                        }
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <Typography variant="body2" sx={{
-                        fontWeight: 600,
-                        color: '#1e293b',
-                        textAlign: 'center'
-                      }}>
-                        {student.lastNoteDate ? student.lastNoteDate.toLocaleDateString('he-IL') : 'לא זמין'}
-                      </Typography>
-                      <Typography variant="caption" sx={{
-                        color: '#64748b',
-                        textAlign: 'center'
-                      }}>
-                        עדכון אחרון
-                      </Typography>
-                    </Box>
-                  </TableCell>
+                        עדכן משימות
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </StyledTableShell>
 
-
-
-                  <TableCell sx={{ textAlign: 'center', py: 0.5 }}>
-                    <Button
-                      size="small"
-                      variant="contained"
-                      startIcon={<EditIcon />}
-                      onClick={() => handleViewDetails(student)}
-                      sx={{
-                        borderRadius: '12px',
-                        px: 1.5,
-                        py: 0.5,
-                        bgcolor: '#3b82f6',
-                        fontWeight: 600,
-                        fontSize: '0.8rem',
-                        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)',
-                        '&:hover': {
-                          bgcolor: '#1d4ed8',
-                          transform: 'translateY(-2px)',
-                          boxShadow: '0 6px 20px rgba(59, 130, 246, 0.35)',
-                        },
-                        transition: 'all 0.2s ease'
-                      }}
-                    >
-                      עדכן משימות
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </StyledTableShell>
-
-          {/* Pagination */}
-          {filteredStudents.length > 0 && (
-            <TablePagination
-              component="div"
-              count={filteredStudents.length}
-              page={page}
-              onPageChange={handleChangePage}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[5, 10, 25, 50, 100]}
-              labelRowsPerPage="שורות בעמוד:"
-              labelDisplayedRows={({ from, to, count }) =>
-                `${from}-${to} מתוך ${count !== -1 ? count : `יותר מ-${to}`}`
-              }
-              sx={{
-                direction: 'rtl',
-                '& .MuiTablePagination-toolbar': {
-                  direction: 'rtl',
-                  paddingLeft: 2,
-                  paddingRight: 2
-                },
-                '& .MuiTablePagination-selectLabel': {
-                  margin: 0
-                },
-                '& .MuiTablePagination-displayedRows': {
-                  margin: 0
-                },
-                '& .MuiTablePagination-select': {
-                  textAlign: 'right'
-                },
-                '& .MuiTablePagination-actions': {
-                  marginLeft: 0,
-                  marginRight: 20
+            {/* Pagination */}
+            {filteredStudents.length > 0 && (
+              <TablePagination
+                component="div"
+                count={filteredStudents.length}
+                page={page}
+                onPageChange={handleChangePage}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                rowsPerPageOptions={[5, 10, 25, 50, 100]}
+                labelRowsPerPage="שורות בעמוד:"
+                labelDisplayedRows={({ from, to, count }) =>
+                  `${from}-${to} מתוך ${count !== -1 ? count : `יותר מ-${to}`}`
                 }
-              }}
-            />
-          )}
-        </Box>
-
-        {filteredStudents.length === 0 && (
-          <Box sx={{
-            textAlign: 'center',
-            py: 8,
-            background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-            borderRadius: '0 0 20px 20px'
-          }}>
-            <Box sx={{
-              background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-              borderRadius: '50%',
-              p: 3,
-              mb: 3,
-              display: 'inline-flex',
-              boxShadow: '0 10px 30px rgba(59, 130, 246, 0.3)'
-            }}>
-              <SearchIcon sx={{ fontSize: 48, color: 'white' }} />
-            </Box>
-            <Typography variant="h5" sx={{
-              color: '#1e293b',
-              fontWeight: 'bold',
-              mb: 1
-            }}>
-              לא נמצאו תלמידים
-            </Typography>
-            <Typography variant="body1" sx={{
-              color: '#64748b',
-              mb: 3
-            }}>
-              {searchTerm ? `לא נמצאו תלמידים המתאימים לחיפוש "${searchTerm}"` : 'לא נמצאו תלמידים במעקב רישום'}
-            </Typography>
-            {searchTerm && (
-              <Button
-                variant="outlined"
-                onClick={() => setSearchTerm('')}
                 sx={{
-                  borderRadius: '12px',
-                  px: 3,
-                  py: 1,
-                  borderColor: '#3b82f6',
-                  color: '#3b82f6',
-                  '&:hover': {
-                    bgcolor: 'rgba(59, 130, 246, 0.1)',
-                    borderColor: '#1d4ed8'
+                  direction: 'rtl',
+                  '& .MuiTablePagination-toolbar': {
+                    direction: 'rtl',
+                    paddingLeft: 2,
+                    paddingRight: 2
+                  },
+                  '& .MuiTablePagination-selectLabel': {
+                    margin: 0
+                  },
+                  '& .MuiTablePagination-displayedRows': {
+                    margin: 0
+                  },
+                  '& .MuiTablePagination-select': {
+                    textAlign: 'right'
+                  },
+                  '& .MuiTablePagination-actions': {
+                    marginLeft: 0,
+                    marginRight: 20
                   }
                 }}
-              >
-                נקה חיפוש
-              </Button>
+              />
             )}
           </Box>
-        )}
 
-        <Dialog
-          open={detailsDialogOpen}
-          onClose={handleCloseDialog}
-          maxWidth="md"
-          fullWidth
-          PaperProps={{
-            sx: { borderRadius: '16px', direction: 'rtl' }
-          }}
-        >
-          <DialogTitle sx={{ bgcolor: '#3b82f6', color: 'white', textAlign: 'right' }}>
-            <Typography variant="h6">
-              פרטי משימות - {selectedStudent?.firstName} {selectedStudent?.lastName}
-            </Typography>
-          </DialogTitle>
+          {/* </Box> end tab 0 */}
 
-          <DialogContent sx={{ p: 3 }}>
-            {selectedStudent && (
-              <Grid container spacing={3}>
-                <Grid item xs={12}>
-                  <Alert severity="info" sx={{ mb: 2 }}>
-                    כאן תוכל לראות את פרטי המשימות של התלמיד
-                  </Alert>
-                </Grid>
+          {/* תוכן טאב 1 - שיעורי ניסיון */}
+          {activeTab === 1 && (
+            <Box sx={{ mt: 2 }}>
+              <TrialStudentsTable />
+            </Box>
+          )}
 
-                <Grid item xs={12}>
-                  <Card sx={{ width: '100%' }}>
-                    <CardContent>
-                      <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <AssignmentIcon />
-                        משימות רישום ({selectedStudent.incompleteTasks.length})
-                      </Typography>
+          {filteredStudents.length === 0 && activeTab === 0 && (
+            <Box sx={{
+              textAlign: 'center',
+              py: 8,
+              background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+              borderRadius: '0 0 20px 20px'
+            }}>
+              <Box sx={{
+                background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                borderRadius: '50%',
+                p: 3,
+                mb: 3,
+                display: 'inline-flex',
+                boxShadow: '0 10px 30px rgba(59, 130, 246, 0.3)'
+              }}>
+                <SearchIcon sx={{ fontSize: 48, color: 'white' }} />
+              </Box>
+              <Typography variant="h5" sx={{
+                color: '#1e293b',
+                fontWeight: 'bold',
+                mb: 1
+              }}>
+                לא נמצאו תלמידים
+              </Typography>
+              <Typography variant="body1" sx={{
+                color: '#64748b',
+                mb: 3
+              }}>
+                {searchTerm ? `לא נמצאו תלמידים המתאימים לחיפוש "${searchTerm}"` : 'לא נמצאו תלמידים במעקב רישום'}
+              </Typography>
+              {searchTerm && (
+                <Button
+                  variant="outlined"
+                  onClick={() => setSearchTerm('')}
+                  sx={{
+                    borderRadius: '12px',
+                    px: 3,
+                    py: 1,
+                    borderColor: '#3b82f6',
+                    color: '#3b82f6',
+                    '&:hover': {
+                      bgcolor: 'rgba(59, 130, 246, 0.1)',
+                      borderColor: '#1d4ed8'
+                    }
+                  }}
+                >
+                  נקה חיפוש
+                </Button>
+              )}
+            </Box>
+          )}
 
-                      {editNotesMode ? (
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                          <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
-                            סמן משימות שהושלמו:
-                          </Typography>
-
-                          {registrationTasks.map((task, index) => (
-                            <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <input
-                                type="checkbox"
-                                checked={editedTasks[task] || false}
-                                onChange={() => handleTaskToggle(task)}
-                                style={{ transform: 'scale(1.2)' }}
-                              />
-                              <Typography variant="body2" sx={{
-                                textDecoration: editedTasks[task] ? 'line-through' : 'none',
-                                color: editedTasks[task] ? 'text.secondary' : 'text.primary'
-                              }}>
-                                {task}
-                              </Typography>
-                            </Box>
-                          ))}
-
-                          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', mt: 2 }}>
-                            <Button
-                              onClick={handleCancelNotesEdit}
-                              disabled={saving}
-                              size="small"
-                            >
-                              ביטול
-                            </Button>
-                            <Button
-                              onClick={handleSaveNotes}
-                              disabled={saving}
-                              variant="contained"
-                              size="small"
-                              sx={{ bgcolor: '#10b981' }}
-                              startIcon={saving ? <CircularProgress size={16} /> : null}
-                            >
-                              {saving ? '...שומר' : 'שמור עדכון'}
-                            </Button>
-                          </Box>
-                        </Box>
-                      ) : (
-                        <>
-                          <Typography variant="body1" sx={{ fontWeight: 600, mb: 2 }}>
-                            תלמיד: {selectedStudent.firstName} {selectedStudent.lastName} (ת.ז: {selectedStudent.id})
-                          </Typography>
-
-                          {selectedStudent.incompleteTasks.length > 0 ? (
-                            <>
-                              <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
-                                משימות שטרם הושלמו:
-                              </Typography>
-                              <List dense>
-                                {selectedStudent.incompleteTasks.map((task, index) => (
-                                  <ListItem key={index}>
-                                    <ListItemIcon>
-                                      <ErrorIcon sx={{ color: '#ef4444' }} />
-                                    </ListItemIcon>
-                                    <ListItemText primary={task} />
-                                  </ListItem>
-                                ))}
-                              </List>
-                            </>
-                          ) : (
-                            <Box sx={{ textAlign: 'center', py: 2 }}>
-                              <CheckCircleIcon sx={{ color: '#10b981', fontSize: 48, mb: 1 }} />
-                              <Typography variant="body1" sx={{ color: '#10b981' }}>
-                                כל המשימות הושלמו!
-                              </Typography>
-                            </Box>
-                          )}
-
-                          <Box sx={{ mt: 2, textAlign: 'center' }}>
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              onClick={handleEditNotesMode}
-                              startIcon={<EditIcon />}
-                              sx={{ fontSize: '0.75rem' }}
-                            >
-                              עדכן משימות
-                            </Button>
-                          </Box>
-                        </>
-                      )}
-                    </CardContent>
-                  </Card>
-                </Grid>
-              </Grid>
-            )}
-          </DialogContent>
-
-          <DialogActions sx={{ p: 2, direction: 'rtl' }}>
-            <Button onClick={handleCloseDialog}>
-              סגור
-            </Button>
-          </DialogActions>
-        </Dialog>
-
-        {/* Student Details Dialog */}
-        {selectedStudentForDetails && (
-          <StudentCoursesDialog
-            open={studentDetailsDialogOpen}
-            onClose={handleCloseStudentDetails}
-            student={selectedStudentForDetails}
-            studentCourses={studentCourses}
-            loadingCourses={loadingStudentCourses}
-            showAddButton={false}
-            title={`פרטי התלמיד: ${selectedStudentForDetails.firstName} ${selectedStudentForDetails.lastName}`}
-            subtitle={`ת"ז: ${selectedStudentForDetails.id}${selectedStudentForDetails.email ? ` | 📧 ${selectedStudentForDetails.email}` : ''}`}
-          />
-        )}
-
-        {/* Alert for notifications */}
-        {alert.open && (
-          <Alert
-            severity={alert.severity}
-            onClose={() => setAlert({ ...alert, open: false })}
-            sx={{
-              position: 'fixed',
-              top: 20,
-              right: 20,
-              zIndex: 9999,
-              direction: 'rtl'
+          <Dialog
+            open={detailsDialogOpen}
+            onClose={handleCloseDialog}
+            maxWidth="md"
+            fullWidth
+            PaperProps={{
+              sx: { borderRadius: '16px', direction: 'rtl' }
             }}
           >
-            {alert.message}
-          </Alert>
-        )}
+            <DialogTitle sx={{ bgcolor: '#3b82f6', color: 'white', textAlign: 'right' }}>
+              <Typography variant="h6">
+                פרטי משימות - {selectedStudent?.firstName} {selectedStudent?.lastName}
+              </Typography>
+            </DialogTitle>
+
+            <DialogContent sx={{ p: 3 }}>
+              {selectedStudent && (
+                <Grid container spacing={3}>
+                  <Grid item xs={12}>
+                    <Alert severity="info" sx={{ mb: 2 }}>
+                      כאן תוכל לראות את פרטי המשימות של התלמיד
+                    </Alert>
+                  </Grid>
+
+                  <Grid item xs={12}>
+                    <Card sx={{ width: '100%' }}>
+                      <CardContent>
+                        <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <AssignmentIcon />
+                          משימות רישום ({selectedStudent.incompleteTasks.length})
+                        </Typography>
+
+                        {editNotesMode ? (
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
+                              סמן משימות שהושלמו:
+                            </Typography>
+
+                            {registrationTasks.map((task, index) => (
+                              <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <input
+                                  type="checkbox"
+                                  checked={editedTasks[task] || false}
+                                  onChange={() => handleTaskToggle(task)}
+                                  style={{ transform: 'scale(1.2)' }}
+                                />
+                                <Typography variant="body2" sx={{
+                                  textDecoration: editedTasks[task] ? 'line-through' : 'none',
+                                  color: editedTasks[task] ? 'text.secondary' : 'text.primary'
+                                }}>
+                                  {task}
+                                </Typography>
+                              </Box>
+                            ))}
+
+                            <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', mt: 2 }}>
+                              <Button
+                                onClick={handleCancelNotesEdit}
+                                disabled={saving}
+                                size="small"
+                              >
+                                ביטול
+                              </Button>
+                              <Button
+                                onClick={handleSaveNotes}
+                                disabled={saving}
+                                variant="contained"
+                                size="small"
+                                sx={{ bgcolor: '#10b981' }}
+                                startIcon={saving ? <CircularProgress size={16} /> : null}
+                              >
+                                {saving ? '...שומר' : 'שמור עדכון'}
+                              </Button>
+                            </Box>
+                          </Box>
+                        ) : (
+                          <>
+                            <Typography variant="body1" sx={{ fontWeight: 600, mb: 2 }}>
+                              תלמיד: {selectedStudent.firstName} {selectedStudent.lastName} (ת.ז: {selectedStudent.id})
+                            </Typography>
+
+                            {selectedStudent.incompleteTasks.length > 0 ? (
+                              <>
+                                <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
+                                  משימות שטרם הושלמו:
+                                </Typography>
+                                <List dense>
+                                  {selectedStudent.incompleteTasks.map((task, index) => (
+                                    <ListItem key={index}>
+                                      <ListItemIcon>
+                                        <ErrorIcon sx={{ color: '#ef4444' }} />
+                                      </ListItemIcon>
+                                      <ListItemText primary={task} />
+                                    </ListItem>
+                                  ))}
+                                </List>
+                              </>
+                            ) : (
+                              <Box sx={{ textAlign: 'center', py: 2 }}>
+                                <CheckCircleIcon sx={{ color: '#10b981', fontSize: 48, mb: 1 }} />
+                                <Typography variant="body1" sx={{ color: '#10b981' }}>
+                                  כל המשימות הושלמו!
+                                </Typography>
+                              </Box>
+                            )}
+
+                            <Box sx={{ mt: 2, textAlign: 'center' }}>
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                onClick={handleEditNotesMode}
+                                startIcon={<EditIcon />}
+                                sx={{ fontSize: '0.75rem' }}
+                              >
+                                עדכן משימות
+                              </Button>
+                            </Box>
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+              )}
+            </DialogContent>
+
+            <DialogActions sx={{ p: 2, direction: 'rtl' }}>
+              <Button onClick={handleCloseDialog}>
+                סגור
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* Student Details Dialog */}
+          {selectedStudentForDetails && (
+            <StudentCoursesDialog
+              open={studentDetailsDialogOpen}
+              onClose={handleCloseStudentDetails}
+              student={selectedStudentForDetails}
+              studentCourses={studentCourses}
+              loadingCourses={loadingStudentCourses}
+              showAddButton={false}
+              title={`פרטי התלמיד: ${selectedStudentForDetails.firstName} ${selectedStudentForDetails.lastName}`}
+              subtitle={`ת"ז: ${selectedStudentForDetails.id}${selectedStudentForDetails.email ? ` | 📧 ${selectedStudentForDetails.email}` : ''}`}
+            />
+          )}
+
+          {/* Alert for notifications */}
+          {alert.open && (
+            <Alert
+              severity={alert.severity}
+              onClose={() => setAlert({ ...alert, open: false })}
+              sx={{
+                position: 'fixed',
+                top: 20,
+                right: 20,
+                zIndex: 9999,
+                direction: 'rtl'
+              }}
+            >
+              {alert.message}
+            </Alert>
+          )}
+        </Box>
       </Box>
     </motion.div>
   );

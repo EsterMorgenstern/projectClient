@@ -94,6 +94,7 @@ const AddStudentDialog = ({
   const [savedStudentData, setSavedStudentData] = useState(null);
 
   const [enrollDate, setEnrollDate] = useState('');
+  const [trialDate, setTrialDate] = useState('');
   const [localGroupStatus, setLocalGroupStatus] = useState(groupStatus);
   // הסרנו שדות תאריך סיום ויום שיעור - הכל מחושב מנתוני הקבוצה
 
@@ -581,7 +582,7 @@ const AddStudentDialog = ({
     
     if (onSuccess) {
       console.log('📤 Sending student data to callback:', studentData);
-      onSuccess({ ...studentData, enrollDate, groupStatus: localGroupStatus }, 'התלמיד נוסף בהצלחה!', 'success');
+      onSuccess({ ...studentData, enrollDate, groupStatus: localGroupStatus, trialDate: localGroupStatus === 4 ? trialDate : null }, 'התלמיד נוסף בהצלחה!', 'success');
     }
   };
   // פונקציה לפתיחת דיאלוג סטודנט קופה
@@ -1072,6 +1073,28 @@ useEffect(() => {
                   >
                     🚪 עזב
                   </Button>
+                  <Button
+                    variant={localGroupStatus === 4 ? 'contained' : 'outlined'}
+                    onClick={() => {
+                      setLocalGroupStatus(4);
+                      if (onGroupStatusChange) onGroupStatusChange(4);
+                    }}
+                    sx={{
+                      borderRadius: '12px',
+                      px: 3,
+                      py: 1,
+                      fontWeight: 'bold',
+                      bgcolor: localGroupStatus === 4 ? '#0EA5E9' : 'transparent',
+                      borderColor: '#0EA5E9',
+                      color: localGroupStatus === 4 ? 'white' : '#0EA5E9',
+                      '&:hover': {
+                        bgcolor: localGroupStatus === 4 ? '#0284C7' : 'rgba(14, 165, 233, 0.1)',
+                        borderColor: '#0EA5E9'
+                      }
+                    }}
+                  >
+                    🔍 ניסיון
+                  </Button>
                 </Box>
                 <Typography variant="caption" sx={{ 
                   display: 'block', 
@@ -1083,8 +1106,29 @@ useEffect(() => {
                     ? 'התלמיד יהיה פעיל בקבוצה ותירשם נוכחות'
                     : localGroupStatus === 2
                       ? 'התלמיד יסומן כעזב בקבוצה'
-                      : 'התלמיד יהיה רשום כליד בקבוצה'}
+                      : localGroupStatus === 4
+                        ? 'התלמיד נמצא בשיעור ניסיון - שיעורים ייווצרו רק לאחר מעבר לפעיל'
+                        : 'התלמיד יהיה רשום כליד בקבוצה'}
                 </Typography>
+                {localGroupStatus === 4 && (
+                  <Box sx={{ mt: 2 }}>
+                    <TextField
+                      fullWidth
+                      type="date"
+                      label="תאריך שיעור ניסיון"
+                      value={trialDate}
+                      onChange={(e) => setTrialDate(e.target.value)}
+                      InputLabelProps={{ shrink: true }}
+                      inputProps={{ dir: 'ltr' }}
+                      helperText="תאריך שיעור הניסיון - ישמש לגביה עתידית"
+                      sx={{
+                        '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+                        '& label': { color: '#0EA5E9' },
+                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#0EA5E9' }
+                      }}
+                    />
+                  </Box>
+                )}
               </Box>
             </Grid>
           )}

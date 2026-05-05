@@ -45,6 +45,9 @@ const normalizeGroupStudentStatus = (value) => {
   if (value === 3 || value === '3' || value === false) {
     return 3;
   }
+  if (value === 4 || value === '4') {
+    return 4;
+  }
   return 3;
 };
 
@@ -55,6 +58,9 @@ const getGroupStudentStatusMeta = (value) => {
   }
   if (statusCode === 2) {
     return { label: 'עזב', color: 'error' };
+  }
+  if (statusCode === 4) {
+    return { label: 'ניסיון', color: 'info' };
   }
   return { label: 'ליד', color: 'warning' };
 };

@@ -50,6 +50,9 @@ const normalizeCourseStatus = (value) => {
   if (value === 3 || value === '3' || value === false) {
     return 3;
   }
+  if (value === 4 || value === '4') {
+    return 4;
+  }
   return 3;
 };
 
@@ -60,6 +63,9 @@ const getCourseStatusMeta = (value) => {
   }
   if (statusCode === 2) {
     return { code: 2, label: 'עזב', color: 'error', chipIcon: CloseIcon };
+  }
+  if (statusCode === 4) {
+    return { code: 4, label: 'ניסיון', color: 'info', chipIcon: InfoIcon };
   }
   return { code: 3, label: 'ליד', color: 'warning', chipIcon: WarningIcon };
 };
@@ -243,7 +249,8 @@ const StudentCoursesDialog = ({
         studentId: editingCourse.studentId,
         groupName: updatedFields.groupName !== undefined ? updatedFields.groupName : editingCourse.groupName,
         enrollmentDate: updatedFields.enrollmentDate,
-        isActive: updatedFields.isActive
+        isActive: updatedFields.isActive,
+        trialDate: updatedFields.trialDate !== undefined ? updatedFields.trialDate : (editingCourse.trialDate || null)
       };
       await dispatch(updateGroupStudent(payload));
       dispatch(getgroupStudentByStudentId(editingCourse.studentId));

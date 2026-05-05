@@ -48,6 +48,7 @@ const normalizeGroupStudentStatus = (value) => {
   if (value === 1 || value === '1' || value === true) return 1;
   if (value === 2 || value === '2') return 2;
   if (value === 3 || value === '3' || value === false) return 3;
+  if (value === 4 || value === '4') return 4;
   return 3;
 };
 
@@ -191,7 +192,7 @@ const GroupDetailsPanel = ({ groupId: propGroupId } = {}) => {
     const rawIsActive = groupStudentEntry?.isActive ?? s.isActive ?? s.IsActive ?? s.groupStudentStatus ?? s.enrollmentStatus;
     const statusCode = normalizeGroupStudentStatus(rawIsActive);
     const isLeft = statusCode === 2;
-    const status = isLeft ? 'עזב' : (statusCode === 3 ? 'ליד' : (s.status || s.Status || s.studentStatus || 'פעיל'));
+    const status = isLeft ? 'עזב' : (statusCode === 4 ? 'ניסיון' : (statusCode === 3 ? 'ליד' : (s.status || s.Status || s.studentStatus || 'פעיל')));
     return {
       ...s,
       studentId: s.studentId || s.id || s.Id,

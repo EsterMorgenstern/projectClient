@@ -4,6 +4,7 @@ import { getGroupStudentByStudentName } from './groupStudentGetByStudentNameThun
 import { groupStudentAddThunk } from './groupStudentAddThunk';
 import { deleteGroupStudent } from './groupStudentDeleteThunk';
 import { updateGroupStudent } from './groupStudentUpdateThunk';
+import { getGroupStudentsByStatus } from './groupStudentGetByStatusThunk';
 
 const groupStudentSlice = createSlice({
   name: 'groupStudent',
@@ -13,6 +14,8 @@ const groupStudentSlice = createSlice({
     error: null,
     groupStudentById: [],
     groupStudentByName: [],
+    groupStudentByStatus: [],
+    statusLoading: false,
   },
   reducers: {
     // הוספת reducer לעדכון מקומי
@@ -118,6 +121,20 @@ const groupStudentSlice = createSlice({
         state.loading = false;
         state.error = action.payload || 'Failed to add group student';
         console.error('❌ Add group student failed:', action.payload);
+      })
+
+      // getGroupStudentsByStatus
+      .addCase(getGroupStudentsByStatus.pending, (state) => {
+        state.statusLoading = true;
+        state.error = null;
+      })
+      .addCase(getGroupStudentsByStatus.fulfilled, (state, action) => {
+        state.statusLoading = false;
+        state.groupStudentByStatus = action.payload;
+      })
+      .addCase(getGroupStudentsByStatus.rejected, (state, action) => {
+        state.statusLoading = false;
+        state.error = action.payload || 'Failed to fetch group students by status';
       });   
   }
 }); 

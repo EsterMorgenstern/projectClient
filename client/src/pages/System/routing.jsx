@@ -29,6 +29,7 @@ const Routing = () => {
           <Route path="/my-notes" element={<Layout><MyNotes /></Layout>} />
           <Route path="/about-system" element={<HomeLayout><AboutSystem /></HomeLayout>} />
           <Route path="/registration-tracking" element={<Layout><RegistrationTracking /></Layout>} />
+          <Route path="/registration-tracking/trial" element={<Layout><RegistrationTracking /></Layout>} />
           <Route path="/students" element={<Layout><StudentsTable /></Layout>} />
           <Route path="/students/:studentId" element={<Layout><StudentDetailsPage /></Layout>} />
           <Route path="/instructors" element={<Layout><InstructorsTable /></Layout>} />

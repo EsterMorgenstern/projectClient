@@ -335,6 +335,9 @@ const EnrollStudent = () => {
     if (value === 3 || value === '3' || value === false) {
       return 3;
     }
+    if (value === 4 || value === '4') {
+      return 4;
+    }
     return 3;
   };
 
@@ -345,6 +348,9 @@ const EnrollStudent = () => {
     }
     if (statusCode === 2) {
       return { code: 2, label: 'עזב', color: 'error', icon: '🚪' };
+    }
+    if (statusCode === 4) {
+      return { code: 4, label: 'ניסיון', color: 'info', icon: '🔍' };
     }
     return { code: 3, label: 'ליד', color: 'warning', icon: '🤝' };
   };
@@ -419,7 +425,8 @@ const EnrollStudent = () => {
   const [enrollDialogOpen, setEnrollDialogOpen] = useState(false);
   const [studentId, setStudentId] = useState('');
   const [enrollDate, setEnrollDate] = useState('');
-  const [groupStatus, setGroupStatus] = useState(1); // סטטוס תלמיד בקבוצה: 1 פעיל, 2 עזב, 3 ליד
+  const [trialDate, setTrialDate] = useState('');
+  const [groupStatus, setGroupStatus] = useState(1); // סטטוס תלמיד בקבוצה: 1 פעיל, 2 עזב, 3 ליד, 4 ניסיון
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
   const [view, setView] = useState('courses'); // courses, branches, groups, days
   const [selectedDay, setSelectedDay] = useState(null); // ליום שנבחר במיון לפי ימים
@@ -1126,6 +1133,7 @@ if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity
     setSelectedGroup(group);
     setStudentGroupData({ ...studentGroupData, groupId: group.groupId });
     setGroupStatus(1); // איפוס הסטטוס לפעיל כברירת מחדל
+    setTrialDate('');
     
     // עדכון הקורס והסניף בהתאם לקבוצה שנבחרה (עם fallback מתוך הנתונים של הקבוצה)
     const courseFromStore = courses.find(c => c.courseId === group.courseId);
@@ -1387,7 +1395,8 @@ if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity
           studentId: studentData.id, // אותו טיפוס כמו בפונקציה הרגילה
           groupId: selectedGroup.groupId,
           enrollmentDate: studentData.enrollDate, 
-          isActive: normalizeGroupStudentStatus(studentData.groupStatus !== undefined ? studentData.groupStatus : groupStatus)
+          isActive: normalizeGroupStudentStatus(studentData.groupStatus !== undefined ? studentData.groupStatus : groupStatus),
+          trialDate: normalizeGroupStudentStatus(studentData.groupStatus !== undefined ? studentData.groupStatus : groupStatus) === 4 ? (trialDate || null) : null
         };
 if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
         console.log('🔍 Enrollment data to send:', entrollmentData);
@@ -1540,7 +1549,8 @@ if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity
       studentId: studentId,
       groupId: groupId,
       enrollmentDate: enrollDate ? new Date(enrollDate).toISOString().split('T')[0] : '',
-      isActive: normalizeGroupStudentStatus(groupStatus)
+      isActive: normalizeGroupStudentStatus(groupStatus),
+      trialDate: normalizeGroupStudentStatus(groupStatus) === 4 ? (trialDate || null) : null
     };
 if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
     await dispatch(groupStudentAddThunk(entrollmentDate));
@@ -3943,6 +3953,25 @@ if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity
     >
       🚪 עזב
     </Button>
+    <Button
+      variant={groupStatus === 4 ? 'contained' : 'outlined'}
+      onClick={() => setGroupStatus(4)}
+      sx={{
+        borderRadius: '12px',
+        px: 3,
+        py: 1,
+        fontWeight: 'bold',
+        bgcolor: groupStatus === 4 ? '#0EA5E9' : 'transparent',
+        borderColor: '#0EA5E9',
+        color: groupStatus === 4 ? 'white' : '#0EA5E9',
+        '&:hover': {
+          bgcolor: groupStatus === 4 ? '#0284C7' : 'rgba(14, 165, 233, 0.1)',
+          borderColor: '#0EA5E9'
+        }
+      }}
+    >
+      🔍 ניסיון
+    </Button>
   </Box>
   <Typography variant="caption" sx={{ 
     display: 'block', 
@@ -3954,8 +3983,29 @@ if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity
       ? 'התלמיד יהיה פעיל בקבוצה ותירשם נוכחות'
       : groupStatus === 2
         ? 'התלמיד יסומן כעזב בקבוצה'
-        : 'התלמיד יהיה רשום כליד בקבוצה'}
+        : groupStatus === 4
+          ? 'התלמיד נמצא בשיעור ניסיון - שיעורים ייווצרו רק לאחר מעבר לפעיל'
+          : 'התלמיד יהיה רשום כליד בקבוצה'}
   </Typography>
+  {groupStatus === 4 && (
+    <Box sx={{ mt: 2 }}>
+      <TextField
+        fullWidth
+        type="date"
+        label="תאריך שיעור ניסיון"
+        value={trialDate}
+        onChange={(e) => setTrialDate(e.target.value)}
+        InputLabelProps={{ shrink: true }}
+        inputProps={{ dir: 'ltr' }}
+        helperText="תאריך שיעור הניסיון - ישמש לגביה עתידית"
+        sx={{
+          '& .MuiOutlinedInput-root': { borderRadius: '12px' },
+          '& label': { color: '#0EA5E9' },
+          '& .MuiOutlinedInput-notchedOutline': { borderColor: '#0EA5E9' }
+        }}
+      />
+    </Box>
+  )}
 </Box>
 
 {/* חישוב מספר השיעורים לתלמיד ותאריכים עתידיים */}
