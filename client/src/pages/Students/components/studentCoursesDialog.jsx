@@ -40,6 +40,12 @@ import { updateGroupStudent } from '../../../store/groupStudent/groupStudentUpda
 import { getGroupWithStudentsById } from '../../../store/group/groupGetGroupWithStudentsByIdThunk';
 import GroupDialog from '../../Groups/components/groupDialog';
 
+const normalizeTrialDate = (val) => {
+  if (!val) return null;
+  if (typeof val === 'string' && val.startsWith('0001')) return null;
+  return val;
+};
+
 const normalizeCourseStatus = (value) => {
   if (value === 1 || value === '1' || value === true) {
     return 1;
@@ -234,7 +240,8 @@ const StudentCoursesDialog = ({
   const handleEditCourse = (course) => {
     setEditingCourse({
       ...course,
-      isActive: normalizeCourseStatus(course?.isActive)
+      isActive: normalizeCourseStatus(course?.isActive),
+      trialDate: normalizeTrialDate(course?.trialDate)
     });
     setEditCourseDialogOpen(true);
     handleCourseMenuClose();
@@ -250,7 +257,7 @@ const StudentCoursesDialog = ({
         groupName: updatedFields.groupName !== undefined ? updatedFields.groupName : editingCourse.groupName,
         enrollmentDate: updatedFields.enrollmentDate,
         isActive: updatedFields.isActive,
-        trialDate: updatedFields.trialDate !== undefined ? updatedFields.trialDate : (editingCourse.trialDate || null)
+        trialDate: normalizeTrialDate(updatedFields.trialDate !== undefined ? updatedFields.trialDate : editingCourse.trialDate)
       };
       await dispatch(updateGroupStudent(payload));
       dispatch(getgroupStudentByStudentId(editingCourse.studentId));
@@ -1490,8 +1497,26 @@ const StudentCoursesDialog = ({
                       >
                         ליד
                       </Button>
+                      <Button
+                        variant={editingCourse.isActive === 4 ? 'contained' : 'outlined'}
+                        color="info"
+                        onClick={() => setEditingCourse({ ...editingCourse, isActive: 4 })}
+                      >
+                        🔍 ניסיון
+                      </Button>
                     </Box>
                   </Box>
+                  {editingCourse.isActive === 4 && (
+                    <Box>
+                      <Typography variant="subtitle2">תאריך שיעור ניסיון</Typography>
+                      <input
+                        type="date"
+                        value={normalizeTrialDate(editingCourse.trialDate) ? editingCourse.trialDate.slice(0, 10) : ''}
+                        onChange={e => setEditingCourse({ ...editingCourse, trialDate: e.target.value })}
+                        style={{ fontSize: '1rem', padding: '8px', borderRadius: '8px', border: '1px solid #0EA5E9', marginTop: '8px' }}
+                      />
+                    </Box>
+                  )}
                   <Box>
                     <Typography variant="subtitle2">תאריך התחלה</Typography>
                     <input
@@ -1506,7 +1531,7 @@ const StudentCoursesDialog = ({
               <DialogActions sx={{ justifyContent: 'center', gap: 2 }}>
                 <Button onClick={() => { setEditCourseDialogOpen(false); setEditingCourse(null); }} variant="outlined">ביטול</Button>
                 <Button
-                  onClick={() => handleEditCourseSave({ isActive: editingCourse.isActive, enrollmentDate: editingCourse.enrollmentDate })}
+                  onClick={() => handleEditCourseSave({ isActive: editingCourse.isActive, enrollmentDate: editingCourse.enrollmentDate, trialDate: editingCourse.trialDate })}
                   variant="contained"
                   color="primary"
                   disabled={editCourseLoading}

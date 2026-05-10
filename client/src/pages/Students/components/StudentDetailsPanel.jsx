@@ -91,6 +91,9 @@ const normalizeCourseStatus = (value) => {
   if (value === 3 || value === '3' || value === false) {
     return 3;
   }
+  if (value === 4 || value === '4') {
+    return 4;
+  }
   return 3;
 };
 
@@ -109,6 +112,14 @@ const getCourseStatusMeta = (statusCode) => {
       bg: '#fff7ed',
       color: '#9a3412',
       border: '#fdba74'
+    };
+  }
+  if (statusCode === 4) {
+    return {
+      label: 'ניסיון',
+      bg: '#e0f2fe',
+      color: '#075985',
+      border: '#7dd3fc'
     };
   }
   return {

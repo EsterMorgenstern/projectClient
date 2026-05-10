@@ -153,7 +153,7 @@ const TrialStudentsTable = () => {
       // סינון לפי חודש ניסיון
       if (filterTrialMonth !== 'all') {
         const date = gs.trialDate || gs.TrialDate;
-        if (!date) return false;
+        if (!date || (typeof date === 'string' && date.startsWith('0001'))) return false;
         if (new Date(date).getMonth() !== Number(filterTrialMonth)) return false;
       }
 
@@ -171,9 +171,11 @@ const TrialStudentsTable = () => {
   );
 
   const trialWithoutDateCount = useMemo(() =>
-    (groupStudentByStatus || []).filter(gs =>
-      Number(gs.isActive ?? gs.IsActive) === 4 && !(gs.trialDate || gs.TrialDate)
-    ).length,
+    (groupStudentByStatus || []).filter(gs => {
+      const td = gs.trialDate || gs.TrialDate;
+      const hasDate = td && !(typeof td === 'string' && td.startsWith('0001'));
+      return Number(gs.isActive ?? gs.IsActive) === 4 && !hasDate;
+    }).length,
     [groupStudentByStatus]
   );
 
@@ -211,6 +213,7 @@ const TrialStudentsTable = () => {
 
   const formatDate = (val) => {
     if (!val) return '—';
+    if (typeof val === 'string' && val.startsWith('0001')) return '—';
     try { return new Date(val).toLocaleDateString('he-IL'); } catch { return '—'; }
   };
 
@@ -411,7 +414,8 @@ const TrialStudentsTable = () => {
                     paginatedData.map((row, idx) => {
                       const statusMeta = getStatusMeta(row.isActive ?? row.IsActive);
                       const trialDate = row.trialDate || row.TrialDate;
-                      const isTrialMissingDate = Number(row.isActive ?? row.IsActive) === 4 && !trialDate;
+                      const normalizedTrialDate = trialDate && !(typeof trialDate === 'string' && trialDate.startsWith('0001')) ? trialDate : null;
+                      const isTrialMissingDate = Number(row.isActive ?? row.IsActive) === 4 && !normalizedTrialDate;
                       return (
                         <TableRow key={row.groupStudentId ?? idx}
                           sx={{
@@ -460,9 +464,9 @@ const TrialStudentsTable = () => {
                             {formatDate(row.enrollmentDate || row.EnrollmentDate)}
                           </TableCell>
                           <TableCell align="right" sx={{ py: 1.5 }}>
-                            {trialDate ? (
+                            {normalizedTrialDate ? (
                               <Typography sx={{ fontSize: '0.86rem', color: '#0369a1', fontWeight: 600 }}>
-                                {formatDate(trialDate)}
+                                {formatDate(normalizedTrialDate)}
                               </Typography>
                             ) : (
                               <Chip label="לא הוזן" size="small"

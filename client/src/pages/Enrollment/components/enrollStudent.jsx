@@ -76,6 +76,7 @@ import { fetchBranches } from '../../../store/branch/branchGetAllThunk';
 import { getGroupsByCourseId } from '../../../store/group/groupGetGroupsByCourseIdThunk';
 import { fetchGroups } from '../../../store/group/groupGellAllThunk';
 import { groupStudentAddThunk } from '../../../store/groupStudent/groupStudentAddThunk';
+import { updateGroupStudent } from '../../../store/groupStudent/groupStudentUpdateThunk';
 import { getgroupStudentByStudentId } from '../../../store/groupStudent/groupStudentGetByStudentIdThunk';
 import { getStudentsByGroupId } from '../../../store/group/groupGetStudentsByGroupId';
 import { clearStudentsInGroup } from '../../../store/group/groupSlice';
@@ -427,6 +428,8 @@ const EnrollStudent = () => {
   const [enrollDate, setEnrollDate] = useState('');
   const [trialDate, setTrialDate] = useState('');
   const [groupStatus, setGroupStatus] = useState(1); // סטטוס תלמיד בקבוצה: 1 פעיל, 2 עזב, 3 ליד, 4 ניסיון
+  // Trial date warning dialog
+  const [trialDateWarning, setTrialDateWarning] = useState({ open: false, groupStudentId: null, correctedDate: '', studentId: null, studentName: '', groupName: '', groupId: null, enrollmentDate: '' });
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
   const [view, setView] = useState('courses'); // courses, branches, groups, days
   const [selectedDay, setSelectedDay] = useState(null); // ליום שנבחר במיון לפי ימים
@@ -1396,7 +1399,7 @@ if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity
           groupId: selectedGroup.groupId,
           enrollmentDate: studentData.enrollDate, 
           isActive: normalizeGroupStudentStatus(studentData.groupStatus !== undefined ? studentData.groupStatus : groupStatus),
-          trialDate: normalizeGroupStudentStatus(studentData.groupStatus !== undefined ? studentData.groupStatus : groupStatus) === 4 ? (trialDate || null) : null
+          trialDate: normalizeGroupStudentStatus(studentData.groupStatus !== undefined ? studentData.groupStatus : groupStatus) === 4 ? (studentData.trialDate || trialDate || null) : null
         };
 if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
         console.log('🔍 Enrollment data to send:', entrollmentData);
@@ -1456,8 +1459,24 @@ if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity
             </Box>
           )
         });
-        }
         
+
+        // אם תאריך ניסיון לא נמצא ברשימת השיעורים - פתח דיאלוג אזהרה
+        const responseData = enrollResult.payload;
+        if (responseData?.trialDateNotFound) {
+          setTrialDateWarning({
+            open: true,
+            groupStudentId: responseData.groupStudentId,
+            correctedDate: '',
+            studentId: studentData.id,
+            studentName: `${studentData.firstName || ''} ${studentData.lastName || ''}`.trim() || studentData.studentName || `ת"ז ${studentData.id}`,
+            groupName: selectedGroup?.groupName || '',
+            groupId: selectedGroup?.groupId || null,
+            enrollmentDate: studentData.enrollDate || ''
+          });
+        }
+
+        }
       } catch (error) {
         console.error('❌ Error enrolling new student:', error);
         setNotification({
@@ -1553,7 +1572,7 @@ if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity
       trialDate: normalizeGroupStudentStatus(groupStatus) === 4 ? (trialDate || null) : null
     };
 if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
-    await dispatch(groupStudentAddThunk(entrollmentDate));
+    const enrollResult2 = await dispatch(groupStudentAddThunk(entrollmentDate));
 
     setEnrollDialogOpen(false);
 
@@ -1587,6 +1606,19 @@ if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity
       )
     });
 
+    if (enrollResult2?.payload?.trialDateNotFound) {
+      setTrialDateWarning({
+        open: true,
+        groupStudentId: enrollResult2.payload.groupStudentId,
+        correctedDate: '',
+        studentId: studentId,
+        studentName: searchStudentName || `ת"ז ${studentId}`,
+        groupName: selectedGroup?.groupName || '',
+        groupId: selectedGroup?.groupId || null,
+        enrollmentDate: enrollDate ? new Date(enrollDate).toISOString().split('T')[0] : ''
+      });
+    }
+
     setStudentId('');
     setEnrollDate('');
   } catch (error) {
@@ -1599,11 +1631,51 @@ if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity
   }
 };
 
+  const handleSaveCorrectedTrialDate = async () => {
+    if (!trialDateWarning.groupStudentId || !trialDateWarning.correctedDate) {
+      setNotification({
+        open: true,
+        message: 'יש להזין תאריך ניסיון תקין',
+        severity: 'warning'
+      });
+      return;
+    }
+
+    if (!checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+
+    console.log('🔍 Saving corrected trial date:', trialDateWarning);
+
+    const result = await dispatch(updateGroupStudent({
+      groupStudentId: trialDateWarning.groupStudentId,
+      studentId: trialDateWarning.studentId,
+      groupId: trialDateWarning.groupId,
+      groupName: trialDateWarning.groupName,
+      enrollmentDate: trialDateWarning.enrollmentDate,
+      isActive: 4,
+      trialDate: trialDateWarning.correctedDate
+    }));
+
+    if (result.type === 'groupStudent/updateGroupStudent/fulfilled') {
+      setTrialDateWarning({ open: false, groupStudentId: null, correctedDate: '', studentId: null, studentName: '', groupName: '', groupId: null, enrollmentDate: '' });
+      setNotification({
+        open: true,
+        message: 'תאריך הניסיון נשמר ונוצרה רשומת נוכחות מתאימה',
+        severity: 'success'
+      });
+    } else {
+      console.error('❌ Update trial date failed:', result);
+      setNotification({
+        open: true,
+        message: 'שגיאה בשמירת תאריך הניסיון: ' + (result.payload || 'אנא נסה שנית'),
+        severity: 'error'
+      });
+    }
+  };
+
  const handleSmartMatchingOpen = async () => {
     if (!smartMatchingStudentId.trim()) {
       setNotification({
         open: true,
-        message: 'נא להזין מספר תעודת זהות',
         severity: 'error'
       });
       return;
@@ -4934,6 +5006,36 @@ function calculateStudentLessons(groupStart, enroll, lessonDay, totalLessons, le
             {notification.message}
           </Alert>
         </Snackbar>
+
+        <Dialog
+          open={trialDateWarning.open}
+          onClose={() => setTrialDateWarning({ open: false, groupStudentId: null, correctedDate: '', studentId: null, studentName: '', groupName: '', groupId: null, enrollmentDate: '' })}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle sx={{ direction: 'rtl', fontWeight: 'bold' }}>תאריך ניסיון לא נשמר</DialogTitle>
+          <DialogContent sx={{ direction: 'rtl' }}>
+            <Typography sx={{ mb: 1, fontWeight: 600 }}>
+              תלמיד: {trialDateWarning.studentName || `ת"ז ${trialDateWarning.studentId || ''}`}
+            </Typography>
+            <Typography sx={{ mb: 2 }}>
+              תאריך הניסיון לא נשמר ברשימת השיעורים לתלמיד. לגביה יש להזין תאריך שקיים ברשימת השיעורים של הקבוצה.
+            </Typography>
+            <TextField
+              fullWidth
+              type="date"
+              label="תאריך ניסיון מתוקן"
+              value={trialDateWarning.correctedDate}
+              onChange={(e) => setTrialDateWarning((prev) => ({ ...prev, correctedDate: e.target.value }))}
+              InputLabelProps={{ shrink: true }}
+              inputProps={{ dir: 'ltr' }}
+            />
+          </DialogContent>
+          <DialogActions sx={{ direction: 'rtl', px: 3, pb: 2 }}>
+            <Button onClick={() => setTrialDateWarning({ open: false, groupStudentId: null, correctedDate: '', studentId: null, studentName: '', groupName: '', groupId: null, enrollmentDate: '' })} variant="outlined">ביטול</Button>
+            <Button onClick={handleSaveCorrectedTrialDate} variant="contained">שמור תאריך נכון</Button>
+          </DialogActions>
+        </Dialog>
       </Box>
        <AnimatePresence>
       {enrollmentSuccessOpen && (
