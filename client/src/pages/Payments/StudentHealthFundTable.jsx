@@ -169,8 +169,6 @@ const StudentHealthFundTable = () => {
     commitmentTreatments: '',
     usedTreatments: 0,
     startDate: '',
-    endDate: '',
-    filePath: '',
     notes: '',
     isActive: true,
   });
@@ -1556,8 +1554,6 @@ const StudentHealthFundTable = () => {
       commitmentTreatments: '',
       usedTreatments: 0,
       startDate: today,
-      endDate: '',
-      filePath: '',
       notes: '',
       isActive: true,
     });
@@ -1579,8 +1575,6 @@ const StudentHealthFundTable = () => {
       commitmentTreatments: commitment.commitmentTreatments ?? commitment.CommitmentTreatments ?? '',
       usedTreatments: commitment.usedTreatments ?? commitment.UsedTreatments ?? 0,
       startDate: formatDateInput(commitment.startDate ?? commitment.StartDate),
-      endDate: formatDateInput(commitment.endDate ?? commitment.EndDate),
-      filePath: commitment.filePath ?? commitment.FilePath ?? '',
       notes: commitment.notes ?? commitment.Notes ?? '',
       isActive: commitment.isActive ?? commitment.IsActive ?? true,
       createdAt: commitment.createdAt ?? commitment.CreatedAt ?? null,
@@ -1615,7 +1609,6 @@ const StudentHealthFundTable = () => {
         studentHealthFundId: Number(selectedStudentForCommitments?.id || commitmentFormData.studentHealthFundId || 0),
         commitmentTreatments: commitmentFormData.commitmentTreatments === '' ? null : Number(commitmentFormData.commitmentTreatments),
         usedTreatments: Number(commitmentFormData.usedTreatments || 0),
-        endDate: commitmentFormData.endDate || null,
         createdAt: commitmentFormData.createdAt || null,
       };
 
@@ -4301,9 +4294,6 @@ const StudentHealthFundTable = () => {
                     <Typography sx={{ color: '#334155' }}>
                       תאריך התחלה: {commitment.startDate || commitment.StartDate ? new Date(commitment.startDate || commitment.StartDate).toLocaleDateString('he-IL') : '-'}
                     </Typography>
-                    <Typography sx={{ color: '#334155' }}>
-                      תאריך סיום: {commitment.endDate || commitment.EndDate ? new Date(commitment.endDate || commitment.EndDate).toLocaleDateString('he-IL') : '-'}
-                    </Typography>
                     <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>
                       <Chip
                         label={(commitment.isActive ?? commitment.IsActive) ? 'פעילה' : 'לא פעילה'}
@@ -4410,24 +4400,6 @@ const StudentHealthFundTable = () => {
                 onChange={(e) => handleCommitmentFormChange('startDate', e.target.value)}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="תאריך סיום"
-                type="date"
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-                value={commitmentFormData.endDate}
-                onChange={(e) => handleCommitmentFormChange('endDate', e.target.value)}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="נתיב קובץ"
-                fullWidth
-                value={commitmentFormData.filePath}
-                onChange={(e) => handleCommitmentFormChange('filePath', e.target.value)}
-              />
-            </Grid>
             <Grid item xs={12}>
               <TextField
                 label="הערות"
@@ -4443,7 +4415,7 @@ const StudentHealthFundTable = () => {
         <DialogActions sx={{ p: 2, gap: 1, direction: 'rtl' }}>
           <Button variant="outlined" color="error" onClick={handleCloseCommitmentForm}>ביטול</Button>
           <Button variant="contained" onClick={handleSaveCommitment} disabled={commitmentSaving} sx={{ direction: 'ltr' }} startIcon={<Save />}>
-            {commitmentSaving ? 'שומר...' : 'שמור'}
+            {commitmentSaving ? '...שומר' : 'שמור'}
           </Button>
         </DialogActions>
       </Dialog>

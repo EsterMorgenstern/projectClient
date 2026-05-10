@@ -21,12 +21,12 @@ const sanitizeCommitmentPayload = (commitment, includeId = false) => {
         : Number(commitment?.commitmentTreatments ?? commitment?.CommitmentTreatments),
     usedTreatments: Number(commitment?.usedTreatments ?? commitment?.UsedTreatments ?? 0),
     startDate: commitment?.startDate ?? commitment?.StartDate ?? null,
-    endDate: commitment?.endDate ?? commitment?.EndDate ?? null,
-    filePath: commitment?.filePath ?? commitment?.FilePath ?? '',
     notes: commitment?.notes ?? commitment?.Notes ?? '',
     isActive: commitment?.isActive ?? commitment?.IsActive ?? true,
-    createdAt: commitment?.createdAt ?? commitment?.CreatedAt ?? null,
   };
+
+  const createdAt = commitment?.createdAt ?? commitment?.CreatedAt ?? null;
+  if (createdAt) payload.createdAt = createdAt;
 
   if (includeId) {
     const commitmentId = Number(

@@ -35,6 +35,7 @@ import { updateStudentNote } from '../../../store/studentNotes/studentNoteUpdate
 import PaymentsTab from '../../Payments/PaymentsTab';
 import PaymentHistoryTab from '../../Payments/PaymentHistoryTab';
 import { deleteGroupStudent } from '../../../store/groupStudent/groupStudentDeleteThunk';
+import { deleteGroupStudentCompletely } from '../../../store/groupStudent/groupStudentDeleteCompletelyThunk';
 import { getgroupStudentByStudentId } from '../../../store/groupStudent/groupStudentGetByStudentIdThunk';
 import { updateGroupStudent } from '../../../store/groupStudent/groupStudentUpdateThunk';
 import { getGroupWithStudentsById } from '../../../store/group/groupGetGroupWithStudentsByIdThunk';
@@ -290,36 +291,50 @@ const StudentCoursesDialog = ({
     setDeletingCourse(true);
     try {
       if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
-      console.log('🗑️ Deleting course with groupStudentId:', courseToDelete.groupStudentId);
 
       const result = await dispatch(deleteGroupStudent(courseToDelete.groupStudentId));
 
       if (deleteGroupStudent.fulfilled.match(result)) {
-        console.log('✅ Course deleted successfully');
-
-        // עדכון מיידי של הרשימה המקומית
         setLocalStudentCourses(prev =>
           prev.filter(course => course.groupStudentId !== courseToDelete.groupStudentId)
         );
-
-        // קריאה ל-callback לעדכון הרשימה בקומפוננטה האב
-        if (onCourseDeleted) {
-          onCourseDeleted(courseToDelete.groupStudentId);
-        }
-
-        // רענון הנתונים מהשרת
+        if (onCourseDeleted) onCourseDeleted(courseToDelete.groupStudentId);
         dispatch(getgroupStudentByStudentId(student.id));
-
         setDeleteCourseConfirmOpen(false);
         setCourseToDelete(null);
-
       } else {
-        console.error('❌ Failed to delete course:', result.payload);
         alert('שגיאה במחיקת החוג: ' + (result.payload?.message || result.payload || 'שגיאה לא ידועה'));
       }
     } catch (error) {
-      console.error('❌ Error deleting course:', error);
       alert('שגיאה במחיקת החוג: ' + error.message);
+    } finally {
+      setDeletingCourse(false);
+    }
+  };
+
+  const handleDeleteCourseCompletely = async () => {
+    if (!courseToDelete?.groupStudentId) return;
+
+    setDeletingCourse(true);
+    try {
+      if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
+
+      const result = await dispatch(deleteGroupStudentCompletely(courseToDelete.groupStudentId));
+
+      if (deleteGroupStudentCompletely.fulfilled.match(result)) {
+        setLocalStudentCourses(prev =>
+          prev.filter(course => course.groupStudentId !== courseToDelete.groupStudentId)
+        );
+        if (onCourseDeleted) onCourseDeleted(courseToDelete.groupStudentId);
+        dispatch(getgroupStudentByStudentId(student.id));
+        setDeleteCourseConfirmOpen(false);
+        setCourseToDelete(null);
+        setNotification({ open: true, message: 'התלמיד נמחק מלא מהחוג וכל רשומות הנוכחות נמחקו', severity: 'success' });
+      } else {
+        alert('שגיאה במחיקה המלאה: ' + (result.payload?.message || result.payload || 'שגיאה לא ידועה'));
+      }
+    } catch (error) {
+      alert('שגיאה במחיקה המלאה: ' + error.message);
     } finally {
       setDeletingCourse(false);
     }
@@ -1394,16 +1409,16 @@ const StudentCoursesDialog = ({
                   </Typography>
                 </Box>
               )}
-              <Typography variant="body2" sx={{
-                textAlign: 'center',
-                mt: 2,
-                color: '#dc2626',
-                fontWeight: 'medium'
-              }}>
-                פעולה זו לא ניתנת לביטול!
-              </Typography>
+              <Box sx={{ mt: 2, p: 1.5, borderRadius: 2, bgcolor: '#fff7ed', border: '1px solid #fed7aa' }}>
+                <Typography variant="body2" sx={{ color: '#92400e', mb: 0.5 }}>
+                  <strong>הסר מהחוג</strong> — משנה סטטוס לעזב, רשומות הנוכחות נשמרות.
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#b91c1c' }}>
+                  <strong>מחיקה מלאה</strong> — מוחק לחלוטין מהחוג וגם את כל רשומות הנוכחות. פעולה זו אינה הפיכה!
+                </Typography>
+              </Box>
             </DialogContent>
-            <DialogActions sx={{ justifyContent: 'center', gap: 2, p: 2 }}>
+            <DialogActions sx={{ justifyContent: 'center', gap: 2, p: 2, flexWrap: 'wrap' }}>
               <Button
                 onClick={() => {
                   setDeleteCourseConfirmOpen(false);
@@ -1411,29 +1426,33 @@ const StudentCoursesDialog = ({
                 }}
                 variant="outlined"
                 disabled={deletingCourse}
-                sx={{
-                  borderRadius: '12px',
-                  px: 3
-                }}
+                sx={{ borderRadius: '12px', px: 3 }}
               >
                 ביטול
               </Button>
               <Button
                 onClick={handleDeleteCourse}
                 variant="contained"
-                color="error"
                 disabled={deletingCourse}
                 startIcon={deletingCourse ? null : <DeleteIcon />}
                 sx={{
                   borderRadius: '12px',
                   px: 3,
-                  background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, #b91c1c 0%, #991b1b 100%)',
-                  }
+                  background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)',
+                  '&:hover': { background: 'linear-gradient(135deg, #b45309 0%, #92400e 100%)' }
                 }}
               >
-                {deletingCourse ? 'מוחק...' : 'מחק חוג'}
+                {deletingCourse ? 'מחק...' : 'הסר מהחוג'}
+              </Button>
+              <Button
+                onClick={handleDeleteCourseCompletely}
+                variant="contained"
+                color="error"
+                disabled={deletingCourse}
+                startIcon={deletingCourse ? null : <DeleteIcon />}
+                sx={{ borderRadius: '12px', px: 3 }}
+              >
+                {deletingCourse ? 'מחק...' : 'מחיקה מלאה (כולל נוכחויות)'}
               </Button>
             </DialogActions>
           </Dialog>

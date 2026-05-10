@@ -416,6 +416,10 @@ const TrialStudentsTable = () => {
                       const trialDate = row.trialDate || row.TrialDate;
                       const normalizedTrialDate = trialDate && !(typeof trialDate === 'string' && trialDate.startsWith('0001')) ? trialDate : null;
                       const isTrialMissingDate = Number(row.isActive ?? row.IsActive) === 4 && !normalizedTrialDate;
+                      const isTrialOld = normalizedTrialDate && (() => {
+                        const diffDays = Math.floor((new Date() - new Date(normalizedTrialDate)) / (1000 * 60 * 60 * 24));
+                        return diffDays >= 4 ? diffDays : null;
+                      })();
                       return (
                         <TableRow key={row.groupStudentId ?? idx}
                           sx={{
@@ -426,8 +430,9 @@ const TrialStudentsTable = () => {
                               transition: 'all 0.2s ease',
                               boxShadow: '0 4px 20px rgba(59, 130, 246, 0.1)'
                             },
-                            borderRight: Number(row.isActive ?? row.IsActive) === 4 ? '4px solid #0EA5E9' : 'none',
+                            borderRight: Number(row.isActive ?? row.IsActive) === 4 ? `4px solid ${isTrialOld ? '#f59e0b' : '#0EA5E9'}` : 'none',
                             borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
+                            bgcolor: isTrialOld ? 'rgba(254,243,199,0.35)' : undefined,
                             direction: 'rtl',
                           }}>
                           <TableCell align="right" sx={{ py: 1.5 }}>
@@ -465,9 +470,25 @@ const TrialStudentsTable = () => {
                           </TableCell>
                           <TableCell align="right" sx={{ py: 1.5 }}>
                             {normalizedTrialDate ? (
-                              <Typography sx={{ fontSize: '0.86rem', color: '#0369a1', fontWeight: 600 }}>
-                                {formatDate(normalizedTrialDate)}
-                              </Typography>
+                              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                                <Typography sx={{ fontSize: '0.86rem', color: isTrialOld ? '#b45309' : '#0369a1', fontWeight: 600 }}>
+                                  {formatDate(normalizedTrialDate)}
+                                </Typography>
+                                {isTrialOld && (
+                                  <Chip
+                                    label={`⚠️ לפני ${isTrialOld} ימים — ממתין להחלטה`}
+                                    size="small"
+                                    sx={{
+                                      bgcolor: '#fef3c7',
+                                      color: '#92400e',
+                                      fontWeight: 'bold',
+                                      fontSize: '0.72rem',
+                                      border: '1px solid #fcd34d',
+                                      height: 20,
+                                    }}
+                                  />
+                                )}
+                              </Box>
                             ) : (
                               <Chip label="לא הוזן" size="small"
                                 sx={{ bgcolor: isTrialMissingDate ? '#fef3c7' : '#f3f4f6',

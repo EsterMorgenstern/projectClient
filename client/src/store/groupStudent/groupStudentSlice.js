@@ -3,6 +3,7 @@ import { getgroupStudentByStudentId } from './groupStudentGetByStudentIdThunk';
 import { getGroupStudentByStudentName } from './groupStudentGetByStudentNameThunk';
 import { groupStudentAddThunk } from './groupStudentAddThunk';
 import { deleteGroupStudent } from './groupStudentDeleteThunk';
+import { deleteGroupStudentCompletely } from './groupStudentDeleteCompletelyThunk';
 import { updateGroupStudent } from './groupStudentUpdateThunk';
 import { getGroupStudentsByStatus } from './groupStudentGetByStatusThunk';
 
@@ -121,6 +122,22 @@ const groupStudentSlice = createSlice({
         state.loading = false;
         state.error = action.payload || 'Failed to add group student';
         console.error('❌ Add group student failed:', action.payload);
+      })
+
+      // deleteGroupStudentCompletely
+      .addCase(deleteGroupStudentCompletely.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteGroupStudentCompletely.fulfilled, (state, action) => {
+        state.loading = false;
+        const { gsId } = action.payload;
+        state.groupStudent = state.groupStudent.filter(gs => gs.groupStudentId !== gsId);
+        state.groupStudentById = state.groupStudentById.filter(gs => gs.groupStudentId !== gsId);
+      })
+      .addCase(deleteGroupStudentCompletely.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to completely delete group student';
       })
 
       // getGroupStudentsByStatus

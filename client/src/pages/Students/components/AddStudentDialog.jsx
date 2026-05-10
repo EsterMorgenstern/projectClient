@@ -107,31 +107,19 @@ const AddStudentDialog = ({
 
   // מצב הצ'קליסט למעקב אחר משימות הרישום
   const [registrationChecklist, setRegistrationChecklist] = useState({
-    paymentMethodCompleted: false,    // אמצעי תשלום מולא
-    instructorNotified: false,        // מדריך עודכן
-    gisEntered: false,               // הוכנס ל-GIS
+    gisEntered: false,               // הוכנס ל-קול כשר
     commitmentExplained: false       // הוסבר על התחייבות/הפניה
   });
 
   const checklistItems = [
     { 
-      key: 'paymentMethodCompleted', 
-      label: '💳 אמצעי תשלום מולא', 
-      description: 'התקבלו פרטי תשלום מלאים במערכת' 
-    },
-    { 
-      key: 'instructorNotified', 
-      label: '👨‍🏫 מדריך עודכן', 
-      description: 'המדריך קיבל הודעה על התלמיד החדש' 
-    },
-    { 
       key: 'gisEntered', 
-      label: '📱 הוכנס ל-GIS', 
+      label: 'הוכנס לקול כשר', 
       description: 'התלמיד נוסף למערכת ההודעות' 
     },
     { 
       key: 'commitmentExplained', 
-      label: '📄 הוסבר על התחייבות/הפניה', 
+      label: 'הוסבר על הפניה/התחייבות', 
       description: 'הסבר על חובות וזכויות ההורים והתלמיד' 
     }
   ];
@@ -218,8 +206,6 @@ const AddStudentDialog = ({
     
     // איפוס הצ'קליסט
     setRegistrationChecklist({
-      paymentMethodCompleted: false,
-      instructorNotified: false,
       gisEntered: false,
       commitmentExplained: false
     });
@@ -357,7 +343,9 @@ const AddStudentDialog = ({
   // ודא גם ששם קופת חולים לא ריק
   const isHealthFundNameValid = (newStudent.healthFund || '').toString().trim() !== '';
   const isEnrollDateValid = enrollDate && enrollDate.trim() !== '';
-  return isStudentFieldsValid && isHealthFundNameValid && isEnrollDateValid;
+  const isLeumiSelected = (newStudent.healthFundName || '').includes('לאומית');
+  const isEmailValid = !isLeumiSelected || (newStudent.email || '').trim() !== '';
+  return isStudentFieldsValid && isHealthFundNameValid && isEnrollDateValid && isEmailValid;
   };
 
   // פונקציה לחישוב תאריכי שיעורים לתלמיד לפי נתוני הקבוצה בלבד
@@ -807,11 +795,14 @@ useEffect(() => {
 
           <Grid item xs={12} sm={6}>
             <TextField
-              label="📧 מייל"
+              label={`📧 מייל${(newStudent.healthFundName || '').includes('לאומית') ? ' *' : ''}`}
               type="email"
               variant="outlined"
               value={newStudent.email}
               onChange={(e) => handleInputChange('email', e.target.value)}
+              required={(newStudent.healthFundName || '').includes('לאומית')}
+              error={(newStudent.healthFundName || '').includes('לאומית') && !(newStudent.email || '').trim()}
+              helperText={(newStudent.healthFundName || '').includes('לאומית') && !(newStudent.email || '').trim() ? 'שדה חובה עבור לאומית' : ''}
               sx={{ 
                 textAlign: 'right', 
                 width: '220px', 

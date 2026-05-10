@@ -50,6 +50,7 @@ import { getStudentById } from '../../../store/student/studentGetByIdThunk';
 import { editStudent } from '../../../store/student/studentEditThunk';
 import { getgroupStudentByStudentId } from '../../../store/groupStudent/groupStudentGetByStudentIdThunk';
 import { deleteGroupStudent } from '../../../store/groupStudent/groupStudentDeleteThunk';
+import { deleteGroupStudentCompletely } from '../../../store/groupStudent/groupStudentDeleteCompletelyThunk';
 import { getAttendanceByStudent } from '../../../store/attendance/attendanceGetByStudent';
 import { fetchPaymentHistory } from '../../../store/payments/fetchPaymentHistory';
 import { fetchPaymentMethods } from '../../../store/payments/fetchPaymentMethods';
@@ -437,7 +438,11 @@ const StudentDetailsPanel = () => {
 
     if (editStudent.fulfilled.match(result)) {
       setIsEditing(false);
-      dispatch(getStudentById(effectiveStudentId));
+      await Promise.all([
+        dispatch(getStudentById(effectiveStudentId)),
+        dispatch(getAttendanceByStudent(effectiveStudentId)),
+        dispatch(getgroupStudentByStudentId(effectiveStudentId)),
+      ]);
       return;
     }
 
@@ -465,6 +470,28 @@ const StudentDetailsPanel = () => {
       ]);
     } catch (error) {
       setErrorMessage('אירעה שגיאה ביציאה מהקורס.');
+    } finally {
+      setOperationLoading(false);
+    }
+  };
+
+  const handleDeleteCourseCompletely = async () => {
+    const course = confirmExitCourse.course;
+    setConfirmExitCourse({ open: false, course: null });
+
+    setOperationLoading(true);
+    setErrorMessage('');
+
+    try {
+      if (course.groupStudentId) {
+        await dispatch(deleteGroupStudentCompletely(course.groupStudentId));
+      }
+      await Promise.all([
+        dispatch(getgroupStudentByStudentId(effectiveStudentId)),
+        dispatch(getAttendanceByStudent(effectiveStudentId))
+      ]);
+    } catch (error) {
+      setErrorMessage('אירעה שגיאה במחיקה המלאה מהקורס.');
     } finally {
       setOperationLoading(false);
     }
@@ -1350,11 +1377,14 @@ const StudentDetailsPanel = () => {
               {confirmExitCourse.course?.groupName ||
                 confirmExitCourse.course?.courseName ||
                 `קורס ${confirmExitCourse.course?.groupId || ''}`}
-            </strong>{' '}
-            ולמחוק נוכחויות עתידיות?
+            </strong>{' '}?
+          </DialogContentText>
+          <DialogContentText sx={{ color: '#6b7280', fontSize: '0.85rem', mt: 1.5 }}>
+            <strong>הסר מהחוג</strong> — משנה סטטוס לעזב, נוכחויות נשמרות.<br />
+            <strong style={{ color: '#b91c1c' }}>מחיקה מלאה</strong> — מוחק לחלוטין מהחוג וגם את כל רשומות הנוכחות. פעולה זו אינה הפיכה.
           </DialogContentText>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+        <DialogActions sx={{ px: 3, pb: 2, gap: 1, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           <Button
             onClick={() => setConfirmExitCourse({ open: false, course: null })}
             variant="outlined"
@@ -1368,6 +1398,14 @@ const StudentDetailsPanel = () => {
             sx={{ borderRadius: 99, px: 3, backgroundColor: '#b45309', '&:hover': { backgroundColor: '#92400e' } }}
           >
             הסר מהחוג
+          </Button>
+          <Button
+            onClick={handleDeleteCourseCompletely}
+            variant="contained"
+            color="error"
+            sx={{ borderRadius: 99, px: 3 }}
+          >
+            מחיקה מלאה (כולל נוכחויות)
           </Button>
         </DialogActions>
       </Dialog>
