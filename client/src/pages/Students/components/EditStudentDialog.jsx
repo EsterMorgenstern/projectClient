@@ -57,6 +57,7 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
   id: '',
   IdentityCard: '',
     firstName: '',
+    officialFirstName: '',
     lastName: '',
     phone: '',
     secondaryPhone: '',
@@ -182,6 +183,7 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
       const studentData = {
         id: student.id || student.studentId || '',
         firstName: student.firstName || student.firstname || student.studentName?.split(' ')[0] || '',
+        officialFirstName: student.officialFirstName || student.OfficialFirstName || student.fullFirstName || student.FullFirstName || '',
         lastName: student.lastName || student.lastname || student.studentName?.split(' ').slice(1).join(' ') || '',
         phone: student.phone || '',
         secondaryPhone: student.secondaryPhone || student.secondary_phone || student.phoneSecondary || '',
@@ -257,6 +259,7 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
       const studentData = {
         id: formData.id,
         firstName: formData.firstName || '',
+        officialFirstName: formData.officialFirstName || '',
         lastName: formData.lastName || '',
         phone: (formData.phone || '').toString(),
         secondaryPhone: formData.secondaryPhone || '',
@@ -340,6 +343,7 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
     setFormData({
       id: '',
       firstName: '',
+      officialFirstName: '',
       lastName: '',
       phone: '',
       secondaryPhone: '',
@@ -612,6 +616,27 @@ const EditStudentDialog = ({ open, onClose, student, onStudentUpdated }) => {
                 }
               }}
               InputLabelProps={{ sx: { right: 24, left: 'auto', transformOrigin: 'top right' } }}
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label={`✍️ שם פרטי מלא${(formData.healthFundName || '').includes('כללית') ? ' *' : ''}`}
+              fullWidth
+              variant="outlined"
+              value={formData.officialFirstName}
+              onChange={(e) => handleInputChange('officialFirstName', e.target.value)}
+              required={(formData.healthFundName || '').includes('כללית')}
+              error={(formData.healthFundName || '').includes('כללית') && !(formData.officialFirstName || '').trim()}
+              helperText={(formData.healthFundName || '').includes('כללית') && !(formData.officialFirstName || '').trim() ? 'שדה חובה עבור כללית' : 'למשל: יוסף חיים'}
+              sx={{
+                textAlign: 'right',
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+              InputLabelProps={{ sx: { right: 24, left: 'auto', transformOrigin: 'top right' } }}
+              placeholder="למשל: יוסף חיים"
             />
           </Grid>
 

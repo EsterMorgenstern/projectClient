@@ -1,5 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
-import AddStudentHealthFundDialog from './AddStudentHealthFundDialog';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -62,11 +61,13 @@ const AddStudentDialog = ({
   // קבלת רשימת קופות החולים מה-redux
   const healthFunds = useSelector(state => state.healthFunds?.items || []);
   const healthFundsLoading = useSelector(state => state.healthFunds?.loading || false);
+  const instructors = useSelector(state => state.instructors?.instructors || []);
   
   const [newStudent, setNewStudent] = useState({
   id: '',
   IdentityCard: '',
     firstName: '',
+    officialFirstName: '',
     lastName: '',
     phone: '',
     secondaryPhone: '',
@@ -86,8 +87,6 @@ const AddStudentDialog = ({
   const [loading, setLoading] = useState(false);
   const [termsDialogOpen, setTermsDialogOpen] = useState(false);
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
-  // דיאלוג סטודנט קופה
-  const [healthFundDialogOpen, setHealthFundDialogOpen] = useState(false);
   // Notification state
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
   const [studentNote, setStudentNote] = useState('');
@@ -186,6 +185,7 @@ const AddStudentDialog = ({
     setNewStudent({
       id: '',
       firstName: '',
+      officialFirstName: '',
       lastName: '',
       phone: '',
       secondaryPhone: '',
@@ -344,8 +344,10 @@ const AddStudentDialog = ({
   const isHealthFundNameValid = (newStudent.healthFund || '').toString().trim() !== '';
   const isEnrollDateValid = enrollDate && enrollDate.trim() !== '';
   const isLeumiSelected = (newStudent.healthFundName || '').includes('לאומית');
+  const isOfficialFirstNameRequired = (newStudent.healthFundName || '').includes('כללית');
+  const isOfficialFirstNameValid = !isOfficialFirstNameRequired || (newStudent.officialFirstName || '').trim() !== '';
   const isEmailValid = !isLeumiSelected || (newStudent.email || '').trim() !== '';
-  return isStudentFieldsValid && isHealthFundNameValid && isEnrollDateValid && isEmailValid;
+  return isStudentFieldsValid && isHealthFundNameValid && isEnrollDateValid && isEmailValid && isOfficialFirstNameValid;
   };
 
   // פונקציה לחישוב תאריכי שיעורים לתלמיד לפי נתוני הקבוצה בלבד
@@ -373,6 +375,8 @@ const AddStudentDialog = ({
       let errorMsg = 'נא למלא את כל השדות הנדרשים';
       if (!enrollDate || enrollDate.trim() === '') {
         errorMsg = 'יש לבחור תאריך התחלה';
+      } else if ((newStudent.healthFundName || '').includes('כללית') && !(newStudent.officialFirstName || '').trim()) {
+        errorMsg = 'שם פרטי מלא הוא שדה חובה עבור קופ"ח כללית';
       }
       if (onSuccess) {
         onSuccess(null, errorMsg, 'error');
@@ -407,6 +411,7 @@ const AddStudentDialog = ({
         id: newStudent.id || '',
         IdentityCard: newStudent.IdentityCard || '',
         firstName: newStudent.firstName || '',
+        officialFirstName: newStudent.officialFirstName || '',
         lastName: newStudent.lastName || '',
         phone: (newStudent.phone || '').toString(),
         secondaryPhone: newStudent.secondaryPhone || '',
@@ -573,15 +578,6 @@ const AddStudentDialog = ({
       onSuccess({ ...studentData, enrollDate, groupStatus: localGroupStatus, trialDate: localGroupStatus === 4 ? trialDate : null }, 'התלמיד נוסף בהצלחה!', 'success');
     }
   };
-  // פונקציה לפתיחת דיאלוג סטודנט קופה
-  const handleOpenHealthFundDialog = () => {
-    setHealthFundDialogOpen(true);
-  };
-  
-  const handleCloseHealthFundDialog = () => {
-    setHealthFundDialogOpen(false);
-  };
-
   const handleNoteSubmit = (noteData) => {
     console.log('✅ Note added for student:', noteData);
     // שמור את ההערה הידנית לשרת
@@ -630,6 +626,46 @@ React.useEffect(() => {
   // חישוב שיעורים פשוט - קבל מה-lessonInfo prop או חשב פשוט
   const lessonsForStudentCount = lessonInfo?.studentLessons || 
     Math.max((selectedGroup?.numOfLessons || 0) - (selectedGroup?.lessonsCompleted || 0), 0);
+
+  const KOL_KASHER_LINE = '0733835914';
+  const selectedGroupInstructorName = useMemo(() => {
+    const directName = String(
+      selectedGroup?.instructorName ||
+      selectedGroup?.InstructorName ||
+      selectedGroup?.instructor ||
+     
+      ''
+    ).trim();
+
+    if (directName) {
+      return directName;
+    }
+
+    const groupInstructorId =
+      selectedGroup?.instructorId ??
+      selectedGroup?.InstructorId ??
+      selectedGroup?.instructor?.id ??
+      selectedGroup?.instructor?.instructorId;
+
+    if (groupInstructorId === undefined || groupInstructorId === null || String(groupInstructorId).trim() === '') {
+      return '';
+    }
+
+    const matchedInstructor = (Array.isArray(instructors) ? instructors : []).find((inst) => {
+      const instId = inst?.instructorId ?? inst?.id ?? inst?.InstructorId ?? inst?.Id;
+      return String(instId || '').trim() === String(groupInstructorId).trim();
+    });
+
+    if (!matchedInstructor) {
+      return '';
+    }
+
+    return String(
+      matchedInstructor?.instructorName ||
+      matchedInstructor?.InstructorName ||
+      `${matchedInstructor?.firstName || matchedInstructor?.FirstName || ''} ${matchedInstructor?.lastName || matchedInstructor?.LastName || ''}`
+    ).trim();
+  }, [selectedGroup, instructors]);
 
 // הצגת מידע החישוב בקונסול כאשר הדיאלוג נפתח
 useEffect(() => {
@@ -826,6 +862,27 @@ useEffect(() => {
               sx={{ 
                 textAlign: 'right', 
                 width: '160px', 
+                minWidth: '120px',
+                '& .MuiOutlinedInput-notchedOutline legend': {
+                  textAlign: 'right'
+                }
+              }}
+              InputLabelProps={{ sx: { right: 24, left: 'auto', transformOrigin: 'top right' } }}
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label={`✍️ שם פרטי מלא${(newStudent.healthFundName || '').includes('כללית') ? ' *' : ''}`}
+              variant="outlined"
+              value={newStudent.officialFirstName}
+              onChange={(e) => handleInputChange('officialFirstName', e.target.value)}
+              required={(newStudent.healthFundName || '').includes('כללית')}
+              error={(newStudent.healthFundName || '').includes('כללית') && !(newStudent.officialFirstName || '').trim()}
+              helperText={(newStudent.healthFundName || '').includes('כללית') && !(newStudent.officialFirstName || '').trim() ? 'שדה חובה עבור כללית' : 'למשל: יוסף חיים'}
+              sx={{
+                textAlign: 'right',
+                width: '200px',
                 minWidth: '120px',
                 '& .MuiOutlinedInput-notchedOutline legend': {
                   textAlign: 'right'
@@ -1101,6 +1158,14 @@ useEffect(() => {
                         ? 'התלמיד נמצא בשיעור ניסיון - שיעורים ייווצרו רק לאחר מעבר לפעיל'
                         : 'התלמיד יהיה רשום כליד בקבוצה'}
                 </Typography>
+                <Box sx={{ mt: 1.5, p: 1.5, borderRadius: 2, bgcolor: '#eff6ff', border: '1px solid #bfdbfe' }}>
+                  <Typography variant="body2" sx={{ color: '#1e3a8a', fontWeight: 600, textAlign: 'center' }}>
+                    <strong>שם המדריך:</strong> {selectedGroupInstructorName || 'לא זמין'}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#0f4c81', fontWeight: 600, textAlign: 'center', mt: 0.75 }}>
+                    <strong>קו קול כשר:</strong> {KOL_KASHER_LINE}
+                  </Typography>
+                </Box>
                 {localGroupStatus === 4 && (
                   <Box sx={{ mt: 2 }}>
                     <TextField
@@ -1456,16 +1521,6 @@ useEffect(() => {
         open={termsDialogOpen}
         onClose={() => setTermsDialogOpen(false)}
         onAccept={() => setTermsDialogOpen(false)}
-      />
-
-      {/* דיאלוג סטודנט קופה */}
-      <AddStudentHealthFundDialog
-        open={healthFundDialogOpen}
-        onClose={handleCloseHealthFundDialog}
-        studentId={savedStudentData?.id || newStudent.id}
-        onSuccess={() => {
-          setHealthFundDialogOpen(false);
-        }}
       />
 
       {/* דיאלוג הוספת הערה */}

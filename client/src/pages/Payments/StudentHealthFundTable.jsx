@@ -47,15 +47,16 @@ import {
 
 // קונפיגורציה לפי קופת חולים — שם שדה ב-DB: standing_order_date
 const HEALTH_FUND_CONFIG = {
-  'מאוחדת': { showCommitments: true, showStandingOrder: false },
-  'לאומית':  { showCommitments: false, showStandingOrder: true },
+  'כללית': { showCommitments: false, showStandingOrder: false, showOfficialFirstName: true },
+  'מאוחדת': { showCommitments: true, showStandingOrder: false, showOfficialFirstName: false },
+  'לאומית': { showCommitments: false, showStandingOrder: true, showOfficialFirstName: false },
 };
 
 const getConfigByFundName = (name = '') => {
   for (const [key, cfg] of Object.entries(HEALTH_FUND_CONFIG)) {
     if (name.includes(key)) return cfg;
   }
-  return { showCommitments: false, showStandingOrder: false };
+  return { showCommitments: false, showStandingOrder: false, showOfficialFirstName: false };
 };
 
 const StudentHealthFundTable = () => {
@@ -82,6 +83,7 @@ const StudentHealthFundTable = () => {
     healthFundId: '',
     hasReferralFile: 'all', // 'all', 'yes', 'no'
     hasCommitmentFile: 'all', // 'all', 'yes', 'no'
+    monthlyHandlingStatus: 'all', // 'all', 'notHandled', 'handled', 'waitingForDate'
     minTreatments: '',
     maxTreatments: '',
     city: '',
@@ -98,6 +100,8 @@ const StudentHealthFundTable = () => {
   // State עבור pagination
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [localHandledMonthByRecordId, setLocalHandledMonthByRecordId] = useState({});
+  const [markingHandledById, setMarkingHandledById] = useState({});
   
   // Dialog for health fund details
   const [fundDialogOpen, setFundDialogOpen] = useState(false);
@@ -349,6 +353,7 @@ const StudentHealthFundTable = () => {
         id: recordId,
         studentId: row?.studentId ?? row?.StudentId ?? '',
         studentName: row?.studentName ?? row?.StudentName ?? '',
+        officialFirstName: row?.officialFirstName ?? row?.OfficialFirstName ?? row?.fullFirstName ?? row?.FullFirstName ?? '',
         email: row?.email ?? row?.Email ?? '',
         healthFundId: row?.healthFundId ?? row?.HealthFundId ?? '',
         age: row?.age ?? row?.Age ?? '',
@@ -364,6 +369,10 @@ const StudentHealthFundTable = () => {
         commitmentTreatments: Number(row?.commitmentTreatments ?? row?.CommitmentTreatments ?? 0),
         registeredTreatments: Number(row?.registeredTreatments ?? row?.RegisteredTreatments ?? 0),
         standingOrderDay: row?.standingOrderDay ?? row?.StandingOrderDay ?? null,
+        standingOrderHandledMonth:
+          row?.standingOrderHandledMonth ??
+          row?.StandingOrderHandledMonth ??
+                   null,
       };
     })
   ), [rawHealthFunds, attendanceCountsByRecordId]);
@@ -432,6 +441,7 @@ const StudentHealthFundTable = () => {
         const searchableText = [
           row.studentId,
           row.studentName,
+          row.officialFirstName,
           row.email,
           row.age,
           row.city,
@@ -516,6 +526,35 @@ const StudentHealthFundTable = () => {
       filtered = filtered.filter(row => {
         const hasFile = !!row.commitmentFilePath;
         return advancedFilters.hasCommitmentFile === 'yes' ? hasFile : !hasFile;
+      });
+    }
+
+    if (advancedFilters.monthlyHandlingStatus !== 'all') {
+      const currentMonthKey = (() => {
+        const now = new Date();
+        return now.getFullYear() * 100 + (now.getMonth() + 1);
+      })();
+
+      filtered = filtered.filter((row) => {
+        const recordId = row?.id ?? row?.Id;
+        const localMonthValue = localHandledMonthByRecordId[recordId];
+        const rowMonthValue = row?.standingOrderHandledMonth;
+        const handledMonth = Number(localMonthValue ?? rowMonthValue);
+        const isHandled = Number.isFinite(handledMonth) && handledMonth === currentMonthKey;
+
+        const orderDay = Number(row?.standingOrderDay);
+        const isValidOrderDay = Number.isFinite(orderDay) && orderDay >= 1 && orderDay <= 31;
+        const reachedThisMonth = isValidOrderDay && orderDay <= new Date().getDate();
+        const isWaitingForDate = isValidOrderDay && !reachedThisMonth && !isHandled;
+        const isNotHandled = !isHandled && !isWaitingForDate;
+
+        if (advancedFilters.monthlyHandlingStatus === 'handled') {
+          return isHandled;
+        }
+        if (advancedFilters.monthlyHandlingStatus === 'waitingForDate') {
+          return isWaitingForDate;
+        }
+        return isNotHandled;
       });
     }
 
@@ -650,6 +689,7 @@ const StudentHealthFundTable = () => {
       healthFundId: '',
       hasReferralFile: 'all',
       hasCommitmentFile: 'all',
+      monthlyHandlingStatus: 'all',
       minTreatments: '',
       maxTreatments: '',
       city: '',
@@ -762,8 +802,85 @@ const StudentHealthFundTable = () => {
 
   // האם להציג עמודות התחייבויות (רק כשיש שורות מאוחדת)
   const showCommitmentsColumns = allFilteredHealthFunds.some(row => getConfigByFundName(getFundName(row)).showCommitments);
+  // האם להציג עמודת שם פרטי מלא (רק כשיש שורות כללית/מאוחדת)
+  const showOfficialFirstNameColumn = allFilteredHealthFunds.some(row => getConfigByFundName(getFundName(row)).showOfficialFirstName);
   // האם להציג עמודת הוראת קבע (רק כשיש שורות לאומית)
   const showStandingOrderColumn = allFilteredHealthFunds.some(row => getConfigByFundName(getFundName(row)).showStandingOrder);
+
+  const getOfficialFirstNameValue = (row) => {
+    const fromServer = String(row?.officialFirstName || '').trim();
+    if (fromServer) {
+      return fromServer;
+    }
+
+    // Fallback: extract first token from the existing student name when the new field is empty.
+    return String(row?.studentName || '').trim().split(' ')[0] || '';
+  };
+
+  const shouldShowOfficialFirstNameForRow = (row) => getConfigByFundName(getFundName(row)).showOfficialFirstName;
+
+  const getCurrentMonthKey = () => {
+    const now = new Date();
+    return now.getFullYear() * 100 + (now.getMonth() + 1);
+  };
+
+  const getRowHandledMonth = (row) => {
+    const recordId = row?.id ?? row?.Id;
+    const fromLocal = localHandledMonthByRecordId[recordId];
+    const fromRow = row?.standingOrderHandledMonth;
+    const monthValue = fromLocal ?? fromRow;
+    const asNumber = Number(monthValue);
+    return Number.isFinite(asNumber) ? asNumber : 0;
+  };
+
+  const isStandingOrderReachedThisMonth = (row) => {
+    const orderDay = Number(row?.standingOrderDay);
+    if (!Number.isFinite(orderDay) || orderDay <= 0 || orderDay > 31) {
+      return false;
+    }
+    const today = new Date().getDate();
+    return orderDay <= today;
+  };
+
+  const isMonthlyHandled = (row) => getRowHandledMonth(row) === getCurrentMonthKey();
+
+  const isMonthlyHandlingPending = (row) => isStandingOrderReachedThisMonth(row) && !isMonthlyHandled(row);
+
+  const handleMarkHandledThisMonth = async (row) => {
+    const recordId = row?.id ?? row?.Id;
+    if (!recordId) {
+      setNotification({ open: true, message: 'לא נמצא מזהה רשומה לעדכון', severity: 'error' });
+      return;
+    }
+
+    const monthKey = getCurrentMonthKey();
+    setMarkingHandledById((prev) => ({ ...prev, [recordId]: true }));
+    try {
+      const payload = {
+        id: recordId,
+        studentId: row?.studentId,
+        healthFundId: row?.healthFundId,
+        startDate: row?.startDate,
+        treatmentsUsed: Number(row?.treatmentsUsed ?? 0),
+        commitmentTreatments: Number(row?.commitmentTreatments ?? 0),
+        reportedTreatments: Number(row?.reportedTreatments ?? 0),
+        registeredTreatments: Number(row?.registeredTreatments ?? 0),
+        referralFilePath: row?.referralFilePath,
+        commitmentFilePath: row?.commitmentFilePath,
+        notes: row?.notes,
+        standingOrderDay: row?.standingOrderDay,
+        standingOrderHandledMonth: monthKey,
+      };
+
+      await dispatch(updateStudentHealthFund(payload)).unwrap();
+      setLocalHandledMonthByRecordId((prev) => ({ ...prev, [recordId]: monthKey }));
+      setNotification({ open: true, message: 'סומן כטופל החודש', severity: 'success' });
+    } catch (error) {
+      setNotification({ open: true, message: `שגיאה בסימון טופל החודש: ${error}`, severity: 'error' });
+    } finally {
+      setMarkingHandledById((prev) => ({ ...prev, [recordId]: false }));
+    }
+  };
 
   // בדיקה אם יום הוראת קבע הוא היום בחודש
   const isStandingOrderToday = (row) => {
@@ -772,7 +889,7 @@ const StudentHealthFundTable = () => {
   };
 
   // ספירת עמודות דינמית
-  const totalColumns = 15 + (showCommitmentsColumns ? 2 : 0) + (showStandingOrderColumn ? 1 : 0);
+  const totalColumns = 16 + (showOfficialFirstNameColumn ? 1 : 0) + (showCommitmentsColumns ? 2 : 0) + (showStandingOrderColumn ? 1 : 0);
   
   // נתונים מפולטרים עם pagination
   const paginatedHealthFunds = useMemo(() => {
@@ -1887,116 +2004,6 @@ const StudentHealthFundTable = () => {
       </Box>
     </Paper>
 
-    <Paper
-      elevation={0}
-      sx={{
-        mb: 3,
-        px: { xs: 1.5, md: 2 },
-        py: 2,
-        borderRadius: 3,
-        bgcolor: 'white',
-        border: '1px solid #e2e8f0',
-        boxShadow: '0 8px 20px rgba(15,23,42,0.05)'
-      }}
-    >
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%', flexWrap: 'wrap' }}>
-          <TextField
-            placeholder="חיפוש לפי שם תלמיד, קוד, עיר, קופה, הערות ונתוני גביה"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            sx={{
-              flex: 1,
-              minWidth: 260,
-              '& .MuiOutlinedInput-root': {
-                borderRadius: '999px',
-                bgcolor: '#f8fbff',
-                direction: 'rtl',
-                pr: 2,
-                '& fieldset': {
-                  borderColor: '#dbeafe'
-                },
-                '&:hover': {
-                  boxShadow: '0 4px 12px rgba(37,99,235,0.10)',
-                },
-                '&.Mui-focused': {
-                  boxShadow: '0 4px 16px rgba(37,99,235,0.16)',
-                }
-              },
-              '& input': {
-                textAlign: 'right',
-                fontSize: '0.92rem',
-                fontFamily: 'inherit'
-              }
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  {isSearching ? <CircularProgress size={18} /> : <SearchIcon sx={{ color: '#2563EB', fontSize: 22 }} />}
-                </InputAdornment>
-              ),
-              endAdornment: searchTerm && (
-                <InputAdornment position="end">
-                  <IconButton
-                    onClick={handleClearSearch}
-                    size="small"
-                    sx={{
-                      color: '#64748B',
-                      '&:hover': {
-                        color: '#ef4444',
-                        bgcolor: '#fef2f2'
-                      }
-                    }}
-                  >
-                    <ClearIcon />
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-
-          <Button
-            variant={showAdvancedSearch ? 'contained' : 'outlined'}
-            color="primary"
-            onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
-            sx={{
-              borderRadius: '999px',
-              fontWeight: 700,
-              minWidth: '190px',
-              px: 2.5,
-              whiteSpace: 'nowrap',
-              fontFamily: 'inherit',
-              fontSize: '0.9rem'
-            }}
-          >
-            {showAdvancedSearch ? 'סגור חיפוש מתקדם' : 'חיפוש מתקדם'}
-          </Button>
-
-          {(hasActiveAdvancedFilters || searchTerm) && (
-            <Button
-              variant="outlined"
-              color="error"
-              onClick={handleClearAllFilters}
-              sx={{
-                borderRadius: '999px',
-                fontWeight: 700,
-                px: 2.5,
-                whiteSpace: 'nowrap',
-                fontFamily: 'inherit',
-                fontSize: '0.9rem'
-              }}
-            >
-              נקה הכל
-            </Button>
-          )}
-        </Box>
-
-        <Typography variant="caption" sx={{ color: '#64748B', textAlign: 'right', px: 0.5 }}>
-          ניתן לסנן לפי קופה, עיר, הערות גביה, קבצים ונתוני טיפולים.
-        </Typography>
-      </Box>
-    </Paper>
-
     {/* פאנל חיפוש מתקדם */}
     {showAdvancedSearch && (
       <Paper sx={{ 
@@ -2099,6 +2106,23 @@ const StudentHealthFundTable = () => {
               <MenuItem value="all">הכל</MenuItem>
               <MenuItem value="yes">יש הערות</MenuItem>
               <MenuItem value="no">אין הערות</MenuItem>
+            </TextField>
+          </Grid>
+
+          <Grid item xs={6} sm={4} md={3}>
+            <TextField
+              select
+              size="small"
+              label="סטטוס טיפול חודשי"
+              fullWidth
+              value={advancedFilters.monthlyHandlingStatus}
+              onChange={(e) => handleAdvancedFilterChange('monthlyHandlingStatus', e.target.value)}
+              sx={compactFilterFieldSx}
+            >
+              <MenuItem value="all">הכל</MenuItem>
+              <MenuItem value="notHandled">לא טופל החודש</MenuItem>
+              <MenuItem value="handled">טופל החודש</MenuItem>
+              <MenuItem value="waitingForDate">ממתין לתאריך</MenuItem>
             </TextField>
           </Grid>
 
@@ -2364,6 +2388,116 @@ const StudentHealthFundTable = () => {
       </Paper>
     )}
 
+    <Paper
+      elevation={0}
+      sx={{
+        mb: 3,
+        px: { xs: 1.5, md: 2 },
+        py: 2,
+        borderRadius: 3,
+        bgcolor: 'white',
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 8px 20px rgba(15,23,42,0.05)'
+      }}
+    >
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%', flexWrap: 'wrap' }}>
+          <TextField
+            placeholder="חיפוש לפי שם תלמיד, קוד, עיר, קופה, הערות ונתוני גביה"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{
+              flex: 1,
+              minWidth: 260,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '999px',
+                bgcolor: '#f8fbff',
+                direction: 'rtl',
+                pr: 2,
+                '& fieldset': {
+                  borderColor: '#dbeafe'
+                },
+                '&:hover': {
+                  boxShadow: '0 4px 12px rgba(37,99,235,0.10)',
+                },
+                '&.Mui-focused': {
+                  boxShadow: '0 4px 16px rgba(37,99,235,0.16)',
+                }
+              },
+              '& input': {
+                textAlign: 'right',
+                fontSize: '0.92rem',
+                fontFamily: 'inherit'
+              }
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  {isSearching ? <CircularProgress size={18} /> : <SearchIcon sx={{ color: '#2563EB', fontSize: 22 }} />}
+                </InputAdornment>
+              ),
+              endAdornment: searchTerm && (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={handleClearSearch}
+                    size="small"
+                    sx={{
+                      color: '#64748B',
+                      '&:hover': {
+                        color: '#ef4444',
+                        bgcolor: '#fef2f2'
+                      }
+                    }}
+                  >
+                    <ClearIcon />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
+
+          <Button
+            variant={showAdvancedSearch ? 'contained' : 'outlined'}
+            color="primary"
+            onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
+            sx={{
+              borderRadius: '999px',
+              fontWeight: 700,
+              minWidth: '190px',
+              px: 2.5,
+              whiteSpace: 'nowrap',
+              fontFamily: 'inherit',
+              fontSize: '0.9rem'
+            }}
+          >
+            {showAdvancedSearch ? 'סגור חיפוש מתקדם' : 'חיפוש מתקדם'}
+          </Button>
+
+          {(hasActiveAdvancedFilters || searchTerm) && (
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={handleClearAllFilters}
+              sx={{
+                borderRadius: '999px',
+                fontWeight: 700,
+                px: 2.5,
+                whiteSpace: 'nowrap',
+                fontFamily: 'inherit',
+                fontSize: '0.9rem'
+              }}
+            >
+              נקה הכל
+            </Button>
+          )}
+        </Box>
+
+        <Typography variant="caption" sx={{ color: '#64748B', textAlign: 'right', px: 0.5 }}>
+          ניתן לסנן לפי קופה, עיר, הערות גביה, קבצים ונתוני טיפולים.
+        </Typography>
+      </Box>
+    </Paper>
+
     {/* הצגת תוצאות החיפוש */}
     {(searchTerm || hasActiveAdvancedFilters) && (
       <Box sx={{ 
@@ -2470,6 +2604,20 @@ const StudentHealthFundTable = () => {
                 onDelete={() => handleAdvancedFilterChange('hasNotes', 'all')}
               />
             )}
+            {advancedFilters.monthlyHandlingStatus !== 'all' && (
+              <Chip
+                label={`טיפול חודשי: ${
+                  advancedFilters.monthlyHandlingStatus === 'handled'
+                    ? 'טופל החודש'
+                    : advancedFilters.monthlyHandlingStatus === 'waitingForDate'
+                    ? 'ממתין לתאריך'
+                    : 'לא טופל החודש'
+                }`}
+                size="small"
+                color="secondary"
+                onDelete={() => handleAdvancedFilterChange('monthlyHandlingStatus', 'all')}
+              />
+            )}
             {advancedFilters.billingNotesFilter && advancedFilters.billingNotesFilter.length > 0 && (
               <Chip 
                 label={`הערות גביה: ${advancedFilters.billingNotesFilter.length} נבחרו`}
@@ -2513,6 +2661,7 @@ const StudentHealthFundTable = () => {
             label={`מיון לפי: ${
               sortConfig.key === 'studentId' ? 'קוד תלמיד' :
               sortConfig.key === 'studentName' ? 'שם תלמיד' :
+              sortConfig.key === 'officialFirstName' ? 'שם פרטי מלא' :
               sortConfig.key === 'email' ? 'מייל' :
               sortConfig.key === 'age' ? 'גיל' :
               sortConfig.key === 'city' ? 'עיר' :
@@ -2619,6 +2768,7 @@ const StudentHealthFundTable = () => {
           <col style={{ width: 90 }} />
           <col style={{ width: 160 }} />
           <col style={{ width: 170 }} />
+          {showOfficialFirstNameColumn && <col style={{ width: 160 }} />}
           <col style={{ width: 60 }} />
           <col style={{ width: 100 }} />
           <col style={{ width: 110 }} />
@@ -2630,6 +2780,7 @@ const StudentHealthFundTable = () => {
           {showCommitmentsColumns && <col style={{ width: 90 }} />}
           {showCommitmentsColumns && <col style={{ width: 110 }} />}
           {showStandingOrderColumn && <col style={{ width: 120 }} />}
+          <col style={{ width: 130 }} />
           <col style={{ width: 80 }} />
           <col style={{ width: 185 }} />
           <col style={{ width: 160 }} />
@@ -2643,6 +2794,11 @@ const StudentHealthFundTable = () => {
               <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center' }}>
                 {getSortableHeader('studentName', 'שם תלמיד', <Face sx={{ color: '#43E97B' }} />)}
               </TableCell>
+              {showOfficialFirstNameColumn && (
+                <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center' }}>
+                  {getSortableHeader('officialFirstName', 'שם פרטי מלא', <Face sx={{ color: '#86baef' }} />)}
+                </TableCell>
+              )}
               <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center' }}>
                 {getSortableHeader('email', 'מייל', <AlternateEmail sx={{ color: '#fbbf24' }} />)}
               </TableCell>
@@ -2685,6 +2841,12 @@ const StudentHealthFundTable = () => {
                   {getSortableHeader('standingOrderDay', 'יום הוראת קבע', <CalendarMonth sx={{ color: '#fde68a' }} />)}
                 </TableCell>
               )}
+              <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.75 }}>
+                  <AssignmentTurnedIn sx={{ color: '#fef08a' }} />
+                  טופל החודש
+                </Box>
+              </TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center' }}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '52px', gap: 0.25 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '20px' }}>
@@ -2780,7 +2942,8 @@ const StudentHealthFundTable = () => {
               </TableRow>
             ) : (
               paginatedHealthFunds.map((row, idx) => {
-                const standingOrderToday = showStandingOrderColumn && isStandingOrderToday(row);
+                const standingOrderToday = isStandingOrderToday(row);
+                const monthlyHandlingPending = isMonthlyHandlingPending(row);
                 return (
                 <TableRow
                   key={row.id || `row-${idx}`}
@@ -2789,11 +2952,17 @@ const StudentHealthFundTable = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05 }}
                   sx={{
-                    background: standingOrderToday
+                    background: monthlyHandlingPending
+                      ? 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 65%, #fed7aa 100%)'
+                      : standingOrderToday
                       ? 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 60%, #c0f1dbda 100%)'
                       : (idx % 2 === 0 ? '#f8fafc' : '#e2e8f0'),
                     height: 30,
-                    ...(standingOrderToday && {
+                    ...(monthlyHandlingPending && {
+                      boxShadow: 'inset 4px 0 0 #ea580c',
+                      outline: '1px solid #fb923c75'
+                    }),
+                    ...(!monthlyHandlingPending && standingOrderToday && {
                       boxShadow: 'inset 4px 0 0 #059669',
                       outline: '1px solid #6ee7b770'
                     })
@@ -2825,6 +2994,13 @@ const StudentHealthFundTable = () => {
                       </span>
                     </Tooltip>
                   </TableCell>
+                  {showOfficialFirstNameColumn && (
+                    <TableCell align="center">
+                      {shouldShowOfficialFirstNameForRow(row)
+                        ? highlightSearchTerm(getOfficialFirstNameValue(row) || '-', searchTerm)
+                        : '-'}
+                    </TableCell>
+                  )}
                   <TableCell
                     align="center"
                     sx={{
@@ -2958,6 +3134,47 @@ const StudentHealthFundTable = () => {
                       ) : '—'}
                     </TableCell>
                   )}
+                  <TableCell align="center">
+                    {isMonthlyHandled(row) ? (
+                      <Chip
+                        label="טופל"
+                        size="small"
+                        sx={{
+                          bgcolor: '#dcfce7',
+                          color: '#166534',
+                          fontWeight: 700,
+                        }}
+                      />
+                    ) : (!row.standingOrderDay || isStandingOrderReachedThisMonth(row)) ? (
+                      <Button
+                        size="small"
+                        variant="contained"
+                        onClick={() => handleMarkHandledThisMonth(row)}
+                        disabled={Boolean(markingHandledById[row.id])}
+                        sx={{
+                          borderRadius: '999px',
+                          fontWeight: 700,
+                          fontSize: '0.72rem',
+                          px: 1.5,
+                          minWidth: 94,
+                          bgcolor: '#10b981',
+                          '&:hover': { bgcolor: '#059669' }
+                        }}
+                      >
+                        לחץ כדי לסמן שטופל החודש
+                      </Button>
+                    ) : (
+                      <Chip
+                        label={`ממתין ליום ${row.standingOrderDay}`}
+                        size="small"
+                        sx={{
+                          bgcolor: '#e2e8f0',
+                          color: '#334155',
+                          fontWeight: 600,
+                        }}
+                      />
+                    )}
+                  </TableCell>
                   <TableCell align="center">
                     {row.referralFilePath ? (
                       <Chip 
