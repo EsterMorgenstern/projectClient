@@ -94,12 +94,23 @@ const studentHealthFundSlice = createSlice({
       })
       .addCase(updateStudentHealthFund.fulfilled, (state, action) => {
         state.saving = false;
-        const updatedItem = action.payload;
-        const updatedId = updatedItem?.id ?? updatedItem?.Id;
+        // action.meta.arg = הפייילוד שנשלח (תמיד מכיל id ושדות מעודכנים)
+        // action.payload = תשובת השרת (יכולה להיות ריקה / ללא id)
+        const argItem = action.meta.arg;
+        const serverItem = action.payload;
+        const updatedId = argItem?.id ?? argItem?.Id;
+        if (!updatedId) return;
+
         const idx = state.items.findIndex(s => (s?.id ?? s?.Id) === updatedId);
-        if (idx !== -1) state.items[idx] = updatedItem;
+        if (idx !== -1) {
+          // שדות שרת תקפים רק אם יש id — אחרת מתעלמים מהם
+          const validServerFields = (serverItem?.id ?? serverItem?.Id) ? serverItem : {};
+          // סדר מיזוג: שדות join קיימים ← שדות מעודכנים ← תשובת שרת תקפה
+          state.items[idx] = { ...state.items[idx], ...argItem, ...validServerFields };
+        }
         if ((state.currentItem?.id ?? state.currentItem?.Id) === updatedId) {
-          state.currentItem = updatedItem;
+          const validServerFields = (serverItem?.id ?? serverItem?.Id) ? serverItem : {};
+          state.currentItem = { ...state.currentItem, ...argItem, ...validServerFields };
         }
       })
       .addCase(updateStudentHealthFund.rejected, (state, action) => {

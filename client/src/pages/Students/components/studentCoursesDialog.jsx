@@ -35,7 +35,6 @@ import { updateStudentNote } from '../../../store/studentNotes/studentNoteUpdate
 import PaymentsTab from '../../Payments/PaymentsTab';
 import PaymentHistoryTab from '../../Payments/PaymentHistoryTab';
 import { deleteGroupStudent } from '../../../store/groupStudent/groupStudentDeleteThunk';
-import { deleteGroupStudentCompletely } from '../../../store/groupStudent/groupStudentDeleteCompletelyThunk';
 import { getgroupStudentByStudentId } from '../../../store/groupStudent/groupStudentGetByStudentIdThunk';
 import { updateGroupStudent } from '../../../store/groupStudent/groupStudentUpdateThunk';
 import { getGroupWithStudentsById } from '../../../store/group/groupGetGroupWithStudentsByIdThunk';
@@ -291,50 +290,36 @@ const StudentCoursesDialog = ({
     setDeletingCourse(true);
     try {
       if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
+      console.log('🗑️ Deleting course with groupStudentId:', courseToDelete.groupStudentId);
 
       const result = await dispatch(deleteGroupStudent(courseToDelete.groupStudentId));
 
       if (deleteGroupStudent.fulfilled.match(result)) {
+        console.log('✅ Course deleted successfully');
+
+        // עדכון מיידי של הרשימה המקומית
         setLocalStudentCourses(prev =>
           prev.filter(course => course.groupStudentId !== courseToDelete.groupStudentId)
         );
-        if (onCourseDeleted) onCourseDeleted(courseToDelete.groupStudentId);
+
+        // קריאה ל-callback לעדכון הרשימה בקומפוננטה האב
+        if (onCourseDeleted) {
+          onCourseDeleted(courseToDelete.groupStudentId);
+        }
+
+        // רענון הנתונים מהשרת
         dispatch(getgroupStudentByStudentId(student.id));
+
         setDeleteCourseConfirmOpen(false);
         setCourseToDelete(null);
+
       } else {
+        console.error('❌ Failed to delete course:', result.payload);
         alert('שגיאה במחיקת החוג: ' + (result.payload?.message || result.payload || 'שגיאה לא ידועה'));
       }
     } catch (error) {
+      console.error('❌ Error deleting course:', error);
       alert('שגיאה במחיקת החוג: ' + error.message);
-    } finally {
-      setDeletingCourse(false);
-    }
-  };
-
-  const handleDeleteCourseCompletely = async () => {
-    if (!courseToDelete?.groupStudentId) return;
-
-    setDeletingCourse(true);
-    try {
-      if (!(checkUserPermission(currentUser?.id || currentUser?.userId, (msg, severity) => setNotification({ open: true, message: msg, severity })))) return;
-
-      const result = await dispatch(deleteGroupStudentCompletely(courseToDelete.groupStudentId));
-
-      if (deleteGroupStudentCompletely.fulfilled.match(result)) {
-        setLocalStudentCourses(prev =>
-          prev.filter(course => course.groupStudentId !== courseToDelete.groupStudentId)
-        );
-        if (onCourseDeleted) onCourseDeleted(courseToDelete.groupStudentId);
-        dispatch(getgroupStudentByStudentId(student.id));
-        setDeleteCourseConfirmOpen(false);
-        setCourseToDelete(null);
-        setNotification({ open: true, message: 'התלמיד נמחק מלא מהחוג וכל רשומות הנוכחות נמחקו', severity: 'success' });
-      } else {
-        alert('שגיאה במחיקה המלאה: ' + (result.payload?.message || result.payload || 'שגיאה לא ידועה'));
-      }
-    } catch (error) {
-      alert('שגיאה במחיקה המלאה: ' + error.message);
     } finally {
       setDeletingCourse(false);
     }
@@ -807,6 +792,22 @@ const StudentCoursesDialog = ({
                                       borderBottom: '2px solid #10b981'
                                     }}
                                   >
+                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 1, direction: 'rtl' }}>
+                                      <Typography sx={{ fontWeight: 'bold' }}>מס' קול כשר</Typography>
+                                    </Box>
+                                  </TableCell>
+                                  <TableCell
+                                    align="right"
+                                    sx={{
+                                      fontWeight: 'bold',
+                                      fontSize: '1rem',
+                                      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                                      py: 2,
+                                      textAlign: 'right',
+                                      direction: 'rtl',
+                                      borderBottom: '2px solid #10b981'
+                                    }}
+                                  >
                                     <Box sx={{
                                       display: 'flex',
                                       alignItems: 'center',
@@ -970,6 +971,20 @@ const StudentCoursesDialog = ({
                                             fontWeight: 'medium',
                                             borderRadius: '12px',
                                             fontSize: '0.875rem'
+                                          }}
+                                        />
+                                      </TableCell>
+
+                                      <TableCell align="right" sx={{ py: 2 }}>
+                                        <Chip
+                                          size="small"
+                                          label={(course.kolKasherGroupNumber || course.KolKasherGroupNumber) || 'לא הוזן'}
+                                          sx={{
+                                            bgcolor: (course.kolKasherGroupNumber || course.KolKasherGroupNumber) ? 'rgba(11,181,133,0.10)' : 'rgba(107,114,128,0.12)',
+                                            color: (course.kolKasherGroupNumber || course.KolKasherGroupNumber) ? '#0bb585' : '#6b7280',
+                                            fontWeight: 600,
+                                            fontSize: '0.8rem',
+                                            borderRadius: '8px'
                                           }}
                                         />
                                       </TableCell>
@@ -1409,16 +1424,16 @@ const StudentCoursesDialog = ({
                   </Typography>
                 </Box>
               )}
-              <Box sx={{ mt: 2, p: 1.5, borderRadius: 2, bgcolor: '#fff7ed', border: '1px solid #fed7aa' }}>
-                <Typography variant="body2" sx={{ color: '#92400e', mb: 0.5 }}>
-                  <strong>הסר מהחוג</strong> — משנה סטטוס לעזב, רשומות הנוכחות נשמרות.
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#b91c1c' }}>
-                  <strong>מחיקה מלאה</strong> — מוחק לחלוטין מהחוג וגם את כל רשומות הנוכחות. פעולה זו אינה הפיכה!
-                </Typography>
-              </Box>
+              <Typography variant="body2" sx={{
+                textAlign: 'center',
+                mt: 2,
+                color: '#dc2626',
+                fontWeight: 'medium'
+              }}>
+                פעולה זו לא ניתנת לביטול!
+              </Typography>
             </DialogContent>
-            <DialogActions sx={{ justifyContent: 'center', gap: 2, p: 2, flexWrap: 'wrap' }}>
+            <DialogActions sx={{ justifyContent: 'center', gap: 2, p: 2 }}>
               <Button
                 onClick={() => {
                   setDeleteCourseConfirmOpen(false);
@@ -1426,33 +1441,29 @@ const StudentCoursesDialog = ({
                 }}
                 variant="outlined"
                 disabled={deletingCourse}
-                sx={{ borderRadius: '12px', px: 3 }}
+                sx={{
+                  borderRadius: '12px',
+                  px: 3
+                }}
               >
                 ביטול
               </Button>
               <Button
                 onClick={handleDeleteCourse}
                 variant="contained"
+                color="error"
                 disabled={deletingCourse}
                 startIcon={deletingCourse ? null : <DeleteIcon />}
                 sx={{
                   borderRadius: '12px',
                   px: 3,
-                  background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)',
-                  '&:hover': { background: 'linear-gradient(135deg, #b45309 0%, #92400e 100%)' }
+                  background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #b91c1c 0%, #991b1b 100%)',
+                  }
                 }}
               >
-                {deletingCourse ? 'מחק...' : 'הסר מהחוג'}
-              </Button>
-              <Button
-                onClick={handleDeleteCourseCompletely}
-                variant="contained"
-                color="error"
-                disabled={deletingCourse}
-                startIcon={deletingCourse ? null : <DeleteIcon />}
-                sx={{ borderRadius: '12px', px: 3 }}
-              >
-                {deletingCourse ? 'מחק...' : 'מחיקה מלאה (כולל נוכחויות)'}
+                {deletingCourse ? 'מוחק...' : 'מחק חוג'}
               </Button>
             </DialogActions>
           </Dialog>

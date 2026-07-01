@@ -500,6 +500,25 @@ export const GroupDialog = ({ open, values, groupNamePreview = '', onChange, onS
             InputProps={{ readOnly: true }}
           />
         </Grid>
+        <Grid item xs={12}>
+          <TextField
+            margin="dense"
+            label="מס' קול כשר"
+            type="text"
+            fullWidth
+            variant="outlined"
+            sx={{
+              '& .MuiOutlinedInput-notchedOutline legend': {
+                textAlign: 'right'
+              }
+            }}
+            inputProps={{ dir: 'rtl' }}
+            InputLabelProps={{ sx: { right: 24, left: 'auto', transformOrigin: 'top right' } }}
+            value={values.kolKasherGroupNumber || ''}
+            onChange={e => onChange('kolKasherGroupNumber', e.target.value)}
+            placeholder="הזן מס' קול כשר (אם יש)"
+          />
+        </Grid>
         <Grid item xs={12} sm={6}>
           <FormControl 
             fullWidth 

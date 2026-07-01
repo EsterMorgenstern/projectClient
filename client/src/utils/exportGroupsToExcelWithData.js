@@ -7,19 +7,17 @@ import { getAllGroupsWithStudents } from '../store/group/groupGetAllGroupsWithSt
  */
 export async function exportGroupsToExcelWithData() {
   try {
-  // הורדה ללא הודעות
     console.log('התחל יצוא קבוצות לאקסל');
     const response = await store.dispatch(getAllGroupsWithStudents());
     console.log('תשובת thunk:', response);
     if (response.error) {
       console.error('שגיאת thunk:', response.error);
-  // אפשר להוסיף טיפול בשגיאה אם רוצים
       return;
     }
     const groups = response.payload || [];
     if (!Array.isArray(groups) || groups.length === 0) {
       console.error('השרת החזיר נתונים לא תקינים או ריקים:', groups);
-  // אפשר להוסיף טיפול בשגיאה אם רוצים
+      showSnackbarPersistent('⚠️ לא נמצאו קבוצות לייצוא', 'error');
       return;
     }
 
@@ -35,6 +33,7 @@ export async function exportGroupsToExcelWithData() {
             'יום ושעה': group.schedule,
             'מדריך': group.instructorName,
             'סטטוס הקבוצה': groupStatus,
+           'מס\' קול כשר': group.kolKasherGroupNumber || group.KolKasherGroupNumber || '',
             'הערות': group.notes || group.Notes || '',
             'קוד תלמיד': student.studentId,
             'שם תלמיד': student.studentName,
@@ -51,6 +50,7 @@ export async function exportGroupsToExcelWithData() {
           'יום ושעה': group.schedule,
           'מדריך': group.instructorName,
           'סטטוס הקבוצה': groupStatus,
+          'מס\' קול כשר': group.kolKasherGroupNumber || group.KolKasherGroupNumber || '',
           'הערות': group.notes || group.Notes || '',
           'קוד תלמיד': '',
           'שם תלמיד': '',
@@ -66,7 +66,7 @@ export async function exportGroupsToExcelWithData() {
     // יצירת workbook ו-worksheet
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.json_to_sheet(rows, { header: [
-      'שם קבוצה', 'חוג', 'סניף', 'יום ושעה', 'מדריך', 'סטטוס הקבוצה', 'הערות', 'קוד תלמיד', 'שם תלמיד', 'טלפון', 'עיר', 'קופת חולים'
+      'שם קבוצה', 'חוג', 'סניף', 'יום ושעה', 'מדריך', 'סטטוס הקבוצה', 'מס\' קול כשר', 'הערות', 'קוד תלמיד', 'שם תלמיד', 'טלפון', 'עיר', 'קופת חולים'
     ] });
     worksheet['!cols'] = [
       { wch: 30 }, // שם קבוצה
@@ -75,6 +75,7 @@ export async function exportGroupsToExcelWithData() {
       { wch: 10 }, // יום ושעה
       { wch: 18 }, // מדריך
       { wch: 15 }, // סטטוס
+     { wch: 18 }, // מס' קול כשר
       { wch: 35 }, // הערות
       { wch: 20 }, // קוד תלמיד
       { wch: 20 }, // שם תלמיד
@@ -86,7 +87,13 @@ export async function exportGroupsToExcelWithData() {
 
   XLSX.utils.book_append_sheet(workbook, worksheet, 'קבוצות');
   XLSX.writeFile(workbook, 'שיבוץ_תלמידים_בקבוצות.xlsx');
-// הודעת Snackbar מעוצבת בתחתית המסך
+  showSnackbarPersistent('✅ הקובץ יוצא בהצלחה!', 'success');
+  } catch (err) {
+    console.error('שגיאה ביצוא לאקסל:', err);
+    showSnackbarPersistent('❌ התרחשה שגיאה ביצוא לאקסל', 'error');
+  }
+}
+
 function showSnackbarPersistent(message, type = 'info') {
   removeSnackbarPersistent();
   let color = '#2563eb';
@@ -132,14 +139,12 @@ function showSnackbarPersistent(message, type = 'info') {
   el.style.gap = '16px';
   document.body.appendChild(el);
   document.getElementById('snackbar-close-btn').onclick = removeSnackbarPersistent;
+  if (type === 'success') {
+    setTimeout(removeSnackbarPersistent, 4000);
+  }
 }
 
 function removeSnackbarPersistent() {
   const el = document.getElementById('snackbar-persistent');
   if (el) document.body.removeChild(el);
-}
-  } catch (err) {
-    console.error('שגיאה ביצוא לאקסל:', err);
-    alert('התרחשה שגיאה ביצוא לאקסל. נסה שוב או פנה למנהל מערכת.');
-  }
 }

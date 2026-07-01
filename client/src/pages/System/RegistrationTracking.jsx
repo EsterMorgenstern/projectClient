@@ -737,13 +737,16 @@ const RegistrationTracking = () => {
                 />
 
                 {/* סינון לפי משימת רישום */}
-                <FormControl size="small" sx={{ minWidth: 185, direction: 'rtl', '& .MuiOutlinedInput-notchedOutline legend': { textAlign: 'right', marginRight: '20px' }, '& .MuiInputLabel-shrink': { transform: 'translate(0, -9px) scale(0.75)' } }}>
-                  <InputLabel sx={{ right: 20, left: 'auto', transformOrigin: 'top right' }}>סנן לפי משימת רישום</InputLabel>
+                <Box sx={{ position: 'relative', minWidth: 185 }}>
+                  <Typography sx={{ position: 'absolute', top: 0, right: '12px', transform: 'translateY(-50%)', zIndex: 1, bgcolor: 'white', px: 0.5, fontSize: '0.72rem', color: '#3b82f6', fontWeight: 700, lineHeight: 1, pointerEvents: 'none' }}>
+                    סנן לפי משימת רישום
+                  </Typography>
                   <Select
+                    size="small"
                     value={filterTask}
-                    label="סנן לפי משימת רישום"
                     onChange={e => setFilterTask(e.target.value)}
-                    sx={{ borderRadius: '12px', direction: 'rtl', bgcolor: 'white' }}
+                    displayEmpty
+                    sx={{ borderRadius: '12px', direction: 'rtl', bgcolor: 'white', minWidth: 185 }}
                     MenuProps={{ PaperProps: { sx: { direction: 'rtl' } } }}
                   >
                     <MenuItem value="all" sx={{ direction: 'rtl' }}>הכל</MenuItem>
@@ -751,23 +754,26 @@ const RegistrationTracking = () => {
                       <MenuItem key={task} value={task} sx={{ direction: 'rtl' }}>{task}</MenuItem>
                     ))}
                   </Select>
-                </FormControl>
+                </Box>
 
                 {/* סינון לפי חודש רישום */}
-                <FormControl size="small" sx={{ minWidth: 185, direction: 'rtl', '& .MuiOutlinedInput-notchedOutline legend': { textAlign: 'right', marginRight: '20px' }, '& .MuiInputLabel-shrink': { transform: 'translate(0, -9px) scale(0.75)' } }}>
-                  <InputLabel sx={{ right: 20, left: 'auto', transformOrigin: 'top right' }}>סינון לפי תאריך רישום</InputLabel>
+                <Box sx={{ position: 'relative', minWidth: 185 }}>
+                  <Typography sx={{ position: 'absolute', top: 0, right: '12px', transform: 'translateY(-50%)', zIndex: 1, bgcolor: 'white', px: 0.5, fontSize: '0.72rem', color: '#3b82f6', fontWeight: 700, lineHeight: 1, pointerEvents: 'none' }}>
+                    סינון לפי תאריך רישום
+                  </Typography>
                   <Select
+                    size="small"
                     value={filterMonth}
-                    label="סינון לפי תאריך רישום"
                     onChange={e => setFilterMonth(e.target.value)}
-                    sx={{ borderRadius: '12px', direction: 'rtl', bgcolor: 'white' }}
+                    displayEmpty
+                    sx={{ borderRadius: '12px', direction: 'rtl', bgcolor: 'white', minWidth: 185 }}
                     MenuProps={{ PaperProps: { sx: { direction: 'rtl' } } }}
                   >
                     {months.map(month => (
                       <MenuItem key={month.value} value={month.value} sx={{ direction: 'rtl' }}>{month.label}</MenuItem>
                     ))}
                   </Select>
-                </FormControl>
+                </Box>
 
                 {/* כפתור איפוס מיון */}
                 {sortField && (

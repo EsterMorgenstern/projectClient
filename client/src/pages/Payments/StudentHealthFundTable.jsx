@@ -1339,7 +1339,7 @@ const StudentHealthFundTable = () => {
     setEditFormData({
       ...row,
       startDate: toDateInputValue(resolvedStartDate),
-      standingOrderDay: row.standingOrderDay ?? '',
+      standingOrderDay: row.standingOrderDay ?? null,
     });
     setEditDialogOpen(true);
     setEditSaving(false);
@@ -1359,11 +1359,30 @@ const StudentHealthFundTable = () => {
         setEditSaving(false);
         return;
       }
-      await dispatch(updateStudentHealthFund(editFormData)).unwrap();
+      const standingOrderDayValue = editFormData.standingOrderDay === '' || editFormData.standingOrderDay == null
+        ? null
+        : Number(editFormData.standingOrderDay);
+      const cleanPayload = {
+        id: editFormData.id ?? editFormData.Id,
+        studentId: editFormData.studentId,
+        healthFundId: editFormData.healthFundId,
+        startDate: editFormData.startDate || null,
+        treatmentsUsed: Number(editFormData.treatmentsUsed ?? 0),
+        commitmentTreatments: Number(editFormData.commitmentTreatments ?? 0),
+        reportedTreatments: Number(editFormData.reportedTreatments ?? 0),
+        registeredTreatments: Number(editFormData.registeredTreatments ?? 0),
+        referralFilePath: editFormData.referralFilePath ?? null,
+        commitmentFilePath: editFormData.commitmentFilePath ?? null,
+        notes: editFormData.notes ?? '',
+        standingOrderDay: standingOrderDayValue,
+        standingOrderHandledMonth: editFormData.standingOrderHandledMonth ?? null,
+      };
+      await dispatch(updateStudentHealthFund(cleanPayload)).unwrap();
       handleCloseEditDialog();
-      dispatch(fetchStudentHealthFunds());
+      setNotification({ open: true, message: 'הנתונים עודכנו בהצלחה', severity: 'success' });
     } catch (err) {
       console.error('Failed to update student health fund:', err);
+      setNotification({ open: true, message: 'שגיאה בעדכון הנתונים', severity: 'error' });
     }
     setEditSaving(false);
   };

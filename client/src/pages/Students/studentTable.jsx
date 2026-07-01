@@ -519,20 +519,40 @@ export default function StudentsTable() {
           sx={{
             display: 'flex',
             flexWrap: 'wrap',
-            alignItems: 'center',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
             gap: 2,
-            mb: 2.5,
-            px: { xs: 1, md: 0 },
+            mb: 3,
+            px: { xs: 1.5, md: 2.5 },
+            py: 2.5,
             width: '100%',
-            maxWidth: '100%',
             direction: 'rtl',
-            background: 'linear-gradient(90deg, #f7fafd 0%, #f1f5f9 100%)',
+            background: '#ffffff',
             borderRadius: '16px',
-            boxShadow: '0 1px 6px 0 rgba(60,60,60,0.04)',
-            minHeight: 70,
-            justifyContent: { xs: 'flex-start', md: 'center' }
+            border: '1.5px solid #e2e8f0',
+            boxShadow: '0 2px 12px 0 rgba(15,23,42,0.06)',
           }}
         >
+          {/* כותרת שורת פילטרים */}
+          <Box sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.6,
+            alignSelf: 'center',
+            background: '#eff6ff',
+            border: '1.5px solid #bfdbfe',
+            borderRadius: '8px',
+            px: 1.25,
+            py: 0.6,
+          }}>
+            <FilterIcon sx={{ fontSize: 15, color: '#3b82f6' }} />
+            <Typography sx={{ fontSize: '0.88rem', fontWeight: 700, color: '#2563eb', letterSpacing: '0.3px', lineHeight: 1 }}>
+              סינון
+            </Typography>
+          </Box>
+
+          <Box sx={{ width: '1.5px', height: 52, background: '#e2e8f0', alignSelf: 'center' }} />
+
           <StudentTableFilters
             createdByFilter={createdByFilter}
             setCreatedByFilter={setCreatedByFilter}
@@ -545,66 +565,80 @@ export default function StudentsTable() {
             registrationDateTo={registrationDateTo}
             setRegistrationDateTo={setRegistrationDateTo}
           />
-          <Tooltip title="סינון הטבלה לפי תלמידים ללא קבוצה פעילה">
-            <Button
-              variant={isWithoutGroupFilterActive ? 'contained' : 'outlined'}
-              startIcon={<FilterIcon />}
-              onClick={handleToggleWithoutGroupFilter}
-              disabled={loadingWithoutGroup}
-              sx={{
-                borderColor: '#1d4ed8',
-                borderWidth: '2px',
-                color: '#1e3a8a',
-                bgcolor: isWithoutGroupFilterActive ? '#dbeafe' : '#eff6ff',
-                '&:hover': {
-                  bgcolor: isWithoutGroupFilterActive ? '#bfdbfe' : '#dbeafe',
-                  borderColor: '#1d4ed8'
-                },
-                fontWeight: 700,
-                letterSpacing: '0.2px',
-                borderRadius: '10px',
-                px: 2,
-                textTransform: 'none',
-                height: 38,
-                marginBottom: { xs: 0, md: 2 }
-              }}
-            >
-              {isWithoutGroupFilterActive ? 'הסר סינון ללא קבוצה' : 'סנן: ללא קבוצה עם הערות'}
-            </Button>
-          </Tooltip>
+
+          <Box sx={{ width: '1.5px', height: 52, background: '#e2e8f0', alignSelf: 'flex-end', mb: 0.25 }} />
+
+          {/* כפתור סינון מיוחד */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', direction: 'rtl', alignSelf: 'flex-end' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5, direction: 'rtl' }}>
+              <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748b', letterSpacing: '0.4px', lineHeight: 1, opacity: 0 }}>
+                &nbsp;
+              </Typography>
+            </Box>
+            <Tooltip title="סינון הטבלה לפי תלמידים ללא קבוצה פעילה">
+              <Button
+                variant={isWithoutGroupFilterActive ? 'contained' : 'outlined'}
+                startIcon={<FilterIcon sx={{ fontSize: '16px !important', marginLeft: '4px' }} />}
+                onClick={handleToggleWithoutGroupFilter}
+                disabled={loadingWithoutGroup}
+                sx={{
+                  height: 42,
+                  borderRadius: '10px',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '0.82rem',
+                  letterSpacing: '0.2px',
+                  px: 2,
+                  transition: 'all 0.18s ease',
+                  ...(isWithoutGroupFilterActive ? {
+                    background: '#dbeafe',
+                    color: '#1d4ed8',
+                    border: '2px solid #3b82f6',
+                    boxShadow: '0 0 0 3px rgba(59,130,246,0.13)',
+                    '&:hover': { background: '#bfdbfe', borderColor: '#2563eb' },
+                  } : {
+                    color: '#3b82f6',
+                    border: '1.5px solid #93c5fd',
+                    background: '#f0f9ff',
+                    '&:hover': { background: '#dbeafe', borderColor: '#3b82f6', boxShadow: '0 0 0 3px rgba(59,130,246,0.10)' },
+                  }),
+                  '&.Mui-disabled': { opacity: 0.5 },
+                }}
+              >
+                {isWithoutGroupFilterActive ? 'הסר סינון ללא קבוצה' : 'ללא קבוצה עם הערות'}
+              </Button>
+            </Tooltip>
+          </Box>
+
           {isWithoutGroupFilterActive && (
             <Tooltip title="ייצוא כל התלמידים שחזרו מהשרת בסינון זה">
-              <span>
+              <span style={{ alignSelf: 'flex-end' }}>
                 <Button
-                  variant="contained"
-                  color="success"
-                  startIcon={<DownloadIcon />}
+                  variant="outlined"
+                  startIcon={<DownloadIcon sx={{ fontSize: '16px !important' }} />}
                   onClick={handleExportFilteredStudents}
                   disabled={loadingWithoutGroup || !studentsWithoutActiveGroupWithNotes?.length}
                   sx={{
-                    bgcolor: '#dcfce7',
-                    color: '#166534',
-                    border: '2px solid #16a34a',
-                    fontWeight: 700,
-                    letterSpacing: '0.2px',
+                    height: 42,
                     borderRadius: '10px',
-                    px: 2.25,
                     textTransform: 'none',
-                    boxShadow: '0 8px 24px rgba(22, 163, 74, 0.18)',
+                    fontWeight: 600,
+                    fontSize: '0.82rem',
+                    letterSpacing: '0.2px',
+                    px: 2,
+                    color: '#16a34a',
+                    border: '1.5px solid #86efac',
+                    background: '#f0fdf4',
+                    transition: 'all 0.18s ease',
                     '&:hover': {
-                      bgcolor: '#bbf7d0',
-                      borderColor: '#15803d',
-                      boxShadow: '0 10px 28px rgba(22, 163, 74, 0.26)'
+                      background: '#dcfce7',
+                      borderColor: '#16a34a',
+                      boxShadow: '0 0 0 3px rgba(22,163,74,0.12)',
                     },
-                    '&.Mui-disabled': {
-                      bgcolor: '#f0fdf4',
-                      color: '#86efac',
-                      borderColor: '#86efac'
-                    },
-                    height: 48
+                    '&.Mui-disabled': { opacity: 0.45 },
                   }}
                 >
-                  יצא לאקסל את רשימת הסינון
+                  יצא לאקסל
                 </Button>
               </span>
             </Tooltip>

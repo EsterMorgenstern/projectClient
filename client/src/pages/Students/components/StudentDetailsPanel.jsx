@@ -308,6 +308,7 @@ const StudentDetailsPanel = () => {
       groupId: pick(course, ['groupId', 'GroupId']),
       courseName: pick(course, ['courseName', 'CourseName']),
       groupName: pick(course, ['groupName', 'GroupName']),
+      kolKasherGroupNumber: pick(course, ['kolKasherGroupNumber', 'KolKasherGroupNumber']) || '',
       notes: pick(course, ['notes', 'Notes']),
       branchName: pick(course, ['branchName', 'BranchName']),
       instructorName: pick(course, ['instructorName', 'InstructorName']),
@@ -851,6 +852,7 @@ const StudentDetailsPanel = () => {
               <TableRow sx={{ backgroundColor: '#f8fafc' }}>
                 <TableCell align="right" sx={{ fontWeight: 700, color: '#334155', fontSize: '0.9rem' }}>חוג</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 700, color: '#334155', fontSize: '0.9rem' }}>קבוצה</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, color: '#334155', fontSize: '0.9rem' }}>מס' קול כשר</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 700, color: '#334155', fontSize: '0.9rem' }}>הערות</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 700, color: '#334155', fontSize: '0.9rem' }}>סניף</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 700, color: '#334155', fontSize: '0.9rem' }}>מדריך</TableCell>
@@ -865,7 +867,7 @@ const StudentDetailsPanel = () => {
             <TableBody>
               {normalizedCourses.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={11} align="center" sx={{ py: 3, color: '#6b7280', fontWeight: 500 }}>
+                  <TableCell colSpan={12} align="center" sx={{ py: 3, color: '#6b7280', fontWeight: 500 }}>
                     אין קורסים לתלמיד
                   </TableCell>
                 </TableRow>
@@ -886,6 +888,17 @@ const StudentDetailsPanel = () => {
                 >
                   <TableCell align="right" sx={{ color: '#334155', fontWeight: 500 }}>{course.courseName || '---'}</TableCell>
                   <TableCell align="right" sx={{ color: '#334155', fontWeight: 500 }}>{course.groupName || '---'}</TableCell>
+                  <TableCell align="right" sx={{ color: '#334155', fontWeight: 500 }}>
+                    <Chip
+                      size="small"
+                      label={course.kolKasherGroupNumber || 'לא הוזן'}
+                      sx={{
+                        bgcolor: course.kolKasherGroupNumber ? 'rgba(11,181,133,0.10)' : 'rgba(107,114,128,0.12)',
+                        color: course.kolKasherGroupNumber ? '#0bb585' : '#6b7280',
+                        fontWeight: 600, fontSize: '0.78rem'
+                      }}
+                    />
+                  </TableCell>
                   <TableCell align="right" sx={{ color: '#334155', fontWeight: 500, maxWidth: 260 }}>
                     <Typography sx={{ fontSize: '0.9rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                       {course.notes || '---'}

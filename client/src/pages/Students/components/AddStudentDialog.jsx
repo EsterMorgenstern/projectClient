@@ -836,7 +836,7 @@ useEffect(() => {
               variant="outlined"
               value={newStudent.email}
               onChange={(e) => handleInputChange('email', e.target.value)}
-              required={(newStudent.healthFundName || '').includes('לאומית')}
+              required
               error={(newStudent.healthFundName || '').includes('לאומית') && !(newStudent.email || '').trim()}
               helperText={(newStudent.healthFundName || '').includes('לאומית') && !(newStudent.email || '').trim() ? 'שדה חובה עבור לאומית' : ''}
               sx={{ 

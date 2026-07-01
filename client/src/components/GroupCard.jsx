@@ -110,11 +110,54 @@ const GroupCard = ({
 
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, justifyContent: 'flex-start' }}>
         <GroupIcon sx={{ fontSize: 32, color: '#6366F1', ml: 1 }} />
-        <Typography variant="h6" fontWeight="bold" color="#1E3A8A" component="span">
-          <span style={{wordBreak: 'break-word', whiteSpace: 'pre-line'}}>
-            קבוצה {group.groupName}
-          </span>
-        </Typography>
+        <Box>
+          <Typography variant="h6" fontWeight="bold" color="#1E3A8A" component="span">
+            <span style={{wordBreak: 'break-word', whiteSpace: 'pre-line'}}>
+              קבוצה {group.groupName}
+            </span>
+          </Typography>
+          <Box sx={{ mt: 0.5 }}>
+            {group.kolKasherGroupNumber ? (
+              <Box
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  bgcolor: 'rgba(13,148,136,0.06)',
+                  border: '1px solid rgba(13,148,136,0.18)',
+                  borderRadius: '8px',
+                  px: 1,
+                  py: 0.25,
+                }}
+              >
+                <Typography component="span" sx={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 400, lineHeight: 1 }}>
+                  מס' קול כשר:
+                </Typography>
+                <Typography component="span" sx={{ color: '#0d9488', fontSize: '0.82rem', fontWeight: 700, lineHeight: 1, letterSpacing: '0.02em' }}>
+                  {group.kolKasherGroupNumber}
+                </Typography>
+              </Box>
+            ) : (
+              <Tooltip title="לא הוזן מספר קול כשר" placement="top">
+                <Chip
+                  label="ללא מס' קול כשר"
+                  size="small"
+                  sx={{
+                    bgcolor: 'transparent',
+                    color: '#94a3b8',
+                    fontWeight: 400,
+                    fontSize: '0.78rem',
+                    borderRadius: '10px',
+                    border: '1px dashed rgba(148,163,184,0.45)',
+                    height: 22,
+                    boxShadow: 'none',
+                    '& .MuiChip-label': { px: 1.2 },
+                  }}
+                />
+              </Tooltip>
+            )}
+          </Box>
+        </Box>
       </Box>
       {(group.notes || group.Notes) && (
         <Typography

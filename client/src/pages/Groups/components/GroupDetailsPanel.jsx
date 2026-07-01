@@ -172,6 +172,7 @@ const GroupDetailsPanel = ({ groupId: propGroupId } = {}) => {
     || group?.instructorId
     || '---';
   const hourValue = group?.hour || group?.Hour || group?.schedule?.hour || '';
+  const kolKasherNumber = group?.kolKasherGroupNumber || group?.KolKasherGroupNumber || '';
 
   const normalizedLessons = (lessons || []).map((l) => ({
     ...l,
@@ -323,6 +324,15 @@ const GroupDetailsPanel = ({ groupId: propGroupId } = {}) => {
                 <Box>
                   <Typography variant="caption" sx={{ fontWeight: 'bold', color: '#666' }}>מגזר</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{group.sector || group.Sector || '---'}</Typography>
+                </Box>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={6} md={4}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 2, background: '#f0fff8', borderRadius: 2 }}>
+                <InfoIcon sx={{ color: '#0bb585', fontSize: 28 }} />
+                <Box>
+                  <Typography variant="caption" sx={{ fontWeight: 'bold', color: '#666' }}>מס' קול כשר</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{kolKasherNumber || 'לא הוזן'}</Typography>
                 </Box>
               </Box>
             </Grid>

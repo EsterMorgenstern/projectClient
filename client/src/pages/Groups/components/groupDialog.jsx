@@ -51,6 +51,17 @@ import AddIcon from '@mui/icons-material/Add';
             <GroupIcon sx={{ fontSize: 32, color: '#6366f1' }} />
             {group.groupName}
           </Box>
+          <Box sx={{ mt: 1, display: 'flex', justifyContent: 'center' }}>
+            <Chip
+              label={`מס' קול כשר: ${group.kolKasherGroupNumber || group.KolKasherGroupNumber || 'לא הוזן'}`}
+              size="small"
+              sx={{
+                bgcolor: (group.kolKasherGroupNumber || group.KolKasherGroupNumber) ? 'rgba(11,181,133,0.10)' : 'rgba(107,114,128,0.12)',
+                color: (group.kolKasherGroupNumber || group.KolKasherGroupNumber) ? '#0bb585' : '#6b7280',
+                fontWeight: 700
+              }}
+            />
+          </Box>
         </DialogTitle>
         <Box sx={{ px: 3, pt: 1 }}>
           {(group.notes || group.Notes) && (

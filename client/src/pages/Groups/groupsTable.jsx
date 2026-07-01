@@ -112,6 +112,7 @@ const GroupsTable = () => {
     startDate: '',
     lessonsCompleted: '',
     notes: '',
+    kolKasherGroupNumber: '',
     isActive: true
   }), []);
 
@@ -458,6 +459,7 @@ const ensurePermission = useCallback(() => {
         startDate: group.startDate || '',
         lessonsCompleted: group.lessonsCompleted || '',
         notes: group.notes || group.Notes || '',
+        kolKasherGroupNumber: group.kolKasherGroupNumber || group.KolKasherGroupNumber || '',
         isActive: group.isActive !== undefined ? group.isActive : true
       });
     } else {
@@ -576,6 +578,7 @@ const ensurePermission = useCallback(() => {
           StartDate: formData.startDate || '',
           LessonsCompleted: parseInt(formData.lessonsCompleted) || 0,
           Notes: formData.notes || '',
+          KolKasherGroupNumber: formData.kolKasherGroupNumber || '',
           IsActive: formData.isActive !== undefined ? formData.isActive : true
         };
         console.log('📤 Sending group data:', groupData);
@@ -599,6 +602,7 @@ const ensurePermission = useCallback(() => {
             numOfLessons: formData.numOfLessons,
             lessonsCompleted: formData.lessonsCompleted,
             notes: formData.notes,
+            kolKasherGroupNumber: formData.kolKasherGroupNumber,
             location: formData.location,
             instructorId: formData.instructorId,
             instructorName: instructorName,
@@ -836,6 +840,7 @@ const ensurePermission = useCallback(() => {
       day: g.dayOfWeek || g.day || '-',
       groupName: g.groupName,
       notes: g.notes || g.Notes || '',
+      kolKasherGroupNumber: g.kolKasherGroupNumber || g.KolKasherGroupNumber || '',
       instructor: g.instructorName || '-',
       hour: g.hour,
       ageRange: g.ageRange,
@@ -909,6 +914,7 @@ const ensurePermission = useCallback(() => {
       { label: 'סניף' },
       { label: 'יום' },
       { label: 'שם הקבוצה' },
+      { label: 'מס\' קול כשר' },
       { label: 'הערות' },
       { label: 'מדריך' },
       { label: 'שעות' },
@@ -1040,6 +1046,23 @@ const ensurePermission = useCallback(() => {
                       {row.groupName}
                     </Box>
                   </Tooltip>
+                </TableCell>
+                <TableCell align="right" sx={{ py: 2, fontSize: '0.9rem' }}>
+                  <Chip
+                    label={row.kolKasherGroupNumber || 'לא הוזן'}
+                    size="small"
+                    sx={{
+                      bgcolor: row.kolKasherGroupNumber ? 'rgba(11, 181, 133, 0.10)' : 'rgba(107, 114, 128, 0.12)',
+                      color: row.kolKasherGroupNumber ? '#0bb585' : '#6b7280',
+                      fontWeight: 500,
+                      fontSize: '0.95rem',
+                      borderRadius: '12px',
+                      px: 1.2,
+                      py: 0,
+                      boxShadow: 'none',
+                      height: 28,
+                    }}
+                  />
                 </TableCell>
                 <TableCell align="right" sx={{ py: 2, fontSize: '0.9rem', maxWidth: 220 }}>
                   {row.notes ? (
@@ -1646,11 +1669,54 @@ const ensurePermission = useCallback(() => {
                       {/* שם קבוצה עם אייקון */}
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, justifyContent: 'flex-start' }}>
                         <GroupIcon sx={{ fontSize: 32, color: '#6366F1', ml: 1 }} />
-                        <Typography variant="h6" fontWeight="bold" color="#1E3A8A" component="span">
-                          <span style={{ wordBreak: 'break-word', whiteSpace: 'pre-line' }}>
-                            {group.groupName}
-                          </span>
-                        </Typography>
+                        <Box>
+                          <Typography variant="h6" fontWeight="bold" color="#1E3A8A" component="span">
+                            <span style={{ wordBreak: 'break-word', whiteSpace: 'pre-line' }}>
+                              {group.groupName}
+                            </span>
+                          </Typography>
+                          <Box sx={{ mt: 0.5 }}>
+                            {(group.kolKasherGroupNumber || group.KolKasherGroupNumber) ? (
+                              <Box
+                                sx={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 0.5,
+                                  bgcolor: 'rgba(13,148,136,0.06)',
+                                  border: '1px solid rgba(13,148,136,0.18)',
+                                  borderRadius: '8px',
+                                  px: 1,
+                                  py: 0.25,
+                                }}
+                              >
+                                <Typography component="span" sx={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 400, lineHeight: 1 }}>
+                                  מס' קול כשר:
+                                </Typography>
+                                <Typography component="span" sx={{ color: '#0d9488', fontSize: '0.82rem', fontWeight: 700, lineHeight: 1, letterSpacing: '0.02em' }}>
+                                  {group.kolKasherGroupNumber || group.KolKasherGroupNumber}
+                                </Typography>
+                              </Box>
+                            ) : (
+                              <Tooltip title="לא הוזן מספר קול כשר" placement="top">
+                                <Chip
+                                  label="ללא מספר קול כשר"
+                                  size="small"
+                                  sx={{
+                                    bgcolor: 'transparent',
+                                    color: '#94a3b8',
+                                    fontWeight: 400,
+                                    fontSize: '0.78rem',
+                                    borderRadius: '10px',
+                                    border: '1px dashed rgba(148,163,184,0.45)',
+                                    height: 22,
+                                    boxShadow: 'none',
+                                    '& .MuiChip-label': { px: 1.2 },
+                                  }}
+                                />
+                              </Tooltip>
+                            )}
+                          </Box>
+                        </Box>
                       </Box>
                       {(group.notes || group.Notes) && (
                         <Typography
@@ -1875,6 +1941,22 @@ const ensurePermission = useCallback(() => {
                 <Typography variant="h6" sx={{ fontWeight: 'bold', textAlign: 'right' }}>
                   {selectedItem.groupName}
                 </Typography>
+                <Chip
+                  label={selectedItem.kolKasherGroupNumber || selectedItem.KolKasherGroupNumber || 'לא הוזן'}
+                  size="small"
+                  sx={{
+                    mt: 1,
+                    bgcolor: (selectedItem.kolKasherGroupNumber || selectedItem.KolKasherGroupNumber) ? 'rgba(11,181,133,0.10)' : 'rgba(107,114,128,0.12)',
+                    color: (selectedItem.kolKasherGroupNumber || selectedItem.KolKasherGroupNumber) ? '#0bb585' : '#6b7280',
+                    fontWeight: 500,
+                    fontSize: '0.95rem',
+                    borderRadius: '12px',
+                    px: 1.2,
+                    py: 0,
+                    boxShadow: 'none',
+                    height: 28,
+                  }}
+                />
               </Box>
               {(selectedItem.notes || selectedItem.Notes) && (
                 <Box sx={{ background: 'rgba(99, 102, 241, 0.1)', p: 2, borderRadius: 2 }}>

@@ -350,34 +350,55 @@ const TrialStudentsTable = () => {
               }}
             />
 
-            <FormControl size="small" sx={{ minWidth: 150, direction: 'rtl', '& .MuiOutlinedInput-notchedOutline legend': { textAlign: 'right', marginRight: '20px' }, '& .MuiInputLabel-shrink': { transform: 'translate(0, -9px) scale(0.75)' } }}>
-              <InputLabel sx={{ right: 20, left: 'auto', transformOrigin: 'top right' }}>סטטוס</InputLabel>
-              <Select value={filterStatus} label="סטטוס"
+            <Box sx={{ position: 'relative', minWidth: 150 }}>
+              <Typography sx={{ position: 'absolute', top: 0, right: '12px', transform: 'translateY(-50%)', zIndex: 1, bgcolor: 'white', px: 0.5, fontSize: '0.72rem', color: '#3b82f6', fontWeight: 700, lineHeight: 1, pointerEvents: 'none' }}>
+                סטטוס
+              </Typography>
+              <Select
+                size="small"
+                value={filterStatus}
                 onChange={e => { setFilterStatus(e.target.value); setPage(0); }}
-                sx={{ borderRadius: '12px', direction: 'rtl', bgcolor: 'white' }}>
+                displayEmpty
+                sx={{ borderRadius: '12px', direction: 'rtl', bgcolor: 'white', minWidth: 150 }}
+                MenuProps={{ PaperProps: { sx: { direction: 'rtl' } } }}
+              >
                 {STATUS_OPTIONS.map(o => (
                   <MenuItem key={o.value} value={o.value} sx={{ direction: 'rtl' }}>{o.label}</MenuItem>
                 ))}
               </Select>
-            </FormControl>
+            </Box>
 
-            <FormControl size="small" sx={{ minWidth: 165, direction: 'rtl', '& .MuiOutlinedInput-notchedOutline legend': { textAlign: 'right', marginRight: '20px' }, '& .MuiInputLabel-shrink': { transform: 'translate(0, -9px) scale(0.75)' } }}>
-              <InputLabel sx={{ right: 20, left: 'auto', transformOrigin: 'top right' }}>חודש רישום</InputLabel>
-              <Select value={filterMonth} label="חודש רישום"
+            <Box sx={{ position: 'relative', minWidth: 165 }}>
+              <Typography sx={{ position: 'absolute', top: 0, right: '12px', transform: 'translateY(-50%)', zIndex: 1, bgcolor: 'white', px: 0.5, fontSize: '0.72rem', color: '#3b82f6', fontWeight: 700, lineHeight: 1, pointerEvents: 'none' }}>
+                חודש רישום
+              </Typography>
+              <Select
+                size="small"
+                value={filterMonth}
                 onChange={e => { setFilterMonth(e.target.value); setPage(0); }}
-                sx={{ borderRadius: '12px', direction: 'rtl', bgcolor: 'white' }}>
+                displayEmpty
+                sx={{ borderRadius: '12px', direction: 'rtl', bgcolor: 'white', minWidth: 165 }}
+                MenuProps={{ PaperProps: { sx: { direction: 'rtl' } } }}
+              >
                 {months.map(m => <MenuItem key={m.value} value={m.value} sx={{ direction: 'rtl' }}>{m.label}</MenuItem>)}
               </Select>
-            </FormControl>
+            </Box>
 
-            <FormControl size="small" sx={{ minWidth: 165, direction: 'rtl', '& .MuiOutlinedInput-notchedOutline legend': { textAlign: 'right', marginRight: '20px' }, '& .MuiInputLabel-shrink': { transform: 'translate(0, -9px) scale(0.75)' } }}>
-              <InputLabel sx={{ right: 20, left: 'auto', transformOrigin: 'top right' }}>חודש ניסיון</InputLabel>
-              <Select value={filterTrialMonth} label="חודש ניסיון"
+            <Box sx={{ position: 'relative', minWidth: 165 }}>
+              <Typography sx={{ position: 'absolute', top: 0, right: '12px', transform: 'translateY(-50%)', zIndex: 1, bgcolor: 'white', px: 0.5, fontSize: '0.72rem', color: '#3b82f6', fontWeight: 700, lineHeight: 1, pointerEvents: 'none' }}>
+                חודש ניסיון
+              </Typography>
+              <Select
+                size="small"
+                value={filterTrialMonth}
                 onChange={e => { setFilterTrialMonth(e.target.value); setPage(0); }}
-                sx={{ borderRadius: '12px', direction: 'rtl', bgcolor: 'white' }}>
+                displayEmpty
+                sx={{ borderRadius: '12px', direction: 'rtl', bgcolor: 'white', minWidth: 165 }}
+                MenuProps={{ PaperProps: { sx: { direction: 'rtl' } } }}
+              >
                 {months.map(m => <MenuItem key={m.value} value={m.value} sx={{ direction: 'rtl' }}>{m.label}</MenuItem>)}
               </Select>
-            </FormControl>
+            </Box>
           </Box>
         </Paper>
 
@@ -491,9 +512,11 @@ const TrialStudentsTable = () => {
                               </Box>
                             ) : (
                               <Chip label="לא הוזן" size="small"
-                                sx={{ bgcolor: isTrialMissingDate ? '#fef3c7' : '#f3f4f6',
+                                sx={{
+                                  bgcolor: isTrialMissingDate ? '#fef3c7' : '#f3f4f6',
                                   color: isTrialMissingDate ? '#92400e' : '#9ca3af',
-                                  fontSize: '0.75rem', fontWeight: isTrialMissingDate ? 'bold' : 'normal' }} />
+                                  fontSize: '0.75rem', fontWeight: isTrialMissingDate ? 'bold' : 'normal'
+                                }} />
                             )}
                           </TableCell>
                           <TableCell align="right" sx={{ py: 1.5 }}>
