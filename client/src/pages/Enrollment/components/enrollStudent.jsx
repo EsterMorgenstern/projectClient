@@ -98,6 +98,8 @@ import { addStudentNote } from '../../../store/studentNotes/studentNoteAddThunk'
 import SmartMatchingSystem from './smartMatchingSystem';
 import EnrollmentSuccess from './enrollmentSuccess';
 import { checkUserPermission } from '../../../utils/permissions';
+import { getGroupInstructorName, prepareEnrollmentSuccessEmail } from '../../../utils/enrollmentSuccessEmail';
+import { sendEmail } from '../../../store/email/emailSendThunk';
 import StudentSearchDialog from '../../../components/StudentSearchDialog';
 import GroupCard from '../../../components/GroupCard';
 
@@ -1373,6 +1375,41 @@ const EnrollStudent = () => {
     }
   };
 
+  const sendEnrollmentConfirmationEmail = async (studentData) => {
+    const recipientEmail = String(studentData?.email || '').trim();
+    if (!recipientEmail || !recipientEmail.includes('@')) {
+      return { sent: false, reason: 'no-email' };
+    }
+
+    const instructorName = getGroupInstructorName(selectedGroup, instructors);
+    const courseName = selectedCourse?.couresName || selectedCourse?.name || selectedGroup?.courseName || '';
+    const branchName = selectedBranch?.name || selectedBranch?.branchName || selectedGroup?.branchName || '';
+    const studentLessonsCount = Math.max(
+      (Number(selectedGroup?.numOfLessons) || 0) - (Number(selectedGroup?.lessonsCompleted) || 0),
+      0
+    );
+
+    const { subject, body } = await prepareEnrollmentSuccessEmail({
+      student: studentData,
+      group: selectedGroup,
+      courseName,
+      branchName,
+      instructorName,
+      enrollDate: studentData.enrollDate || enrollDate,
+      groupStatus: studentData.groupStatus !== undefined ? studentData.groupStatus : groupStatus,
+      studentLessonsCount
+    });
+
+    const result = await dispatch(sendEmail({ to: recipientEmail, subject, body }));
+
+    if (sendEmail.fulfilled.match(result)) {
+      return { sent: true };
+    }
+
+    console.error('❌ Failed to send enrollment confirmation email:', result.payload);
+    return { sent: false, reason: 'send-failed', error: result.payload };
+  };
+
   const handleAddStudentAndEnroll = async (studentData, message, severity) => {
     console.log('🚀 handleAddStudentAndEnroll called with:', { studentData, message, severity });
 
@@ -1429,14 +1466,20 @@ const EnrollStudent = () => {
           // יצירת הערה אוטומטית לתלמיד החדש
           await createAutomaticRegistrationNote(studentData.id);
 
+          const emailResult = await sendEnrollmentConfirmationEmail(studentData);
+
           // עדכון רשימת הקבוצות
           if (selectedCourse) {
             await dispatch(getGroupsByCourseId(selectedCourse.courseId));
           }
 
+          const emailSuffix = emailResult.sent
+            ? ' ומייל אישור נשלח להורה'
+            : (String(studentData?.email || '').trim() ? ' (שליחת מייל אישור נכשלה)' : '');
+
           setNotification({
             open: true,
-            message: `התלמיד ${studentData.firstName} ${studentData.lastName} נוסף בהצלחה ושובץ לקבוצה`,
+            message: `התלמיד ${studentData.firstName} ${studentData.lastName} נוסף בהצלחה ושובץ לקבוצה${emailSuffix}`,
             severity: 'success',
             action: (
               <Box sx={{ direction: 'rtl', textAlign: 'right', display: 'flex', gap: 1 }}>
@@ -1588,13 +1631,27 @@ const EnrollStudent = () => {
 
       setEnrollDialogOpen(false);
 
+      if (enrollResult2.type !== 'groupStudent/addGroupStudent/fulfilled') {
+        throw new Error(enrollResult2.payload || 'שגיאה ברישום התלמיד');
+      }
+
       await dispatch(getGroupsByCourseId(selectedCourse.courseId));
 
-
+      let emailSuffix = '';
+      const studentResult = await dispatch(getStudentById(studentId));
+      if (studentResult.type === 'students/GetStudentById/fulfilled' && studentResult.payload) {
+        const emailResult = await sendEnrollmentConfirmationEmail({
+          ...studentResult.payload,
+          enrollDate: enrollDate || entrollmentDate.enrollmentDate
+        });
+        emailSuffix = emailResult.sent
+          ? ' ומייל אישור נשלח להורה'
+          : (String(studentResult.payload?.email || '').trim() ? ' (שליחת מייל אישור נכשלה)' : '');
+      }
 
       setNotification({
         open: true,
-        message: 'התלמיד נרשם בהצלחה לחוג',
+        message: `התלמיד נרשם בהצלחה לחוג${emailSuffix}`,
         severity: 'success',
         action: (
           <Button

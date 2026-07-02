@@ -5,6 +5,8 @@ import './style/smartMatchingSystem.css';
 import { FindBestGroupsForStudent } from '../../../store/group/groupFindBestGroupForStudent';
 import { groupStudentAddThunk } from '../../../store/groupStudent/groupStudentAddThunk';
 import { checkUserPermission } from '../../../utils/permissions';
+import { sendEmail } from '../../../store/email/emailSendThunk';
+import { getGroupInstructorName, prepareEnrollmentSuccessEmail } from '../../../utils/enrollmentSuccessEmail';
 
 const SmartMatchingSystem = ({ studentData, onEnrollSuccess, onClose }) => {
   const dispatch = useDispatch();
@@ -22,6 +24,7 @@ const SmartMatchingSystem = ({ studentData, onEnrollSuccess, onClose }) => {
   
   const loading = useSelector(state => state.groups.loading);
   const error = useSelector(state => state.groups.error);
+  const instructors = useSelector(state => state.instructors?.instructors || []);
 
   // אלגוריתם ההתאמה החכם
   const findMatchingGroups = async () => {
@@ -87,6 +90,29 @@ const SmartMatchingSystem = ({ studentData, onEnrollSuccess, onClose }) => {
       
       if (result.type.endsWith('/fulfilled')) {
         console.log('✅ רישום הושלם בהצלחה');
+
+        const recipientEmail = String(studentData?.email || '').trim();
+        if (recipientEmail.includes('@')) {
+          try {
+            const courseName = group.courseName || group.couresName || group.course || '';
+            const { subject, body } = await prepareEnrollmentSuccessEmail({
+              student: studentData,
+              group,
+              courseName,
+              branchName: group.branchName || '',
+              instructorName: getGroupInstructorName(group, instructors) || group.instructorName || '',
+              enrollDate: new Date().toISOString().split('T')[0],
+              groupStatus: 1,
+              studentLessonsCount: Math.max(
+                (Number(group.numOfLessons) || 0) - (Number(group.lessonsCompleted) || 0),
+                0
+              )
+            });
+            await dispatch(sendEmail({ to: recipientEmail, subject, body }));
+          } catch (emailError) {
+            console.error('❌ Failed to send enrollment confirmation email:', emailError);
+          }
+        }
         
         // הצגת הודעת הצלחה
         onEnrollSuccess?.({

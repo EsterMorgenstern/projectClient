@@ -5,7 +5,7 @@ import {
   TableHead, TableRow, Paper, Chip, TextField, Button, CircularProgress,
   IconButton, Tooltip, FormControl, InputLabel, Select, MenuItem,
   TablePagination, Alert, Snackbar, Dialog, DialogTitle, DialogContent,
-  DialogActions, Grid, InputAdornment
+  DialogActions, Grid, InputAdornment, Checkbox
 } from '@mui/material';
 import {
   Refresh as RefreshIcon,
@@ -13,6 +13,7 @@ import {
   Edit as EditIcon,
   CheckCircle as CheckCircleIcon,
   Science as ScienceIcon,
+  Email as EmailIcon,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { getGroupStudentsByStatus } from '../../store/groupStudent/groupStudentGetByStatusThunk';
@@ -21,6 +22,7 @@ import { getgroupStudentByStudentId } from '../../store/groupStudent/groupStuden
 import { checkUserPermission } from '../../utils/permissions';
 import StatsCard from '../../components/StatsCard';
 import StudentCoursesDialog from '../Students/components/studentCoursesDialog';
+import TrialFollowUpEmailDialog from './components/TrialFollowUpEmailDialog';
 
 const months = [
   { value: 'all', label: 'כל התאריכים' },
@@ -81,6 +83,10 @@ const TrialStudentsTable = () => {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [studentCourses, setStudentCourses] = useState([]);
   const [loadingStudentCourses, setLoadingStudentCourses] = useState(false);
+
+  // Email dialog & selection
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [selectedRowIds, setSelectedRowIds] = useState([]);
 
   const handleOpenStudentDetails = async (row) => {
     const student = {
@@ -165,6 +171,65 @@ const TrialStudentsTable = () => {
     return filteredData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
   }, [filteredData, page, rowsPerPage]);
 
+  const trialFilteredData = useMemo(() =>
+    filteredData.filter(gs => Number(gs.isActive ?? gs.IsActive) === 4),
+    [filteredData]
+  );
+
+  useEffect(() => {
+    setSelectedRowIds(prev => prev.filter(id =>
+      trialFilteredData.some(row => row.groupStudentId === id)
+    ));
+  }, [trialFilteredData]);
+
+  const selectedRows = useMemo(() =>
+    trialFilteredData.filter(row => selectedRowIds.includes(row.groupStudentId)),
+    [trialFilteredData, selectedRowIds]
+  );
+
+  const paginatedTrialIds = useMemo(() =>
+    paginatedData
+      .filter(row => Number(row.isActive ?? row.IsActive) === 4)
+      .map(row => row.groupStudentId),
+    [paginatedData]
+  );
+
+  const allPaginatedTrialSelected = paginatedTrialIds.length > 0
+    && paginatedTrialIds.every(id => selectedRowIds.includes(id));
+
+  const somePaginatedTrialSelected = paginatedTrialIds.some(id => selectedRowIds.includes(id))
+    && !allPaginatedTrialSelected;
+
+  const toggleRowSelection = (groupStudentId) => {
+    setSelectedRowIds(prev =>
+      prev.includes(groupStudentId)
+        ? prev.filter(id => id !== groupStudentId)
+        : [...prev, groupStudentId]
+    );
+  };
+
+  const toggleSelectAllPaginatedTrial = () => {
+    if (allPaginatedTrialSelected) {
+      setSelectedRowIds(prev => prev.filter(id => !paginatedTrialIds.includes(id)));
+      return;
+    }
+    setSelectedRowIds(prev => [...new Set([...prev, ...paginatedTrialIds])]);
+  };
+
+  const handleOpenEmailDialog = () => {
+    if (!checkUserPermission(currentUser?.id || currentUser?.userId,
+      (msg, severity) => setNotification({ open: true, message: msg, severity }))) return;
+    setEmailDialogOpen(true);
+  };
+
+  const handleEmailSendComplete = (summary) => {
+    setNotification({
+      open: true,
+      message: summary?.message || 'המיילים נשלחו',
+      severity: summary?.failed ? 'warning' : 'success'
+    });
+  };
+
   const trialCount = useMemo(() =>
     (groupStudentByStatus || []).filter(gs => Number(gs.isActive ?? gs.IsActive) === 4).length,
     [groupStudentByStatus]
@@ -242,25 +307,47 @@ const TrialStudentsTable = () => {
                 כל התלמידים לפי סטטוס — סינון, מיון ועדכון ישיר
               </Typography>
             </Box>
-            <Button
-              variant="contained"
-              startIcon={<RefreshIcon />}
-              onClick={loadData}
-              sx={{
-                borderRadius: '999px',
-                direction: 'ltr',
-                fontWeight: 700,
-                px: 3,
-                py: 1,
-                fontSize: '0.92rem',
-                fontFamily: 'inherit',
-                boxShadow: '0 8px 18px rgba(37,99,235,0.18)',
-                background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
-                '&:hover': { background: 'linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%)' }
-              }}
-            >
-              רענן
-            </Button>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <Button
+                variant="contained"
+                startIcon={<EmailIcon />}
+                onClick={handleOpenEmailDialog}
+                disabled={trialFilteredData.length === 0}
+                sx={{
+                  borderRadius: '999px',
+                  direction: 'ltr',
+                  fontWeight: 700,
+                  px: 3,
+                  py: 1,
+                  fontSize: '0.92rem',
+                  fontFamily: 'inherit',
+                  boxShadow: '0 8px 18px rgba(14,165,233,0.18)',
+                  background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)',
+                  '&:hover': { background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)' }
+                }}
+              >
+                שלח מייל ניסיון{selectedRowIds.length > 0 ? ` (${selectedRowIds.length})` : ''}
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<RefreshIcon />}
+                onClick={loadData}
+                sx={{
+                  borderRadius: '999px',
+                  direction: 'ltr',
+                  fontWeight: 700,
+                  px: 3,
+                  py: 1,
+                  fontSize: '0.92rem',
+                  fontFamily: 'inherit',
+                  boxShadow: '0 8px 18px rgba(37,99,235,0.18)',
+                  background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+                  '&:hover': { background: 'linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%)' }
+                }}
+              >
+                רענן
+              </Button>
+            </Box>
           </Box>
         </Paper>
 
@@ -413,6 +500,16 @@ const TrialStudentsTable = () => {
               <Table size="small" sx={{ minWidth: 750 }}>
                 <TableHead>
                   <TableRow sx={{ bgcolor: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)', background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)' }}>
+                    <TableCell align="center" sx={{ color: 'white', fontWeight: 'bold', py: 1.5, borderBottom: 'none', width: 48 }}>
+                      <Checkbox
+                        size="small"
+                        checked={allPaginatedTrialSelected}
+                        indeterminate={somePaginatedTrialSelected}
+                        onChange={toggleSelectAllPaginatedTrial}
+                        disabled={paginatedTrialIds.length === 0}
+                        sx={{ color: 'white', '&.Mui-checked': { color: 'white' }, '&.MuiCheckbox-indeterminate': { color: 'white' } }}
+                      />
+                    </TableCell>
                     {['שם תלמיד', 'ת״ז', 'קבוצה', 'סטטוס', 'תאריך התחלה', 'תאריך ניסיון', 'פעולות'].map(h => (
                       <TableCell key={h} align="right"
                         sx={{ color: 'white', fontWeight: 'bold', fontSize: '0.98rem', py: 1.5, borderBottom: 'none' }}>
@@ -424,7 +521,7 @@ const TrialStudentsTable = () => {
                 <TableBody>
                   {paginatedData.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} align="center" sx={{ py: 6, color: '#94a3b8' }}>
+                      <TableCell colSpan={8} align="center" sx={{ py: 6, color: '#94a3b8' }}>
                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
                           <ScienceIcon sx={{ fontSize: 48, opacity: 0.3 }} />
                           <Typography>אין תוצאות לפי הסינון הנוכחי</Typography>
@@ -433,7 +530,9 @@ const TrialStudentsTable = () => {
                     </TableRow>
                   ) : (
                     paginatedData.map((row, idx) => {
-                      const statusMeta = getStatusMeta(row.isActive ?? row.IsActive);
+                      const statusCode = Number(row.isActive ?? row.IsActive);
+                      const isTrialRow = statusCode === 4;
+                      const statusMeta = getStatusMeta(statusCode);
                       const trialDate = row.trialDate || row.TrialDate;
                       const normalizedTrialDate = trialDate && !(typeof trialDate === 'string' && trialDate.startsWith('0001')) ? trialDate : null;
                       const isTrialMissingDate = Number(row.isActive ?? row.IsActive) === 4 && !normalizedTrialDate;
@@ -456,6 +555,15 @@ const TrialStudentsTable = () => {
                             bgcolor: isTrialOld ? 'rgba(254,243,199,0.35)' : undefined,
                             direction: 'rtl',
                           }}>
+                          <TableCell align="center" sx={{ py: 1.5 }}>
+                            <Checkbox
+                              size="small"
+                              checked={selectedRowIds.includes(row.groupStudentId)}
+                              onChange={() => toggleRowSelection(row.groupStudentId)}
+                              disabled={!isTrialRow}
+                              sx={{ color: isTrialRow ? '#0ea5e9' : '#cbd5e1' }}
+                            />
+                          </TableCell>
                           <TableCell align="right" sx={{ py: 1.5 }}>
                             <Tooltip title="לחץ לצפייה בפרטי התלמיד" placement="top" arrow>
                               <Typography
@@ -632,6 +740,14 @@ const TrialStudentsTable = () => {
             showAddButton={false}
           />
         )}
+
+        <TrialFollowUpEmailDialog
+          open={emailDialogOpen}
+          onClose={() => setEmailDialogOpen(false)}
+          trialRows={trialFilteredData}
+          selectedRows={selectedRows}
+          onComplete={handleEmailSendComplete}
+        />
       </Box>
     </motion.div>
   );
